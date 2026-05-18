@@ -1020,6 +1020,25 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_vni(for: "dinh59"), "định")
     XCTAssertEqual(transform_text_vni(for: "dinh95"), "định")
 
+    // 2.5 Test Existing Typo Corrections (ei -> ie, gn -> ng)
+    XCTAssertEqual(transform_text_telex(for: "veeitj"), "việt")
+    XCTAssertEqual(transform_text_telex(for: "phuowgn"), "phương")
+
+    // 2.6 Test transient "g" after a vowel allowing "n" to correct to "ng"
+    let processor = InputProcessor(method: .Telex)
+    processor.push(char: "p")
+    processor.push(char: "h")
+    processor.push(char: "u")
+    processor.push(char: "o")
+    processor.push(char: "w")
+    // Now they have typed "phươ"
+    processor.push(char: "g")
+    // Trailing "g" should not trigger recovery
+    XCTAssertFalse(processor.stopProcessing)
+    processor.push(char: "n")
+    // Corrected to "phương"
+    XCTAssertEqual(processor.transformed, "phương")
+
     // 3. Test autoTypoCorrection user toggle disabled/enabled behavior
     Defaults[.autoTypoCorrection] = false
     XCTAssertEqual(transform_text_telex(for: "thfi"), "thfi")
