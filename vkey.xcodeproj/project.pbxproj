@@ -41,6 +41,7 @@
 		3FCA000012C00001000000B /* Trie.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FCA000012C00001000000A /* Trie.swift */; };
 		3FDB83CB2BB4682F00AD6322 /* Keys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDB83CA2BB4682F00AD6322 /* Keys.swift */; };
 		3FDB83CD2BB468BA00AD6322 /* EventSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */; };
+		5A21D21AF4397FCB9C827912 /* DonateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */; };
 		7BEAE86A3D1B31E3C36D6645 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C15A8AB81A235FF54939DC /* Updater.swift */; };
 /* End PBXBuildFile section */
 
@@ -101,6 +102,7 @@
 		3FDB83CA2BB4682F00AD6322 /* Keys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keys.swift; sourceTree = "<group>"; };
 		3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSimulator.swift; sourceTree = "<group>"; };
 		3FDB83CE2BB468BA00AD6323 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DonateView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -253,6 +255,7 @@
 				3F4564E12BA5FFD800F087BA /* GuideView.swift */,
 				3F4564E32BA5FFD800F087BB /* OnboardingView.swift */,
 				3F94E7AE2BA736E100360F8B /* UpgradeAppView.swift */,
+				8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -447,6 +450,7 @@
 				3FAFBB852B84A86C0032A55E /* vkeyApp.swift in Sources */,
 				3F8A64FF2B89A078009E2AF1 /* InputProcessor.swift in Sources */,
 				7BEAE86A3D1B31E3C36D6645 /* Updater.swift in Sources */,
+				5A21D21AF4397FCB9C827912 /* DonateView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

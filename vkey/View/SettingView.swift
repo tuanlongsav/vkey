@@ -207,9 +207,23 @@ struct GeneralView: View {
                 Toggle("Phụ âm z, w, j, f", isOn: $appState.allowedZWJF)
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     
-                // Tuỳ chọn kiểu dấu mới/cũ
-                Toggle("Dấu kiểu cũ (hoà, khoẻ, thuỷ)", isOn: $oldStyleTonePlacement)
-                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                Picker("Kiểu đặt dấu", selection: $oldStyleTonePlacement) {
+                    Text("Kiểu mới").tag(false)
+                    Text("Kiểu cũ").tag(true)
+                }
+                .pickerStyle(.segmented)
+                
+                if oldStyleTonePlacement {
+                    Text("Ví dụ kiểu cũ: thuỷ, khoẻ, khoá,...")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, -8)
+                } else {
+                    Text("Ví dụ kiểu mới: thủy, khỏe, khóa,...")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, -8)
+                }
 
                 Toggle("Tự tắt khi mở Spotlight / Raycast", isOn: $smartSwitchEnabled)
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
@@ -217,11 +231,6 @@ struct GeneralView: View {
                 LabeledContent("Phím tắt") {
                     FlexibleShortcutRecorder(name: .toggleInputMode)
                 }
-                
-                Button("Kiểm tra cập nhật") {
-                    Updater.checkForUpdates(manual: true)
-                }
-                .buttonStyle(.link)
             }
             .formStyle(.grouped)
             .scrollDisabled(true)

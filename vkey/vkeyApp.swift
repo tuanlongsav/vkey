@@ -93,6 +93,24 @@ struct MainMenuView: View {
     // and widens the whole menu to fit, leaving an empty gap on items that
     // don't have a hint. Dropping the hint lets the menu shrink to text width.
 
+    Button {
+      appDelegate.openDonate()
+    } label: {
+      Label("Ủng hộ tác giả", systemImage: "cup.and.saucer")
+    }
+    
+    Button {
+      NSWorkspace.shared.open(URL(string: "https://github.com/tuanlongsav/vkey")!)
+    } label: {
+      Label("Thông tin dự án", systemImage: "info.circle")
+    }
+    
+    Button {
+      Updater.checkForUpdates(manual: true)
+    } label: {
+      Label("Kiểm tra cập nhật", systemImage: "arrow.triangle.2.circlepath")
+    }
+
     Divider()
 
     Button {

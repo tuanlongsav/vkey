@@ -109,6 +109,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     NSApp.activate(ignoringOtherApps: true)
   }
 
+  // Opens donate window
+  @objc func openDonate() {
+    NSApp.setActivationPolicy(.regular)
+    let contentView = DonateView()
+    let windowController = OnboardingWindowController()
+    windowController.contentViewController = NSHostingController(rootView: contentView)
+    windowController.showWindow(nil)
+    NSApp.activate(ignoringOtherApps: true)
+  }
+
   private func closeOnboardingWindows() {
     NSApp.windows
       .filter { $0.title == "vkey - Cài Đặt" }
