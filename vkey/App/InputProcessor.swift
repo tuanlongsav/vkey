@@ -171,36 +171,17 @@ struct TransformationTracker {
   /// Current sending strategy for the active app
   var currentStrategy: SendingStrategy = .batch
 
-  /// Track consecutive transformation failures for auto-switching
-  private var consecutiveFailures = 0
-
-  /// Maximum failures before auto-switching to step-by-step mode.
-  /// Kept low (2) so an Electron / web app gets the safest strategy almost
-  /// immediately rather than after several mistyped Vietnamese words.
-  private let maxFailuresBeforeSwitch = 2
-
-  /// Track last input character for failure detection
-  private var lastInputChar: Character?
-
   // MARK: - Strategy Management
 
   mutating func resetForApp(_ bundleId: String) {
     currentStrategy = EventSimulator.getStrategy(for: bundleId)
-    consecutiveFailures = 0
-    lastInputChar = nil
   }
 
-  /// Detects if a transformation likely failed based on input/output tracking.
-  /// Returns true if the transformation appears to have failed.
+  /// Placeholder for future output-aware failure detection.
+  /// The previous heuristic only counted repeated input characters, which could
+  /// switch strategies after valid typing and slow down the app unnecessarily.
   mutating func detectFailure(input: Character) -> Bool {
-    if let last = lastInputChar, last == input {
-      consecutiveFailures += 1
-    } else {
-      consecutiveFailures = 1
-    }
-    lastInputChar = input
-
-    return consecutiveFailures >= maxFailuresBeforeSwitch
+    return false
   }
 
   /// Auto-switches to step-by-step mode if failures are detected.
@@ -217,7 +198,6 @@ struct TransformationTracker {
     #endif
 
     currentStrategy = .stepByStep
-    consecutiveFailures = 0
   }
 }
 
@@ -348,7 +328,7 @@ class InputProcessor {
       || flags.contains(.maskAlternate)
     {
       newWord()
-      return Unmanaged.passRetained(event)
+      return Unmanaged.passUnretained(event)
     }
 
     // Detect if a paste operation occurred (pasteboard changed externally)
@@ -365,7 +345,7 @@ class InputProcessor {
       return handleTextChar(newChar, event: event)
     }
 
-    return Unmanaged.passRetained(event)
+    return Unmanaged.passUnretained(event)
   }
 
   // MARK: - Private Event Handlers
@@ -392,7 +372,7 @@ class InputProcessor {
     } else if InputProcessor.JumpTaskKeys.contains(taskKey) {
       newWord()
     }
-    return Unmanaged.passRetained(event)
+    return Unmanaged.passUnretained(event)
   }
 
   private func handleTextChar(_ newChar: Character, event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -403,7 +383,7 @@ class InputProcessor {
         return nil
       }
       newWord(storePrevious: true)
-      return Unmanaged.passRetained(event)
+      return Unmanaged.passUnretained(event)
     }
 
     push(char: newChar)
@@ -414,7 +394,7 @@ class InputProcessor {
     if let firstDiffChar = diffChars.first,
       diffChars.count == 1 && firstDiffChar == newChar && numBackspaces == 0
     {
-      return Unmanaged.passRetained(event)
+      return Unmanaged.passUnretained(event)
     }
 
     // Check for transformation failures and auto-switch if needed

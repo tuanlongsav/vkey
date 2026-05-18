@@ -14,19 +14,19 @@ public struct Focused {
 
   public static func elementText() -> String? {
     guard let focusedElement = Focused.element() else { return nil }
-    guard let selectedText: AXValue = focusedElement.getAttribute(property: kAXValueAttribute)
+    guard let text: String = focusedElement.getAttribute(property: kAXValueAttribute)
     else { return nil }
-    return "\(selectedText)"
+    return text
   }
 
   public static func hasHighlightedText() -> Bool {
     guard let focusedElement = Focused.element() else { return false }
 
     // Method 1: Check selected text content directly
-    if let highlightedText: AXValue = focusedElement.getAttribute(
+    if let highlightedText: String = focusedElement.getAttribute(
       property: kAXSelectedTextAttribute)
     {
-      if !"\(highlightedText)".isEmpty {
+      if !highlightedText.isEmpty {
         return true
       }
     }
@@ -53,11 +53,11 @@ public struct Focused {
 
   public static func highlightedText() -> String? {
     guard let focusedElement = Focused.element() else { return nil }
-    guard let highlightedText: AXValue = focusedElement.getAttribute(
+    guard let highlightedText: String = focusedElement.getAttribute(
       property: kAXSelectedTextAttribute)
     else { return nil }
-    guard !"\(highlightedText)".isEmpty else { return nil }
-    return "\(highlightedText)"
+    guard !highlightedText.isEmpty else { return nil }
+    return highlightedText
   }
 }
 
@@ -67,8 +67,6 @@ extension AXUIElement {
     if AXUIElementCopyAttributeValue(self, property as CFString, &ptr) != AXError.success {
       return nil
     }
-    return ptr.map {
-      $0 as! T
-    }
+    return ptr as? T
   }
 }

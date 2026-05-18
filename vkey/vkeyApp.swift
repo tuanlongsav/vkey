@@ -25,7 +25,7 @@ struct vkeyApp: App {
     Settings {
       TabView {
         GeneralView()
-          .environment(appDelegate.appState)
+          .environmentObject(appDelegate.appState)
           .tabItem { Label("Chung", systemImage: "gear") }
 
         MacroView()
@@ -113,7 +113,7 @@ struct GuideMenuView: View {
 }
 
 struct MenuBarLabel: View {
-  var appState: AppState
+  @ObservedObject var appState: AppState
   var isTrusted: Bool
 
   var body: some View {

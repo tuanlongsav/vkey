@@ -384,6 +384,13 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "ddangs"), "đáng")
   }
 
+  /// Test that dd only toggles đ immediately after an initial d.
+  func testTelexStrokedDOnlyAtInitialDD() throws {
+    XCTAssertEqual(transform_text_telex(for: "dduowngf"), "đường")
+    XCTAssertEqual(transform_text_telex(for: "dad"), "dad")
+    XCTAssertEqual(transform_text_telex(for: "ded"), "ded")
+  }
+
   // MARK: - Telex: Combined Diacritics and Tones
 
   /// Test combinations of circumflex + tone
@@ -663,6 +670,12 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_vni(for: "d9i"), "đi")
     XCTAssertEqual(transform_text_vni(for: "d9uo7c5"), "được")
     XCTAssertEqual(transform_text_vni(for: "d9a1ng"), "đáng")
+  }
+
+  /// Test that d9 only toggles đ immediately after an initial d.
+  func testVNIStrokedDOnlyAtInitialD9() throws {
+    XCTAssertEqual(transform_text_vni(for: "d9uo7ng2"), "đường")
+    XCTAssertEqual(transform_text_vni(for: "da9"), "da9")
   }
 
   // MARK: - VNI: Combined Diacritics and Tones

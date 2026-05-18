@@ -1,14 +1,13 @@
 import Cocoa
+import Combine
 import Foundation
 import SwiftUI
-import Observation
 
 // AppDelegate manages the application lifecycle and background services
-@Observable
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
-  var appState = AppState()
-  var isTrusted = false
+  @Published var appState = AppState()
+  @Published var isTrusted = false
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     // Hide dock icon since we use MenuBarExtra
@@ -70,7 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   // Opens onboarding guide
   @objc func openGuide() {
     NSApp.setActivationPolicy(.regular)
-    let contentView = OnboardingView().environment(appState)
+    let contentView = OnboardingView().environmentObject(appState)
     let windowController = OnboardingWindowController()
     windowController.contentViewController = NSHostingController(rootView: contentView)
     windowController.showWindow(nil)
@@ -80,7 +79,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   // Opens upgrade guide
   @objc func openUpgradeNewVersion() {
     NSApp.setActivationPolicy(.regular)
-    let contentView = UpgradeAppView().environment(appState)
+    let contentView = UpgradeAppView().environmentObject(appState)
     let windowController = OnboardingWindowController()
     windowController.contentViewController = NSHostingController(rootView: contentView)
     windowController.showWindow(nil)

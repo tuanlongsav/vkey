@@ -97,7 +97,8 @@ class Telex: TypingMethod {
     }
 
     // Xử lý dd → đ (phím d gõ 2 lần)
-    if let chuCaiDau = state.chuKhongDau.first,
+    if state.chuKhongDau.count == 1,
+      let chuCaiDau = state.chuKhongDau.first,
       (char == "d" || char == "D") && (chuCaiDau == "d" || chuCaiDau == "D")
     {
       return (state.withGachD(), true)

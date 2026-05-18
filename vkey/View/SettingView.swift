@@ -170,13 +170,12 @@ final class FlexibleShortcutButton: NSButton {
 }
 
 struct GeneralView: View {
-    @Environment(AppState.self) var appState
+    @EnvironmentObject var appState: AppState
     @Default(.smartSwitchEnabled) private var smartSwitchEnabled
 
     let appVersion = Bundle.main.appVersionLong
 
     var body: some View {
-        @Bindable var appState = appState
         VStack(spacing: 0) {
             Image("Cficon")
                 .resizable()
@@ -235,7 +234,7 @@ struct GeneralView: View {
 struct GeneralView_Previews: PreviewProvider {
     static var previews: some View {
         GeneralView()
-            .environment(AppState())
+            .environmentObject(AppState())
             .previewLayout(PreviewLayout.sizeThatFits)
             .padding()
             .previewDisplayName("GeneralView preview")

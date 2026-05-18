@@ -75,7 +75,8 @@ class VNI: TypingMethod {
     let thanhPhan = state.thanhPhanTieng
 
     // Xử lý d9 → đ (phím 9 sau chữ d)
-    if let chuCaiDau = state.chuKhongDau.first,
+    if state.chuKhongDau.count == 1,
+      let chuCaiDau = state.chuKhongDau.first,
       (char == "9") && (chuCaiDau == "d" || chuCaiDau == "D")
     {
       return (state.withGachD(), true)

@@ -79,6 +79,8 @@ struct MacroView: View {
   }
 }
 
-#Preview {
-  MacroView()
+struct MacroView_Previews: PreviewProvider {
+  static var previews: some View {
+    MacroView()
+  }
 }

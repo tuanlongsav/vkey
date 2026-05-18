@@ -6,13 +6,12 @@
 //
 
 import Cocoa
-import Observation
+import Combine
 import Defaults
 import Foundation
 import KeyboardShortcuts
 
-@Observable
-class AppState: FileMonitorDelegate {
+class AppState: ObservableObject, FileMonitorDelegate {
 
     /// Launcher / search apps that should default to English typing.
     /// vkey auto-disables in these apps but does not persist that to `appModes`,
@@ -32,7 +31,7 @@ class AppState: FileMonitorDelegate {
     private var smartSwitchActive = false
     private var enabledBeforeSmartSwitch = false
 
-    public var enabled = false {
+    @Published public var enabled = false {
         didSet {
             if !skipPersistAppMode {
                 self.appModes[self.activeAppName] = enabled
@@ -40,13 +39,13 @@ class AppState: FileMonitorDelegate {
             self.eventHook.setEnabled(enabled)
         }
     }
-    public var typingMethod: TypingMethods {
+    @Published public var typingMethod: TypingMethods {
         didSet {
             self.inputProcessor.changeTypingMethod(newMethod: typingMethod)
             Defaults[.typingMethod] = typingMethod
         }
     }
-    public var allowedZWJF: Bool {
+    @Published public var allowedZWJF: Bool {
         didSet {
             if allowedZWJF {
                 TiengViet.PhuAmDau =
@@ -59,12 +58,12 @@ class AppState: FileMonitorDelegate {
             Defaults[.allowedZWJF] = allowedZWJF
         }
     }
-    public var secureInputActive = false
+    @Published public var secureInputActive = false
 
     public var inputProcessor: InputProcessor
     public var eventHook: EventHook
-    public var appModes: [String: Bool] = [:]
-    public var activeAppName = "Unknown"
+    @Published public var appModes: [String: Bool] = [:]
+    @Published public var activeAppName = "Unknown"
     public var bundleId: String
 
     init() {

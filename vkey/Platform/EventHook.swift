@@ -98,7 +98,7 @@ class EventHook {
 func eventTapCallback(
   proxy: CGEventTapProxy, type: CGEventType, event: CGEvent, refcon: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
-  guard let refcon else { return Unmanaged.passRetained(event) }
+  guard let refcon else { return Unmanaged.passUnretained(event) }
   let eventHook = Unmanaged<EventHook>.fromOpaque(refcon).takeUnretainedValue()
 
   // Auto-recover when macOS disables the event tap
@@ -111,12 +111,12 @@ func eventTapCallback(
       print("[vkey] Event tap was disabled by system (\(type == .tapDisabledByTimeout ? "timeout" : "user input")), auto-recovered (count: \(eventHook.tapRecoveryCount))")
       #endif
     }
-    return Unmanaged.passRetained(event)
+    return Unmanaged.passUnretained(event)
   }
 
   // Ignore keystrokes not from hardware (HID system state).
   if event.getIntegerValueField(.eventSourceStateID) != 1 {
-    return Unmanaged.passRetained(event)
+    return Unmanaged.passUnretained(event)
   }
 
   // IME Switcher button on keyboard
@@ -151,7 +151,7 @@ func eventTapCallback(
   // the KeyboardShortcuts library and operates independently of this event tap, so
   // toggling Vi/En still works while the password field is focused.
   if isSecureInput {
-    return Unmanaged.passRetained(event)
+    return Unmanaged.passUnretained(event)
   }
 
   // ── Modifier-only hotkey detection ────────────────────────────────────────
@@ -190,5 +190,5 @@ func eventTapCallback(
     input.newWord()
   }
 
-  return Unmanaged.passRetained(event)
+  return Unmanaged.passUnretained(event)
 }
