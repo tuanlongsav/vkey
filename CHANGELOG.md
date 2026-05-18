@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.5 - 2026-05-18
+
+- Fixed the orientation of the star in the Vietnamese flag menu bar icon to point straight up.
+- Fixed diacritic tone placement to use the "kiểu cũ" style (e.g. `hoà`, `thuỷ`, `khoẻ`) instead of "kiểu mới".
+
 ## 1.3.4 - 2026-05-18
 
 - Fixed the menu bar state after onboarding so it switches from the setup guide menu to the main input menu immediately.

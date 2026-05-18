@@ -930,6 +930,13 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(vni, "toi yêu việt nam")
   }
 
+  func testOldStylePlacement() throws {
+    XCTAssertEqual(transform_text_telex(for: "hoaf"), "hoà")
+    XCTAssertEqual(transform_text_telex(for: "thuyr"), "thuỷ")
+    XCTAssertEqual(transform_text_telex(for: "khoer"), "khoẻ")
+  }
+
+
   func testBugTesst() throws {
     let inputProcessor = InputProcessor(method: .Telex)
     inputProcessor.push(char: "t")

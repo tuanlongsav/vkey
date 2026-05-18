@@ -191,7 +191,7 @@ func drawVNFlag(ctx: CGContext, size: CGSize) {
 
   let path = CGMutablePath()
   for i in 0..<10 {
-    let angle = -CGFloat.pi / 2 + CGFloat(i) * CGFloat.pi / 5
+    let angle = CGFloat.pi / 2 + CGFloat(i) * CGFloat.pi / 5
     let r = (i % 2 == 0) ? outerR : innerR
     let p = CGPoint(x: cx + r * cos(angle), y: cy + r * sin(angle))
     if i == 0 { path.move(to: p) } else { path.addLine(to: p) }
