@@ -932,21 +932,21 @@ final class vkeyTests: XCTestCase {
   }
 
   func testOldStylePlacement() throws {
-    let oldValue = Defaults[.oldStyleTonePlacement]
-    Defaults[.oldStyleTonePlacement] = true
-    XCTAssertEqual(transform_text_telex(for: "hoaf"), "hoà")
-    XCTAssertEqual(transform_text_telex(for: "thuyr"), "thuỷ")
-    XCTAssertEqual(transform_text_telex(for: "khoer"), "khoẻ")
-    Defaults[.oldStyleTonePlacement] = oldValue
-  }
-  
-  func testNewStylePlacement() throws {
-    let oldValue = Defaults[.oldStyleTonePlacement]
-    Defaults[.oldStyleTonePlacement] = false
+    let oldValue = Defaults[.newStyleTonePlacement]
+    Defaults[.newStyleTonePlacement] = false
     XCTAssertEqual(transform_text_telex(for: "hoaf"), "hòa")
     XCTAssertEqual(transform_text_telex(for: "thuyr"), "thủy")
     XCTAssertEqual(transform_text_telex(for: "khoer"), "khỏe")
-    Defaults[.oldStyleTonePlacement] = oldValue
+    Defaults[.newStyleTonePlacement] = oldValue
+  }
+  
+  func testNewStylePlacement() throws {
+    let oldValue = Defaults[.newStyleTonePlacement]
+    Defaults[.newStyleTonePlacement] = true
+    XCTAssertEqual(transform_text_telex(for: "hoaf"), "hoà")
+    XCTAssertEqual(transform_text_telex(for: "thuyr"), "thuỷ")
+    XCTAssertEqual(transform_text_telex(for: "khoer"), "khoẻ")
+    Defaults[.newStyleTonePlacement] = oldValue
   }
 
 

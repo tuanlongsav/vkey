@@ -172,7 +172,7 @@ final class FlexibleShortcutButton: NSButton {
 struct GeneralView: View {
     @EnvironmentObject var appState: AppState
     @Default(.smartSwitchEnabled) private var smartSwitchEnabled
-    @Default(.oldStyleTonePlacement) private var oldStyleTonePlacement
+    @Default(.newStyleTonePlacement) private var newStyleTonePlacement
 
     let appVersion = Bundle.main.appVersionLong
 
@@ -194,7 +194,7 @@ struct GeneralView: View {
                 Toggle("Bật / Tắt gõ TV", isOn: $appState.enabled)
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                LaunchAtLogin.Toggle("Mở lúc bật Mac")
+                LaunchAtLogin.Toggle("Tự khởi động cùng hệ thống")
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
                 Picker("Kiểu gõ", selection: $appState.typingMethod) {
@@ -207,19 +207,19 @@ struct GeneralView: View {
                 Toggle("Phụ âm z, w, j, f", isOn: $appState.allowedZWJF)
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     
-                Picker("Kiểu đặt dấu", selection: $oldStyleTonePlacement) {
-                    Text("Kiểu mới").tag(false)
-                    Text("Kiểu cũ").tag(true)
+                Picker("Kiểu đặt dấu", selection: $newStyleTonePlacement) {
+                    Text("Kiểu cũ").tag(false)
+                    Text("Kiểu mới").tag(true)
                 }
                 .pickerStyle(.segmented)
                 
-                if oldStyleTonePlacement {
-                    Text("Ví dụ kiểu cũ: thuỷ, khoẻ, khoá,...")
+                if newStyleTonePlacement {
+                    Text("Ví dụ kiểu mới: oà, uý, khoẻ, thuỷ,...")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, -8)
                 } else {
-                    Text("Ví dụ kiểu mới: thủy, khỏe, khóa,...")
+                    Text("Ví dụ kiểu cũ: òa, úy, khỏe, thủy,...")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, -8)

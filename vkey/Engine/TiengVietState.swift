@@ -66,12 +66,20 @@ struct TiengVietState {
   /// Chuỗi đã biến đổi với dấu tiếng Việt
   var transformed: String {
     if isBlank { return "" }
+    
+    // Auto-correct missing 'ê' for "uyen", "uyet"
+    var finalDauMu = dauMu
+    let nguyenAmLower = String(thanhPhanTieng.nguyenAm).lowercased()
+    if dauMu == .khongMu, nguyenAmLower == "uye", !thanhPhanTieng.phuAmCuoi.isEmpty {
+      finalDauMu = .muUp
+    }
+    
     return TiengVietTransformer.transform(
       thanhPhanTieng: thanhPhanTieng,
       dauThanh: dauThanh,
-      dauMu: dauMu,
+      dauMu: finalDauMu,
       gachD: gachD,
-      kieuCu: Defaults[.oldStyleTonePlacement]
+      kieuMoi: Defaults[.newStyleTonePlacement]
     )
   }
 

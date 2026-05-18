@@ -66,9 +66,31 @@ enum TiengVietParser {
 
       case .keepGi:
         // "gi" giữ nguyên là phụ âm ghép
-        // "gia" → gi + a, "giáng" → gi + a + ng, "giữ" → gi + ư
         break
       }
+    }
+    
+    // Auto-correct common typing mistakes (Typo correction)
+    
+    // 1. "gn" ở cuối -> "ng"
+    if result.phuAmCuoi.count == 2,
+       result.phuAmCuoi[0].lowercased() == "g",
+       result.phuAmCuoi[1].lowercased() == "n" {
+      let isUpperG = result.phuAmCuoi[0].isUppercase
+      let isUpperN = result.phuAmCuoi[1].isUppercase
+      result.phuAmCuoi[0] = isUpperN ? "N" : "n"
+      result.phuAmCuoi[1] = isUpperG ? "G" : "g"
+    }
+    
+    // 2. "ei" -> "ie" (khi có phụ âm cuối, ví dụ "veit" -> "viet" + dauMu -> việt)
+    if result.nguyenAm.count == 2,
+       result.nguyenAm[0].lowercased() == "e",
+       result.nguyenAm[1].lowercased() == "i",
+       !result.phuAmCuoi.isEmpty {
+      let isUpperE = result.nguyenAm[0].isUppercase
+      let isUpperI = result.nguyenAm[1].isUppercase
+      result.nguyenAm[0] = isUpperI ? "I" : "i"
+      result.nguyenAm[1] = isUpperE ? "E" : "e"
     }
 
     return result
