@@ -33,9 +33,14 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 ## Hình ảnh giao diện
 
 <p align="center">
-  <img src="images/menu-bar.png" width="250" alt="Menu Bar">
-  <img src="images/general-settings.png" width="350" alt="Cài đặt Chung">
-  <img src="images/macro-settings.png" width="350" alt="Cài đặt Macro">
+  <img src="images/hud-toggle.png" width="380" alt="HUD Chuyển đổi bộ gõ">
+  <img src="images/reinstall-alert.png" width="220" alt="Thông báo cài lại">
+</p>
+
+<p align="center">
+  <img src="images/general-settings.png" width="280" alt="Cài đặt Chung">
+  <img src="images/smart-switch-settings.png" width="280" alt="Cài đặt Smart Switch">
+  <img src="images/macro-settings.png" width="320" alt="Cài đặt Macro">
 </p>
 
 ## Cài đặt
