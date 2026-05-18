@@ -4,7 +4,9 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 
-> **vkey là một bản fork mở rộng từ [Caffee](https://github.com/khanhicetea/Caffee)** của tác giả Khanh Nguyen ([@khanhicetea](https://github.com/khanhicetea)). Toàn bộ engine xử lý âm tiết tiếng Việt (Telex / VNI / Parser / Transformer / Validator) cùng kiến trúc Platform-Layer ban đầu đều do tác giả gốc xây dựng. vkey kế thừa nguyên si và bổ sung thêm các tính năng riêng (xem mục [Khác biệt so với Caffee](#khác-biệt-so-với-caffee)).
+> **vkey là một bản fork mở rộng từ [Caffee](https://github.com/khanhicetea/Caffee)** của tác giả Khanh Nguyen ([@khanhicetea](https://github.com/khanhicetea)). Toàn bộ engine xử lý âm tiết tiếng Việt (Telex / VNI / Parser / Transformer / Validator) cùng kiến trúc Platform-Layer ban đầu đều do tác giả gốc xây dựng. 
+> 
+> Đồng thời, kể từ phiên bản v1.3.9 và v1.4.0, vkey đã **học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ dự án [XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen ([@xmannv](https://github.com/xmannv)) bao gồm giao diện thông báo Translucent Toggle HUD mờ kính, cơ chế Smart Switch tối ưu với bộ quét AX Probing và bộ lọc chính tả sớm Impossible Consonant Clusters nhằm mang lại trải nghiệm người dùng tuyệt vời nhất. vkey kế thừa nguyên si và bổ sung thêm các tính năng riêng (xem mục [Khác biệt so với Caffee](#khác-biệt-so-với-caffee)).
 
 ---
 
