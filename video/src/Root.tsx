@@ -1,13 +1,13 @@
 import type React from "react";
 import { Composition } from "remotion";
-import { CaffeePromo } from "./compositions/CaffeePromo";
+import { vkeyPromo } from "./compositions/vkeyPromo";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Composition
-        id="CaffeePromo"
-        component={CaffeePromo}
+        id="vkeyPromo"
+        component={vkeyPromo}
         durationInFrames={700}
         fps={30}
         width={1920}

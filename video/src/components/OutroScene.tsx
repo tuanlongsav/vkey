@@ -46,7 +46,7 @@ export const OutroScene: React.FC = () => {
           boxShadow: '0 20px 60px rgba(238, 90, 111, 0.4)',
           marginBottom: 40,
         }}
-        alt="Caffee Logo"
+        alt="vkey Logo"
       />
 
       {/* Typing text below logo */}

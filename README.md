@@ -1,70 +1,121 @@
-#  Caffee
+# vkey
 
-Bộ gõ tiếng Việt đơn giản nhất (native cho mac, viết bằng Swift, support macOS 14+ Sonoma trở lên)
+Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
+
+![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
+
+> **vkey là một bản fork mở rộng từ [Caffee](https://github.com/khanhicetea/Caffee)** của tác giả Khanh Nguyen ([@khanhicetea](https://github.com/khanhicetea)). Toàn bộ engine xử lý âm tiết tiếng Việt (Telex / VNI / Parser / Transformer / Validator) cùng kiến trúc Platform-Layer ban đầu đều do tác giả gốc xây dựng. vkey kế thừa nguyên si và bổ sung thêm các tính năng riêng (xem mục [Khác biệt so với Caffee](#khác-biệt-so-với-caffee)).
+
+---
 
 ## Chức năng
 
-- Gõ tiếng Việt (đặt dấu theo kiểu cũ - vì tính thẩm mỹ và nhất quán - chữ viết là 1 data vì vậy nó nên nhất quán cách viết và đặt dấu)
-- Hỗ trợ 2 kiểu gõ thông dụng nhất ( TELEX và VNI )
-- Hỗ trợ nhớ chế độ gõ (Vi - En) theo ứng dụng (ví dụ app A là Vi, switch qua app B trước đó là En, switch lại app A thì chuyển về Vi)
-- Hỗ trợ fix lỗi thanh địa chỉ của trình duyệt và Excel (do tính năng tự gợi ý)
-- Hỗ trợ tạo Hot key để chuyển nhanh chế độ gõ En - Vi trong app mà không cần bấm chuột
-- Hỗ trợ khởi động cùng hệ điều hành (và tự động chạy ngầm trên System Menu)
+- ✅ Gõ tiếng Việt với 2 kiểu phổ biến: **Telex** và **VNI**.
+- ✅ Đặt dấu theo kiểu cũ (nhất quán, dễ đọc).
+- ✅ Bộ gõ chỉ duy nhất Unicode (UTF-8), không hỗ trợ TCVN3/VNI Windows (giữ đơn giản).
+- ✅ Nhớ chế độ Vi/En theo từng ứng dụng (per-app input mode memory).
+- ✅ **Smart Switch**: tự động tắt khi vào Spotlight / Raycast / Alfred / LaunchBar — bạn gõ tìm tiếng Anh thuận tiện, không bị transform.
+- ✅ **Macro** (viết tắt → cụm dài): gõ `vn ` → ra `Việt Nam `.
+- ✅ Phím tắt linh hoạt: hỗ trợ cả tổ hợp key+modifier (vd `⌃⇧Z`) và **modifier-only** (vd nhấn-thả `⌃⇧` để toggle).
+- ✅ Fix lỗi thanh địa chỉ trình duyệt + Excel autocomplete.
+- ✅ Tương thích Electron / web app (Claude desktop, Notion, Slack, Discord…): mặc định dùng hybrid sending strategy, tự fallback step-by-step nếu phát hiện thất bại.
+- ✅ Tự bypass khi macOS bật secure input (gõ password an toàn).
+- ✅ Khởi động cùng macOS (tuỳ chọn).
+- ✅ Hoạt động xuyên QWERTZ / AZERTY / Dvorak (dùng physical key code → mapping QWERTY position cho Telex/VNI).
+
+## Khác biệt so với Caffee
+
+| Hạng mục | Caffee | vkey |
+|----------|--------|------|
+| Engine gõ (Telex/VNI/Parser/Transformer) | ✅ Tác giả gốc | Kế thừa nguyên si |
+| Per-app mode memory | ✅ | Kế thừa |
+| Autocomplete fix (browser/Excel) | ✅ | Kế thừa |
+| App icon, menu bar icon | hạt cà phê | **Mới**: nền đỏ + chữ "Vkey", cờ VN/US trên menu bar |
+| Phím tắt | Option+Z (key+modifier) | **Mới**: modifier-only `⌃⇧` mặc định + custom recorder chấp nhận mọi tổ hợp |
+| Smart Switch (Spotlight/Raycast/Alfred) | ❌ | **Mới** |
+| Macro (text expansion) | TODO trong code | **Mới**, hoàn thiện |
+| Tương thích Electron/web app | mặc định batch | **Mới**: mặc định hybrid + auto-fallback step-by-step |
+| DMG packaging script | thủ công | **Mới**: script Swift sinh asset + DMG build pipeline |
+| Tests | bộ test engine | Kế thừa + thêm tests cho WordBuffer / KeyboardUS / Validator |
 
 ## Cài đặt
 
-1. Tải file .dmg phiên bản mới nhất về, mở file lên, xuất hiện khung cửa sổ
-2. Kéo thả app tên Caffee vào thư mục Applications
-3. Mở app Caffee bằng LaunchPad hoặc Spotlight (lần đầu macOS sẽ hỏi có muốn mở app không, xác nhận Mở)
-4. Sau khi mở app lần đầu cần cài đặt quyền hệ thống để bộ gõ hoạt động được (theo hướng dẫn trên App)
-5. Sau khi làm theo hướng dẫn trên App, tắt App và mở lại 1 lần nữa là có thể dùng được bình thường
+### Tải file DMG (đơn giản nhất)
 
-## Nâng cấp phiên bản
+1. Tải `vkey-x.y.z.dmg` từ trang [Releases](../../releases/latest).
+2. Mở DMG → kéo `vkey` vào thư mục `Applications`.
+3. Vì vkey chỉ ký ad-hoc (không có Apple Developer ID), khi mở lần đầu macOS chặn:
+   - Mở Finder → Applications → **click chuột phải vào vkey** → chọn **"Mở"**.
+   - Hộp thoại hiện ra → bấm **"Mở"** xác nhận.
+   - Chỉ cần làm 1 lần.
+4. Vào **System Settings → Privacy & Security → Accessibility** → bật toggle cho `vkey`.
+5. Tắt rồi mở lại app để event tap được nạp.
 
-Vào menu bar > chọn 'Check for Updates' để kiểm tra và nâng cấp phiên bản mới nhất.
+### Build từ source
+
+Yêu cầu: macOS 14+, Xcode 16+ (Swift 5+).
+
+```bash
+git clone https://github.com/tuanlongsav/vkey.git
+cd vkey
+xcodebuild -project vkey.xcodeproj -scheme vkey \
+  -configuration Release \
+  -derivedDataPath /tmp/vkey-release \
+  CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO \
+  clean build
+ditto /tmp/vkey-release/Build/Products/Release/vkey.app /Applications/vkey.app
+```
+
+## Sử dụng
+
+| Tác vụ | Cách dùng |
+|--------|----------|
+| Chuyển VN ↔ EN | Nhấn + nhả **⌃⇧** (Control + Shift) đồng thời |
+| Đổi phím tắt | Menu vkey → Cài đặt → Phím tắt → bấm vào nút và nhập tổ hợp mới |
+| Bật/tắt từ menu | Click cờ trên menu bar → "Chuyển đổi bộ gõ 🇻🇳 \| 🇺🇸" |
+| Đổi kiểu gõ | Menu → "Kiểu Telex" / "Kiểu VNI" |
+| Thêm macro | Menu → Cài đặt → tab Macro → bấm "Thêm" |
+
+**Trạng thái icon menu bar:**
+- 🇻🇳 cờ Việt Nam: đang gõ tiếng Việt
+- 🇺🇸 cờ Mỹ: đang gõ tiếng Anh
+- 🔒 ổ khoá: đang ở ô password (vkey tự bypass)
+- ⚙️ bánh răng có dấu hỏi: chưa cấp quyền Accessibility
 
 ## FAQ
 
-1. App có an toàn không ?
+**1. Có an toàn không?**
+Mã nguồn mở GPL v3, bạn tự build hoặc đọc code trước khi tin. App không gửi dữ liệu đi đâu, không telemetry.
 
-- App trên website chính thức sẽ an toàn, do chính tay mình Code, chính tay mình Build, chính tay mình gửi lên Apple ký số để phân phối App (1 lớp quét virus dạng nhẹ).
-- Nếu bạn hỏi tại sao phải tin mình ? Đúng! Bạn không cần tin. Mình tin mình làm điều đúng đắn.
+**2. Tại sao phải cấp quyền Accessibility?**
+vkey nghe keyboard system-wide (qua `CGEvent.tapCreate`) để chuyển ký tự bạn gõ thành tiếng Việt. Đây là quyền chuẩn cho mọi bộ gõ "hàng chế" trên macOS (OpenKey, EVKey, GoTiengViet cũng vậy). Apple's official IME thì dùng cơ chế khác (Input Method Kit) nhưng có nhược điểm gạch chân + bug khi click sang ô khác giữa từ.
 
-2. Sao phải cấp quyền macOS thì mới dùng được App ?
+**3. Sao chỉ nhận Telex và VNI?**
+Triết lý "đơn giản nhất". Hai kiểu này phủ ~95% người dùng VN. Không có bảng setting to đùng như OpenKey/EVKey.
 
-- Đầu tiên việc bạn đặt ra câu hỏi mỗi khi cấp quyền là một tư duy bảo mật tốt!
-- Nếu bạn dùng macOS đã lâu sẽ thấy macOS có 2 dạng bộ gõ :
-    + Chính thức nguyên tem của hệ điều hành, do Apple viết dựa trên Engine tiếng việt của Unikey, nhưng cách hoạt động là nó tạo 1 cái input giả (gọi là Buffer ảo) để bạn nhập Tiếng Việt vào đó, đó là lý do mà nó thường có gạch chân. Đến khi bạn bấm 1 key kết thúc 1 từ (như Space hay chấm phẩy), hệ điều hành mới Commit cái từ tiếng Việt đó xuống cái Input thật. Nên sẽ có hiện tượng bạn chưa gõ xong từ mà bấm chuột qua khung khác là nó Move cái từ bạn vừa gõ qua khung đó. Và còn rất nhiều bug phát sinh do dùng Input giả.
-    + Hàng chế (Caffee, GoTiengViet, OpenKey, EVKey, ...), do lập trình viên VN mơ ước về một trải nghiệm gõ tiếng Việt tốt hơn trên macOS như trên Windows (Unikey làm rất tốt). Các hàng chế này hoạt động cơ bản trên cách "Listen" (nghe toàn bộ keyboard được bấm) của bạn trên macOS, chuyển nó qua Tiếng Việt theo kiểu gõ bạn chọn, rồi lại "Send" các ký tự Tiếng Việt này xuống thẳng Input thật cho bạn. Vì thế mà tất cả app kiểu hàng chế này phải xin 2 quyền cơ bản là Listen và Send (quyền nào cũng nguy hiểm nếu tác giả không ngay thẳng)
-- **Lưu ý :** Một khi đã cấp quyền, bạn có thể lấy lại quyền nếu muốn (nhưng nhớ tắt App trước khi làm vì đây là cái bug to đùng ở phía macOS, nó sẽ crash cả cái máy, bạn chỉ có nước bấm giữ Power để tắt hoàn toàn máy).
+**4. Bản DMG có notarized không?**
+Không. Đây là dự án cá nhân, không có Apple Developer ID. Bạn tin tưởng → right-click Open. Không tin → build lại từ source.
 
-3. Tại sao app miễn phí ?
+## Giấy phép & Bản quyền
 
-- Ban đầu mình cũng dự tính thương mại bán License app này, nhưng nghĩ lại market VN hơi chua :
-    + Thị trường quá quen với hàng Free (như mình cũng vậy)
-    + Thị trường cũng đã có các app Free (OpenKey, EVKey) với hàng tá tính năng kiểu gõ với bảng Settings to đùng
-    + Cổng thanh toán ở VN khá chán, bán App thì lên Apple Store là ngon nhất (vừa tạo được niềm tin uy tín, vừa trải nghiệm mua nhanh gọn lẹ). Nhưng khổ nổi loại app này được liệt kê vào danh mục cấm lên App (do đó bạn thấy các app trước không lên được - vì 2 cái quyền khá nhạy cảm)
+vkey kế thừa giấy phép **GNU General Public License v3.0** từ Caffee. Xem file [`LICENSE`](LICENSE).
 
-4. Tại sao Open-source ?
+Điều này có nghĩa:
+- Bạn **được** sao chép, sửa, phân phối lại.
+- Bản phân phối lại của bạn **bắt buộc** cũng phải mở mã nguồn dưới GPL v3 (copyleft).
+- Không được phép đóng nguồn và bán thương mại độc quyền.
 
-- Mình dự tính là Free nhưng sẽ Closed-Source, nhưng nghĩ lại tài hèn sức mọn, cái đống mã này chẳng bỏ gì với tài năng của các dev VN khác
-- Việc open-source cho các Dev khác chung sở thích và muốn hiểu hơn về bộ gõ có thể đóng góp
-- Mình thấy đa phần các App trước OpenSource viết khá khó hiểu (như OpenKey viết bằng Obj-C) và Engine nhìn rất Hard-core (mỗi khi mình muốn Contribute phải vận rất nhiều nội công học lại - nên đa phần bỏ cuộc ở bước đọc code)
+### Ghi công (Credit)
 
-5. App có dùng AI để phát triển không ?
+- **Caffee** © Khanh Nguyen ([@khanhicetea](https://github.com/khanhicetea)) — toàn bộ engine xử lý tiếng Việt + kiến trúc lõi.
+- **vkey** © 2026 longht ([@tuanlongsav](https://github.com/tuanlongsav)) — các tính năng mở rộng nêu trong bảng [Khác biệt so với Caffee](#khác-biệt-so-với-caffee).
 
-Có, trước năm 2026 hoàn toàn kiến trúc bộ gõ (Engine) là do tự mình nghĩ và phát triển. Từ 2026, mình dùng AI để tìm bugs, cải thiện UX, và phát triển các tính năng mới dựa trên kiến trúc bộ gõ (Engine).
+Mỗi file source vẫn giữ header gốc của tác giả Caffee khi có. Vui lòng tôn trọng attribution khi tiếp tục fork.
 
-Mọi commits đều được review và test kĩ trước khi push và release app.
+### Lưu ý về tên gọi
 
-## Package .dmg file
+Tên "vkey" được chọn ngắn gọn, **không liên quan** đến các sản phẩm thương mại / dịch vụ đã đăng ký bảo hộ tại Việt Nam (vd các sản phẩm chữ ký số / bảo mật có chữ "VKey"). Đây là phần mềm phi thương mại, không thay thế / cạnh tranh với sản phẩm đăng ký thương hiệu nào.
 
-```shell
-create-dmg "Caffee.app"
-```
+### Engine xử lý tiếng Việt
 
-## LICENSE
-
-GNU General Public License v3.0
-
-(The GNU GPLv3 also lets people do almost anything they want with your project, except distributing closed source versions.)
+vkey **không** sử dụng mã nguồn từ UniKey (Phạm Kim Long), EVKey hay OpenKey. Engine `Engine/TiengViet*.swift` là của Caffee, được viết lại độc lập từ đầu bằng Swift theo lý thuyết âm tiết học tiếng Việt — xem chi tiết trong [app-arch.md](app-arch.md).

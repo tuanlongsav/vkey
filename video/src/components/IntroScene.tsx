@@ -44,7 +44,7 @@ export const IntroScene: React.FC = () => {
           transform: `scale(${logoScale})`,
           boxShadow: '0 20px 60px rgba(238, 90, 111, 0.4)',
         }}
-        alt="Caffee Logo"
+        alt="vkey Logo"
       />
 
       {/* Title */}
@@ -59,7 +59,7 @@ export const IntroScene: React.FC = () => {
           letterSpacing: '-0.02em',
         }}
       >
-        Caffee
+        vkey
       </h1>
 
       {/* Subtitle */}

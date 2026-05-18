@@ -1,11 +1,11 @@
 {
-  "name": "caffee-video",
+  "name": "vkey-video",
   "version": "1.0.0",
-  "description": "Promotional video for Caffee - Vietnamese IME for macOS",
+  "description": "Promotional video for vkey - Vietnamese IME for macOS",
   "type": "module",
   "scripts": {
     "dev": "remotion studio",
-    "build": "remotion render src/index.ts CaffeePromo out/video.mp4",
+    "build": "remotion render src/index.ts vkeyPromo out/video.mp4",
     "upgrade": "remotion upgrade"
   },
   "dependencies": {
