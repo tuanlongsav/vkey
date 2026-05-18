@@ -31,11 +31,11 @@ enum Updater {
           }
           
           let serverVersionCodeStr = parseTag("sparkle:version", from: xml) ?? ""
-          let serverVersionStr = parseTag("sparkle:shortVersionString", from: xml) ?? "1.4.0"
+          let serverVersionStr = parseTag("sparkle:shortVersionString", from: xml) ?? "1.4.1"
           let enclosureUrlStr = parseEnclosureUrl(from: xml) ?? "https://github.com/tuanlongsav/vkey/releases"
           
           let localVersionCodeStr = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
-          let localVersionStr = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.4.0"
+          let localVersionStr = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.4.1"
           
           let serverVersionCode = Int(serverVersionCodeStr) ?? 0
           let localVersionCode = Int(localVersionCodeStr) ?? 0

@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.4.1</title>
+      <sparkle:version>14100</sparkle:version>
+      <sparkle:shortVersionString>1.4.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 03:06:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.4.1/vkey-1.4.1.dmg"
+        sparkle:edSignature="myoRRBQsaqQb+2roSsESoellhvqaMWFRZqRWA7R7OKBmbfFpufyU/yPZckhZDCarDhEMVOABxEr1nuMxyhUzCg=="
+        length="5384440"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong phiên bản 1.4.1:</h2>
+        <ul>
+          <li><strong>Cải tiến Engine Tiếng Việt của GoNhanh.org:</strong> Tích hợp ma trận kiểm tra 6 bước chính tả, bộ lọc Vowel Inclusion Pairs chống dính chữ tiếng Anh và hỗ trợ tên riêng dân tộc ("kr-", "Đắk Lắk").</li>
+          <li><strong>Bảo toàn phím đúp (Doubled Tone Mark Preservation):</strong> Giữ nguyên hoàn hảo các phím đúp như "ff" (off/offline) hay "ss" (class/pass/staff) không bị nuốt.</li>
+          <li><strong>Tự động khôi phục từ tiếng Anh (Space Restore):</strong> Nhấn phím Space để tự động phục hồi các từ tiếng Anh bị gõ nhầm sang tiếng Việt (như ò -> of, ì -> if, sê -> see, tê -> tee).</li>
+          <li><strong>Phục hồi nhanh phím ESC (Escape Reversion):</strong> Nhấn ESC để hoàn tác ngay lập tức từ đang gõ dở về dạng phím thô ban đầu.</li>
+          <li><strong>AX Combo & Search Box Probing:</strong> Tự động phát hiện các ô tìm kiếm và menu lựa chọn của hệ thống để kích hoạt chế độ Selection-Overwrite, chống dính chữ triệt để trên toàn bộ macOS.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.4.0</title>
       <sparkle:version>14000</sparkle:version>
       <sparkle:shortVersionString>1.4.0</sparkle:shortVersionString>
