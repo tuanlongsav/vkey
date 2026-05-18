@@ -17,9 +17,15 @@ struct DonateView: View {
         .resizable()
         .scaledToFit()
         .frame(width: 300, height: 300)
-        .padding(.bottom, 24)
+        .padding(.bottom, 16)
+        
+      Button("Đóng") {
+        NSApp.windows.filter { $0.title == "Ủng hộ tác giả" }.forEach { $0.close() }
+      }
+      .keyboardShortcut(.defaultAction)
+      .padding(.bottom, 24)
     }
-    .frame(width: 400, height: 480)
+    .frame(width: 400, height: 520)
   }
 }
 

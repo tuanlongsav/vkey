@@ -113,8 +113,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   @objc func openDonate() {
     NSApp.setActivationPolicy(.regular)
     let contentView = DonateView()
-    let windowController = OnboardingWindowController()
-    windowController.contentViewController = NSHostingController(rootView: contentView)
+    let window = NSWindow(
+        contentRect: NSRect(x: 0, y: 0, width: 400, height: 520),
+        styleMask: [.titled, .closable, .fullSizeContentView],
+        backing: .buffered, defer: false)
+    window.center()
+    window.title = "Ủng hộ tác giả"
+    window.titlebarAppearsTransparent = true
+    window.isMovableByWindowBackground = true
+    window.contentViewController = NSHostingController(rootView: contentView)
+    
+    let windowController = NSWindowController(window: window)
     windowController.showWindow(nil)
     NSApp.activate(ignoringOtherApps: true)
   }
