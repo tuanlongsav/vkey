@@ -192,28 +192,40 @@ struct GeneralView: View {
             // Form gives native macOS label-right / control-left layout and
             // centers the whole block horizontally inside its container.
             Form {
-                Toggle("Bật / Tắt gõ TV", isOn: $appState.enabled)
-                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                Toggle(isOn: $appState.enabled) {
+                    Label("Bật / Tắt gõ TV", systemImage: "keyboard")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                LaunchAtLogin.Toggle("Tự khởi động cùng hệ thống")
-                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                LaunchAtLogin.Toggle {
+                    Label("Tự khởi động cùng hệ thống", systemImage: "arrow.up.right.square")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                Picker("Kiểu gõ", selection: $appState.typingMethod) {
+                Picker(selection: $appState.typingMethod) {
                     ForEach(TypingMethods.allCases, id: \.self) { method in
                         Text(method.rawValue)
                     }
+                } label: {
+                    Label("Kiểu gõ", systemImage: "abc")
                 }
                 .pickerStyle(.segmented)
 
-                Toggle("Phụ âm z, w, j, f", isOn: $appState.allowedZWJF)
-                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                Toggle(isOn: $appState.allowedZWJF) {
+                    Label("Phụ âm z, w, j, f", systemImage: "character")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                Toggle("Tự động sửa lỗi gõ nhầm", isOn: $autoTypoCorrection)
-                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                Toggle(isOn: $autoTypoCorrection) {
+                    Label("Tự động sửa lỗi gõ nhầm", systemImage: "sparkles")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     
-                Picker("Kiểu đặt dấu", selection: $newStyleTonePlacement) {
+                Picker(selection: $newStyleTonePlacement) {
                     Text("Kiểu cũ").tag(false)
                     Text("Kiểu mới").tag(true)
+                } label: {
+                    Label("Kiểu đặt dấu", systemImage: "textformat")
                 }
                 .pickerStyle(.segmented)
                 
@@ -229,11 +241,15 @@ struct GeneralView: View {
                         .padding(.top, -8)
                 }
 
-                Toggle("Tự tắt khi mở Spotlight / Raycast", isOn: $smartSwitchEnabled)
-                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                Toggle(isOn: $smartSwitchEnabled) {
+                    Label("Tự tắt khi mở Spotlight / Raycast", systemImage: "magnifyingglass")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                LabeledContent("Phím tắt") {
+                LabeledContent {
                     FlexibleShortcutRecorder(name: .toggleInputMode)
+                } label: {
+                    Label("Phím tắt", systemImage: "command")
                 }
             }
             .formStyle(.grouped)
