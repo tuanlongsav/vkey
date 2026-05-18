@@ -24,6 +24,14 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ Hoạt động xuyên QWERTZ / AZERTY / Dvorak (dùng physical key code → mapping QWERTY position cho Telex/VNI).
 - ✅ Tích hợp **Kiểm tra cập nhật** (Update Checker) tự động và có tuỳ chọn **Ủng hộ tác giả** (Donate) qua VietQR.
 
+## Hình ảnh giao diện
+
+<p align="center">
+  <img src="images/menu-bar.png" width="250" alt="Menu Bar">
+  <img src="images/general-settings.png" width="350" alt="Cài đặt Chung">
+  <img src="images/macro-settings.png" width="350" alt="Cài đặt Macro">
+</p>
+
 ## Khác biệt so với Caffee
 
 | Hạng mục | Caffee | vkey |
