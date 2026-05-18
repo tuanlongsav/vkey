@@ -54,6 +54,13 @@ final class vkeyTests: XCTestCase {
     return p_ret.joined(separator: " ")
   }
 
+  private func withTonePlacement(_ newStyle: Bool, run assertions: () throws -> Void) throws {
+    let oldValue = Defaults[.newStyleTonePlacement]
+    Defaults[.newStyleTonePlacement] = newStyle
+    defer { Defaults[.newStyleTonePlacement] = oldValue }
+    try assertions()
+  }
+
   /// Test paragraph-level transformation with corrected Telex input
   func testExample() throws {
     // Test a simpler sentence with correct Telex sequences
@@ -932,21 +939,98 @@ final class vkeyTests: XCTestCase {
   }
 
   func testOldStylePlacement() throws {
-    let oldValue = Defaults[.newStyleTonePlacement]
-    Defaults[.newStyleTonePlacement] = false
-    XCTAssertEqual(transform_text_telex(for: "hoaf"), "hòa")
-    XCTAssertEqual(transform_text_telex(for: "thuyr"), "thủy")
-    XCTAssertEqual(transform_text_telex(for: "khoer"), "khỏe")
-    Defaults[.newStyleTonePlacement] = oldValue
+    try withTonePlacement(false) {
+      XCTAssertEqual(transform_text_telex(for: "hoaf"), "hòa")
+      XCTAssertEqual(transform_text_telex(for: "thuyr"), "thủy")
+      XCTAssertEqual(transform_text_telex(for: "khoer"), "khỏe")
+    }
   }
   
   func testNewStylePlacement() throws {
-    let oldValue = Defaults[.newStyleTonePlacement]
-    Defaults[.newStyleTonePlacement] = true
-    XCTAssertEqual(transform_text_telex(for: "hoaf"), "hoà")
-    XCTAssertEqual(transform_text_telex(for: "thuyr"), "thuỷ")
-    XCTAssertEqual(transform_text_telex(for: "khoer"), "khoẻ")
-    Defaults[.newStyleTonePlacement] = oldValue
+    try withTonePlacement(true) {
+      XCTAssertEqual(transform_text_telex(for: "hoaf"), "hoà")
+      XCTAssertEqual(transform_text_telex(for: "thuyr"), "thuỷ")
+      XCTAssertEqual(transform_text_telex(for: "khoer"), "khoẻ")
+    }
+  }
+
+  func testReviewedTypoCorrectionRegressions() throws {
+    XCTAssertEqual(transform_text_telex(for: "tuyetj"), "tuyệt")
+    XCTAssertEqual(transform_text_telex(for: "veeitj"), "việt")
+    XCTAssertEqual(transform_text_telex(for: "phuowgn"), "phương")
+    XCTAssertEqual(transform_text_telex(for: "phuwowgn"), "phuong")
+  }
+
+  func testNewTypoCorrections() throws {
+    // Rule 1: "ou" -> "uo"
+    XCTAssertEqual(transform_text_telex(for: "bouts"), "buót")
+    XCTAssertEqual(transform_text_telex(for: "boutos"), "buốt")
+    XCTAssertEqual(transform_text_vni(for: "bout1"), "buót")
+    XCTAssertEqual(transform_text_vni(for: "bout61"), "buốt")
+    
+    // Rule 2: "aoi" -> "oai"
+    XCTAssertEqual(transform_text_telex(for: "haois"), "hoái")
+    XCTAssertEqual(transform_text_vni(for: "haoi1"), "hoái")
+    
+    // Rule 3: "ao" + final consonant -> "oa" + final consonant
+    XCTAssertEqual(transform_text_telex(for: "haocj"), "hoạc")
+    XCTAssertEqual(transform_text_telex(for: "haong"), "hoang")
+    XCTAssertEqual(transform_text_telex(for: "haongf"), "hoàng")
+    XCTAssertEqual(transform_text_vni(for: "haoc5"), "hoạc")
+    
+    // Guarantee that standard "ao" words with no final consonant are preserved
+    XCTAssertEqual(transform_text_telex(for: "baos"), "báo")
+    XCTAssertEqual(transform_text_telex(for: "caof"), "cào")
+  }
+
+  func testReviewedTypoCorrectionParsing() throws {
+    let swappedEi = TiengVietParser.parse(Array("veit"))
+    XCTAssertEqual(String(swappedEi.nguyenAm), "ie")
+    XCTAssertEqual(String(swappedEi.phuAmCuoi), "t")
+    XCTAssertTrue(swappedEi.conLai.isEmpty)
+
+    let swappedGn = TiengVietParser.parse(Array("phuogn"))
+    XCTAssertEqual(String(swappedGn.nguyenAm), "uo")
+    XCTAssertEqual(String(swappedGn.phuAmCuoi), "ng")
+    XCTAssertTrue(swappedGn.conLai.isEmpty)
+
+    let swappedOu = TiengVietParser.parse(Array("bou"))
+    XCTAssertEqual(String(swappedOu.nguyenAm), "uo")
+    XCTAssertTrue(swappedOu.conLai.isEmpty)
+
+    let swappedAoi = TiengVietParser.parse(Array("haoi"))
+    XCTAssertEqual(String(swappedAoi.nguyenAm), "oai")
+    XCTAssertTrue(swappedAoi.conLai.isEmpty)
+
+    let swappedAoFinal = TiengVietParser.parse(Array("haoc"))
+    XCTAssertEqual(String(swappedAoFinal.nguyenAm), "oa")
+    XCTAssertEqual(String(swappedAoFinal.phuAmCuoi), "c")
+    XCTAssertTrue(swappedAoFinal.conLai.isEmpty)
+  }
+
+  func testAdvancedEarlyTonesAndLateStrokes() throws {
+    // 1. Test Misplaced Tone Marks (Early Tone Marks)
+    XCTAssertEqual(transform_text_telex(for: "thfi"), "thì")
+    XCTAssertEqual(transform_text_telex(for: "thfis"), "thí")
+    XCTAssertEqual(transform_text_vni(for: "th2i"), "thì")
+    XCTAssertEqual(transform_text_vni(for: "th1i"), "thí")
+
+    // 2. Test Late-Stroke "d" (Telex) & "9" (VNI) to yield "đ"
+    XCTAssertEqual(transform_text_telex(for: "dinhjd"), "định")
+    XCTAssertEqual(transform_text_vni(for: "dinh59"), "định")
+    XCTAssertEqual(transform_text_vni(for: "dinh95"), "định")
+
+    // 3. Test autoTypoCorrection user toggle disabled/enabled behavior
+    Defaults[.autoTypoCorrection] = false
+    XCTAssertEqual(transform_text_telex(for: "thfi"), "thfi")
+    XCTAssertEqual(transform_text_telex(for: "dinhjd"), "dinhjd")
+    XCTAssertEqual(transform_text_vni(for: "th2i"), "th2i")
+    XCTAssertEqual(transform_text_vni(for: "dinh59"), "dinh59")
+
+    // Restore default setting
+    Defaults[.autoTypoCorrection] = true
+    XCTAssertEqual(transform_text_telex(for: "thfi"), "thì")
+    XCTAssertEqual(transform_text_telex(for: "dinhjd"), "định")
   }
 
 
@@ -1231,7 +1315,7 @@ final class TiengVietValidatorTests: XCTestCase {
   func testDiphthongsWithoutFinalConsonant() throws {
     // "ai", "ao", "au", "ay" cannot take a final consonant.
     XCTAssertTrue(TiengVietValidator.needsRecovery(parse("aim")))
-    XCTAssertTrue(TiengVietValidator.needsRecovery(parse("aon")))
+    XCTAssertTrue(TiengVietValidator.needsRecovery(parse("ain")))
     XCTAssertTrue(TiengVietValidator.needsRecovery(parse("aut")))
   }
 

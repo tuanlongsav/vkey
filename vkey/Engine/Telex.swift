@@ -35,6 +35,7 @@
 /// - Gõ ww → hủy dấu móc/trăng
 
 import Foundation
+import Defaults
 
 class Telex: TypingMethod {
 
@@ -100,6 +101,17 @@ class Telex: TypingMethod {
     if state.chuKhongDau.count == 1,
       let chuCaiDau = state.chuKhongDau.first,
       (char == "d" || char == "D") && (chuCaiDau == "d" || chuCaiDau == "D")
+    {
+      return (state.withGachD(), true)
+    }
+
+    // Xử lý phím d gõ cuối từ để gạch D (Late D toggle, ví dụ: dinjhd -> định)
+    if Defaults[.autoTypoCorrection],
+       state.chuKhongDau.count >= 3,
+       let chuCaiDau = state.chuKhongDau.first,
+       (chuCaiDau == "d" || chuCaiDau == "D"),
+       !state.gachD,
+       (char == "d" || char == "D")
     {
       return (state.withGachD(), true)
     }

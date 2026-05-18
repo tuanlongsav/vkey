@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3F5B00032C12345600000003 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 3F5B00022C12345600000002 /* Sparkle */; };
 		3F2E85C92B9EDE7900A95282 /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2E85C82B9EDE7900A95282 /* Defaults */; };
 		3F2E85CC2B9EDF2600A95282 /* Setting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2E85CB2B9EDF2600A95282 /* Setting.swift */; };
 		3F2E85CF2BA0B0D400A95282 /* MacroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2E85CE2BA0B0D400A95282 /* MacroView.swift */; };
@@ -41,6 +42,7 @@
 		3FCA000012C00001000000B /* Trie.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FCA000012C00001000000A /* Trie.swift */; };
 		3FDB83CB2BB4682F00AD6322 /* Keys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDB83CA2BB4682F00AD6322 /* Keys.swift */; };
 		3FDB83CD2BB468BA00AD6322 /* EventSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */; };
+		3FAFBBC82B84E88C0032A55E /* SmartSwitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAFBBC72B84E88C0032A55E /* SmartSwitchView.swift */; };
 		5A21D21AF4397FCB9C827912 /* DonateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */; };
 		7BEAE86A3D1B31E3C36D6645 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C15A8AB81A235FF54939DC /* Updater.swift */; };
 /* End PBXBuildFile section */
@@ -102,6 +104,7 @@
 		3FDB83CA2BB4682F00AD6322 /* Keys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keys.swift; sourceTree = "<group>"; };
 		3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSimulator.swift; sourceTree = "<group>"; };
 		3FDB83CE2BB468BA00AD6323 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3FAFBBC72B84E88C0032A55E /* SmartSwitchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSwitchView.swift; sourceTree = "<group>"; };
 		8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DonateView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -110,6 +113,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3F5B00032C12345600000003 /* Sparkle in Frameworks */,
 				3F2E85C92B9EDE7900A95282 /* Defaults in Frameworks */,
 				3F2E85D22BA0B53F00A95282 /* KeyboardShortcuts in Frameworks */,
 				3F9FC6D82B9EB6A200659712 /* LaunchAtLogin in Frameworks */,
@@ -252,6 +256,7 @@
 			children = (
 				3FAFBBC32B84E7890032A55E /* SettingView.swift */,
 				3F2E85CE2BA0B0D400A95282 /* MacroView.swift */,
+				3FAFBBC72B84E88C0032A55E /* SmartSwitchView.swift */,
 				3F4564E12BA5FFD800F087BA /* GuideView.swift */,
 				3F4564E32BA5FFD800F087BB /* OnboardingView.swift */,
 				3F94E7AE2BA736E100360F8B /* UpgradeAppView.swift */,
@@ -278,6 +283,7 @@
 			);
 			name = vkey;
 			packageProductDependencies = (
+				3F5B00022C12345600000002 /* Sparkle */,
 				3F8A650E2B91CA9A009E2AF1 /* Settings */,
 				3F9FC6D72B9EB6A200659712 /* LaunchAtLogin */,
 				3F2E85C82B9EDE7900A95282 /* Defaults */,
@@ -356,6 +362,7 @@
 			);
 			mainGroup = 3FAFBB782B84A86C0032A55E;
 			packageReferences = (
+				3F5B00012C12345600000001 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				3F8A650D2B91CA9A009E2AF1 /* XCRemoteSwiftPackageReference "Settings" */,
 				3F9FC6D62B9EB6A200659712 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */,
 				3F2E85C72B9EDE7900A95282 /* XCRemoteSwiftPackageReference "Defaults" */,
@@ -450,6 +457,7 @@
 				3FAFBB852B84A86C0032A55E /* vkeyApp.swift in Sources */,
 				3F8A64FF2B89A078009E2AF1 /* InputProcessor.swift in Sources */,
 				7BEAE86A3D1B31E3C36D6645 /* Updater.swift in Sources */,
+				3FAFBBC82B84E88C0032A55E /* SmartSwitchView.swift in Sources */,
 				5A21D21AF4397FCB9C827912 /* DonateView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -616,7 +624,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 13600;
+				CURRENT_PROJECT_VERSION = 13700;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -631,7 +639,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.3.6;
+				MARKETING_VERSION = 1.3.7;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -648,7 +656,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 13600;
+				CURRENT_PROJECT_VERSION = 13700;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
@@ -664,7 +672,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.3.6;
+				MARKETING_VERSION = 1.3.7;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -787,12 +795,20 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		3F5B00012C12345600000001 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 		3F2E85C72B9EDE7900A95282 /* XCRemoteSwiftPackageReference "Defaults" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/Defaults";
 			requirement = {
-				branch = main;
-				kind = branch;
+				kind = revision;
+				revision = 38925e3cfacf3fb89a81a35b1cd44fd5a5b7e0fa;
 			};
 		};
 		3F2E85D02BA0B53F00A95282 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
@@ -815,13 +831,18 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin";
 			requirement = {
-				branch = main;
-				kind = branch;
+				kind = revision;
+				revision = d811817ce35d74872a1170c851cab243a2b8b559;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		3F5B00022C12345600000002 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F5B00012C12345600000001 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
 		3F2E85C82B9EDE7900A95282 /* Defaults */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3F2E85C72B9EDE7900A95282 /* XCRemoteSwiftPackageReference "Defaults" */;

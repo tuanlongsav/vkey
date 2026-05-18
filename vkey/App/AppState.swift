@@ -138,7 +138,7 @@ class AppState: ObservableObject, FileMonitorDelegate {
             // Smart Switch: launcher / search apps default to English typing
             // without overwriting per-app memory of the underlying app.
             if Defaults[.smartSwitchEnabled],
-                AppState.SmartSwitchApps.contains(appName)
+                Defaults[.smartSwitchApps].contains(appName)
             {
                 if !smartSwitchActive {
                     enabledBeforeSmartSwitch = enabled

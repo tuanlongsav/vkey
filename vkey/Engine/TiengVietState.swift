@@ -74,9 +74,11 @@ struct TiengVietState {
       finalDauMu = .muUp
     }
     
+    let finalDauThanh = (dauThanh == .bang) ? (thanhPhanTieng.uuTienDauThanh ?? dauThanh) : dauThanh
+
     return TiengVietTransformer.transform(
       thanhPhanTieng: thanhPhanTieng,
-      dauThanh: dauThanh,
+      dauThanh: finalDauThanh,
       dauMu: finalDauMu,
       gachD: gachD,
       kieuMoi: Defaults[.newStyleTonePlacement]

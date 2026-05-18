@@ -24,6 +24,9 @@ struct vkeyApp: App {
           .environmentObject(appDelegate.appState)
           .tabItem { Label("Chung", systemImage: "gear") }
 
+        SmartSwitchView()
+          .tabItem { Label("Smart Switch", systemImage: "arrow.left.arrow.right.circle") }
+
         MacroView()
           .tabItem { Label("Macro", systemImage: "text.cursor") }
       }

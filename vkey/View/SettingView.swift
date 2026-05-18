@@ -173,6 +173,7 @@ struct GeneralView: View {
     @EnvironmentObject var appState: AppState
     @Default(.smartSwitchEnabled) private var smartSwitchEnabled
     @Default(.newStyleTonePlacement) private var newStyleTonePlacement
+    @Default(.autoTypoCorrection) private var autoTypoCorrection
 
     let appVersion = Bundle.main.appVersionLong
 
@@ -205,6 +206,9 @@ struct GeneralView: View {
                 .pickerStyle(.segmented)
 
                 Toggle("Phụ âm z, w, j, f", isOn: $appState.allowedZWJF)
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                Toggle("Tự động sửa lỗi gõ nhầm", isOn: $autoTypoCorrection)
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     
                 Picker("Kiểu đặt dấu", selection: $newStyleTonePlacement) {

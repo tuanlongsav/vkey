@@ -135,6 +135,8 @@ struct ThanhPhanTieng {
   var viTriDauThanh = -1
   /// Cờ: chứa nguyên âm "uo" (xử lý đặc biệt dấu móc → "ươ")
   var chuaNguyenAmUO = false
+  /// Dấu thanh ưu tiên được sửa bởi bộ sửa lỗi gõ nhầm (ví dụ: thfi -> thì)
+  var uuTienDauThanh: DauThanh? = nil
 
   /// Kiểm tra nguyên âm có chứa ký tự chỉ định không
   func nguyenAmChua(char: Character) -> Bool {

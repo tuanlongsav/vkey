@@ -55,6 +55,14 @@ extension Defaults.Keys {
   static let autoSwitchStrategy = Key<Bool>("auto-switch-strategy", default: true)
   /// Tự động chuyển sang tiếng Anh khi launcher app (Spotlight/Raycast/Alfred…) lên foreground.
   static let smartSwitchEnabled = Key<Bool>("smart-switch-enabled", default: true)
+  /// Danh sách các ứng dụng tự động chuyển sang gõ Tiếng Anh khi kích hoạt.
+  static let smartSwitchApps = Key<[String]>("smart-switch-apps", default: [
+    "com.apple.Spotlight",
+    "com.raycast.macos",
+    "com.runningwithcrayons.Alfred",
+    "com.runningwithcrayons.Alfred-Preferences",
+    "com.obdev.LaunchBar",
+  ])
   /// Bảng macro thay thế chữ viết tắt → cụm dài.
   static let macros = Key<[Macro]>("macros", default: [])
   /// Tổ hợp modifier-only (vd Shift+Control) dùng để chuyển đổi vi/en.
@@ -67,6 +75,9 @@ extension Defaults.Keys {
   
   /// Tuỳ chọn kiểu đặt dấu: false = Kiểu cũ (hòa, khỏe), true = Kiểu mới (hoà, khoẻ).
   static let newStyleTonePlacement = Key<Bool>("new-style-tone-placement", default: true)
+
+  /// Tự động sửa lỗi gõ nhầm (ví dụ: thfi -> thì, dinjhd -> định)
+  static let autoTypoCorrection = Key<Bool>("auto-typo-correction", default: true)
 
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value

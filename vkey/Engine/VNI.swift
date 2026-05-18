@@ -35,6 +35,7 @@
 /// - d99 → hủy gạch ngang, in số 9
 
 import Foundation
+import Defaults
 
 class VNI: TypingMethod {
 
@@ -78,6 +79,17 @@ class VNI: TypingMethod {
     if state.chuKhongDau.count == 1,
       let chuCaiDau = state.chuKhongDau.first,
       (char == "9") && (chuCaiDau == "d" || chuCaiDau == "D")
+    {
+      return (state.withGachD(), true)
+    }
+
+    // Xử lý phím 9 gõ cuối từ để gạch D (Late D toggle, ví dụ: dinh9 -> định)
+    if Defaults[.autoTypoCorrection],
+       state.chuKhongDau.count >= 3,
+       let chuCaiDau = state.chuKhongDau.first,
+       (chuCaiDau == "d" || chuCaiDau == "D"),
+       !state.gachD,
+       (char == "9")
     {
       return (state.withGachD(), true)
     }

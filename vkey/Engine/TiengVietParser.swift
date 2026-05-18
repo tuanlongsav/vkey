@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Defaults
 
 /// TiengVietParser - Hàm thuần phân tích, không có side effects
 ///
@@ -19,6 +20,15 @@ enum TiengVietParser {
   /// - Parameter chuKhongDau: Mảng ký tự chưa có dấu (từ bàn phím)
   /// - Returns: ThanhPhanTieng với các thành phần đã phân tích
   static func parse(_ chuKhongDau: [Character]) -> ThanhPhanTieng {
+    var result = rawParse(chuKhongDau)
+    if Defaults[.autoTypoCorrection] {
+      applyTypoCorrections(to: &result, originalInput: chuKhongDau)
+    }
+    return result
+  }
+
+  /// Phân tích chuỗi ký tự thành các thành phần âm tiết tiếng Việt (không áp dụng sửa lỗi tự động)
+  static func rawParse(_ chuKhongDau: [Character]) -> ThanhPhanTieng {
     var result = ThanhPhanTieng()
     var remaining = String(chuKhongDau)
 
@@ -69,29 +79,6 @@ enum TiengVietParser {
         break
       }
     }
-    
-    // Auto-correct common typing mistakes (Typo correction)
-    
-    // 1. "gn" ở cuối -> "ng"
-    if result.phuAmCuoi.count == 2,
-       result.phuAmCuoi[0].lowercased() == "g",
-       result.phuAmCuoi[1].lowercased() == "n" {
-      let isUpperG = result.phuAmCuoi[0].isUppercase
-      let isUpperN = result.phuAmCuoi[1].isUppercase
-      result.phuAmCuoi[0] = isUpperN ? "N" : "n"
-      result.phuAmCuoi[1] = isUpperG ? "G" : "g"
-    }
-    
-    // 2. "ei" -> "ie" (khi có phụ âm cuối, ví dụ "veit" -> "viet" + dauMu -> việt)
-    if result.nguyenAm.count == 2,
-       result.nguyenAm[0].lowercased() == "e",
-       result.nguyenAm[1].lowercased() == "i",
-       !result.phuAmCuoi.isEmpty {
-      let isUpperE = result.nguyenAm[0].isUppercase
-      let isUpperI = result.nguyenAm[1].isUppercase
-      result.nguyenAm[0] = isUpperI ? "I" : "i"
-      result.nguyenAm[1] = isUpperE ? "E" : "e"
-    }
 
     return result
   }
@@ -123,6 +110,169 @@ enum TiengVietParser {
     // Bước 4: Phần còn lại (không thuộc âm tiết tiếng Việt hợp lệ)
     result.conLai = Array(remaining)
     return result
+  }
+
+  /// Auto-correct common adjacent-key ordering mistakes before validation.
+  private static func applyTypoCorrections(to result: inout ThanhPhanTieng, originalInput: [Character]) {
+    // "veit" -> "viet": users sometimes type the second "e" before "i"
+    // when aiming for "việt". The first parse sees "e" + leftover "i...";
+    // reparsing the tail lets final consonants such as "t" or "ng" attach normally.
+    if result.nguyenAm.count == 1,
+      result.nguyenAm[0].lowercased() == "e",
+      let firstLeftover = result.conLai.first,
+      firstLeftover.lowercased() == "i"
+    {
+      let eChar = result.nguyenAm[0]
+      let iChar = firstLeftover
+      let tail = String(result.conLai.dropFirst())
+      var reparsed = ThanhPhanTieng()
+      reparsed.nguyenAm = [iChar, eChar]
+      reparsed = finishParsing(result: &reparsed, remaining: tail)
+      result.nguyenAm = reparsed.nguyenAm
+      result.phuAmCuoi = reparsed.phuAmCuoi
+      result.conLai = reparsed.conLai
+      result.chuaNguyenAmUO = false
+    }
+
+    // "bous" -> "buos" (to become "buốt" when tone/diacritics applied)
+    // "ou" is not a valid Vietnamese vowel group, so vowel trie parses "o"
+    // leaving "u" in conLai.
+    if result.nguyenAm.count == 1,
+      result.nguyenAm[0].lowercased() == "o",
+      let firstLeftover = result.conLai.first,
+      firstLeftover.lowercased() == "u"
+    {
+      let oChar = result.nguyenAm[0]
+      let uChar = firstLeftover
+      let tail = String(result.conLai.dropFirst())
+      var reparsed = ThanhPhanTieng()
+      reparsed.nguyenAm = [uChar, oChar]
+      reparsed = finishParsing(result: &reparsed, remaining: tail)
+      result.nguyenAm = reparsed.nguyenAm
+      result.phuAmCuoi = reparsed.phuAmCuoi
+      result.conLai = reparsed.conLai
+      result.chuaNguyenAmUO = true
+    }
+
+    // "haois" -> "hoais" (to become "hoái")
+    // "aoi" is not valid. Vowel trie parses "ao" -> nguyenAm = ["a", "o"], leaving "i" in conLai.
+    if result.nguyenAm.count == 2,
+      result.nguyenAm[0].lowercased() == "a",
+      result.nguyenAm[1].lowercased() == "o",
+      let firstLeftover = result.conLai.first,
+      firstLeftover.lowercased() == "i"
+    {
+      let aChar = result.nguyenAm[0]
+      let oChar = result.nguyenAm[1]
+      let iChar = firstLeftover
+      let tail = String(result.conLai.dropFirst())
+      var reparsed = ThanhPhanTieng()
+      reparsed.nguyenAm = [oChar, aChar, iChar]
+      reparsed = finishParsing(result: &reparsed, remaining: tail)
+      result.nguyenAm = reparsed.nguyenAm
+      result.phuAmCuoi = reparsed.phuAmCuoi
+      result.conLai = reparsed.conLai
+      result.chuaNguyenAmUO = false
+    }
+
+    // "haoc" -> "hoac" (to become "hoác").
+    // Vowel trie parses "ao" -> nguyenAm = ["a", "o"].
+    // If we have "ao" and either phuAmCuoi or conLai is not empty, we try to re-parse with "oa" as the vowel group.
+    // If the re-parsed result successfully extracts a final consonant (phuAmCuoi is not empty),
+    // then this was indeed a typo of "oa" followed by final consonant!
+    if result.nguyenAm.count == 2,
+      result.nguyenAm[0].lowercased() == "a",
+      result.nguyenAm[1].lowercased() == "o",
+      (!result.phuAmCuoi.isEmpty || !result.conLai.isEmpty)
+    {
+      let aChar = result.nguyenAm[0]
+      let oChar = result.nguyenAm[1]
+      let remainingStr = String(result.phuAmCuoi + result.conLai)
+      var reparsed = ThanhPhanTieng()
+      reparsed.nguyenAm = [oChar, aChar]
+      reparsed = finishParsing(result: &reparsed, remaining: remainingStr)
+      if !reparsed.phuAmCuoi.isEmpty {
+        result.nguyenAm = reparsed.nguyenAm
+        result.phuAmCuoi = reparsed.phuAmCuoi
+        result.conLai = reparsed.conLai
+        result.chuaNguyenAmUO = false
+      }
+    }
+
+    // "phuowgn" -> "phuong": transpose a trailing "gn" into the valid
+    // Vietnamese final consonant "ng".
+    if result.phuAmCuoi.isEmpty,
+      result.conLai.count >= 2,
+      result.conLai[0].lowercased() == "g",
+      result.conLai[1].lowercased() == "n"
+    {
+      let gChar = result.conLai[0]
+      let nChar = result.conLai[1]
+      result.phuAmCuoi = [
+        nChar.isUppercase ? "N" : "n",
+        gChar.isUppercase ? "G" : "g",
+      ]
+      result.conLai = Array(result.conLai.dropFirst(2))
+    }
+
+    // Rule 5: Misplaced tone-mark auto-correction (e.g. "thfi" -> "thì", "dinhj" -> "dịnh" which can be combined, etc.)
+    // We try to find and strip any misplaced tone mark key and see if the rest forms a perfect syllable
+    if result.nguyenAm.isEmpty || !result.conLai.isEmpty || TiengVietValidator.needsRecovery(result) {
+      let telexTones: [Character: DauThanh] = ["s": .sac, "f": .huyen, "r": .hoi, "x": .nga, "j": .nang]
+      let vniTones: [Character: DauThanh] = ["1": .sac, "2": .huyen, "3": .hoi, "4": .nga, "5": .nang]
+
+      // Check if there is a tone mark and it is NOT the last character in the input (otherwise it is a trailing tone mark, not misplaced)
+      var toneIndex: Int? = nil
+      for (i, char) in originalInput.enumerated() {
+        let lower = char.lowercased().first!
+        if telexTones[lower] != nil || vniTones[lower] != nil {
+          toneIndex = i
+          break
+        }
+      }
+
+      if let index = toneIndex, index > 0, index < originalInput.count - 1 {
+        var foundTone: DauThanh? = nil
+        var strippedChars: [Character] = []
+
+        // Try Telex tones
+        for char in originalInput {
+          let lower = char.lowercased().first!
+          if let tone = telexTones[lower], foundTone == nil {
+            foundTone = tone
+          } else {
+            strippedChars.append(char)
+          }
+        }
+
+        // If not found in Telex, try VNI tones
+        if foundTone == nil {
+          strippedChars = []
+          for char in originalInput {
+            let lower = char.lowercased().first!
+            if let tone = vniTones[lower], foundTone == nil {
+              foundTone = tone
+            } else {
+              strippedChars.append(char)
+            }
+          }
+        }
+
+        if let tone = foundTone, !strippedChars.isEmpty {
+          let tempResult = rawParse(strippedChars)
+          if !tempResult.nguyenAm.isEmpty && tempResult.conLai.isEmpty && !TiengVietValidator.needsRecovery(tempResult) {
+            result.phuAmDau = tempResult.phuAmDau
+            result.nguyenAm = tempResult.nguyenAm
+            result.phuAmCuoi = tempResult.phuAmCuoi
+            result.conLai = tempResult.conLai
+            result.chuaNguyenAmUO = tempResult.chuaNguyenAmUO
+            result.viTriDauMu = tempResult.viTriDauMu
+            result.viTriDauThanh = tempResult.viTriDauThanh
+            result.uuTienDauThanh = tone
+          }
+        }
+      }
+    }
   }
 
   // MARK: - Phân loại "gi"

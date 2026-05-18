@@ -12,6 +12,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 
 - ✅ Gõ tiếng Việt với 2 kiểu phổ biến: **Telex** và **VNI**.
 - ✅ Tuỳ chọn kiểu đặt dấu: **Kiểu mới** (thủy, khỏe) hoặc **Kiểu cũ** (thuỷ, khoẻ).
+- ✅ **Tự động sửa lỗi gõ nhầm (Auto Typo Correction)**: Tự động sửa khi gõ nhầm dấu thanh sớm hoặc sai vị trí (ví dụ: `thfi` -> `thì`, `thfis` -> `thí`, `th2i` -> `thì`, `th1i` -> `thí`) và sửa gạch chữ đ cuối từ (ví dụ: `dinhjd` -> `định` / `dinh59` -> `định`). Có thể bật/tắt dễ dàng trong Cài đặt.
 - ✅ Bộ gõ chỉ duy nhất Unicode (UTF-8), không hỗ trợ TCVN3/VNI Windows (giữ đơn giản).
 - ✅ Nhớ chế độ Vi/En theo từng ứng dụng (per-app input mode memory).
 - ✅ **Smart Switch**: tự động tắt khi vào Spotlight / Raycast / Alfred / LaunchBar — bạn gõ tìm tiếng Anh thuận tiện, không bị transform.
@@ -22,7 +23,8 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ Tự bypass khi macOS bật secure input (gõ password an toàn).
 - ✅ Khởi động cùng macOS (tuỳ chọn).
 - ✅ Hoạt động xuyên QWERTZ / AZERTY / Dvorak (dùng physical key code → mapping QWERTY position cho Telex/VNI).
-- ✅ Tích hợp **Kiểm tra cập nhật** (Update Checker) tự động và có tuỳ chọn **Ủng hộ tác giả** (Donate) qua VietQR.
+- ✅ **Cập nhật trực tiếp (Sparkle Integration)**: Tải và cài đặt trực tiếp bản cập nhật mới nhanh gọn, an toàn.
+- ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
 
 ## Hình ảnh giao diện
 
@@ -45,7 +47,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 | Macro (text expansion) | TODO trong code | **Mới**, hoàn thiện |
 | Tuỳ chọn kiểu đặt dấu (Cũ/Mới) | ❌ (Chỉ Kiểu cũ) | **Mới**: Tuỳ chọn linh hoạt trong Cài đặt |
 | Tương thích Electron/web app | mặc định batch | **Mới**: mặc định hybrid + auto-fallback step-by-step |
-| Cập nhật tự động (Update Checker) | ❌ | **Mới**: Tự động báo có bản mới qua Github Releases |
+| Cập nhật tự động (Sparkle) | ❌ | **Mới**: Tải & cài đặt trực tiếp không cần mở trình duyệt nhờ framework Sparkle |
 | DMG packaging script | thủ công | **Mới**: script Swift sinh asset + DMG build pipeline |
 | Tests | bộ test engine | Kế thừa + thêm tests cho WordBuffer / KeyboardUS / Validator |
 

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Defaults
 
 /// TiengVietValidator - Kiểm tra cấu trúc âm tiết tiếng Việt
 ///
@@ -121,6 +122,29 @@ enum TiengVietValidator {
   static func needsRecovery(_ thanhPhan: ThanhPhanTieng, dauMu: DauMu = .khongMu) -> Bool {
     // Trường hợp 1: Có ký tự thừa (conLai) không khớp mẫu tiếng Việt
     if !thanhPhan.conLai.isEmpty {
+      // Allow a transient trailing "g" after a vowel so the next "n" can be
+      // corrected from the common "gn" typo into the valid final "ng".
+      if thanhPhan.conLai.count == 1,
+        thanhPhan.conLai[0].lowercased() == "g",
+        !thanhPhan.nguyenAm.isEmpty,
+        thanhPhan.phuAmCuoi.isEmpty
+      {
+        return false
+      }
+
+      // Allow a transient trailing tone mark key so it can be corrected when subsequent vowels are typed
+      if Defaults[.autoTypoCorrection],
+         thanhPhan.nguyenAm.isEmpty,
+         thanhPhan.conLai.count == 1,
+         let firstConLai = thanhPhan.conLai.first {
+        let lower = firstConLai.lowercased().first!
+        let telexTones: Set<Character> = ["s", "f", "r", "x", "j"]
+        let vniTones: Set<Character> = ["1", "2", "3", "4", "5"]
+        if telexTones.contains(lower) || vniTones.contains(lower) {
+          return false
+        }
+      }
+
       return true
     }
 

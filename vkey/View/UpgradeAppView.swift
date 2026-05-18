@@ -47,15 +47,15 @@ struct UpgradeAppView: View {
         .padding(.horizontal, 20)
 
       // Instructions
-      VStack(alignment: .leading, spacing: 10) {
+      VStack(alignment: .leading, spacing: 12) {
         UpgradeInstructionStep(
-          number: 1, text: "Bấm nút bên dưới để mở Cài đặt",
+          number: 1, text: "Bấm nút bên dưới để mở Trợ năng (Accessibility) trong Cài đặt Hệ thống",
           isCompleted: hasRequestedPermission)
         UpgradeInstructionStep(
-          number: 2, text: "Tắt rồi bật lại công tắc \"vkey\"",
+          number: 2, text: "Chọn 'vkey' và ấn nút '-' ở dưới danh sách để xoá bỏ quyền cũ",
           isCompleted: permissionGranted)
         UpgradeInstructionStep(
-          number: 3, text: "Xác thực bằng vân tay hoặc mật khẩu",
+          number: 3, text: "Ấn nút '+' rồi chọn 'vkey' trong Applications để cấp quyền mới",
           isCompleted: permissionGranted)
       }
       .padding(.horizontal, 30)
