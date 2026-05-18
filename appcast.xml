@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.4.0</title>
+      <sparkle:version>14000</sparkle:version>
+      <sparkle:shortVersionString>1.4.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 02:20:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.4.0/vkey-1.4.0.dmg"
+        sparkle:edSignature="b7U4JbS6JJ4lABDyftUUXC0YOLglATJkBsCJsLYNrpdrwilArzUwwC6+rAVTlIr/Kb3HiBPN45BUfOw0qAvKDg=="
+        length="4260307"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong phiên bản 1.4.0:</h2>
+        <ul>
+          <li><strong>AX Probing Smart Switch:</strong> Nhận diện bảng overlay hệ thống Spotlight/Raycast/Alfred tức thời và khôi phục hoàn hảo trạng thái bộ gõ ứng dụng nền trước đó.</li>
+          <li><strong>Bộ lọc Impossible Consonant Clusters:</strong> Bỏ qua gõ tiếng Việt từ ký tự đầu tiên khi nhập các từ tiếng Anh không hợp lệ và tự động re-arm khi Backspace.</li>
+          <li><strong>Giao diện HUD mờ kính:</strong> Hiển thị HUD trực quan mượt mà khi thay đổi chế độ gõ.</li>
+          <li><strong>Bản quyền & Ghi nhận công lao:</strong> Tích hợp trọn vẹn credit đóng góp và tham khảo đầy tôn trọng cho Caffee và XKey.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.3.8</title>
       <sparkle:version>13800</sparkle:version>
       <sparkle:shortVersionString>1.3.8</sparkle:shortVersionString>
