@@ -489,12 +489,12 @@ final class vkeyTests: XCTestCase {
 
   /// Test tone toggle (typing same tone twice removes it)
   func testTelexToneToggle() throws {
-    // Typing 's' twice should remove the tone and output 'as'
-    XCTAssertEqual(transform_text_telex(for: "ass"), "as")
-    XCTAssertEqual(transform_text_telex(for: "aff"), "af")
-    XCTAssertEqual(transform_text_telex(for: "arr"), "ar")
-    XCTAssertEqual(transform_text_telex(for: "axx"), "ax")
-    XCTAssertEqual(transform_text_telex(for: "ajj"), "aj")
+    // Typing doubled tone keys should preserve them as-is under Doubled Tone Mark Preservation
+    XCTAssertEqual(transform_text_telex(for: "ass"), "ass")
+    XCTAssertEqual(transform_text_telex(for: "aff"), "aff")
+    XCTAssertEqual(transform_text_telex(for: "arr"), "arr")
+    XCTAssertEqual(transform_text_telex(for: "axx"), "axx")
+    XCTAssertEqual(transform_text_telex(for: "ajj"), "ajj")
   }
 
   /// Test diacritical mark toggle
@@ -840,6 +840,27 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_vni(for: "d9uo7c5"), "được")
     XCTAssertEqual(transform_text_vni(for: "muo7n5"), "mượn")
     XCTAssertEqual(transform_text_vni(for: "huo7ng"), "hương")
+  }
+
+  // MARK: - GoNhanh Engine Innovations Tests
+
+  func testGoNhanhEngineInnovations() throws {
+    // 1. Inclusion Vowel Pairs Matrix (VALID_VOWEL_PAIRS)
+    // English words should not get transformed or recovered improperly
+    XCTAssertEqual(transform_text_telex(for: "claus"), "claus")
+    XCTAssertEqual(transform_text_telex(for: "beyond"), "beyond")
+    XCTAssertEqual(transform_text_telex(for: "house"), "house")
+    XCTAssertEqual(transform_text_telex(for: "metric"), "metric")
+    
+    // Ethnic minority names support
+    XCTAssertEqual(transform_text_telex(for: "krong"), "krong") // kr initials
+    XCTAssertEqual(transform_text_telex(for: "d9ak1"), "đắk") // k final consonant
+    
+    // 2. Doubled Tone Mark Preservation
+    XCTAssertEqual(transform_text_telex(for: "off"), "off")
+    XCTAssertEqual(transform_text_telex(for: "class"), "class")
+    XCTAssertEqual(transform_text_telex(for: "pass"), "pass")
+    XCTAssertEqual(transform_text_telex(for: "staff"), "staff")
   }
 
   // MARK: - ===========================================

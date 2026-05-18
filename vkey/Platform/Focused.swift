@@ -71,6 +71,14 @@ public struct Focused {
     guard !highlightedText.isEmpty else { return nil }
     return highlightedText
   }
+
+  public static func isComboBoxOrSearchField() -> Bool {
+    guard let focusedElement = Focused.element() else { return false }
+    if let role: String = focusedElement.getAttribute(property: kAXRoleAttribute) {
+      return role == "AXComboBox" || role == "AXSearchField"
+    }
+    return false
+  }
 }
 
 extension AXUIElement {

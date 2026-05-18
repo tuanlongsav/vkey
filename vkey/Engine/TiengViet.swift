@@ -198,6 +198,7 @@ enum TiengViet {
     "gh", "gH", "Gh", "GH",
     "gi", "gI", "Gi", "GI",
     "kh", "kH", "Kh", "KH",
+    "kr", "kR", "Kr", "KR",
     "ng", "nG", "Ng", "NG",
     "nh", "nH", "Nh", "NH",
     "ph", "pH", "Ph", "PH",

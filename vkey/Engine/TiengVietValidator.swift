@@ -19,11 +19,29 @@ enum TiengVietValidator {
   /// Phụ âm cuối hợp lệ trong tiếng Việt
   /// Chỉ có các phụ âm này mới có thể xuất hiện ở cuối âm tiết
   static let ValidPhuAmCuoi: Set<String> = [
-    "c", "ch", "m", "n", "ng", "nh", "p", "t",
+    "c", "ch", "m", "n", "ng", "nh", "p", "t", "k",
+  ]
+
+  // MARK: - Bảng phụ âm đầu hợp lệ
+  static let ValidInitials: Set<String> = [
+    "b", "c", "d", "đ", "g", "h", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "x",
+    "ch", "gh", "gi", "kh", "kr", "ng", "nh", "ph", "qu", "th", "tr", "ngh"
+  ]
+
+  // MARK: - Bảng cặp nguyên âm hợp lệ (Inclusion Vowel Pairs)
+  static let ValidVowelPairs: Set<String> = [
+    "ai", "ao", "au", "ay",
+    "ei", "eo", "eu",
+    "ia", "ie", "iu",
+    "oa", "oe", "oi",
+    "ua", "ue", "ui", "uo", "uy", "uu",
+    "ye",
+    // Telex intermediate states:
+    "aa", "ee", "oo"
   ]
 
   // MARK: - Bảng kết hợp nguyên âm + phụ âm cuối hợp lệ
-
+  
   /// Quy tắc kết hợp nguyên âm với phụ âm cuối theo ngữ âm học tiếng Việt
   ///
   /// Key: nguyên âm (chữ thường)
@@ -33,8 +51,8 @@ enum TiengVietValidator {
   /// KHÔNG có phụ âm cuối - chúng là nhân âm tiết hoàn chỉnh.
   static let ValidVowelEndings: [String: Set<String>] = [
     // Nguyên âm đơn - có thể kết hợp với nhiều phụ âm cuối
-    "a": ["c", "ch", "m", "n", "ng", "nh", "p", "t"],
-    "ă": ["c", "m", "n", "ng", "p", "t"],
+    "a": ["c", "ch", "m", "n", "ng", "nh", "p", "t", "k"],
+    "ă": ["c", "m", "n", "ng", "p", "t", "k"],
     "â": ["c", "m", "n", "ng", "p", "t"],
     "e": ["c", "m", "n", "p", "t"],
     "ê": ["c", "ch", "m", "n", "nh", "p", "t"],
@@ -43,7 +61,7 @@ enum TiengVietValidator {
     "ô": ["c", "m", "n", "ng", "p", "t"],
     "ơ": ["m", "n", "p", "t"],
     "u": ["c", "m", "n", "ng", "p", "t"],
-    "ư": ["c", "m", "n", "ng", "p", "t"],
+    "ư": ["c", "m", "n", "ng", "p", "t", "k"],
     "y": ["c", "ch", "m", "n", "nh", "p", "t"],
 
     // Nguyên âm ghép CÓ THỂ có phụ âm cuối
@@ -56,7 +74,7 @@ enum TiengVietValidator {
     "uo": ["c", "m", "n", "ng", "p", "t"],
 
     // ươ - lướt, mượn, hương...
-    "ươ": ["c", "m", "n", "ng", "p", "t"],
+    "ươ": ["c", "m", "n", "ng", "p", "t", "k"],
 
     // oa - hoạch, toàn, khoang, loan...
     "oa": ["c", "ch", "m", "n", "ng", "nh", "p", "t"],
@@ -120,7 +138,15 @@ enum TiengVietValidator {
   ///   - dauMu: Dấu mũ hiện tại (mũ, móc, trăng)
   /// - Returns: true nếu âm tiết không hợp lệ và cần recovery
   static func needsRecovery(_ thanhPhan: ThanhPhanTieng, dauMu: DauMu = .khongMu) -> Bool {
-    // Trường hợp 1: Có ký tự thừa (conLai) không khớp mẫu tiếng Việt
+    // Rule 2: Valid Initial
+    if !thanhPhan.phuAmDau.isEmpty {
+      let initial = String(thanhPhan.phuAmDau).lowercased()
+      if !ValidInitials.contains(initial) {
+        return true
+      }
+    }
+
+    // Rule 3: All Chars Parsed (conLai must be empty, with typo correction exceptions)
     if !thanhPhan.conLai.isEmpty {
       // Allow a transient trailing "g" after a vowel so the next "n" can be
       // corrected from the common "gn" typo into the valid final "ng".
@@ -148,7 +174,47 @@ enum TiengVietValidator {
       return true
     }
 
-    // Trường hợp 2: Tổ hợp nguyên âm không hợp lệ
+    // Rule 4: Spelling Rules
+    if !thanhPhan.phuAmDau.isEmpty && !thanhPhan.nguyenAm.isEmpty {
+      let initial = String(thanhPhan.phuAmDau).lowercased()
+      let firstVowel = String(thanhPhan.nguyenAm.first!).lowercased()
+      if initial == "c" && ["e", "i", "y"].contains(firstVowel) { return true }
+      if initial == "k" && ["a", "o", "u"].contains(firstVowel) { return true }
+      if initial == "g" && firstVowel == "e" { return true }
+      if initial == "ng" && ["e", "i"].contains(firstVowel) { return true }
+      if initial == "gh" && ["a", "o", "u"].contains(firstVowel) { return true }
+      if initial == "ngh" && ["a", "o", "u"].contains(firstVowel) { return true }
+    }
+
+    // Rule 5: Valid Final Consonant & Vowel Ending Combination
+    if !thanhPhan.phuAmCuoi.isEmpty {
+      let phuAmCuoi = String(thanhPhan.phuAmCuoi).lowercased()
+
+      // Kiểm tra phụ âm cuối có hợp lệ không
+      if !ValidPhuAmCuoi.contains(phuAmCuoi) {
+        return true
+      }
+
+      // Kiểm tra kết hợp nguyên âm + phụ âm cuối
+      let nguyenAm = String(thanhPhan.nguyenAm).lowercased()
+      if !isValidVowelEnding(nguyenAm: nguyenAm, phuAmCuoi: phuAmCuoi, dauMu: dauMu) {
+        return true
+      }
+    }
+
+    // Rule 6: Valid Vowel Pattern (Inclusion Vowel Pairs)
+    if thanhPhan.nguyenAm.count > 1 {
+      let vowelStr = String(thanhPhan.nguyenAm).lowercased()
+      let vowelChars = Array(vowelStr)
+      for i in 0..<(vowelChars.count - 1) {
+        let pair = String(vowelChars[i...(i+1)])
+        if !ValidVowelPairs.contains(pair) {
+          return true
+        }
+      }
+    }
+
+    // Trường hợp bổ sung: Tổ hợp nguyên âm không hợp lệ
     let nguyenAm = String(thanhPhan.nguyenAm).lowercased()
     if InvalidVowelCombinations.contains(nguyenAm) {
       return true

@@ -186,6 +186,20 @@ struct WordBuffer {
       return
     }
 
+    // Doubled Tone Mark Preservation: if raw keys contains consecutive doubled tone marks, preserve it raw
+    let keysStr = String(keys).lowercased()
+    let doubledTones = ["ss", "ff", "rr", "xx", "jj"]
+    if doubledTones.contains(where: { keysStr.contains($0) }) {
+      stopProcessing = true
+      transformed = String(keys)
+      wordState = wordState.push(char)
+      
+      if !snapshot.stopProcessing {
+        lastValidSnapshot = snapshot
+      }
+      return
+    }
+
     // Check if newly formed keys are an impossible cluster
     if isImpossibleCluster(keys, engine: engine) {
       stopProcessing = true
@@ -305,6 +319,13 @@ class InputProcessor {
   static let NewWordTaskKeys: [TaskKey] = [.Enter, .Space, .Tab]
   static let JumpTaskKeys: [TaskKey] = [.Home, .End, .ArrowUp, .ArrowDown, .ArrowLeft, .ArrowRight]
 
+  static let AutoRestoreOnSpace: [String: String] = [
+    "ò": "of",
+    "ì": "if",
+    "sê": "see",
+    "tê": "tee"
+  ]
+
   public var engine: TypingMethod
   public var typingMethod: TypingMethods
   public var keyLayout = KeyboardUS()
@@ -419,6 +440,20 @@ class InputProcessor {
 
   private func handleTaskKey(_ taskKey: TaskKey, event: CGEvent) -> Unmanaged<CGEvent>? {
     if InputProcessor.NewWordTaskKeys.contains(taskKey) {
+      if taskKey == .Space {
+        let current = wordBuffer.transformed
+        if let restored = InputProcessor.AutoRestoreOnSpace[current] {
+          let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(from: current, to: restored + " ")
+          EventSimulator.sendReplacement(
+            backspaceCount: numBackspaces,
+            diffChars: diffChars,
+            strategy: strategyTracker.currentStrategy
+          )
+          newWord(storePrevious: true)
+          return nil
+        }
+      }
+
       // Only expand macros on Space — Tab/Enter often have form-submission semantics
       // we don't want to swallow.
       if taskKey == .Space, expandMacroIfMatch(endingChar: " ") {
@@ -426,6 +461,20 @@ class InputProcessor {
         return nil
       }
       newWord(storePrevious: true)
+    } else if taskKey == .Escape {
+      let orig = String(wordBuffer.keys)
+      let currentTransformed = wordBuffer.transformed
+      if !wordBuffer.wordState.isBlank && currentTransformed != orig {
+        let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(from: currentTransformed, to: orig)
+        EventSimulator.sendReplacement(
+          backspaceCount: numBackspaces,
+          diffChars: diffChars,
+          strategy: strategyTracker.currentStrategy
+        )
+        newWord()
+        return nil // swallow ESC event
+      }
+      newWord()
     } else if taskKey == .Delete {
       let (numBackspaces, diffChars) = pop()
       if numBackspaces > 0 || !diffChars.isEmpty {
@@ -492,6 +541,9 @@ class InputProcessor {
   // MARK: - Helpers
 
   func isFixAutocompleteApp() -> Bool {
+    if Focused.isComboBoxOrSearchField() {
+      return true
+    }
     return InputProcessor.FixAutocompleteApps.contains { app in
       return activeApp.hasPrefix(app)
     }
