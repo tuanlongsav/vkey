@@ -171,7 +171,6 @@ final class FlexibleShortcutButton: NSButton {
 
 struct GeneralView: View {
     @EnvironmentObject var appState: AppState
-    @Default(.smartSwitchEnabled) private var smartSwitchEnabled
     @Default(.newStyleTonePlacement) private var newStyleTonePlacement
     @Default(.autoTypoCorrection) private var autoTypoCorrection
 
@@ -241,11 +240,6 @@ struct GeneralView: View {
                         .padding(.top, -8)
                 }
 
-                Toggle(isOn: $smartSwitchEnabled) {
-                    Label("Tự tắt khi mở Spotlight / Raycast", systemImage: "magnifyingglass")
-                }
-                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-
                 LabeledContent {
                     FlexibleShortcutRecorder(name: .toggleInputMode)
                 } label: {
@@ -253,7 +247,7 @@ struct GeneralView: View {
                 }
             }
             .formStyle(.grouped)
-            .scrollDisabled(true)
+            .scrollDisabled(false)
 
             Text(
                 "Version \(appVersion)\nKhông có tính năng gì ngoài gõ Tiếng Việt!\nTuỳ biến bởi longht, dựa trên dự án mã nguồn mở của KhanhIceTea."
@@ -266,7 +260,7 @@ struct GeneralView: View {
             .padding(.bottom, 14)
             .frame(maxWidth: .infinity)
         }
-        .frame(width: 440, height: 540)
+        .frame(width: 440, height: 560)
     }
 }
 

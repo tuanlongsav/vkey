@@ -15,7 +15,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Tự động sửa lỗi gõ nhầm (Auto Typo Correction)**: Tự động sửa khi gõ nhầm dấu thanh sớm hoặc sai vị trí (ví dụ: `thfi` -> `thì`, `thfis` -> `thí`, `th2i` -> `thì`, `th1i` -> `thí`), sửa gạch chữ đ cuối từ (ví dụ: `dinhjd` -> `định` / `dinh59` -> `định`), sửa lỗi hoán đổi nguyên âm (ví dụ: `veeitj` -> `việt`) và hoán đổi phụ âm cuối (ví dụ: `phuowgn` -> `phương`). Có thể bật/tắt dễ dàng trong Cài đặt.
 - ✅ Bộ gõ chỉ duy nhất Unicode (UTF-8), không hỗ trợ TCVN3/VNI Windows (giữ đơn giản).
 - ✅ Nhớ chế độ Vi/En theo từng ứng dụng (per-app input mode memory).
-- ✅ **Smart Switch**: tự động tắt khi vào Spotlight / Raycast / Alfred / LaunchBar — bạn gõ tìm tiếng Anh thuận tiện, không bị transform.
+- ✅ **Smart Switch**: tự động tắt khi vào Spotlight / Raycast / Alfred / LaunchBar — bạn gõ tìm tiếng Anh thuận tiện, không bị transform. Có thể kích hoạt hoặc tắt nhanh chóng thông qua toggle trực tiếp ngay trên thanh Menu Bar.
 - ✅ **Macro** (viết tắt → cụm dài): gõ `vn ` → ra `Việt Nam `.
 - ✅ Phím tắt linh hoạt: hỗ trợ cả tổ hợp key+modifier (vd `⌃⇧Z`) và **modifier-only** (vd nhấn-thả `⌃⇧` để toggle).
 - ✅ Fix lỗi thanh địa chỉ trình duyệt + Excel autocomplete.

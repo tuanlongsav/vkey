@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>vkey Updates</title>
+    <link>https://raw.githubusercontent.com/tuanlongsav/vkey/master/appcast.xml</link>
+    <description>Most recent changes for vkey.</description>
+    <language>vi</language>
+    <item>
+      <title>Version 1.3.8</title>
+      <sparkle:version>13800</sparkle:version>
+      <sparkle:shortVersionString>1.3.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 18 May 2026 18:45:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.3.8/vkey-1.3.8.dmg"
+        length="8713085"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong phiên bản 1.3.8:</h2>
+        <ul>
+          <li><strong>Cải tiến Giao diện Cài đặt (Settings):</strong> Chiều cao cửa sổ tự động co giãn động và hỗ trợ cuộn Form giúp hiển thị trọn vẹn toàn bộ các mục cài đặt không lo bị che khuất.</li>
+          <li><strong>Tối ưu hóa Menu Bar Dropdown:</strong> Sắp xếp các mục menu thành các section trực quan với đường chia mờ tinh tế.</li>
+          <li><strong>Bật/Tắt nhanh Smart Switch:</strong> Đưa toggle bật/tắt nhanh Smart Switch lên ngay thanh Menu Bar (có tích checkmark trạng thái), dọn dẹp toggle thừa ở các màn hình con.</li>
+          <li><strong>Độ ổn định tối đa:</strong> Vận hành mượt mà cùng Sparkle Auto Update và bảo mật tối ưu.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
+      <title>Version 1.3.7</title>
+      <sparkle:version>13700</sparkle:version>
+      <sparkle:shortVersionString>1.3.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 18 May 2026 18:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.3.7/vkey-1.3.7.dmg"
+        length="4208452"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong phiên bản 1.3.7:</h2>
+        <ul>
+          <li><strong>Tích hợp Sparkle Auto Update:</strong> Tải và cập nhật trực tiếp phiên bản mới siêu nhanh.</li>
+          <li><strong>Tự động sửa lỗi gõ nhầm (Auto Typo Correction):</strong> Công cụ sửa lỗi gõ nhầm thông minh và phục hồi từ cực tốt.</li>
+          <li><strong>Sửa lỗi crash khởi động:</strong> Khắc phục triệt để lỗi crash dyld trên macOS 14+ do Hardened Runtime.</li>
+        </ul>
+      ]]></description>
+    </item>
+  </channel>
+</rss>

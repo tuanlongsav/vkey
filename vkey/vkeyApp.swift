@@ -1,10 +1,4 @@
-//
-//  vkeyApp.swift
-//  vkey
-//
-//  Created by KhanhIceTea on 20/02/2024.
-//
-
+import Defaults
 import SwiftUI
 
 @main
@@ -49,6 +43,7 @@ struct MenuContentView: View {
 struct MainMenuView: View {
   @ObservedObject var appDelegate: AppDelegate
   @Environment(\.openSettings) private var openSettings
+  @Default(.smartSwitchEnabled) private var smartSwitchEnabled
 
   var body: some View {
     // MenuBarExtra (`.menu` style) renders SwiftUI Buttons as NSMenuItem.
@@ -83,6 +78,7 @@ struct MainMenuView: View {
 
     Divider()
 
+    // Cài đặt và SmartSwitch cùng 1 section
     Button {
       // Promote to .regular so the Settings window can become key — required for
       // KeyboardShortcuts.Recorder to receive keystrokes from the global event stream.
@@ -92,10 +88,19 @@ struct MainMenuView: View {
     } label: {
       Label("Cài đặt", systemImage: "gearshape")
     }
-    // No .keyboardShortcut: AppKit reserves a right-column for shortcut hints
-    // and widens the whole menu to fit, leaving an empty gap on items that
-    // don't have a hint. Dropping the hint lets the menu shrink to text width.
 
+    Button {
+      smartSwitchEnabled.toggle()
+    } label: {
+      Label(
+        smartSwitchEnabled ? "Smart Switch  ✓" : "Smart Switch",
+        systemImage: "arrow.left.arrow.right.circle"
+      )
+    }
+
+    Divider()
+
+    // Ủng hộ + thông tin + cập nhật cùng 1 section
     Button {
       appDelegate.openDonate()
     } label: {

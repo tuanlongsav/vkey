@@ -29,26 +29,21 @@ struct SmartSwitchView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header Section
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Image(systemName: "arrow.left.arrow.right.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundStyle(Color.accentColor)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Smart Switch")
-                            .font(.headline)
-                        Text("Tự tắt Tiếng Việt khi chuyển sang ứng dụng lập trình/tìm kiếm")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+            HStack {
+                Image(systemName: "arrow.left.arrow.right.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(Color.accentColor)
                 
-                Toggle("Kích hoạt tính năng Smart Switch", isOn: $smartSwitchEnabled)
-                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                    .padding(.top, 8)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Smart Switch")
+                        .font(.headline)
+                    Text("Tự tắt Tiếng Việt khi chuyển sang ứng dụng lập trình/tìm kiếm")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(NSColor.windowBackgroundColor))
             
             Divider()
@@ -62,7 +57,7 @@ struct SmartSwitchView: View {
                     Text("Tính năng đang tắt")
                         .font(.headline)
                         .foregroundStyle(.secondary)
-                    Text("Bật Smart Switch để tự động quản lý bộ gõ cho từng ứng dụng.")
+                    Text("Kích hoạt Smart Switch từ biểu tượng bộ gõ trên thanh Menu Bar để bắt đầu sử dụng.")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .multilineTextAlignment(.center)
