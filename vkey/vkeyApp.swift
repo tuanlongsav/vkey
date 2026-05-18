@@ -81,7 +81,9 @@ struct MainMenuView: View {
     } label: {
       Label("Cài đặt", systemImage: "gearshape")
     }
-    .keyboardShortcut(",", modifiers: .command)
+    // No .keyboardShortcut: AppKit reserves a right-column for shortcut hints
+    // and widens the whole menu to fit, leaving an empty gap on items that
+    // don't have a hint. Dropping the hint lets the menu shrink to text width.
 
     Divider()
 
@@ -90,7 +92,6 @@ struct MainMenuView: View {
     } label: {
       Label("Thoát", systemImage: "power")
     }
-    .keyboardShortcut("q", modifiers: .command)
   }
 }
 
