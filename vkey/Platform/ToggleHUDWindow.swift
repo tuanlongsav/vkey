@@ -143,10 +143,12 @@ private struct ToggleHUDView: View {
                 .frame(width: 44, height: 44)
                 .contentTransition(.symbolEffect(.replace))
             
-            // Nhãn hiển thị ngôn ngữ
+            // Nhãn hiển thị ngôn ngữ (bảo đảm không bị nén hoặc cắt ngắn)
             Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundStyle(.primary)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
             
             // Ký hiệu viết tắt (VI / EN)
             Text(viewModel.isEnabled ? "VI" : "EN")
@@ -161,8 +163,8 @@ private struct ToggleHUDView: View {
                 .foregroundStyle(viewModel.isEnabled ? Color.accentColor : Color.secondary)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 16)
+        .frame(width: 130) // Kích thước HUD đồng bộ đối xứng, sang trọng và không đổi khi switch
+        .padding(.vertical, 18)
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(.ultraThinMaterial)
