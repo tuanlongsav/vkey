@@ -3,10 +3,22 @@
 //
 //
 
+import AppKit
 import ApplicationServices
 import Foundation
 
 public struct Focused {
+  public static func focusedAppBundleId() -> String? {
+    guard let focusedElement = Focused.element() else { return nil }
+    var pid: pid_t = 0
+    if AXUIElementGetPid(focusedElement, &pid) == .success {
+      if let app = NSRunningApplication(processIdentifier: pid) {
+        return app.bundleIdentifier
+      }
+    }
+    return nil
+  }
+
   public static func element() -> AXUIElement? {
     let systemWideElement = AXUIElementCreateSystemWide()
     return systemWideElement.getAttribute(property: kAXFocusedUIElementAttribute)

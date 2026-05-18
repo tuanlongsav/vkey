@@ -173,4 +173,15 @@ extension TiengVietState {
       cachedThanhPhan: _cachedThanhPhan
     )
   }
+
+  /// Trả về state mới với danh sách phím được cập nhật
+  func withChuKhongDau(_ keys: [Character]) -> TiengVietState {
+    TiengVietState(
+      chuKhongDau: keys,
+      dauThanh: dauThanh,
+      dauMu: dauMu,
+      gachD: gachD,
+      cachedThanhPhan: TiengVietParser.parse(keys)
+    )
+  }
 }

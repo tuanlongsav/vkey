@@ -28,8 +28,9 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// Used by Smart Switch so launcher apps don't pollute the per-app memory.
     private var skipPersistAppMode = false
     private var switchFileMonitor: FileMonitor?
-    private var smartSwitchActive = false
-    private var enabledBeforeSmartSwitch = false
+    public var smartSwitchActive = false
+    public var enabledBeforeSmartSwitch = false
+    private var skipHUDNotification = true
 
     @Published public var enabled = false {
         didSet {
@@ -37,6 +38,12 @@ class AppState: ObservableObject, FileMonitorDelegate {
                 self.appModes[self.activeAppName] = enabled
             }
             self.eventHook.setEnabled(enabled)
+            
+            if !skipHUDNotification {
+                DispatchQueue.main.async {
+                    ToggleHUDWindow.shared.show(isEnabled: self.enabled)
+                }
+            }
         }
     }
     @Published public var typingMethod: TypingMethods {
@@ -96,6 +103,11 @@ class AppState: ObservableObject, FileMonitorDelegate {
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(activeApplicationDidChange),
             name: NSWorkspace.didActivateApplicationNotification, object: nil)
+            
+        // Enable HUD notifications after a brief delay once startup is fully completed
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.skipHUDNotification = false
+        }
     }
 
     public func load() {
@@ -131,6 +143,10 @@ class AppState: ObservableObject, FileMonitorDelegate {
     }
 
     @objc func activeApplicationDidChange(notification: Notification) {
+        let wasSkippingHUD = skipHUDNotification
+        skipHUDNotification = true
+        defer { skipHUDNotification = wasSkippingHUD }
+        
         if let activeApp = NSWorkspace.shared.frontmostApplication,
             let appName = activeApp.bundleIdentifier,
             appName != bundleId
@@ -168,9 +184,12 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// Apply an enabled state change without writing it to per-app memory.
     /// Used by Smart Switch so transient launcher activations don't override
     /// the user's preference for the app underneath.
-    private func setEnabledWithoutPersist(_ value: Bool) {
+    public func setEnabledWithoutPersist(_ value: Bool) {
+        let wasSkippingHUD = skipHUDNotification
+        skipHUDNotification = true
         skipPersistAppMode = true
         enabled = value
         skipPersistAppMode = false
+        skipHUDNotification = wasSkippingHUD
     }
 }

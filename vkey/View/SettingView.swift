@@ -173,6 +173,7 @@ struct GeneralView: View {
     @EnvironmentObject var appState: AppState
     @Default(.newStyleTonePlacement) private var newStyleTonePlacement
     @Default(.autoTypoCorrection) private var autoTypoCorrection
+    @Default(.hudEnabled) private var hudEnabled
 
     let appVersion = Bundle.main.appVersionLong
 
@@ -217,6 +218,11 @@ struct GeneralView: View {
 
                 Toggle(isOn: $autoTypoCorrection) {
                     Label("Tự động sửa lỗi gõ nhầm", systemImage: "sparkles")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                
+                Toggle(isOn: $hudEnabled) {
+                    Label("Hiển thị thông báo khi chuyển VI/EN", systemImage: "macwindow.badge.plus")
                 }
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     

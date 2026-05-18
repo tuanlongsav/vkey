@@ -190,6 +190,24 @@ func eventTapCallback(
     }
   }
 
+  // ── Smart Switch Overlay Probing ──────────────────────────────────────────
+  if let appState = eventHook.appState, Defaults[.smartSwitchEnabled],
+     (type == .keyDown || type == .leftMouseDown || type == .rightMouseDown) {
+    if let focusedBundleId = Focused.focusedAppBundleId() {
+      let isLauncher = Defaults[.smartSwitchApps].contains(focusedBundleId)
+      if isLauncher {
+        if !appState.smartSwitchActive {
+          appState.enabledBeforeSmartSwitch = appState.enabled
+          appState.smartSwitchActive = true
+          appState.setEnabledWithoutPersist(false)
+        }
+      } else if appState.smartSwitchActive {
+        appState.smartSwitchActive = false
+        appState.setEnabledWithoutPersist(appState.enabledBeforeSmartSwitch)
+      }
+    }
+  }
+
   if type == .keyDown && eventHook.processing {
     return input.handleEvent(event: event)
   } else if type == .leftMouseDown || type == .rightMouseDown {

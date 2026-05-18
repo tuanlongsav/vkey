@@ -1114,6 +1114,79 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(inputProcessor.transformed, "hồ", "transformed should be hồ")
     XCTAssertFalse(inputProcessor.stopProcessing, "stopProcessing should be false")
   }
+
+  func testImpossibleConsonantClustersTelex() throws {
+    let oldAllowed = Defaults[.allowedZWJF]
+    Defaults[.allowedZWJF] = false
+    defer { Defaults[.allowedZWJF] = oldAllowed }
+
+    // 1. Double letter impossible prefixes (e.g. street, plural, class, block)
+    XCTAssertEqual(transform_text_telex(for: "street"), "street")
+    XCTAssertEqual(transform_text_telex(for: "plural"), "plural")
+    XCTAssertEqual(transform_text_telex(for: "clear"), "clear")
+    XCTAssertEqual(transform_text_telex(for: "block"), "block")
+    XCTAssertEqual(transform_text_telex(for: "fly"), "fly")
+    XCTAssertEqual(transform_text_telex(for: "green"), "green")
+
+    // 2. Letters f, j, z starting a word (e.g. fast, jail, zone)
+    XCTAssertEqual(transform_text_telex(for: "fast"), "fast")
+    XCTAssertEqual(transform_text_telex(for: "jail"), "jail")
+    XCTAssertEqual(transform_text_telex(for: "zone"), "zone")
+
+    // 3. Normal Telex words are processed fine (e.g. ddieemr -> điểm, song -> song)
+    XCTAssertEqual(transform_text_telex(for: "song"), "song")
+    XCTAssertEqual(transform_text_telex(for: "ddieemr"), "điểm")
+  }
+
+  func testImpossibleConsonantClustersVni() throws {
+    let oldAllowed = Defaults[.allowedZWJF]
+    Defaults[.allowedZWJF] = false
+    defer { Defaults[.allowedZWJF] = oldAllowed }
+
+    // 1. Double letter impossible prefixes in VNI
+    XCTAssertEqual(transform_text_vni(for: "street"), "street")
+    XCTAssertEqual(transform_text_vni(for: "plural"), "plural")
+    XCTAssertEqual(transform_text_vni(for: "clear"), "clear")
+
+    // 2. Starting letter 'w' is bypassed in VNI (w is impossible in VNI)
+    XCTAssertEqual(transform_text_vni(for: "word"), "word")
+
+    // 3. Normal VNI words work fine (e.g. d9ie6m3 -> điểm)
+    XCTAssertEqual(transform_text_vni(for: "d9ie6m3"), "điểm")
+  }
+
+  func testImpossibleConsonantClusterRollback() throws {
+    let inputProcessor = InputProcessor(method: .Telex)
+    
+    // Type "s" -> valid Vietnamese consonant prefix so far
+    inputProcessor.push(char: "s")
+    XCTAssertFalse(inputProcessor.stopProcessing)
+    XCTAssertEqual(inputProcessor.transformed, "s")
+    
+    // Type "t" -> "st" becomes an impossible consonant prefix! It enters recovery/bypass
+    inputProcessor.push(char: "t")
+    XCTAssertTrue(inputProcessor.stopProcessing)
+    XCTAssertEqual(inputProcessor.transformed, "st")
+    
+    // Type "r" -> still in recovery/bypass
+    inputProcessor.push(char: "r")
+    XCTAssertTrue(inputProcessor.stopProcessing)
+    XCTAssertEqual(inputProcessor.transformed, "str")
+    
+    // Press backspace -> rolls back to "st", still in recovery/bypass
+    let (bs1, diff1) = inputProcessor.pop()
+    XCTAssertEqual(bs1, 0)
+    XCTAssertEqual(diff1, [])
+    XCTAssertTrue(inputProcessor.stopProcessing)
+    XCTAssertEqual(inputProcessor.transformed, "st")
+    
+    // Press backspace again -> rolls back to "s", which is valid, so recovery disarms!
+    let (bs2, diff2) = inputProcessor.pop()
+    XCTAssertEqual(bs2, 0)
+    XCTAssertEqual(diff2, [])
+    XCTAssertFalse(inputProcessor.stopProcessing)
+    XCTAssertEqual(inputProcessor.transformed, "s")
+  }
 }
 
 // MARK: - ===========================================

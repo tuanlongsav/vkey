@@ -79,6 +79,9 @@ extension Defaults.Keys {
   /// Tự động sửa lỗi gõ nhầm (ví dụ: thfi -> thì, dinjhd -> định)
   static let autoTypoCorrection = Key<Bool>("auto-typo-correction", default: true)
 
+  /// Hiển thị HUD khi chuyển đổi bộ gõ
+  static let hudEnabled = Key<Bool>("hud-enabled", default: true)
+
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value
 }

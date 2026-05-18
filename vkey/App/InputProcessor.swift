@@ -35,6 +35,55 @@ struct WordBuffer {
   /// Last valid snapshot for single-step rollback out of recovery mode.
   var lastValidSnapshot: Snapshot?
 
+  private static let impossible2LetterPrefixes: Set<String> = [
+    "bl", "cl", "fl", "gl", "pl", "sl", "vl",
+    "br", "cr", "dr", "fr", "gr", "pr", "wr",
+    "st", "sm", "sn", "sp", "sc", "sk", "sw",
+    "tw", "dw", "sh", "ps", "pn", "ts", "kn", "kr",
+    "bb", "cc", "ff", "gg", "hh", "jj", "kk", "ll",
+    "mm", "nn", "pp", "qq", "rr", "ss", "tt", "vv",
+    "xx", "zz"
+  ]
+
+  private static let impossible3LetterPrefixes: Set<String> = [
+    "str", "thr", "phr", "chr", "sch", "scr", "spr"
+  ]
+
+  func isImpossibleCluster(_ keys: [Character], engine: TypingMethod) -> Bool {
+    guard !keys.isEmpty else { return false }
+    
+    // Rule 1: First letter cannot be f, j, z (or w for VNI) if allowed-zwjf is disabled
+    if !Defaults[.allowedZWJF], let firstChar = keys.first {
+      let lowerFirst = firstChar.lowercased()
+      if lowerFirst == "f" || lowerFirst == "j" || lowerFirst == "z" {
+        return true
+      }
+      
+      // VNI specific: starting letter cannot be w
+      if engine is VNI, lowerFirst == "w" {
+        return true
+      }
+    }
+    
+    // Rule 2: Impossible 2-letter prefixes
+    if keys.count >= 2 {
+      let prefix2 = String(keys.prefix(2)).lowercased()
+      if Self.impossible2LetterPrefixes.contains(prefix2) {
+        return true
+      }
+    }
+    
+    // Rule 3: Impossible 3-letter prefixes
+    if keys.count >= 3 {
+      let prefix3 = String(keys.prefix(3)).lowercased()
+      if Self.impossible3LetterPrefixes.contains(prefix3) {
+        return true
+      }
+    }
+    
+    return false
+  }
+
   // MARK: - Word Lifecycle
 
   mutating func newWord(storePrevious: Bool = false) {
@@ -91,7 +140,12 @@ struct WordBuffer {
     // Normal pop: remove last character
     wordState = engine.pop(state: wordState)
     keys = Array(wordState.chuKhongDau)
-    stopProcessing = wordState.needsRecovery
+    
+    if isImpossibleCluster(keys, engine: engine) {
+      stopProcessing = true
+    } else {
+      stopProcessing = wordState.needsRecovery
+    }
 
     if stopProcessing {
       transformed = String(keys)
@@ -129,6 +183,19 @@ struct WordBuffer {
     if stopProcessing {
       transformed.append(char)
       wordState = wordState.push(char)
+      return
+    }
+
+    // Check if newly formed keys are an impossible cluster
+    if isImpossibleCluster(keys, engine: engine) {
+      stopProcessing = true
+      transformed = String(keys)
+      wordState = wordState.push(char)
+      
+      // Save snapshot for rollback if we just entered recovery/stopProcessing
+      if !snapshot.stopProcessing {
+        lastValidSnapshot = snapshot
+      }
       return
     }
 
