@@ -11,7 +11,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 ## Chức năng
 
 - ✅ Gõ tiếng Việt với 2 kiểu phổ biến: **Telex** và **VNI**.
-- ✅ Đặt dấu theo kiểu cũ (nhất quán, dễ đọc).
+- ✅ Tuỳ chọn kiểu đặt dấu: **Kiểu mới** (thủy, khỏe) hoặc **Kiểu cũ** (thuỷ, khoẻ).
 - ✅ Bộ gõ chỉ duy nhất Unicode (UTF-8), không hỗ trợ TCVN3/VNI Windows (giữ đơn giản).
 - ✅ Nhớ chế độ Vi/En theo từng ứng dụng (per-app input mode memory).
 - ✅ **Smart Switch**: tự động tắt khi vào Spotlight / Raycast / Alfred / LaunchBar — bạn gõ tìm tiếng Anh thuận tiện, không bị transform.
@@ -22,6 +22,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ Tự bypass khi macOS bật secure input (gõ password an toàn).
 - ✅ Khởi động cùng macOS (tuỳ chọn).
 - ✅ Hoạt động xuyên QWERTZ / AZERTY / Dvorak (dùng physical key code → mapping QWERTY position cho Telex/VNI).
+- ✅ Tích hợp **Kiểm tra cập nhật** (Update Checker) tự động và có tuỳ chọn **Ủng hộ tác giả** (Donate) qua VietQR.
 
 ## Khác biệt so với Caffee
 
@@ -30,11 +31,13 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 | Engine gõ (Telex/VNI/Parser/Transformer) | ✅ Tác giả gốc | Kế thừa nguyên si |
 | Per-app mode memory | ✅ | Kế thừa |
 | Autocomplete fix (browser/Excel) | ✅ | Kế thừa |
-| App icon, menu bar icon | hạt cà phê | **Mới**: nền đỏ + chữ "Vkey", cờ VN/US trên menu bar |
+| App icon, menu bar icon | hạt cà phê | **Mới**: nền đỏ + chữ "Vkey", cờ VN/US trên menu bar chuẩn kích thước |
 | Phím tắt | Option+Z (key+modifier) | **Mới**: modifier-only `⌃⇧` mặc định + custom recorder chấp nhận mọi tổ hợp |
 | Smart Switch (Spotlight/Raycast/Alfred) | ❌ | **Mới** |
 | Macro (text expansion) | TODO trong code | **Mới**, hoàn thiện |
+| Tuỳ chọn kiểu đặt dấu (Cũ/Mới) | ❌ (Chỉ Kiểu cũ) | **Mới**: Tuỳ chọn linh hoạt trong Cài đặt |
 | Tương thích Electron/web app | mặc định batch | **Mới**: mặc định hybrid + auto-fallback step-by-step |
+| Cập nhật tự động (Update Checker) | ❌ | **Mới**: Tự động báo có bản mới qua Github Releases |
 | DMG packaging script | thủ công | **Mới**: script Swift sinh asset + DMG build pipeline |
 | Tests | bộ test engine | Kế thừa + thêm tests cho WordBuffer / KeyboardUS / Validator |
 
@@ -74,7 +77,10 @@ ditto /tmp/vkey-release/Build/Products/Release/vkey.app /Applications/vkey.app
 | Đổi phím tắt | Menu vkey → Cài đặt → Phím tắt → bấm vào nút và nhập tổ hợp mới |
 | Bật/tắt từ menu | Click cờ trên menu bar → "Chuyển đổi bộ gõ 🇻🇳 \| 🇺🇸" |
 | Đổi kiểu gõ | Menu → "Kiểu Telex" / "Kiểu VNI" |
+| Đổi kiểu đặt dấu | Menu → Cài đặt → Chung → "Kiểu đặt dấu" (mới/cũ) |
 | Thêm macro | Menu → Cài đặt → tab Macro → bấm "Thêm" |
+| Ủng hộ tác giả | Menu → "Ủng hộ tác giả" (Quét mã VietQR) |
+| Kiểm tra cập nhật | Menu → "Kiểm tra cập nhật" |
 
 **Trạng thái icon menu bar:**
 - 🇻🇳 cờ Việt Nam: đang gõ tiếng Việt
