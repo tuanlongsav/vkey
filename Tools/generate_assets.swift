@@ -308,7 +308,7 @@ do {
   print("== Generating assets ==")
   try writeAppIcon()
   // Rectangular base — softer/wider look, both flags same height to align on menu bar.
-  try writeFlag(dir: vnFlagDir, name: "vn-flag", base: CGSize(width: 22, height: 14), drawer: drawVNFlag)
+  try writeFlag(dir: vnFlagDir, name: "vn-flag", base: CGSize(width: 24, height: 16), drawer: drawVNFlag)
   try writeFlag(dir: usFlagDir, name: "us-flag", base: CGSize(width: 22, height: 14), drawer: drawUSFlag)
   print("✓ done")
 } catch {
