@@ -49,22 +49,12 @@ enum Updater {
             updaterController.checkForUpdates(nil)
           } else {
             // Local version is equal to or greater than the server version
-            // Show custom alert with Reinstall option
             let alert = NSAlert()
             alert.messageText = "Bạn đang sử dụng phiên bản mới nhất!"
-            alert.informativeText = "Phiên bản hiện tại: v\(localVersionStr) (Build \(localVersionCodeStr))\nPhiên bản trên máy chủ: v\(serverVersionStr) (Build \(serverVersionCodeStr))\n\nBạn có muốn tải và cài đặt lại phiên bản này không?"
+            alert.informativeText = "Phiên bản v\(localVersionStr) (Build \(localVersionCodeStr)) là phiên bản mới nhất hiện tại."
             alert.alertStyle = .informational
-            
-            // Add buttons in user-friendly order
-            alert.addButton(withTitle: "Tải và cài lại") // Button 1 (default)
-            alert.addButton(withTitle: "Đóng") // Button 2
-            
-            let response = alert.runModal()
-            if response == .alertFirstButtonReturn {
-              if let url = URL(string: enclosureUrlStr) {
-                NSWorkspace.shared.open(url)
-              }
-            }
+            alert.addButton(withTitle: "Đóng")
+            alert.runModal()
           }
         }
       }.resume()
