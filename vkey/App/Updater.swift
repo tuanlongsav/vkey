@@ -20,12 +20,16 @@ enum Updater {
   static func checkForUpdates(manual: Bool = false) {
     if manual {
       // User explicitly clicked "Check for Updates..." in settings or menu
-      let appcastURL = URL(string: "https://raw.githubusercontent.com/tuanlongsav/vkey/master/appcast.xml")!
+      let appcastURL = URL(string: "https://raw.githubusercontent.com/tuanlongsav/vkey/main/appcast.xml")!
       
       URLSession.shared.dataTask(with: appcastURL) { data, response, error in
         DispatchQueue.main.async {
-          guard error == nil, let data = data, let xml = String(data: data, encoding: .utf8) else {
-            // Fallback to native Sparkle on network error
+          guard error == nil,
+                let httpResponse = response as? HTTPURLResponse,
+                httpResponse.statusCode == 200,
+                let data = data,
+                let xml = String(data: data, encoding: .utf8) else {
+            // Fallback to native Sparkle on network error or non-200 status
             updaterController.checkForUpdates(nil)
             return
           }

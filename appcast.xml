@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>vkey Updates</title>
-    <link>https://raw.githubusercontent.com/tuanlongsav/vkey/master/appcast.xml</link>
+    <link>https://raw.githubusercontent.com/tuanlongsav/vkey/main/appcast.xml</link>
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
@@ -13,8 +13,8 @@
       <pubDate>Tue, 19 May 2026 03:06:00 +0700</pubDate>
       <enclosure
         url="https://github.com/tuanlongsav/vkey/releases/download/v1.4.1/vkey-1.4.1.dmg"
-        sparkle:edSignature="myoRRBQsaqQb+2roSsESoellhvqaMWFRZqRWA7R7OKBmbfFpufyU/yPZckhZDCarDhEMVOABxEr1nuMxyhUzCg=="
-        length="5384440"
+        sparkle:edSignature="0NAEgzfUOC/GHnhxjMbA3ELxPWyfl88m6O0Mr/vniBeuxwwoy9afyhJWnyOAxmih5b1Fvj/nW5JeYqrVVnxmCw=="
+        length="4286274"
         type="application/octet-stream"
       />
       <description><![CDATA[
