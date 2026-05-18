@@ -61,6 +61,11 @@ class EventHook {
 
   // Sets up the event tap to listen for keyboard and mouse events.
   func setupEventTap(give appState: AppState) {
+    if eventTap != nil {
+      self.appState = appState
+      return
+    }
+
     let eventMask =
       (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
       | (1 << CGEventType.leftMouseDown.rawValue) | (1 << CGEventType.rightMouseDown.rawValue)
@@ -91,6 +96,7 @@ class EventHook {
     if let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0) {
       CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
     }
+    self.eventTap = nil
   }
 }
 

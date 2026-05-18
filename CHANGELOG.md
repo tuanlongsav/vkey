@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.3 - 2026-05-18
+
+- Fixed onboarding completion so the app finishes setup in the current session instead of relaunching and exiting.
+- Ensured the event tap setup is idempotent to avoid duplicate hooks after completing onboarding.
+
 ## 1.3.2 - 2026-05-18
 
 - Fixed CGEvent tap event forwarding to avoid retaining pass-through keyboard and mouse events.

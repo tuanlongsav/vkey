@@ -63,19 +63,30 @@ class OnboardingViewModel: ObservableObject {
         Defaults[.typingMethod] = selectedMethod
         appState.typingMethod = selectedMethod
         LaunchAtLogin.isEnabled = launchAtLogin
+        appState.storeTrustedAppVersion()
 
-        // Relaunch app
-        relaunchApp()
+        if appState.eventHook.isTrusted(prompt: false) {
+            appState.eventHook.setupEventTap(give: appState)
+            appState.load()
+            appState.setEnabled(set: true)
+            appState.registerSwitchFileMonitor()
+        }
+
+        closeOnboardingWindow()
     }
 
-    private func relaunchApp() {
-        let url = Bundle.main.bundleURL
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.createsNewApplicationInstance = true
+    private func closeOnboardingWindow() {
+        DispatchQueue.main.async {
+            NSApp.windows
+                .filter { $0.title == "vkey - Cài Đặt" }
+                .forEach { $0.close() }
 
-        NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, _ in
-            DispatchQueue.main.async {
-                NSApp.terminate(nil)
+            let hasVisibleWindow = NSApp.windows.contains { window in
+                window.isVisible && window.canBecomeKey && !(window is NSPanel)
+            }
+
+            if !hasVisibleWindow {
+                NSApp.setActivationPolicy(.accessory)
             }
         }
     }
