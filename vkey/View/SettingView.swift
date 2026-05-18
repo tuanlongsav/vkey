@@ -256,7 +256,7 @@ struct GeneralView: View {
             .scrollDisabled(false)
 
             Text(
-                "Version \(appVersion)\nKhông có tính năng gì ngoài gõ Tiếng Việt!\nTuỳ biến bởi longht, dựa trên dự án mã nguồn mở của KhanhIceTea."
+                "Version \(appVersion)"
             )
             .font(.caption)
             .multilineTextAlignment(.center)
