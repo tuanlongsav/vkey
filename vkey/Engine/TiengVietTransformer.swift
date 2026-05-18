@@ -26,7 +26,8 @@ enum TiengVietTransformer {
     thanhPhanTieng: ThanhPhanTieng,
     dauThanh: DauThanh,
     dauMu: DauMu,
-    gachD: Bool
+    gachD: Bool,
+    kieuCu: Bool
   ) -> String {
     // Clone để không thay đổi bản gốc
     var tieng = thanhPhanTieng
@@ -46,7 +47,7 @@ enum TiengVietTransformer {
     apDungDauMu(vaoTieng: &tieng, dauMu: dauMu, soNguyenAm: countNguyenAm)
 
     // Bước 3: Áp dụng dấu thanh
-    apDungDauThanh(vaoTieng: &tieng, dauThanh: dauThanh, soNguyenAm: countNguyenAm)
+    apDungDauThanh(vaoTieng: &tieng, dauThanh: dauThanh, soNguyenAm: countNguyenAm, kieuCu: kieuCu)
 
     // Ghép các thành phần thành chuỗi kết quả
     return String(tieng.phuAmDau + tieng.nguyenAm + tieng.phuAmCuoi + tieng.conLai)
@@ -122,7 +123,8 @@ enum TiengVietTransformer {
   private static func apDungDauThanh(
     vaoTieng tieng: inout ThanhPhanTieng,
     dauThanh: DauThanh,
-    soNguyenAm: Int
+    soNguyenAm: Int,
+    kieuCu: Bool
   ) {
     guard let quyTac = TiengViet.QuyTacDatDau[dauThanh], !quyTac.isEmpty else { return }
 
@@ -141,8 +143,11 @@ enum TiengVietTransformer {
       return
     }
 
+    let chuoiNguyenAm = String(tieng.nguyenAm).lowercased()
+    let kieuCuOaOeUy = kieuCu && (soNguyenAm == 2) && (chuoiNguyenAm == "oa" || chuoiNguyenAm == "oe" || chuoiNguyenAm == "uy")
+
     // Ưu tiên 2: Có 3 nguyên âm hoặc 2 nguyên âm + phụ âm cuối → đặt ở nguyên âm thứ 2
-    if (soNguyenAm == 3 || (soNguyenAm == 2 && !tieng.phuAmCuoi.isEmpty))
+    if (soNguyenAm == 3 || (soNguyenAm == 2 && !tieng.phuAmCuoi.isEmpty) || kieuCuOaOeUy)
       && thuDatDauThanh(1)
     {
       return

@@ -206,30 +206,33 @@ func drawVNFlag(ctx: CGContext, size: CGSize) {
 // MARK: - US flag
 
 func drawUSFlag(ctx: CGContext, size: CGSize) {
+  // Padding 0.5px on left and right for optical illusion
+  let flagRect = CGRect(x: 0.5, y: 0, width: size.width - 1, height: size.height)
+  
   // Rounded-corner clip
-  let radius = min(size.width, size.height) * 0.15
+  let radius = min(flagRect.width, flagRect.height) * 0.15
   let clipPath = CGPath(
-    roundedRect: CGRect(origin: .zero, size: size),
+    roundedRect: flagRect,
     cornerWidth: radius, cornerHeight: radius, transform: nil
   )
   ctx.addPath(clipPath)
   ctx.clip()
 
   ctx.setFillColor(usWhite)
-  ctx.fill(CGRect(origin: .zero, size: size))
+  ctx.fill(flagRect)
 
   // 13 stripes, 7 red (rows 0,2,4,6,8,10,12 from top)
-  let stripeH = size.height / 13.0
+  let stripeH = flagRect.height / 13.0
   ctx.setFillColor(usRed)
   for i in 0..<13 where i % 2 == 0 {
-    let y = size.height - stripeH * CGFloat(i + 1)
-    ctx.fill(CGRect(x: 0, y: y, width: size.width, height: stripeH))
+    let y = flagRect.height - stripeH * CGFloat(i + 1)
+    ctx.fill(CGRect(x: flagRect.minX, y: y, width: flagRect.width, height: stripeH))
   }
 
   // Canton: 7 stripes tall, 0.4 × width wide
   let cantonH = stripeH * 7
-  let cantonW = size.width * 0.4
-  let cantonRect = CGRect(x: 0, y: size.height - cantonH, width: cantonW, height: cantonH)
+  let cantonW = flagRect.width * 0.4
+  let cantonRect = CGRect(x: flagRect.minX, y: flagRect.height - cantonH, width: cantonW, height: cantonH)
   ctx.setFillColor(usBlue)
   ctx.fill(cantonRect)
 
@@ -241,7 +244,7 @@ func drawUSFlag(ctx: CGContext, size: CGSize) {
   ctx.setFillColor(usWhite)
   for r in 0..<rows {
     for c in 0..<cols {
-      let x = xs * (CGFloat(c) + 0.5) - starDia / 2
+      let x = cantonRect.minX + xs * (CGFloat(c) + 0.5) - starDia / 2
       let y = cantonRect.minY + ys * (CGFloat(r) + 0.5) - starDia / 2
       ctx.fillEllipse(in: CGRect(x: x, y: y, width: starDia, height: starDia))
     }
@@ -308,7 +311,7 @@ do {
   print("== Generating assets ==")
   try writeAppIcon()
   // Rectangular base — softer/wider look, both flags same height to align on menu bar.
-  try writeFlag(dir: vnFlagDir, name: "vn-flag", base: CGSize(width: 24, height: 16), drawer: drawVNFlag)
+  try writeFlag(dir: vnFlagDir, name: "vn-flag", base: CGSize(width: 22, height: 14), drawer: drawVNFlag)
   try writeFlag(dir: usFlagDir, name: "us-flag", base: CGSize(width: 22, height: 14), drawer: drawUSFlag)
   print("✓ done")
 } catch {

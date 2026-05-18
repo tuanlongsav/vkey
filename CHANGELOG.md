@@ -1,6 +1,12 @@
-# Changelog
+# vkey Changelog
 
-## 1.3.5 - 2026-05-18
+## [1.3.6] - 2024-05-18
+
+- Đặt kích thước ảnh cờ VN và cờ US cố định `22x14` trên menu bar, khắc phục lỗi xê dịch các icon trên menu bar khi chuyển trạng thái tiếng Việt/Anh.
+- Thêm Setting tuỳ chọn cách bỏ dấu: Kiểu cũ (hoà, thuỷ, khoẻ) hoặc Kiểu mới (hòa, thủy, khỏe).
+- Tích hợp thêm tính năng Kiểm tra bản cập nhật mới (Update Checker) từ màn hình Setting.
+
+## [1.3.5] - 2024-05-18
 
 - Fixed the orientation of the star in the Vietnamese flag menu bar icon to point straight up.
 - Fixed diacritic tone placement to use the "kiểu cũ" style (e.g. `hoà`, `thuỷ`, `khoẻ`) instead of "kiểu mới".

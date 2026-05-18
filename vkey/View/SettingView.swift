@@ -172,6 +172,7 @@ final class FlexibleShortcutButton: NSButton {
 struct GeneralView: View {
     @EnvironmentObject var appState: AppState
     @Default(.smartSwitchEnabled) private var smartSwitchEnabled
+    @Default(.oldStyleTonePlacement) private var oldStyleTonePlacement
 
     let appVersion = Bundle.main.appVersionLong
 
@@ -205,6 +206,10 @@ struct GeneralView: View {
 
                 Toggle("Phụ âm z, w, j, f", isOn: $appState.allowedZWJF)
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    
+                // Tuỳ chọn kiểu dấu mới/cũ
+                Toggle("Dấu kiểu cũ (hoà, khoẻ, thuỷ)", isOn: $oldStyleTonePlacement)
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
                 Toggle("Tự tắt khi mở Spotlight / Raycast", isOn: $smartSwitchEnabled)
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
@@ -212,6 +217,11 @@ struct GeneralView: View {
                 LabeledContent("Phím tắt") {
                     FlexibleShortcutRecorder(name: .toggleInputMode)
                 }
+                
+                Button("Kiểm tra cập nhật") {
+                    Updater.checkForUpdates(manual: true)
+                }
+                .buttonStyle(.link)
             }
             .formStyle(.grouped)
             .scrollDisabled(true)

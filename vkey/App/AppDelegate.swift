@@ -62,6 +62,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             }
         }
     }
+    
+    // Check for updates silently on launch
+    Updater.checkForUpdates(manual: false)
   }
   
   func checkTrustStatus() {

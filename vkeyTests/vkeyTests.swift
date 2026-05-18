@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import Defaults
 
 @testable import vkey
 
@@ -931,9 +932,21 @@ final class vkeyTests: XCTestCase {
   }
 
   func testOldStylePlacement() throws {
+    let oldValue = Defaults[.oldStyleTonePlacement]
+    Defaults[.oldStyleTonePlacement] = true
     XCTAssertEqual(transform_text_telex(for: "hoaf"), "hoà")
     XCTAssertEqual(transform_text_telex(for: "thuyr"), "thuỷ")
     XCTAssertEqual(transform_text_telex(for: "khoer"), "khoẻ")
+    Defaults[.oldStyleTonePlacement] = oldValue
+  }
+  
+  func testNewStylePlacement() throws {
+    let oldValue = Defaults[.oldStyleTonePlacement]
+    Defaults[.oldStyleTonePlacement] = false
+    XCTAssertEqual(transform_text_telex(for: "hoaf"), "hòa")
+    XCTAssertEqual(transform_text_telex(for: "thuyr"), "thủy")
+    XCTAssertEqual(transform_text_telex(for: "khoer"), "khỏe")
+    Defaults[.oldStyleTonePlacement] = oldValue
   }
 
 

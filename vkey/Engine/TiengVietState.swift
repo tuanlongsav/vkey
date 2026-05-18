@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Defaults
 
 /// TiengVietState - Container trạng thái bất biến
 ///
@@ -69,7 +70,8 @@ struct TiengVietState {
       thanhPhanTieng: thanhPhanTieng,
       dauThanh: dauThanh,
       dauMu: dauMu,
-      gachD: gachD
+      gachD: gachD,
+      kieuCu: Defaults[.oldStyleTonePlacement]
     )
   }
 

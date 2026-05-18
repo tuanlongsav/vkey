@@ -64,6 +64,9 @@ extension Defaults.Keys {
     "modifier-only-toggle-hotkey",
     default: kDefaultModifierOnlyMask
   )
+  
+  /// Tuỳ chọn kiểu đặt dấu: true = Kiểu cũ (hoà, khoẻ), false = Kiểu mới (hòa, khỏe).
+  static let oldStyleTonePlacement = Key<Bool>("old-style-tone-placement", default: true)
 
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value
