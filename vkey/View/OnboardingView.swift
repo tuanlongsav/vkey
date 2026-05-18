@@ -65,30 +65,7 @@ class OnboardingViewModel: ObservableObject {
         LaunchAtLogin.isEnabled = launchAtLogin
         appState.storeTrustedAppVersion()
 
-        if appState.eventHook.isTrusted(prompt: false) {
-            appState.eventHook.setupEventTap(give: appState)
-            appState.load()
-            appState.setEnabled(set: true)
-            appState.registerSwitchFileMonitor()
-        }
-
-        closeOnboardingWindow()
-    }
-
-    private func closeOnboardingWindow() {
-        DispatchQueue.main.async {
-            NSApp.windows
-                .filter { $0.title == "vkey - Cài Đặt" }
-                .forEach { $0.close() }
-
-            let hasVisibleWindow = NSApp.windows.contains { window in
-                window.isVisible && window.canBecomeKey && !(window is NSPanel)
-            }
-
-            if !hasVisibleWindow {
-                NSApp.setActivationPolicy(.accessory)
-            }
-        }
+        NotificationCenter.default.post(name: .vkeyOnboardingDidComplete, object: nil)
     }
 
     deinit {

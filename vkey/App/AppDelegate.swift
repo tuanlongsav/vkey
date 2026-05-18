@@ -3,6 +3,10 @@ import Combine
 import Foundation
 import SwiftUI
 
+extension Notification.Name {
+  static let vkeyOnboardingDidComplete = Notification.Name("vkeyOnboardingDidComplete")
+}
+
 // AppDelegate manages the application lifecycle and background services
 class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
@@ -22,6 +26,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       self,
       selector: #selector(windowWillClose(_:)),
       name: NSWindow.willCloseNotification,
+      object: nil
+    )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(onboardingDidComplete),
+      name: .vkeyOnboardingDidComplete,
       object: nil
     )
 
@@ -59,11 +69,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   }
   
   func setupTrustedSession() {
+      isTrusted = true
       appState.storeTrustedAppVersion()
       appState.eventHook.setupEventTap(give: appState)
       appState.load()
       appState.setEnabled(set: true)
       appState.registerSwitchFileMonitor()
+  }
+
+  @objc func onboardingDidComplete() {
+    checkTrustStatus()
+    if isTrusted {
+      setupTrustedSession()
+    }
+
+    closeOnboardingWindows()
   }
 
   // Opens onboarding guide
@@ -84,6 +104,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     windowController.contentViewController = NSHostingController(rootView: contentView)
     windowController.showWindow(nil)
     NSApp.activate(ignoringOtherApps: true)
+  }
+
+  private func closeOnboardingWindows() {
+    NSApp.windows
+      .filter { $0.title == "vkey - Cài Đặt" }
+      .forEach { $0.close() }
+
+    let hasVisibleWindow = NSApp.windows.contains { window in
+      window.isVisible && window.canBecomeKey && !(window is NSPanel)
+    }
+
+    if !hasVisibleWindow {
+      NSApp.setActivationPolicy(.accessory)
+    }
   }
 
   // Opens settings window

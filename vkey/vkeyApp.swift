@@ -13,13 +13,9 @@ struct vkeyApp: App {
 
   var body: some Scene {
     MenuBarExtra {
-      if appDelegate.isTrusted {
-        MainMenuView(appDelegate: appDelegate)
-      } else {
-        GuideMenuView(appDelegate: appDelegate)
-      }
+      MenuContentView(appDelegate: appDelegate)
     } label: {
-      MenuBarLabel(appState: appDelegate.appState, isTrusted: appDelegate.isTrusted)
+      MenuBarLabel(appDelegate: appDelegate, appState: appDelegate.appState)
     }
 
     Settings {
@@ -35,8 +31,20 @@ struct vkeyApp: App {
   }
 }
 
+struct MenuContentView: View {
+  @ObservedObject var appDelegate: AppDelegate
+
+  var body: some View {
+    if appDelegate.isTrusted {
+      MainMenuView(appDelegate: appDelegate)
+    } else {
+      GuideMenuView(appDelegate: appDelegate)
+    }
+  }
+}
+
 struct MainMenuView: View {
-  var appDelegate: AppDelegate
+  @ObservedObject var appDelegate: AppDelegate
   @Environment(\.openSettings) private var openSettings
 
   var body: some View {
@@ -96,7 +104,7 @@ struct MainMenuView: View {
 }
 
 struct GuideMenuView: View {
-  var appDelegate: AppDelegate
+  @ObservedObject var appDelegate: AppDelegate
 
   var body: some View {
     Button("Hướng dẫn cài đặt") {
@@ -113,11 +121,11 @@ struct GuideMenuView: View {
 }
 
 struct MenuBarLabel: View {
+  @ObservedObject var appDelegate: AppDelegate
   @ObservedObject var appState: AppState
-  var isTrusted: Bool
 
   var body: some View {
-    if !isTrusted {
+    if !appDelegate.isTrusted {
       Image(systemName: "gear.badge.questionmark")
     } else if appState.secureInputActive {
       Image(systemName: "lock.square")

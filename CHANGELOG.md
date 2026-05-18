@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.4 - 2026-05-18
+
+- Fixed the menu bar state after onboarding so it switches from the setup guide menu to the main input menu immediately.
+- Routed onboarding completion through `AppDelegate` so trusted session setup and menu state stay in sync.
+- Made menu bar content observe app state changes after replacing Swift Observation macros with `ObservableObject`.
+
 ## 1.3.3 - 2026-05-18
 
 - Fixed onboarding completion so the app finishes setup in the current session instead of relaunching and exiting.
