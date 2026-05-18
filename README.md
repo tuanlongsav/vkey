@@ -6,7 +6,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 
 > **vkey là một bản fork mở rộng từ [Caffee](https://github.com/khanhicetea/Caffee)** của tác giả Khanh Nguyen ([@khanhicetea](https://github.com/khanhicetea)). Toàn bộ engine xử lý âm tiết tiếng Việt (Telex / VNI / Parser / Transformer / Validator) cùng kiến trúc Platform-Layer ban đầu đều do tác giả gốc xây dựng. 
 > 
-> Đồng thời, kể từ phiên bản v1.3.9 và v1.4.0, vkey đã **học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ dự án [XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen ([@xmannv](https://github.com/xmannv)) bao gồm giao diện thông báo Translucent Toggle HUD mờ kính, cơ chế Smart Switch tối ưu với bộ quét AX Probing và bộ lọc chính tả sớm Impossible Consonant Clusters nhằm mang lại trải nghiệm người dùng tuyệt vời nhất. vkey kế thừa nguyên si và bổ sung thêm các tính năng riêng (xem mục [Khác biệt so với Caffee](#khác-biệt-so-với-caffee)).
+> Đồng thời, kể từ phiên bản v1.3.9 và v1.4.0, vkey đã **học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ dự án [XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen ([@xmannv](https://github.com/xmannv)) bao gồm giao diện thông báo Translucent Toggle HUD mờ kính, cơ chế Smart Switch tối ưu với bộ quét AX Probing và bộ lọc chính tả sớm Impossible Consonant Clusters nhằm mang lại trải nghiệm người dùng tuyệt vời nhất. vkey kế thừa nguyên si và bổ sung thêm các tính năng riêng.
 
 ---
 
@@ -37,25 +37,6 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
   <img src="images/general-settings.png" width="350" alt="Cài đặt Chung">
   <img src="images/macro-settings.png" width="350" alt="Cài đặt Macro">
 </p>
-
-## Khác biệt so với Caffee
-
-| Hạng mục | Caffee | vkey |
-|----------|--------|------|
-| Engine gõ (Telex/VNI/Parser/Transformer) | ✅ Tác giả gốc | Kế thừa nguyên si |
-| Per-app mode memory | ✅ | Kế thừa |
-| Autocomplete fix (browser/Excel) | ✅ | Kế thừa |
-| App icon, menu bar icon | hạt cà phê | **Mới**: nền đỏ + chữ "Vkey", cờ VN/US trên menu bar chuẩn kích thước |
-| Phím tắt | Option+Z (key+modifier) | **Mới**: modifier-only `⌃⇧` mặc định + custom recorder chấp nhận mọi tổ hợp |
-| Smart Switch (Spotlight/Raycast/Alfred) | ❌ | **Mới**: Tích hợp cơ chế AX Overlay Probing siêu nhẹ (<0.1ms) tự động phát hiện overlay panel và khôi phục hoàn hảo trạng thái ứng dụng nền trước đó |
-| Bộ lọc phụ âm không hợp lệ (Phonetic Bypass) | ❌ | **Mới**: Tự động bỏ qua gõ tiếng Việt ngay từ phím đầu tiên khi gõ các tổ hợp phụ âm không có trong Tiếng Việt (như `str`, `pl`, `cl`), tự động re-arm khi Backspace |
-| Hiển thị thông báo chuyển đổi (HUD) | ❌ | **Mới**: Cửa sổ HUD mờ kính (.ultraThinMaterial) cao cấp hiển thị giữa màn hình |
-| Macro (text expansion) | TODO trong code | **Mới**, hoàn thiện |
-| Tuỳ chọn kiểu đặt dấu (Cũ/Mới) | ❌ (Chỉ Kiểu cũ) | **Mới**: Tuỳ chọn linh hoạt trong Cài đặt |
-| Tương thích Electron/web app | mặc định batch | **Mới**: mặc định hybrid + auto-fallback step-by-step |
-| Cập nhật tự động (Sparkle) | ❌ | **Mới**: Tải & cài đặt trực tiếp không cần mở trình duyệt nhờ framework Sparkle |
-| DMG packaging script | thủ công | **Mới**: script Swift sinh asset + DMG build pipeline |
-| Tests | bộ test engine | Kế thừa + thêm tests cho WordBuffer / KeyboardUS / Validator |
 
 ## Cài đặt
 
@@ -136,7 +117,7 @@ vkey là một sản phẩm nguồn mở phát triển vì cộng đồng, kế 
   - Thiết kế và giải pháp giao diện **Translucent Toggle HUD** mờ kính (tích hợp tại `vkey/Platform/ToggleHUDWindow.swift`).
   - Giải pháp tối ưu hóa **Smart Switch với bộ quét AX Probing** phát hiện overlay và khôi phục trạng thái bộ gõ của ứng dụng nền (tích hợp tại `vkey/Platform/Focused.swift` và `vkey/Platform/EventHook.swift`).
   - Giải pháp bộ lọc **Impossible Consonant Clusters** (bộ lọc phụ âm không hợp lệ) giúp tự động bypass gõ tiếng Anh nhanh xen kẽ (tích hợp tại `vkey/App/InputProcessor.swift`).
-- **vkey** © 2026 longht ([@tuanlongsav](https://github.com/tuanlongsav)) — các tính năng mở rộng nêu trong bảng [Khác biệt so với Caffee](#khác-biệt-so-với-caffee).
+- **vkey** © 2026 longht ([@tuanlongsav](https://github.com/tuanlongsav)) — các tính năng mở rộng và hoàn thiện hệ thống.
 
 Mỗi file source vẫn giữ header gốc của tác giả Caffee khi có. Vui lòng tôn trọng attribution khi tiếp tục fork.
 
