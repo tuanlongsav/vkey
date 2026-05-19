@@ -310,6 +310,12 @@ struct SpellCheckView: View {
     @State private var showingPersonalDictEditor = false
     @State private var showingSuggestionSheet = false
 
+    // 1.6.2+: state cho nút "Cập nhật từ điển ngay".
+    @State private var isCheckingDictUpdate = false
+    @State private var dictUpdateStatus = ""
+    @State private var lexiconVnVersion: Int = 0
+    @State private var lexiconVnEntries: Int = 0
+
     var body: some View {
         VStack(spacing: 0) {
             Form {
@@ -444,6 +450,52 @@ struct SpellCheckView: View {
                         Text("Từ điển cá nhân")
                     }
 
+                    // Section: Từ điển từ GitHub (1.6.2+ — manual update button).
+                    // Auto-update vẫn chạy 24h/lần khi launch; button này cho user
+                    // force refresh ngay khi cần (vd vừa thấy maintainer release
+                    // version mới mà chưa đợi đủ 24h).
+                    Section {
+                        HStack {
+                            Text("Phiên bản từ điển:")
+                                .font(.caption)
+                            Text("v\(lexiconVnVersion)")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                            Text("·")
+                                .foregroundStyle(.tertiary)
+                            Text("\(lexiconVnEntries) từ tiếng Việt")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+
+                        HStack {
+                            Spacer()
+                            Button(action: triggerManualDictUpdate) {
+                                Label(isCheckingDictUpdate ? "Đang kiểm tra…" : "Cập nhật từ điển ngay",
+                                      themedSymbol: "arrow.down.circle")
+                            }
+                            .disabled(isCheckingDictUpdate)
+                            Spacer()
+                        }
+                        .padding(.top, 4)
+
+                        if !dictUpdateStatus.isEmpty {
+                            Text(dictUpdateStatus)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.top, 2)
+                        }
+
+                        Text("vkey tự kiểm tra bản từ điển mới mỗi 24 giờ. Bấm \"Cập nhật ngay\" để kiểm tra thủ công (vd khi maintainer vừa publish bản mới hơn).")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 4)
+                    } header: {
+                        Text("Từ điển từ GitHub")
+                    }
+
                     // Section 6: Auto-feedback đề xuất từ Thống kê (1.6.0+).
                     // Thay đổi semantic: KHÔNG còn auto-write nữa — chỉ compute
                     // đề xuất pending. User review qua sheet, chốt thêm.
@@ -488,6 +540,31 @@ struct SpellCheckView: View {
         }
         .sheet(isPresented: $showingSuggestionSheet) {
             PersonalDictSuggestionSheet()
+        }
+        .onAppear(perform: refreshDictMetadata)
+    }
+
+    // MARK: - Dict update actions (1.6.2+)
+
+    private func refreshDictMetadata() {
+        let versions = LexiconManager.shared.snapshotVersions()
+        lexiconVnVersion = versions.vn
+        lexiconVnEntries = LexiconManager.shared.vietnameseWordsSnapshot().count
+    }
+
+    private func triggerManualDictUpdate() {
+        isCheckingDictUpdate = true
+        dictUpdateStatus = ""
+        LexiconManager.shared.downloadAndUpdateLexicon { updated in
+            DispatchQueue.main.async {
+                isCheckingDictUpdate = false
+                refreshDictMetadata()
+                if updated {
+                    dictUpdateStatus = "✓ Đã cập nhật. Phiên bản mới: v\(lexiconVnVersion) — \(lexiconVnEntries) từ."
+                } else {
+                    dictUpdateStatus = "Đã ở phiên bản mới nhất (v\(lexiconVnVersion))."
+                }
+            }
         }
     }
 }

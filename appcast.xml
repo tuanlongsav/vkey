@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.6.2 — "Capacity Audit"</title>
+      <sparkle:version>16200</sparkle:version>
+      <sparkle:shortVersionString>1.6.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 22:55:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.6.2/vkey-1.6.2.dmg"
+        sparkle:edSignature="ClGF9gqgDSdtIoDqAaVzs8FdvFa2wCJBE016Qo8NKgdXa5ntZDPvmcT7LBDndb98BkAG3IAlhrD2tQLryVgyAA=="
+        length="6370425"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.6.2 — "Capacity Audit":</h2>
+        <p>Bản vá tập trung cải thiện cơ chế cập nhật từ điển — gỡ giới hạn 1 MB của GitHub Contents API và thêm nút "Cập nhật từ điển ngay" thủ công.</p>
+        <ul>
+          <li><strong>Đổi endpoint sang raw.githubusercontent.com</strong>: trước đây dùng <code>api.github.com/repos/.../contents/...</code> bị giới hạn 1 MB raw + rate-limit 60 req/giờ anonymous. Endpoint mới không giới hạn kích thước (đến 100 MB) + CDN cache 300s → nhanh hơn + không bị rate-limit khi user behind shared NAT.</li>
+          <li><strong>Nút "Cập nhật từ điển ngay" (mới)</strong>: tab Chính tả → Section "Từ điển từ GitHub". Bấm để force-check ngay, không phải đợi 24h throttle. Hiển thị phiên bản hiện tại + số từ tiếng Việt + status sau khi check.</li>
+          <li><strong>Capacity audit</strong>: app đã được verify chịu được đến 100,000 entries (parse 3.3 ms, memory ~6 MB) — headroom 12× cho mở rộng tương lai. Safe ceiling thực tế ~50,000 entries (~1 MB) để đảm bảo download nhanh trên 3G.</li>
+          <li><strong>Lexicon v6 nhỏ hơn nhưng sạch hơn</strong>: 9,412 → 8,234 syllables (đã loại 1,178 entries noise: 75 chữ cái single-char + 1,103 ASCII English/Latin lẫn vào từ undertheseanlp). Đã được tải tự động cho user 1.6.1 trong 24h vừa qua.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.6.1 — "Polish &amp; Persistence"</title>
       <sparkle:version>16100</sparkle:version>
       <sparkle:shortVersionString>1.6.1</sparkle:shortVersionString>

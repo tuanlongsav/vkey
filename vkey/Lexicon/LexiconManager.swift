@@ -171,10 +171,17 @@ final class LexiconManager {
   }
 
   /// Endpoint shared by `downloadAndUpdateLexicon` and
-  /// `checkAndPromptForDictionaryUpdate`. Defined once with a `guard let` so
-  /// neither call site needs a force-unwrap.
+  /// `checkAndPromptForDictionaryUpdate`.
+  ///
+  /// 1.6.2+: chuyển từ GitHub Contents API (`api.github.com/repos/.../contents/...`)
+  /// sang `raw.githubusercontent.com` để:
+  /// - **Bỏ giới hạn 1 MB** của Contents API (raw returns base64 cho file lớn).
+  ///   Quan trọng khi dictionary mở rộng lên hàng chục nghìn entries.
+  /// - **Không bị rate limit 60/h** của API anonymous (raw không count).
+  /// - **CDN cache 300s** thay vì 60s → nhanh hơn cho user.
+  /// - **Đơn giản hơn**: không cần Accept header đặc biệt.
   private static let lexiconUpdateEndpoint =
-    "https://api.github.com/repos/tuanlongsav/vkey/contents/lexicon-update.json"
+    "https://raw.githubusercontent.com/tuanlongsav/vkey/main/lexicon-update.json"
 
   /// In-flight task. Cancelled in `applicationWillTerminate` (via
   /// `cancelInFlightDownloads`) so the app can exit cleanly without the
@@ -193,7 +200,8 @@ final class LexiconManager {
     }
     var request = URLRequest(url: url)
     request.cachePolicy = .reloadIgnoringLocalCacheData
-    request.setValue("application/vnd.github.v3.raw", forHTTPHeaderField: "Accept")
+    // 1.6.2+: raw.githubusercontent.com trả text/plain trực tiếp, không cần
+    // Accept header tùy chỉnh.
 
     let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
       guard let self = self,
@@ -246,7 +254,8 @@ final class LexiconManager {
     }
     var request = URLRequest(url: url)
     request.cachePolicy = .reloadIgnoringLocalCacheData
-    request.setValue("application/vnd.github.v3.raw", forHTTPHeaderField: "Accept")
+    // 1.6.2+: raw.githubusercontent.com trả text/plain trực tiếp, không cần
+    // Accept header tùy chỉnh.
 
     let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
       guard let self = self,

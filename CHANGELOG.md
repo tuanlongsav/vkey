@@ -2,6 +2,54 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.6.2] - 2026-05-19 — "Capacity Audit"
+
+Bản vá hạ tầng cập nhật từ điển + audit capacity, kết quả từ rà soát chiều sâu sau khi tích hợp dataset undertheseanlp.
+
+### Đổi endpoint từ Contents API sang raw.githubusercontent.com
+
+- **Trước (v1.6.0–v1.6.1)**: `https://api.github.com/repos/.../contents/lexicon-update.json` với `Accept: application/vnd.github.v3.raw`.
+  - Giới hạn 1 MB raw (file lớn hơn → base64 wrapped, decode fail).
+  - Rate-limit 60 req/h anonymous → nhiều user behind shared NAT có thể đụng giới hạn.
+  - Cache 60s, latency cao hơn (API server).
+- **Sau (v1.6.2)**: `https://raw.githubusercontent.com/tuanlongsav/vkey/main/lexicon-update.json`.
+  - Không giới hạn kích thước (đến 100 MB).
+  - Không rate-limit anonymous.
+  - CDN cache 300s, nhanh hơn.
+  - Đơn giản: không cần Accept header tùy chỉnh.
+- Ý nghĩa: dictionary có thể mở rộng lên ~50,000 entries (~1 MB) hoặc hơn mà không lo lỗi fetch.
+
+### Nút "Cập nhật từ điển ngay" thủ công (mới)
+
+- Tab Chính tả → Section "Từ điển từ GitHub" (mới).
+- Hiển thị: phiên bản từ điển hiện tại + số từ tiếng Việt đang dùng.
+- Button "Cập nhật ngay" → force-check, bypass throttle 24h.
+- Status: "✓ Đã cập nhật. Phiên bản mới: vN — X từ" hoặc "Đã ở phiên bản mới nhất".
+- Lý do: auto-update chạy 24h/lần khi launch không đủ — user vừa thấy maintainer publish bản mới có thể không muốn đợi đến ngày mai.
+
+### Capacity audit results
+
+Test trên Apple Silicon Mac (Mac mini M2, macOS 14):
+
+| Entries | File size | Parse | Set construct | Lookup |
+|---------|-----------|-------|---------------|--------|
+| 8,234 (current v6) | 130 KB | 0.30 ms | 0.16 ms | 0.05 µs |
+| 20,000 | 314 KB | 0.58 ms | 0.44 ms | 0.03 µs |
+| 50,000 | 786 KB | 1.49 ms | 0.80 ms | 0.06 µs |
+| 100,000 | 1,569 KB | 3.34 ms | 2.18 ms | 0.09 µs |
+| 200,000 | 3,146 KB | 6.69 ms | 5.11 ms | 0.10 µs |
+
+**Conclusion**:
+- Computational headroom: rất lớn — app xử lý 200k entries không lag.
+- Real bottleneck: **download time on slow networks**. Recommend safe ceiling **~50,000 entries (~1 MB)** để đảm bảo < 10s trên 3G typical.
+- Memory footprint trivial (< 10 MB cho 100k entries).
+
+### Lexicon v6 (đã ship qua auto-update v1.6.1 trong 24h)
+
+- Audit pass loại 1,178 noise entries (75 single-char + 1,103 ASCII no-VN-marker).
+- 9,412 → 8,234 syllables (cleaner, +1,050 từ thật so với baseline 7,184).
+- Script tái sử dụng: [Tools/audit_lexicon.py](Tools/audit_lexicon.py).
+
 ## [1.6.1] - 2026-05-19 — "Polish & Persistence"
 
 Bản vá tập trung sửa các regression của 1.6.0, bổ sung quality-of-life cho cửa sổ Cài đặt và mở rộng dictionary lên ~9,412 syllables.
