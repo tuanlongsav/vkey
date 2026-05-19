@@ -47,14 +47,20 @@ Bản vá tập trung sửa các regression của 1.6.0, bổ sung quality-of-li
 - `MacroSuggestionSheet` load gộp single-word + phrase candidates (phrase ưu tiên hiển thị trước — tiết kiệm keystroke hơn). Auto-suggest viết tắt: "công ty → ct", "kính gửi anh → kga".
 - **Track từ 1.6.1+** (không backfill từ data cũ).
 
-### Mở rộng dictionary +2,228 từ (Issue 5)
+### Mở rộng dictionary +1,050 từ (Issue 5)
 
 - Tích hợp dataset [undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary) của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN.
-- `lexicon-update.json` schema v5: 7,184 → **9,412 syllables** (+2,228 từ chuyên ngành, địa danh, tên thực vật/động vật).
-- Bump `version: 4 → 5` → app fetch tự động qua cơ chế cập nhật im lặng (`LexiconManager.checkAndPromptForDictionaryUpdate`, throttle 24h).
-- Build script mới: [Tools/build_underthesea_package.py](Tools/build_underthesea_package.py).
+- `lexicon-update.json` schema v5: 7,184 → 9,412 syllables (merge thô).
+- **Audit pass (v6)**: loại noise có thể gây sai spell-check:
+  - 75 single-char entries (a, b, c, ..., z, à, á, ...) — chữ cái không phải syllable, để lại sẽ break typo correction.
+  - 1,103 ASCII-only entries không có dấu / không có cluster phụ âm đầu VN (vd "abscess", "microcomputer", "algorithm") — likely English/Latin noise từ transliteration.
+- Kết quả sau audit: **8,234 syllables** (+1,050 từ thực sự VN so với baseline 7,184). Baseline 7,184 từ curated v1.6.0 giữ nguyên 7,136 (48 single-char vowels cũng bị loại).
+- Bump `version: 4 → 6` → app fetch tự động qua `LexiconManager.checkAndPromptForDictionaryUpdate` (throttle 24h). Không cần release app mới.
+- Build script: [Tools/build_underthesea_package.py](Tools/build_underthesea_package.py).
+- Audit script: [Tools/audit_lexicon.py](Tools/audit_lexicon.py).
 - Research report: [Tools/research/undertheseanlp-dictionary.md](Tools/research/undertheseanlp-dictionary.md).
 - Attribution: cập nhật `_meta.sources` trong package + [LICENSE-DATA.md](LICENSE-DATA.md).
+- **Performance verified**: package 95.6 KB, parse 0.31ms, set construction 0.17ms → app load không ảnh hưởng.
 
 ### Đã defer ra v1.7.0+
 
