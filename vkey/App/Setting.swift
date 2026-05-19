@@ -53,9 +53,13 @@ enum RestorePolicy: String, CaseIterable, Defaults.Serializable {
   case englishFirst
 }
 
-enum DictionaryUpdateChannel: String, CaseIterable, Defaults.Serializable {
-  case embeddedOnly
-  case hybrid
+/// Giao diện ứng dụng. `.default` dùng SF Symbol gốc; `.threeD` áp gradient +
+/// shadow + multicolor lên SF Symbol (hoặc dùng asset PDF trong
+/// `Assets.xcassets/Icons3D/` nếu có) để mang lại cảm giác bóng bẩy hơn.
+/// Không ảnh hưởng menu bar state flag (vn-flag/us-flag) và AppIcon.
+enum AppTheme: String, CaseIterable, Defaults.Serializable {
+  case `default`
+  case threeD
 }
 
 extension Defaults.Keys {
@@ -76,6 +80,12 @@ extension Defaults.Keys {
   ])
   /// Bảng macro thay thế chữ viết tắt → cụm dài.
   static let macros = Key<[Macro]>("macros", default: [])
+  /// Bật / Tắt toàn bộ macro engine (không xoá list). Khi tắt, `macros` vẫn
+  /// được giữ nguyên — chỉ tạm dừng expansion khi gõ Space/punctuation.
+  static let macroEnabled = Key<Bool>("macro-enabled", default: true)
+  /// Cờ một lần: app đã seed bộ macro mặc định cho user mới chưa? Khi true,
+  /// app không bao giờ re-seed kể cả khi user xoá hết macro.
+  static let macrosSeeded = Key<Bool>("macros-seeded", default: false)
   /// Tổ hợp modifier-only (vd Shift+Control) dùng để chuyển đổi vi/en.
   /// 0 = không dùng. Bit layout giống NSEvent.ModifierFlags (.shift=0x20000, .control=0x40000…).
   /// Mặc định: ⌃⇧ (Control+Shift).
@@ -104,15 +114,6 @@ extension Defaults.Keys {
 
   /// Chính sách xử lý từ mơ hồ giữa tiếng Việt và tiếng Anh.
   static let restorePolicy = Key<RestorePolicy>("restore-policy", default: .vietnameseFirst)
-
-  /// Cấu hình nguồn dữ liệu từ điển.
-  static let dictionaryUpdateChannel = Key<DictionaryUpdateChannel>(
-    "dictionary-update-channel",
-    default: .hybrid
-  )
-
-  /// Bật tính năng tự động cập nhật từ điển từ GitHub.
-  static let dictionaryGitHubUpdateEnabled = Key<Bool>("dictionary-github-update-enabled", default: true)
 
   /// Bật tính năng gợi ý sửa chính tả.
   static let suggestionEnabled = Key<Bool>("suggestion-enabled", default: true)
@@ -167,6 +168,10 @@ extension Defaults.Keys {
 
   /// Tự động hỏi sao lưu dữ liệu khi phát hiện app cập nhật.
   static let autoBackupOnUpgrade = Key<Bool>("auto-backup-on-upgrade", default: true)
+
+  /// Giao diện ứng dụng — chọn từ menu bar (submenu "Giao diện ứng dụng").
+  /// `.default`: SF Symbol gốc. `.threeD`: gradient + shadow + multicolor.
+  static let appTheme = Key<AppTheme>("app-theme", default: .default)
 
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value

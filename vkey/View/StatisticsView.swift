@@ -28,7 +28,7 @@ struct StatisticsView: View {
         // MARK: Stats toggle + privacy note
         Section {
           Toggle(isOn: $statisticsEnabled) {
-            Label("Ghi nhận thống kê sử dụng", systemImage: "chart.bar")
+            Label("Ghi nhận thống kê sử dụng", themedSymbol: "chart.bar")
           }
           .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
@@ -100,7 +100,7 @@ struct StatisticsView: View {
             HStack {
               Spacer()
               Button(action: runFeedback) {
-                Label("Chạy đồng bộ Personal Dictionary ngay", systemImage: "arrow.triangle.merge")
+                Label("Chạy đồng bộ Personal Dictionary ngay", themedSymbol: "arrow.triangle.merge")
               }
               .help("Đẩy các từ bạn gõ nhiều lần tuần này vào từ điển cá nhân (Allow / Keep) để lần sau bộ gõ xử lý nhanh hơn.")
               Spacer()
@@ -116,7 +116,7 @@ struct StatisticsView: View {
             HStack {
               Spacer()
               Button(role: .destructive, action: clearStats) {
-                Label("Xóa toàn bộ dữ liệu thống kê", systemImage: "trash")
+                Label("Xóa toàn bộ dữ liệu thống kê", themedSymbol: "trash")
               }
               .help("Xóa cả tuần này và các tuần đã đóng (~/Library/Application Support/vkey/stats/).")
               Spacer()
@@ -129,17 +129,17 @@ struct StatisticsView: View {
         // MARK: Backup / Restore — always visible
         Section {
           Toggle(isOn: $autoBackupOnUpgrade) {
-            Label("Tự động hỏi sao lưu khi cập nhật app", systemImage: "shippingbox.and.arrow.backward")
+            Label("Tự động hỏi sao lưu khi cập nhật app", themedSymbol: "shippingbox.and.arrow.backward")
           }
           .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
           HStack {
             Spacer()
             Button(action: exportNow) {
-              Label("Xuất dữ liệu cá nhân", systemImage: "square.and.arrow.up")
+              Label("Xuất dữ liệu cá nhân", themedSymbol: "square.and.arrow.up")
             }
             Button(action: importNow) {
-              Label("Nhập từ tệp sao lưu", systemImage: "square.and.arrow.down")
+              Label("Nhập từ tệp sao lưu", themedSymbol: "square.and.arrow.down")
             }
             Spacer()
           }
@@ -255,7 +255,7 @@ struct StatisticsView: View {
         ? "Không có thay đổi nào — dữ liệu hiện tại đã trùng khớp."
         : "Đã áp dụng \(changes.count) thay đổi."
       // Make engine pick up the new state immediately
-      LexiconManager.shared.reload(channel: Defaults[.dictionaryUpdateChannel])
+      LexiconManager.shared.reload()
     } catch {
       backupStatus = "Lỗi nhập: \(error.localizedDescription)"
     }

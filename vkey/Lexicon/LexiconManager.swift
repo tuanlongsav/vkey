@@ -55,14 +55,14 @@ final class LexiconManager {
       self.updatePackageURL = (dir ?? URL(fileURLWithPath: "/tmp")).appendingPathComponent("lexicon-update.json")
     }
 
-    reload(channel: Defaults[.dictionaryUpdateChannel])
+    reload()
   }
 
-  func reload(channel: DictionaryUpdateChannel) {
-    reload(channel: channel, completion: nil)
+  func reload() {
+    reload(completion: nil)
   }
 
-  func reload(channel: DictionaryUpdateChannel, completion: (() -> Void)?) {
+  func reload(completion: (() -> Void)?) {
     let performReload = { [weak self] in
       guard let self = self else { return }
 
@@ -102,8 +102,7 @@ final class LexiconManager {
       // 1.5.0: also load the bilingual maps if the package carries them.
       var packageForBilingual: LexiconUpdatePackage?
 
-      if channel == .hybrid,
-        let package = self.loadUpdatePackage(),
+      if let package = self.loadUpdatePackage(),
         package.version > EmbeddedLexiconData.version
       {
         selectedVN = InMemoryLexicon(
@@ -158,7 +157,7 @@ final class LexiconManager {
       attributes: nil
     )
     try data.write(to: updatePackageURL, options: .atomic)
-    reload(channel: Defaults[.dictionaryUpdateChannel])
+    reload()
   }
 
   private func loadUpdatePackage() -> LexiconUpdatePackage? {
@@ -188,15 +187,6 @@ final class LexiconManager {
   }
 
   func downloadAndUpdateLexicon(completion: ((Bool) -> Void)? = nil) {
-    guard Defaults[.dictionaryUpdateChannel] == .hybrid else {
-      completion?(false)
-      return
-    }
-    guard Defaults[.dictionaryGitHubUpdateEnabled] else {
-      completion?(false)
-      return
-    }
-
     guard let url = URL(string: Self.lexiconUpdateEndpoint) else {
       completion?(false)
       return
@@ -233,10 +223,13 @@ final class LexiconManager {
     task.resume()
   }
 
+  /// Auto-check & auto-apply dictionary update from GitHub.
+  /// - Auto-throttled to once per 24h (unless `force = true`).
+  /// - Khi phát hiện version mới: tự tải + apply im lặng, không hỏi user.
+  ///   Reasoning: hành vi "có bản mới, cài không?" gây phiền cho user phổ
+  ///   thông; cập nhật từ điển là idempotent + không destructive nên auto.
+  /// - Lỗi mạng / decode: silent.
   func checkAndPromptForDictionaryUpdate(force: Bool = false) {
-    guard Defaults[.dictionaryUpdateChannel] == .hybrid else { return }
-    guard Defaults[.dictionaryGitHubUpdateEnabled] else { return }
-
     if !force {
       if let lastCheck = Defaults[.lastDictionaryCheckDate] {
         let oneDayAgo = Date().addingTimeInterval(-86400) // 24 hours
@@ -263,45 +256,18 @@ final class LexiconManager {
             let data = data else {
         return
       }
-      
+
       do {
         let package = try JSONDecoder().decode(LexiconUpdatePackage.self, from: data)
         let currentVersion = self.snapshotVersions().vn
-        
+
         if package.version > currentVersion {
-          DispatchQueue.main.async {
-            let alert = NSAlert()
-            alert.messageText = "Cập nhật từ điển tiếng Việt"
-            alert.informativeText = "Có phiên bản từ điển mới (phiên bản \(package.version)) có sẵn trên GitHub. Bạn có muốn cập nhật ngay không?"
-            alert.alertStyle = .informational
-            alert.addButton(withTitle: "Cập nhật")
-            alert.addButton(withTitle: "Để sau")
-            
-            NSApp.activate(ignoringOtherApps: true)
-            let response = alert.runModal()
-            if response == .alertFirstButtonReturn {
-              do {
-                try self.setUpdatePackageData(data)
-                
-                let successAlert = NSAlert()
-                successAlert.messageText = "Thành công"
-                successAlert.informativeText = "Đã cập nhật từ điển tiếng Việt lên phiên bản \(package.version) thành công!"
-                successAlert.alertStyle = .informational
-                successAlert.addButton(withTitle: "OK")
-                successAlert.runModal()
-              } catch {
-                let errorAlert = NSAlert()
-                errorAlert.messageText = "Lỗi"
-                errorAlert.informativeText = "Không thể lưu tệp từ điển mới. Vui lòng thử lại sau."
-                errorAlert.alertStyle = .warning
-                errorAlert.addButton(withTitle: "OK")
-                errorAlert.runModal()
-              }
-            }
-          }
+          // Apply im lặng. Nếu ghi file lỗi (rất hiếm — full disk / perm),
+          // bỏ qua; lần check kế tiếp 24h sau sẽ thử lại.
+          try? self.setUpdatePackageData(data)
         }
       } catch {
-        // Silent error
+        // Silent error — sẽ thử lại lần kế tiếp.
       }
     }
     inFlightDictionaryTask = task

@@ -27,6 +27,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     // Hide dock icon since we use MenuBarExtra
     NSApp.setActivationPolicy(.accessory)
 
+    // 1.5.3: seed 19 macro văn phòng VN cho user mới. Idempotent — chỉ
+    // chạy 1 lần (gated bởi `macrosSeeded`). User đã có macro tự thêm sẽ
+    // không bị overwrite. User đã từng xoá toàn bộ macro mặc định sẽ
+    // không bị re-seed.
+    if !Defaults[.macrosSeeded] && Defaults[.macros].isEmpty {
+      Defaults[.macros] = DefaultMacros.officeVN
+      Defaults[.macrosSeeded] = true
+    }
+
     // When the Settings (or onboarding) window closes, slide the app back to
     // .accessory so it disappears from Cmd-Tab and the Dock. We only need to
     // be .regular while a real window is on screen — otherwise the menu bar

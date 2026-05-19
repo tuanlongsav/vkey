@@ -6,6 +6,32 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.5.3 — "Office Friendly"</title>
+      <sparkle:version>15030</sparkle:version>
+      <sparkle:shortVersionString>1.5.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 15:45:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.5.3/vkey-1.5.3.dmg"
+        sparkle:edSignature="D5EfdfdH5p8oREavq4lwVFIc6jEAUOBCvv3ovd3e6oxglKcTmXx7AVeb6DYmJrA78p1GtynaQ8DE5HtxmZ0rAQ=="
+        length="5181408"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.5.3 — "Office Friendly":</h2>
+        <p>Bản nâng cấp lớn hướng tới người dùng phổ thông và dân văn phòng VN.</p>
+        <ul>
+          <li><strong>Tinh gọn tab Chính tả</strong>: bỏ picker "Nguồn từ điển" + toggle "Tự động tải từ GitHub" — app luôn dùng nhúng + cập nhật tự động. Đưa "Gợi ý &amp; Sửa lỗi chính tả" lên ngay sau "Kiểm tra chính tả" cho liền mạch.</li>
+          <li><strong>Cập nhật từ điển im lặng</strong>: thay vì hỏi "Có bản mới, cài không?", app tự tải + apply khi launch (throttle 24h). Bấm "Cập nhật từ điển ngay" để force.</li>
+          <li><strong>Toggle Macro on/off</strong> ngay trên menu bar (cạnh Smart Switch / Sửa lỗi chính tả) và đầu tab Macro — tạm dừng macro mà vẫn giữ danh sách.</li>
+          <li><strong>19 macro mặc định cho dân văn phòng VN</strong>: vn, tv, hn, sg, tphcm, kg (Kính gửi), bcao, cvan, qdinh, tbao, sdt, dchi, cty, gd, nv… Seed lần đầu duy nhất nếu user chưa có macro.</li>
+          <li><strong>Menu bar gọn gàng hơn</strong>: 3 nút "Ủng hộ / Thông tin / Cập nhật" gom thành 1 row icon-only.</li>
+          <li><strong>Giao diện ứng dụng (mới)</strong>: submenu mới trong menu bar, đổi giữa "Mặc định" và "3D" (gradient + shadow trên SF Symbol). Designer có thể drop bitmap PDF vào <code>Assets.xcassets/Icons3D/</code> để override.</li>
+          <li><strong>DICTIONARY_UPDATE.md</strong>: tài liệu mới cho maintainer publish bản từ điển trên GitHub.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.5.2 — "Settings Restored"</title>
       <sparkle:version>15020</sparkle:version>
       <sparkle:shortVersionString>1.5.2</sparkle:shortVersionString>

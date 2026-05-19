@@ -46,9 +46,12 @@
 		3FDB83CB2BB4682F00AD6322 /* Keys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDB83CA2BB4682F00AD6322 /* Keys.swift */; };
 		3FDB83CD2BB468BA00AD6322 /* EventSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */; };
 		4045075CC083173E587560A9 /* SpellDecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01E0C61F7740281BEB6DB9C7 /* SpellDecisionEngine.swift */; };
+		40D7FB871260EEC2B9077795 /* MenuBarFooterRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */; };
 		5A21D21AF4397FCB9C827912 /* DonateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */; };
+		5DF6BF0E4EBC27745F7CA7AA /* DefaultMacros.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E12D557ABDC3D7864363DE /* DefaultMacros.swift */; };
 		6222920C197312B2360B6B43 /* UsageStatistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */; };
 		7BEAE86A3D1B31E3C36D6645 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C15A8AB81A235FF54939DC /* Updater.swift */; };
+		7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */; };
 		9972B2786EB0E3A600C0FF4A /* EnVnReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0A79FB401501E597B689C9 /* EnVnReference.swift */; };
 		A577F31CCB6071AB62F71BD8 /* EmbeddedLexiconData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF27B5F4C4E372971F4466A7 /* EmbeddedLexiconData.swift */; };
 		CDD99ACF8126FA2BF147D861 /* SuggestionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FF73C92A71721E44ACDE39 /* SuggestionService.swift */; };
@@ -119,10 +122,13 @@
 		3FDB83CA2BB4682F00AD6322 /* Keys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keys.swift; sourceTree = "<group>"; };
 		3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSimulator.swift; sourceTree = "<group>"; };
 		3FDB83CE2BB468BA00AD6323 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThemedSymbol.swift; sourceTree = "<group>"; };
 		716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageStatistics.swift; sourceTree = "<group>"; };
 		8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DonateView.swift; sourceTree = "<group>"; };
 		92721E2546773FF5AAC7672C /* StatisticsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
+		A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuBarFooterRow.swift; sourceTree = "<group>"; };
 		B0FF852BE303C340328CB8C0 /* LexiconManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LexiconManager.swift; sourceTree = "<group>"; };
+		C5E12D557ABDC3D7864363DE /* DefaultMacros.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DefaultMacros.swift; sourceTree = "<group>"; };
 		E0316EE5AB4EBE700B533B62 /* UserDataMigration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDataMigration.swift; sourceTree = "<group>"; };
 		E7FF73C92A71721E44ACDE39 /* SuggestionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SuggestionService.swift; sourceTree = "<group>"; };
 		EA0937E79B85F7643A7EC6A8 /* Lexicon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Lexicon.swift; sourceTree = "<group>"; };
@@ -178,6 +184,7 @@
 				3F2E85CB2B9EDF2600A95282 /* Setting.swift */,
 				22C15A8AB81A235FF54939DC /* Updater.swift */,
 				E0316EE5AB4EBE700B533B62 /* UserDataMigration.swift */,
+				C5E12D557ABDC3D7864363DE /* DefaultMacros.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -298,6 +305,8 @@
 				3F94E7AE2BA736E100360F8B /* UpgradeAppView.swift */,
 				8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */,
 				92721E2546773FF5AAC7672C /* StatisticsView.swift */,
+				69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */,
+				A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -530,6 +539,9 @@
 				6222920C197312B2360B6B43 /* UsageStatistics.swift in Sources */,
 				F5E5BFC82700BF11BAF4FBAF /* UserDataMigration.swift in Sources */,
 				CE7ABBC5AC69A832A845CE31 /* StatisticsView.swift in Sources */,
+				5DF6BF0E4EBC27745F7CA7AA /* DefaultMacros.swift in Sources */,
+				7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */,
+				40D7FB871260EEC2B9077795 /* MenuBarFooterRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -695,7 +707,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 15020;
+				CURRENT_PROJECT_VERSION = 15030;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -710,7 +722,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.5.2;
+				MARKETING_VERSION = 1.5.3;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -727,7 +739,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 15020;
+				CURRENT_PROJECT_VERSION = 15030;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
@@ -743,7 +755,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.5.2;
+				MARKETING_VERSION = 1.5.3;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -179,7 +179,7 @@ struct WelcomeStepView: View {
             }) {
                 HStack {
                     Text("Bắt đầu cài đặt")
-                    Image(systemName: "arrow.right")
+                    ThemedSymbol(name: "arrow.right")
                 }
                 .frame(width: 240)
             }
@@ -197,7 +197,7 @@ struct FeatureRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: icon)
+            ThemedSymbol(name: icon)
                 .frame(width: 32)
                 .foregroundColor(.accentColor)
             Text(text)
@@ -256,7 +256,7 @@ struct PermissionStepView: View {
             // Action Button
             if viewModel.permissionGranted {
                 HStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill")
+                    ThemedSymbol(name: "checkmark.circle.fill")
                         .foregroundColor(.green)
                     Text("Đã cấp quyền thành công!")
                         .foregroundColor(.green)
@@ -269,7 +269,7 @@ struct PermissionStepView: View {
                         hasRequestedPermission = true
                     }) {
                         HStack {
-                            Image(systemName: "gear")
+                            ThemedSymbol(name: "gear")
                             Text("Mở Cài đặt Accessibility")
                         }
                         .frame(width: 280)
@@ -321,7 +321,7 @@ struct InstructionStep: View {
                     .frame(width: 32, height: 32)
 
                 if isCompleted {
-                    Image(systemName: "checkmark")
+                    ThemedSymbol(name: "checkmark")
                         .foregroundColor(.white)
                         .font(.system(size: 14, weight: .bold))
                 } else {
@@ -360,7 +360,7 @@ struct ConfigurationStepView: View {
 
             // Success Badge
             HStack(spacing: 14) {
-                Image(systemName: "checkmark.circle.fill")
+                ThemedSymbol(name: "checkmark.circle.fill")
                     .font(.system(size: 44))
                     .foregroundColor(.green)
 
@@ -406,7 +406,7 @@ struct ConfigurationStepView: View {
 
                 Toggle(isOn: $viewModel.launchAtLogin) {
                     HStack {
-                        Image(systemName: "power")
+                        ThemedSymbol(name: "power")
                             .frame(width: 24)
                         Text("Khởi động cùng máy tính")
                             .font(.system(size: 26))
@@ -418,7 +418,7 @@ struct ConfigurationStepView: View {
 
             // Shortcut Info
             HStack(spacing: 14) {
-                Image(systemName: "command")
+                ThemedSymbol(name: "command")
                     .font(.system(size: 16))
                     .foregroundColor(.accentColor)
 
@@ -446,7 +446,7 @@ struct ConfigurationStepView: View {
             }) {
                 HStack {
                     Text("Tiếp theo")
-                    Image(systemName: "arrow.right")
+                    ThemedSymbol(name: "arrow.right")
                 }
                 .frame(width: 240)
             }
@@ -475,7 +475,7 @@ struct TypingMethodCard: View {
                         .font(.system(size: 18, weight: .semibold))
                     Spacer()
                     if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
+                        ThemedSymbol(name: "checkmark.circle.fill")
                             .foregroundColor(.accentColor)
                     }
                 }
@@ -526,7 +526,7 @@ struct RemoveIMEStepView: View {
 
             // Warning message
             HStack(spacing: 12) {
-                Image(systemName: "exclamationmark.triangle.fill")
+                ThemedSymbol(name: "exclamationmark.triangle.fill")
                     .font(.system(size: 34))
                     .foregroundColor(.orange)
 
@@ -591,19 +591,19 @@ struct RemoveIMEStepView: View {
             // Instructions
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
-                    Image(systemName: "1.circle.fill")
+                    ThemedSymbol(name: "1.circle.fill")
                         .foregroundColor(.accentColor)
                     Text("Mở System Settings → Keyboard → Input Sources")
                         .font(.system(size: 14))
                 }
                 HStack(spacing: 8) {
-                    Image(systemName: "2.circle.fill")
+                    ThemedSymbol(name: "2.circle.fill")
                         .foregroundColor(.accentColor)
                     Text("Chọn bộ gõ tiếng Việt (Telex, SimpleTelex...)")
                         .font(.system(size: 14))
                 }
                 HStack(spacing: 8) {
-                    Image(systemName: "3.circle.fill")
+                    ThemedSymbol(name: "3.circle.fill")
                         .foregroundColor(.accentColor)
                     Text("Bấm dấu trừ (-) để gỡ bỏ")
                         .font(.system(size: 14))
@@ -622,7 +622,7 @@ struct RemoveIMEStepView: View {
                 }
             }) {
                 HStack {
-                    Image(systemName: "gear")
+                    ThemedSymbol(name: "gear")
                     Text("Mở Cài đặt Bàn phím")
                 }
                 .frame(width: 260)
@@ -637,7 +637,7 @@ struct RemoveIMEStepView: View {
             }) {
                 HStack {
                     Text("Hoàn tất cài đặt")
-                    Image(systemName: "checkmark")
+                    ThemedSymbol(name: "checkmark")
                 }
                 .frame(width: 260)
             }

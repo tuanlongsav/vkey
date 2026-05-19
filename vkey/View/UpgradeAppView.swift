@@ -66,7 +66,7 @@ struct UpgradeAppView: View {
       if permissionGranted {
         VStack(spacing: 12) {
           HStack(spacing: 8) {
-            Image(systemName: "checkmark.circle.fill")
+            ThemedSymbol(name: "checkmark.circle.fill")
               .foregroundColor(.green)
             Text("Đã cấp quyền thành công!")
               .foregroundColor(.green)
@@ -76,7 +76,7 @@ struct UpgradeAppView: View {
           Button(action: relaunchApp) {
             HStack {
               Text("Khởi động lại")
-              Image(systemName: "arrow.clockwise")
+              ThemedSymbol(name: "arrow.clockwise")
             }
             .frame(width: 200)
           }
@@ -90,7 +90,7 @@ struct UpgradeAppView: View {
             hasRequestedPermission = true
           }) {
             HStack {
-              Image(systemName: "gear")
+              ThemedSymbol(name: "gear")
               Text("Mở Cài đặt Accessibility")
             }
             .frame(width: 240)
@@ -154,7 +154,7 @@ struct UpgradeInstructionStep: View {
           .frame(width: 26, height: 26)
 
         if isCompleted {
-          Image(systemName: "checkmark")
+          ThemedSymbol(name: "checkmark")
             .foregroundColor(.white)
             .font(.system(size: 11, weight: .bold))
         } else {

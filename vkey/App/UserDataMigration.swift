@@ -65,8 +65,6 @@ struct UserDataExport: Codable {
   let spellCheckInSentenceEnabled: Bool?
   let englishAutoRestoreEnabled: Bool?
   let restorePolicy: String?           // raw value
-  let dictionaryUpdateChannel: String? // raw value
-  let dictionaryGitHubUpdateEnabled: Bool?
   let suggestionEnabled: Bool?
   let autoApplyHighConfidenceSuggestion: Bool?
   let useEnVnReference: Bool?
@@ -79,6 +77,11 @@ struct UserDataExport: Codable {
 
   // Macros
   let macros: [MacroSeed]?
+  let macroEnabled: Bool?       // 1.5.3+
+  let macrosSeeded: Bool?       // 1.5.3+
+
+  // Theme (1.5.3+)
+  let appTheme: String?         // AppTheme raw value
 
   // Optional statistics snapshot
   let statistics: [UsageSummary]?
@@ -115,8 +118,6 @@ enum UserDataMigration {
       spellCheckInSentenceEnabled: Defaults[.spellCheckInSentenceEnabled],
       englishAutoRestoreEnabled: Defaults[.englishAutoRestoreEnabled],
       restorePolicy: Defaults[.restorePolicy].rawValue,
-      dictionaryUpdateChannel: Defaults[.dictionaryUpdateChannel].rawValue,
-      dictionaryGitHubUpdateEnabled: Defaults[.dictionaryGitHubUpdateEnabled],
       suggestionEnabled: Defaults[.suggestionEnabled],
       autoApplyHighConfidenceSuggestion: Defaults[.autoApplyHighConfidenceSuggestion],
       useEnVnReference: Defaults[.useEnVnReference],
@@ -127,6 +128,10 @@ enum UserDataMigration {
       userDenyWords: Defaults[.userDenyWords],
 
       macros: Defaults[.macros].map { MacroSeed(from: $0.from, to: $0.to) },
+      macroEnabled: Defaults[.macroEnabled],
+      macrosSeeded: Defaults[.macrosSeeded],
+
+      appTheme: Defaults[.appTheme].rawValue,
 
       statistics: includeStatistics ? UsageStatistics.shared.allSummariesForExport() : nil
     )
@@ -234,14 +239,6 @@ enum UserDataMigration {
       Defaults[.restorePolicy] = parsed
       changes.append("Chính sách khôi phục ← \(rp)")
     }
-    if let ch = export.dictionaryUpdateChannel,
-       let parsed = DictionaryUpdateChannel(rawValue: ch),
-       Defaults[.dictionaryUpdateChannel] != parsed {
-      Defaults[.dictionaryUpdateChannel] = parsed
-      changes.append("Nguồn từ điển ← \(ch)")
-    }
-    applyScalar(.dictionaryGitHubUpdateEnabled, export.dictionaryGitHubUpdateEnabled,
-                label: "Tự động cập nhật từ GitHub")
     applyScalar(.suggestionEnabled, export.suggestionEnabled, label: "Gợi ý chính tả")
     applyScalar(.autoApplyHighConfidenceSuggestion,
                 export.autoApplyHighConfidenceSuggestion,
@@ -275,6 +272,16 @@ enum UserDataMigration {
         changes.append("Macros: +\(added)")
       }
     }
+    applyScalar(.macroEnabled, export.macroEnabled, label: "Bật macro")
+    applyScalar(.macrosSeeded, export.macrosSeeded, label: "Macro đã seed")
+
+    // Theme (1.5.3+)
+    if let raw = export.appTheme,
+       let parsed = AppTheme(rawValue: raw),
+       Defaults[.appTheme] != parsed {
+      Defaults[.appTheme] = parsed
+      changes.append("Giao diện ← \(raw)")
+    }
 
     os_log("UserDataMigration: applied import with %d changes",
            log: log, type: .info, changes.count)
@@ -292,6 +299,11 @@ enum UserDataMigration {
   /// accepted the upgrade).
   @discardableResult
   static func handleVersionChange() -> Bool {
+    // Dọn rác Defaults keys đã xoá ở 1.5.3 trở đi. Idempotent — gọi nhiều
+    // lần không sao. Chạy mọi launch để bao quát cả user mới upgrade.
+    UserDefaults.standard.removeObject(forKey: "dictionary-update-channel")
+    UserDefaults.standard.removeObject(forKey: "dictionary-github-update-enabled")
+
     let persisted = Defaults[.currentVersion]
     let running = Bundle.main.appVersionLong
     guard persisted != "0.1", persisted != running else {

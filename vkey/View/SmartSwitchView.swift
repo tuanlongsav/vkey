@@ -30,7 +30,7 @@ struct SmartSwitchView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Header Section
             HStack {
-                Image(systemName: "arrow.left.arrow.right.circle.fill")
+                ThemedSymbol(name: "arrow.left.arrow.right.circle.fill")
                     .font(.system(size: 32))
                     .foregroundStyle(Color.accentColor)
                 
@@ -51,7 +51,7 @@ struct SmartSwitchView: View {
             if !smartSwitchEnabled {
                 VStack(spacing: 12) {
                     Spacer()
-                    Image(systemName: "arrow.left.arrow.right.circle")
+                    ThemedSymbol(name: "arrow.left.arrow.right.circle")
                         .font(.system(size: 48))
                         .foregroundStyle(.tertiary)
                     Text("Tính năng đang tắt")
@@ -79,7 +79,7 @@ struct SmartSwitchView: View {
                         
                         List(smartSwitchApps, id: \.self, selection: $selectedApp) { app in
                             HStack {
-                                Image(systemName: "app.dashed")
+                                ThemedSymbol(name: "app.dashed")
                                     .foregroundStyle(.secondary)
                                 Text(app)
                                     .font(.system(.body, design: .monospaced))
@@ -99,14 +99,14 @@ struct SmartSwitchView: View {
                                 }
                             
                             Button(action: addNewApp) {
-                                Image(systemName: "plus")
+                                ThemedSymbol(name: "plus")
                             }
                             .buttonStyle(.borderedProminent)
                             .disabled(newBundleId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                             .help("Thêm ứng dụng")
                             
                             Button(action: removeSelectedApp) {
-                                Image(systemName: "trash")
+                                ThemedSymbol(name: "trash")
                             }
                             .buttonStyle(.bordered)
                             .disabled(selectedApp == nil)
@@ -136,13 +136,13 @@ struct SmartSwitchView: View {
                                         }
                                     }) {
                                         HStack {
-                                            Label(preset.name, systemImage: preset.icon)
+                                            Label(preset.name, themedSymbol: preset.icon)
                                             Spacer()
                                             if isAdded {
-                                                Image(systemName: "checkmark.circle.fill")
+                                                ThemedSymbol(name: "checkmark.circle.fill")
                                                     .foregroundStyle(.green)
                                             } else {
-                                                Image(systemName: "plus.circle")
+                                                ThemedSymbol(name: "plus.circle")
                                                     .foregroundStyle(.secondary)
                                             }
                                         }

@@ -24,42 +24,38 @@ struct GuideView: View {
         .padding(.vertical, 10)
         .font(.system(size: 15.0))
       if checkOk {
-        Button(
-          "OK ! Bấm để tắt App (sau đó vui lòng mở lại lần nữa)",
-          systemImage: "gear.badge.checkmark",
-          action: {
-            NSApp.terminate(nil)
-          }
-        )
+        Button(action: { NSApp.terminate(nil) }) {
+          Label(
+            "OK ! Bấm để tắt App (sau đó vui lòng mở lại lần nữa)",
+            themedSymbol: "gear.badge.checkmark"
+          )
+        }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
       } else {
         HStack {
-          Button(
-            "Xin cấp quyền", systemImage: "gear.badge",
-            action: {
-              requested = true
-              if appState.eventHook.isTrusted(prompt: true) {
-                checkOk = true
-              }
+          Button(action: {
+            requested = true
+            if appState.eventHook.isTrusted(prompt: true) {
+              checkOk = true
             }
-          )
+          }) {
+            Label("Xin cấp quyền", themedSymbol: "gear.badge")
+          }
           .buttonStyle(.borderedProminent)
           .controlSize(.large)
 
           if requested {
-            Button(
-              "Kiểm tra quyền", systemImage: "gear.badge.questionmark",
-              action: {
-                checkOk = appState.eventHook.isTrusted(prompt: false)
-                if !checkOk {
-                  requested = false
-                }
+            Button(action: {
+              checkOk = appState.eventHook.isTrusted(prompt: false)
+              if !checkOk {
+                requested = false
               }
-            )
+            }) {
+              Label("Kiểm tra quyền", themedSymbol: "gear.badge.questionmark")
+            }
             .controlSize(.large)
           }
-
         }
       }
     }.frame(width: 520, height: 400)

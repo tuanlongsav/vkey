@@ -13,6 +13,7 @@ import UniformTypeIdentifiers
 
 struct MacroView: View {
   @Default(.macros) private var macros
+  @Default(.macroEnabled) private var macroEnabled
   @State private var selection = Set<Macro.ID>()
   @State private var importStatus: String = ""
 
@@ -21,7 +22,14 @@ struct MacroView: View {
       Text("Macro — Viết tắt → Cụm dài")
         .font(.headline)
 
-      Text("Gõ phần \"Viết tắt\" rồi nhấn cách hoặc dấu câu, vkey sẽ thay bằng \"Cụm dài\".")
+      Toggle(isOn: $macroEnabled) {
+        Label("Bật / Tắt Macro", themedSymbol: "text.cursor")
+      }
+      .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+      Text(macroEnabled
+        ? "Gõ phần \"Viết tắt\" rồi nhấn cách hoặc dấu câu, vkey sẽ thay bằng \"Cụm dài\"."
+        : "Macro đang tắt. Danh sách bên dưới được giữ — bật lại để dùng.")
         .font(.caption)
         .foregroundStyle(.secondary)
 
@@ -46,14 +54,14 @@ struct MacroView: View {
           macros.insert(new, at: 0)
           selection = [new.id]
         } label: {
-          Label("Thêm", systemImage: "plus")
+          Label("Thêm", themedSymbol: "plus")
         }
 
         Button {
           macros.removeAll { selection.contains($0.id) }
           selection.removeAll()
         } label: {
-          Label("Xoá", systemImage: "trash")
+          Label("Xoá", themedSymbol: "trash")
         }
         .disabled(selection.isEmpty)
 
@@ -62,12 +70,12 @@ struct MacroView: View {
         // 1.5.0: Import / Export macros as JSON. Useful for sharing setups
         // between machines and for the upcoming onboarding macro preset.
         Button(action: exportMacros) {
-          Label("Xuất", systemImage: "square.and.arrow.up")
+          Label("Xuất", themedSymbol: "square.and.arrow.up")
         }
         .help("Lưu danh sách macro ra tệp JSON")
 
         Button(action: importMacros) {
-          Label("Nhập", systemImage: "square.and.arrow.down")
+          Label("Nhập", themedSymbol: "square.and.arrow.down")
         }
         .help("Đọc tệp JSON và gộp vào danh sách hiện tại (bỏ qua trùng)")
 

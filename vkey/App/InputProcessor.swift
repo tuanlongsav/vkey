@@ -494,7 +494,7 @@ class InputProcessor {
   init(method: TypingMethods) {
     typingMethod = method
     engine = typingMethod == .Telex ? Telex() : VNI()
-    LexiconManager.shared.reload(channel: Defaults[.dictionaryUpdateChannel])
+    LexiconManager.shared.reload()
   }
 
   public func changeTypingMethod(newMethod: TypingMethods) {
@@ -801,6 +801,10 @@ class InputProcessor {
   /// the word-ending character, then returns true so the caller can swallow the
   /// original ending key. Returns false (no side effects) when no macro matches.
   private func expandMacroIfMatch(endingChar: Character) -> Bool {
+    // Toggle from menu bar / tab Macro. Khi tắt, danh sách macro vẫn được
+    // giữ — chỉ tạm dừng expansion.
+    guard Defaults[.macroEnabled] else { return false }
+
     let current = wordBuffer.transformed
     guard
       let replacement = Self.macroReplacement(

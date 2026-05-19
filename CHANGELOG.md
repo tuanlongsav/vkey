@@ -2,6 +2,46 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.5.3] - 2026-05-19 — "Office Friendly"
+
+Milestone gom nhiều thay đổi UX hướng tới người dùng phổ thông và dân văn phòng VN.
+
+### 🪶 Tinh gọn tab Chính tả
+
+- **Bỏ Picker "Nguồn từ điển"** (`dictionaryUpdateChannel` enum) — app luôn dùng từ điển nhúng + cập nhật (tương đương `.hybrid` cũ).
+- **Bỏ Toggle "Tự động tải từ GitHub"** (`dictionaryGitHubUpdateEnabled`) — app luôn tự tải bản mới khi GitHub có.
+- **Auto-apply update im lặng**: thay alert "Có bản mới, cài không?" bằng download + apply tự động khi launch (throttle 24h). Nút **"Cập nhật từ điển ngay"** vẫn hoạt động cho user muốn force ngay.
+- **Đưa Section "Gợi ý & Sửa lỗi chính tả" lên cạnh "Kiểm tra chính tả"** cho liền mạch — order mới: Master → Kiểm tra → Gợi ý → Space Restore → Từ điển cá nhân → Từ điển GitHub.
+- Master toggle "Kích hoạt nhanh tất cả tính năng mới" đơn giản hơn — bỏ nhánh conditional dictionary.
+
+### 🧰 Macro
+
+- **Toggle Macro on/off** ngay trên Menu Bar (cạnh "Smart Switch" / "Sửa lỗi chính tả") VÀ trong tab Macro của Cài đặt — tạm dừng macro mà vẫn giữ danh sách.
+- **Seed 19 macro mặc định cho dân văn phòng VN** lần đầu launch (idempotent — chỉ chạy nếu list rỗng và chưa từng seed):
+  - Địa danh: `vn`, `tv`, `hn`, `sg`, `dn`, `tphcm`
+  - Văn bản: `kg` (Kính gửi), `kn`, `bcao`, `cvan`, `qdinh`, `tbao`
+  - Thông tin: `sdt`, `dchi`, `ttin`, `cty`, `gd`, `nv`, `xc`
+
+### 🎨 Giao diện
+
+- **Bố cục Menu Bar gọn hơn**: 3 nút "Ủng hộ tác giả / Thông tin dự án / Kiểm tra cập nhật" gom thành 1 hàng icon-only (`MenuBarFooterRow.swift`).
+- **Theme picker mới** "Giao diện ứng dụng" (submenu trong Menu Bar):
+  - **Mặc định**: SF Symbol gốc (như trước).
+  - **3D**: SF Symbol + gradient + shadow + multicolor + fill cho cảm giác bóng bẩy.
+  - Designer có thể drop bitmap PDF vào `Assets.xcassets/Icons3D/<name>.imageset` để override hoàn toàn.
+  - Giữ nguyên menu bar state flag (VN/US) và AppIcon — không đụng tới.
+- ~62 nơi dùng `Image(systemName:)` / `Label(_, systemImage:)` được wrap qua `ThemedSymbol` / `Label(_, themedSymbol:)` để đổi theo theme.
+
+### 📚 Tài liệu
+
+- **`DICTIONARY_UPDATE.md`** (mới, root repo) — workflow cho maintainer publish bản từ điển trên GitHub: edit JSON tay hoặc rebuild qua `Tools/build_lexicon.py`, bump version Int, commit + push. User auto nhận trong 24h.
+
+### 🧹 Dọn dẹp
+
+- Dọn 2 UserDefaults orphan keys (`dictionary-update-channel`, `dictionary-github-update-enabled`) trong `handleVersionChange()` — idempotent, an toàn.
+- `LexiconManager.reload(channel:)` → `LexiconManager.reload()` (đơn giản hoá signature).
+- `UserDataMigration`: bỏ 2 fields cũ trong `UserDataExport`, thêm 3 fields mới (`macroEnabled`, `macrosSeeded`, `appTheme`). Backup 1.5.2 import vào 1.5.3 không crash — 2 field cũ ignored.
+
 ## [1.5.2] - 2026-05-19 — "Settings Restored"
 
 Bản vá khẩn cấp tiếp theo: 1.5.1 mới chỉ nâng deployment target, vẫn chưa fix được root cause của lỗi không mở được "Cài đặt". Bản 1.5.2 khôi phục pattern hoạt động của 1.4.6.

@@ -2,7 +2,7 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 1.5.2 — "Settings Restored"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 1.5.3 — "Office Friendly"** ([CHANGELOG](CHANGELOG.md))
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
@@ -108,10 +108,10 @@ Click icon cờ trên menu bar để mở các tác vụ nhanh.
 | Đổi kiểu gõ | Menu → **"Kiểu Telex"** / **"Kiểu VNI"** (✓ ở dòng đang chọn) |
 | Bật/tắt nhanh Smart Switch | Menu → **"Smart Switch"** (✓ khi đang bật) |
 | Bật/tắt nhanh Sửa lỗi chính tả | Menu → **"Sửa lỗi chính tả"** (✓ khi đang bật) |
+| Bật/tắt nhanh Macro (mới 1.5.3) | Menu → **"Macro"** (✓ khi đang bật) — tạm dừng expansion mà vẫn giữ danh sách |
+| Đổi giao diện ứng dụng (mới 1.5.3) | Menu → **"Giao diện ứng dụng"** → submenu → **"Mặc định"** hoặc **"3D"** (gradient + shadow trên icon) |
 | Mở cửa sổ Cài đặt | Menu → **"Cài đặt"** |
-| Ủng hộ tác giả | Menu → **"Ủng hộ tác giả"** (quét mã VietQR) |
-| Trang dự án trên GitHub | Menu → **"Thông tin dự án"** |
-| Kiểm tra cập nhật thủ công | Menu → **"Kiểm tra cập nhật"** |
+| Ủng hộ tác giả · Thông tin · Cập nhật | Menu → row icon-only ở cuối (☕ / ℹ️ / 🔄) — hover để biết tên |
 | Thoát vkey | Menu → **"Thoát"** |
 
 **Trạng thái icon menu bar:**
@@ -146,29 +146,31 @@ Click icon cờ trên menu bar để mở các tác vụ nhanh.
 
 | Tác vụ | Cách dùng |
 |--------|----------|
+| Bật/Tắt Macro (mới 1.5.3) | Toggle đầu tab (hoặc nút nhanh trên menu bar) — khi tắt, danh sách vẫn giữ nhưng macro tạm dừng |
 | Thêm macro mới | Bấm **"Thêm"** → điền cột "Viết tắt" và "Cụm dài" |
 | Xoá macro | Chọn dòng → bấm **"Xoá"** |
 | Xuất macro ra JSON | Bấm **"Xuất"** — lưu file JSON để chia sẻ giữa máy |
 | Nhập macro từ JSON | Bấm **"Nhập"** — gộp vào danh sách hiện tại, bỏ qua trùng |
 | Kích hoạt khi gõ | Gõ phần "Viết tắt" rồi nhấn **Space** hoặc **dấu câu**, vkey thay bằng "Cụm dài" |
+| Macro mặc định (mới 1.5.3) | Lần đầu mở app sau cập nhật: 19 macro văn phòng VN có sẵn (`vn`, `tv`, `kg` (Kính gửi), `bcao`, `cty`, `gd`, `sdt`, …). Tự xoá / sửa thoải mái. |
 
 ### Cài đặt → tab **Chính tả**
+
+Tab này được **tinh gọn lại ở 1.5.3** — bỏ Picker "Nguồn từ điển" + Toggle "Tự động tải từ GitHub" (đều luôn-on), đưa "Gợi ý & Sửa lỗi chính tả" lên cạnh "Kiểm tra chính tả". Thứ tự section mới: Master → Kiểm tra → Gợi ý → Space Restore → Từ điển cá nhân → Từ điển GitHub.
 
 | Mục | Tác dụng |
 |-----|---------|
 | Kích hoạt nhanh tất cả tính năng mới | Toggle gộp — bật/tắt cùng lúc mọi tính năng chính tả + từ điển bên dưới |
 | Kiểm tra chính tả | Bật cơ chế 6-bước check + Vowel Inclusion Pairs (chặn gõ dấu sai cấu trúc âm tiết) |
 | Kiểm tra trong câu | Mở rộng kiểm tra cho từ ở giữa câu (không chỉ từ vừa gõ) |
-| Nguồn từ điển | **Chỉ từ điển nhúng** (7.184 âm tiết offline) hoặc **Nhúng + Cập nhật cục bộ** (cho phép update) |
-| Tự động tải từ GitHub | Khi chọn "Nhúng + Cập nhật": cho phép vkey tải `lexicon-update.json` mới nhất từ repo |
-| Cập nhật từ điển ngay | Bấm để force-download bản mới nhất từ GitHub |
-| Sử dụng từ điển cá nhân | Bật danh sách Allow / Keep / Deny do bạn tự định nghĩa |
-| Quản lý từ điển cá nhân | Mở editor → thêm / xoá từ trong 3 danh sách Allow / Keep / Deny |
+| Gợi ý sửa lỗi chính tả | Hiện gợi ý khi gõ sai (Levenshtein + heuristic). Đứng ngay sau Kiểm tra (mới 1.5.3) |
+| Tự động sửa khi tin cậy cao | Áp dụng gợi ý luôn nếu độ tin cậy ≥ 88% |
 | Tự động khôi phục tiếng Anh | Bật Space Restore (`ò → of`, `ì → if`, `sê → see`, `tê → tee`…) |
 | Chính sách khôi phục | **Ưu tiên tiếng Việt** / **Cân bằng** / **Ưu tiên tiếng Anh** cho từ mơ hồ |
 | Dùng từ điển tham chiếu Anh-Việt | Bật 110 cặp song ngữ từ Wiktionary (mới ở 1.5.0) |
-| Gợi ý sửa lỗi chính tả | Hiện gợi ý khi gõ sai (dựa trên Levenshtein + heuristic) |
-| Tự động sửa khi tin cậy cao | Áp dụng gợi ý luôn nếu độ tin cậy ≥ 88% |
+| Sử dụng từ điển cá nhân | Bật danh sách Allow / Keep / Deny do bạn tự định nghĩa |
+| Quản lý từ điển cá nhân | Mở editor → thêm / xoá từ trong 3 danh sách Allow / Keep / Deny |
+| Từ điển GitHub — Cập nhật ngay | Bấm để force-download bản mới nhất từ GitHub. Bình thường app tự tải im lặng mỗi 24h khi launch (mới 1.5.3) |
 
 ### Cài đặt → tab **Thống kê & Sao lưu**
 

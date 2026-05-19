@@ -16,22 +16,22 @@ struct vkeyApp: App {
       TabView {
         GeneralView()
           .environmentObject(appDelegate.appState)
-          .tabItem { Label("Chung", systemImage: "gear") }
+          .tabItem { Label("Chung", themedSymbol: "gear") }
 
         SmartSwitchView()
-          .tabItem { Label("Smart Switch", systemImage: "arrow.left.arrow.right.circle") }
+          .tabItem { Label("Smart Switch", themedSymbol: "arrow.left.arrow.right.circle") }
 
         MacroView()
-          .tabItem { Label("Macro", systemImage: "text.cursor") }
+          .tabItem { Label("Macro", themedSymbol: "text.cursor") }
 
         SpellCheckView()
-          .tabItem { Label("Chính tả", systemImage: "text.badge.checkmark") }
+          .tabItem { Label("Chính tả", themedSymbol: "text.badge.checkmark") }
 
         // 1.5.0: Usage Statistics + personal-data backup/restore. Tab is the
         // single user-visible touchpoint for both features — keeping them
         // together emphasises that statistics never leave the machine.
         StatisticsView()
-          .tabItem { Label("Thống kê & Sao lưu", systemImage: "chart.bar.doc.horizontal") }
+          .tabItem { Label("Thống kê & Sao lưu", themedSymbol: "chart.bar.doc.horizontal") }
       }
     }
   }
@@ -61,6 +61,8 @@ struct MainMenuView: View {
   @Environment(\.openSettings) private var openSettings
   @Default(.smartSwitchEnabled) private var smartSwitchEnabled
   @Default(.spellCheckEnabled) private var spellCheckEnabled
+  @Default(.macroEnabled) private var macroEnabled
+  @Default(.appTheme) private var appTheme
 
   var body: some View {
     // MenuBarExtra (`.menu` style) renders SwiftUI Buttons as NSMenuItem.
@@ -70,7 +72,7 @@ struct MainMenuView: View {
     Button {
       appDelegate.appState.enabled.toggle()
     } label: {
-      Label("Chuyển đổi bộ gõ  🇻🇳 | 🇺🇸", systemImage: "arrow.left.arrow.right.square")
+      Label("Chuyển đổi bộ gõ  🇻🇳 | 🇺🇸", themedSymbol: "arrow.left.arrow.right.square")
     }
 
     Divider()
@@ -80,7 +82,7 @@ struct MainMenuView: View {
     } label: {
       Label(
         appDelegate.appState.typingMethod == .Telex ? "Kiểu Telex  ✓" : "Kiểu Telex",
-        systemImage: "keyboard"
+        themedSymbol: "keyboard"
       )
     }
 
@@ -89,7 +91,7 @@ struct MainMenuView: View {
     } label: {
       Label(
         appDelegate.appState.typingMethod == .VNI ? "Kiểu VNI  ✓" : "Kiểu VNI",
-        systemImage: "keyboard.badge.ellipsis"
+        themedSymbol: "keyboard.badge.ellipsis"
       )
     }
 
@@ -103,7 +105,7 @@ struct MainMenuView: View {
       try? openSettings()
       NSApp.activate(ignoringOtherApps: true)
     } label: {
-      Label("Cài đặt", systemImage: "gearshape")
+      Label("Cài đặt", themedSymbol: "gearshape")
     }
 
     Button {
@@ -111,7 +113,7 @@ struct MainMenuView: View {
     } label: {
       Label(
         smartSwitchEnabled ? "Smart Switch  ✓" : "Smart Switch",
-        systemImage: "arrow.left.arrow.right.circle"
+        themedSymbol: "arrow.left.arrow.right.circle"
       )
     }
 
@@ -120,37 +122,55 @@ struct MainMenuView: View {
     } label: {
       Label(
         spellCheckEnabled ? "Sửa lỗi chính tả  ✓" : "Sửa lỗi chính tả",
-        systemImage: "checkmark.circle"
+        themedSymbol: "checkmark.circle"
       )
+    }
+
+    Button {
+      macroEnabled.toggle()
+    } label: {
+      Label(
+        macroEnabled ? "Macro  ✓" : "Macro",
+        themedSymbol: "text.cursor"
+      )
+    }
+
+    Menu {
+      Button { appTheme = .default } label: {
+        Label(
+          appTheme == .default ? "Mặc định  ✓" : "Mặc định",
+          themedSymbol: "circle"
+        )
+      }
+      Button { appTheme = .threeD } label: {
+        Label(
+          appTheme == .threeD ? "3D  ✓" : "3D",
+          themedSymbol: "cube"
+        )
+      }
+    } label: {
+      Label("Giao diện ứng dụng", themedSymbol: "paintbrush")
     }
 
     Divider()
 
-    // Ủng hộ + thông tin + cập nhật cùng 1 section
-    Button {
-      appDelegate.openDonate()
-    } label: {
-      Label("Ủng hộ tác giả", systemImage: "cup.and.saucer")
-    }
-    
-    Button {
-      NSWorkspace.shared.open(URL(string: "https://github.com/tuanlongsav/vkey")!)
-    } label: {
-      Label("Thông tin dự án", systemImage: "info.circle")
-    }
-    
-    Button {
-      Updater.checkForUpdates(manual: true)
-    } label: {
-      Label("Kiểm tra cập nhật", systemImage: "arrow.triangle.2.circlepath")
-    }
+    // Footer utility row: 3 icon nén thành 1 hàng cho gọn.
+    MenuBarFooterRow(
+      onDonate: { appDelegate.openDonate() },
+      onInfo:   {
+        if let url = URL(string: "https://github.com/tuanlongsav/vkey") {
+          NSWorkspace.shared.open(url)
+        }
+      },
+      onUpdate: { Updater.checkForUpdates(manual: true) }
+    )
 
     Divider()
 
     Button {
       NSApp.terminate(nil)
     } label: {
-      Label("Thoát", systemImage: "power")
+      Label("Thoát", themedSymbol: "power")
     }
   }
 }

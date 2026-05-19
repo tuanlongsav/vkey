@@ -193,12 +193,12 @@ struct GeneralView: View {
             // centers the whole block horizontally inside its container.
             Form {
                 Toggle(isOn: $appState.enabled) {
-                    Label("Bật / Tắt gõ TV", systemImage: "keyboard")
+                    Label("Bật / Tắt gõ TV", themedSymbol: "keyboard")
                 }
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
                 LaunchAtLogin.Toggle {
-                    Label("Tự khởi động cùng hệ thống", systemImage: "arrow.up.right.square")
+                    Label("Tự khởi động cùng hệ thống", themedSymbol: "arrow.up.right.square")
                 }
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
@@ -207,22 +207,22 @@ struct GeneralView: View {
                         Text(method.rawValue)
                     }
                 } label: {
-                    Label("Kiểu gõ", systemImage: "abc")
+                    Label("Kiểu gõ", themedSymbol: "abc")
                 }
                 .pickerStyle(.segmented)
 
                 Toggle(isOn: $appState.allowedZWJF) {
-                    Label("Phụ âm z, w, j, f", systemImage: "character")
+                    Label("Phụ âm z, w, j, f", themedSymbol: "character")
                 }
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
                 Toggle(isOn: $autoTypoCorrection) {
-                    Label("Tự động sửa lỗi gõ nhầm", systemImage: "sparkles")
+                    Label("Tự động sửa lỗi gõ nhầm", themedSymbol: "sparkles")
                 }
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                 
                 Toggle(isOn: $hudEnabled) {
-                    Label("Hiển thị thông báo khi chuyển VI/EN", systemImage: "macwindow.badge.plus")
+                    Label("Hiển thị thông báo khi chuyển VI/EN", themedSymbol: "macwindow.badge.plus")
                 }
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     
@@ -230,7 +230,7 @@ struct GeneralView: View {
                     Text("Kiểu cũ").tag(false)
                     Text("Kiểu mới").tag(true)
                 } label: {
-                    Label("Kiểu đặt dấu", systemImage: "textformat")
+                    Label("Kiểu đặt dấu", themedSymbol: "textformat")
                 }
                 .pickerStyle(.segmented)
                 
@@ -249,7 +249,7 @@ struct GeneralView: View {
                 LabeledContent {
                     FlexibleShortcutRecorder(name: .toggleInputMode)
                 } label: {
-                    Label("Phím tắt", systemImage: "command")
+                    Label("Phím tắt", themedSymbol: "command")
                 }
             }
             .formStyle(.grouped)
@@ -285,8 +285,6 @@ struct SpellCheckView: View {
     @Default(.spellCheckInSentenceEnabled) private var spellCheckInSentenceEnabled
     @Default(.englishAutoRestoreEnabled) private var englishAutoRestoreEnabled
     @Default(.restorePolicy) private var restorePolicy
-    @Default(.dictionaryUpdateChannel) private var dictionaryUpdateChannel
-    @Default(.dictionaryGitHubUpdateEnabled) private var dictionaryGitHubUpdateEnabled
     @Default(.suggestionEnabled) private var suggestionEnabled
     @Default(.autoApplyHighConfidenceSuggestion) private var autoApplyHighConfidenceSuggestion
     @Default(.personalDictionaryEnabled) private var personalDictionaryEnabled
@@ -299,10 +297,14 @@ struct SpellCheckView: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
+                // Section 1: Master quick-enable
                 Section {
                     Toggle(isOn: Binding(
                         get: {
-                            spellCheckEnabled && spellCheckInSentenceEnabled && englishAutoRestoreEnabled && suggestionEnabled && autoApplyHighConfidenceSuggestion && personalDictionaryEnabled && useEnVnReference && (dictionaryUpdateChannel == .hybrid ? dictionaryGitHubUpdateEnabled : true)
+                            spellCheckEnabled && spellCheckInSentenceEnabled
+                                && englishAutoRestoreEnabled && suggestionEnabled
+                                && autoApplyHighConfidenceSuggestion && personalDictionaryEnabled
+                                && useEnVnReference
                         },
                         set: { newValue in
                             spellCheckEnabled = newValue
@@ -312,12 +314,9 @@ struct SpellCheckView: View {
                             autoApplyHighConfidenceSuggestion = newValue
                             personalDictionaryEnabled = newValue
                             useEnVnReference = newValue
-                            if dictionaryUpdateChannel == .hybrid {
-                                dictionaryGitHubUpdateEnabled = newValue
-                            }
                         }
                     )) {
-                        Label("Kích hoạt nhanh tất cả tính năng mới", systemImage: "sparkles")
+                        Label("Kích hoạt nhanh tất cả tính năng mới", themedSymbol: "sparkles")
                             .fontWeight(.semibold)
                     }
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
@@ -325,105 +324,50 @@ struct SpellCheckView: View {
                     Text("Phím tắt thông minh")
                 }
 
+                // Section 2: Kiểm tra chính tả
                 Section {
                     Toggle(isOn: $spellCheckEnabled) {
-                        Label("Kiểm tra chính tả", systemImage: "checkmark.circle")
+                        Label("Kiểm tra chính tả", themedSymbol: "checkmark.circle")
                     }
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                    
+
                     if spellCheckEnabled {
                         Toggle(isOn: $spellCheckInSentenceEnabled) {
-                            Label("Kiểm tra trong câu", systemImage: "text.justify.left")
+                            Label("Kiểm tra trong câu", themedSymbol: "text.justify.left")
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    }
+                } header: {
+                    Text("Cấu hình Kiểm tra")
+                }
+
+                if spellCheckEnabled {
+                    // Section 3: Gợi ý & Sửa lỗi chính tả (moved up, sát "Kiểm tra")
+                    Section {
+                        Toggle(isOn: $suggestionEnabled) {
+                            Label("Gợi ý sửa lỗi chính tả", themedSymbol: "lightbulb")
                         }
                         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                        Picker(selection: $dictionaryUpdateChannel) {
-                            Text("Chỉ từ điển nhúng").tag(DictionaryUpdateChannel.embeddedOnly)
-                            Text("Từ điển nhúng + Cập nhật cục bộ").tag(DictionaryUpdateChannel.hybrid)
-                        } label: {
-                            Label("Nguồn từ điển", systemImage: "book")
-                        }
-                        .pickerStyle(.inline)
-                        .onChange(of: dictionaryUpdateChannel) { newValue in
-                            LexiconManager.shared.reload(channel: newValue)
-                        }
-                    }
-                } header: {
-                    Text("Cấu hình Kiểm tra & Từ điển")
-                }
-                
-                if spellCheckEnabled {
-                    if dictionaryUpdateChannel == .hybrid {
-                        Section {
-                            Toggle(isOn: $dictionaryGitHubUpdateEnabled) {
-                                Label("Tự động tải từ GitHub", systemImage: "arrow.down.circle")
+                        if suggestionEnabled {
+                            Toggle(isOn: $autoApplyHighConfidenceSuggestion) {
+                                Label("Tự động sửa khi tin cậy cao", themedSymbol: "wand.and.stars")
                             }
                             .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                            HStack {
-                                Spacer()
-                                Button(action: {
-                                    isUpdatingFromGitHub = true
-                                    gitHubUpdateStatus = "Đang tải dữ liệu từ GitHub..."
-                                    LexiconManager.shared.downloadAndUpdateLexicon { success in
-                                        DispatchQueue.main.async {
-                                            isUpdatingFromGitHub = false
-                                            if success {
-                                                gitHubUpdateStatus = "Đã tải & cập nhật từ điển thành công!"
-                                            } else {
-                                                gitHubUpdateStatus = "Từ điển đã là phiên bản mới nhất hoặc có lỗi."
-                                            }
-                                        }
-                                    }
-                                }) {
-                                    Label("Cập nhật từ điển ngay", systemImage: "arrow.triangle.2.circlepath")
-                                }
-                                .disabled(isUpdatingFromGitHub)
-                                Spacer()
-                            }
-                            
-                            if !gitHubUpdateStatus.isEmpty {
-                                Text(gitHubUpdateStatus)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    .padding(.top, 2)
-                            }
-                        } header: {
-                            Text("Cập nhật từ điển từ GitHub")
-                        }
-                    }
-
-                    Section {
-                        Toggle(isOn: $personalDictionaryEnabled) {
-                            Label("Sử dụng từ điển cá nhân", systemImage: "person.circle")
-                        }
-                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                        
-                        Text("Áp dụng danh sách từ tự thêm (allow/keep/deny) do bạn cấu hình trong phần mềm.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, -4)
-
-                        if personalDictionaryEnabled {
-                            HStack {
-                                Spacer()
-                                Button(action: {
-                                    showingPersonalDictEditor = true
-                                }) {
-                                    Label("Quản lý từ điển cá nhân", systemImage: "pencil.and.outline")
-                                }
-                                Spacer()
-                            }
-                            .padding(.top, 4)
+                            Text("Tự động áp dụng từ gợi ý nếu độ tin cậy đạt mức rất cao (>= 88%).")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, -4)
                         }
                     } header: {
-                        Text("Từ điển cá nhân")
+                        Text("Gợi ý & Sửa lỗi chính tả")
                     }
 
+                    // Section 4: Space Restore
                     Section {
                         Toggle(isOn: $englishAutoRestoreEnabled) {
-                            Label("Tự động khôi phục tiếng Anh", systemImage: "arrow.uturn.backward")
+                            Label("Tự động khôi phục tiếng Anh", themedSymbol: "arrow.uturn.backward")
                         }
                         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
@@ -433,7 +377,7 @@ struct SpellCheckView: View {
                                 Text("Cân bằng").tag(RestorePolicy.balanced)
                                 Text("Ưu tiên tiếng Anh").tag(RestorePolicy.englishFirst)
                             } label: {
-                                Label("Chính sách khôi phục", systemImage: "slider.horizontal.3")
+                                Label("Chính sách khôi phục", themedSymbol: "slider.horizontal.3")
                             }
                             .pickerStyle(.segmented)
 
@@ -442,15 +386,8 @@ struct SpellCheckView: View {
                                 .foregroundStyle(.secondary)
                                 .padding(.top, -4)
 
-                            // 1.5.0: bilingual reference toggle. When on,
-                            // SpellDecisionEngine consults the en_vn_mapping
-                            // shipped in lexicon-update.json (schema v5) so
-                            // that common English words like "computer",
-                            // "developer", "design" are restored cleanly
-                            // even if they're not in the legacy `english[]`
-                            // list.
                             Toggle(isOn: $useEnVnReference) {
-                                Label("Dùng từ điển tham chiếu Anh-Việt", systemImage: "character.book.closed")
+                                Label("Dùng từ điển tham chiếu Anh-Việt", themedSymbol: "character.book.closed")
                             }
                             .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
@@ -462,26 +399,69 @@ struct SpellCheckView: View {
                     } header: {
                         Text("Tự động khôi phục tiếng Anh (Space Restore)")
                     }
-                    
+
+                    // Section 5: Personal dictionary
                     Section {
-                        Toggle(isOn: $suggestionEnabled) {
-                            Label("Gợi ý sửa lỗi chính tả", systemImage: "lightbulb")
+                        Toggle(isOn: $personalDictionaryEnabled) {
+                            Label("Sử dụng từ điển cá nhân", themedSymbol: "person.circle")
                         }
                         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                        
-                        if suggestionEnabled {
-                            Toggle(isOn: $autoApplyHighConfidenceSuggestion) {
-                                Label("Tự động sửa khi tin cậy cao", systemImage: "wand.and.stars")
+
+                        Text("Áp dụng danh sách từ tự thêm (allow/keep/deny) do bạn cấu hình trong phần mềm.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, -4)
+
+                        if personalDictionaryEnabled {
+                            HStack {
+                                Spacer()
+                                Button(action: { showingPersonalDictEditor = true }) {
+                                    Label("Quản lý từ điển cá nhân", themedSymbol: "pencil.and.outline")
+                                }
+                                Spacer()
                             }
-                            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                            
-                            Text("Tự động áp dụng từ gợi ý nếu độ tin cậy đạt mức rất cao (>= 88%).")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .padding(.top, -4)
+                            .padding(.top, 4)
                         }
                     } header: {
-                        Text("Gợi ý & Sửa lỗi chính tả")
+                        Text("Từ điển cá nhân")
+                    }
+
+                    // Section 6: GitHub dictionary update (manual button only)
+                    Section {
+                        Text("Từ điển sẽ tự cập nhật từ GitHub mỗi 24h khi app khởi động. Bấm bên dưới để kiểm tra & tải ngay.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                isUpdatingFromGitHub = true
+                                gitHubUpdateStatus = "Đang tải dữ liệu từ GitHub..."
+                                LexiconManager.shared.downloadAndUpdateLexicon { success in
+                                    DispatchQueue.main.async {
+                                        isUpdatingFromGitHub = false
+                                        gitHubUpdateStatus = success
+                                            ? "Đã tải & cập nhật từ điển thành công!"
+                                            : "Từ điển đã là phiên bản mới nhất hoặc có lỗi."
+                                    }
+                                }
+                            }) {
+                                Label("Cập nhật từ điển ngay", themedSymbol: "arrow.triangle.2.circlepath")
+                            }
+                            .disabled(isUpdatingFromGitHub)
+                            Spacer()
+                        }
+                        .padding(.top, 4)
+
+                        if !gitHubUpdateStatus.isEmpty {
+                            Text(gitHubUpdateStatus)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.top, 2)
+                        }
+                    } header: {
+                        Text("Từ điển GitHub")
                     }
                 }
             }
@@ -561,7 +541,7 @@ struct PersonalDictionaryEditorView: View {
                             Button(action: {
                                 removeWord(word)
                             }) {
-                                Image(systemName: "trash")
+                                ThemedSymbol(name: "trash")
                                     .foregroundColor(.red)
                             }
                             .buttonStyle(.plain)
