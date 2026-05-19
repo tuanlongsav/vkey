@@ -2,6 +2,41 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [data] - 2026-05-20 — lexicon v6 → v7 (deep merge undertheseanlp)
+
+Lexicon data update (KHÔNG cần release app mới — chỉ commit + push `lexicon-update.json`; app v1.6.2+ tự fetch trong 24h hoặc bấm nút "Cập nhật từ điển ngay").
+
+### Deep merge từ undertheseanlp/dictionary phrases
+
+Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token từ TẤT CẢ multi-word phrases ("công ty" → ["công", "ty"]), cross-validate qua tần suất phrase, áp phonotactic filter học từ baseline 7,184 curated.
+
+**Three-tier classification**:
+
+| Tier | Filter | Raw | Phonotactic pass |
+|------|--------|-----|------------------|
+| A | VN marker + ≥2 phrases (cross-validated) | 173 | **157** |
+| B | VN marker + 1 phrase | 550 | **483** |
+| C | ASCII loanword + ≥3 phrases | 31 (curated → 20) | **20** |
+
+**Phonotactic filter** loại: foreign words (`chlorhydric`, `mêga`), non-VN initial clusters (`drăm`, `kpăng`, `phlạo`), garbage from Wiktionary templates.
+
+**Tier C whitelist** (20 từ vay phổ biến): acid, alpha, apacthai, axit, beta, cassette, celsius, clo, diesel, euclid, fahrenheit, internet, ion, kali, kalium, logic, nitrat, oxy, radio, video. SKIP: short/ambiguous (ya, ch, cd, cn, ph, gmt, ka).
+
+**Final**: 8,234 → **8,894 syllables** (+660 từ chuyên ngành, regional, loanword).
+
+### Verify
+
+- File 103.8 KB (vẫn dưới safe ceiling 1 MB)
+- Parse 0.34 ms, set construct 0.25 ms (zero perf impact)
+- Spot-check additions: ✓ "axit", "internet", "video", "kali", "bàm", "chòe", "choàm" present
+- Garbage filter: ✓ "chlorhydric", "drăm", "ya", "gmt", "cd", "ch" all dropped
+- Baseline preserved: ✓ "của", "và", "tôi", "công", "kính", "an" all present
+
+### Tooling
+
+- Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
+- Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
+
 ## [1.6.3] - 2026-05-20 — "Stats Restored"
 
 Hotfix khẩn cấp cho lỗi **tab Thống kê hiển thị toàn 0 sau khi cài bản mới** — root cause THỰC SỰ phát hiện sau khi fix các nhánh khác không hiệu quả.
