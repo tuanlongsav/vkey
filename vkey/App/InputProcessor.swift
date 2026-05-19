@@ -7253,6 +7253,7 @@ bửa
     "desk", "disk", "boost", "cursor", "param", "career", "beer", "peer", "sax", "toto",
     "nurses", "horses", "house", "metric", "off", "class", "pass", "staff",
     "ass", "aff", "arr", "axx", "ajj",
+    "they", "them", "their", "then", "there", "these", "this", "that", "those", "than",
   ])
 
   static let keepVietnameseWords: Set<String> = Set([
@@ -7374,12 +7375,12 @@ final class LexiconManager {
         selectedEN = InMemoryLexicon(
           version: package.version,
           source: .updatePackage,
-          words: Set(package.english.map { $0.normalizedDictionaryToken })
+          words: Set(package.english.map { $0.normalizedDictionaryToken }).union(EmbeddedLexiconData.englishWords)
         )
         selectedKeep = InMemoryLexicon(
           version: package.version,
           source: .updatePackage,
-          words: Set(package.keep.map { $0.normalizedDictionaryToken })
+          words: Set(package.keep.map { $0.normalizedDictionaryToken }).union(EmbeddedLexiconData.keepVietnameseWords)
         )
       }
 
@@ -7934,15 +7935,26 @@ struct WordBuffer {
     keys.append(char)
     lastTransformed = transformed
 
-    if stopProcessing {
+    // If stopProcessing was set, but it was ONLY because of English word restoration on the previous step
+    // (i.e. the previous state did not have a real spelling matrix failure or impossible cluster),
+    // we allow re-evaluation so typing 'thee' (after 'the') can transform to 'thê' correctly.
+    // However, if the new keys form a doubled tone mark (like 'ss', 'ff'), we skip re-evaluation to preserve double-letter English suffixes.
+    var wasOnlyEnglishRestored = false
+    let keysStr = String(keys).lowercased()
+    let doubledTones = ["ss", "ff", "rr", "xx", "jj"]
+    if stopProcessing && !snapshot.wordState.needsRecovery && !isImpossibleCluster(snapshot.keys, engine: engine) {
+      if !doubledTones.contains(where: { keysStr.contains($0) }) {
+        wasOnlyEnglishRestored = true
+      }
+    }
+
+    if stopProcessing && !wasOnlyEnglishRestored {
       transformed.append(char)
       wordState = wordState.push(char)
       return
     }
 
     // Doubled Tone Mark Preservation: if raw keys contains consecutive doubled tone marks, preserve it raw if it forms an English word
-    let keysStr = String(keys).lowercased()
-    let doubledTones = ["ss", "ff", "rr", "xx", "jj"]
     if doubledTones.contains(where: { keysStr.contains($0) }),
        LexiconManager.shared.isEnglishWord(keysStr) {
       stopProcessing = true

@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "vietnamese": [
     "và",
     "của",
@@ -7302,7 +7302,17 @@
     "yes",
     "cancel",
     "exit",
-    "quit"
+    "quit",
+    "they",
+    "them",
+    "their",
+    "then",
+    "there",
+    "these",
+    "this",
+    "that",
+    "those",
+    "than"
   ],
   "keep": [
     "lisa",

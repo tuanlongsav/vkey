@@ -497,6 +497,11 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "trinhf"), "trình")
   }
 
+  func testTelexTheemTransformation() throws {
+    XCTAssertEqual(transform_text_telex(for: "theem"), "thêm")
+    XCTAssertEqual(transform_text_telex(for: "them"), "them")
+  }
+
   // MARK: - Telex: Toggle Behavior (Double Typing)
 
   /// Test tone toggle (typing same tone twice removes it)
