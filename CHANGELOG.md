@@ -2,6 +2,24 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.5.10] - 2026-05-19 — "Updater Fixed"
+
+Hotfix khẩn cấp 2 lỗi update flow phát hiện sau 1.5.9.
+
+### Sửa appcast.xml invalid
+
+- Title item 1.5.9 trong appcast.xml ghi `"Privacy & Tidy"` với ký tự `&` BARE — không escape XML hợp lệ.
+- XMLParser của `AppcastParser` fail parsing, trả về nil shortVersion.
+- Updater dùng fallback `"1.5.0"` cho server version + `0` cho versionCode → so sánh `localVersionCode (15080) < 0` = false → vào nhánh "đã là mới nhất".
+- User bấm "Kiểm tra cập nhật" thấy `"Bạn đang sử dụng phiên bản mới nhất! (Phiên bản server: v1.5.0)"` thay vì đề nghị nâng lên 1.5.9.
+- 1.5.10: sửa thành `"Privacy &amp; Tidy"` — XML hợp lệ.
+
+### Harden Updater fallback
+
+- `Updater.checkForUpdates(manual: true)`: khi `AppcastParser.parseTopItem()` trả nil HOẶC thiếu `sparkle:version`, fallback ngay sang `SPUStandardUpdaterController.checkForUpdates(nil)` thay vì show alert "đã mới nhất".
+- Native Sparkle có XML parser robust hơn (handle entities, encoding issues) và sẽ correctly show update flow nếu phát hiện version mới.
+- Trước đây nếu parser fail, Updater im lặng nuốt lỗi và báo nhầm — vừa gây confusion vừa khiến user bỏ lỡ update.
+
 ## [1.5.9] - 2026-05-19 — "Privacy & Tidy"
 
 3 hiệu chỉnh nhỏ: menu bar layout, không lưu password vào stats, xoá từng cụm trong thống kê.

@@ -6,7 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
-      <title>Version 1.5.9 — "Privacy & Tidy"</title>
+      <title>Version 1.5.10 — "Updater Fixed"</title>
+      <sparkle:version>15100</sparkle:version>
+      <sparkle:shortVersionString>1.5.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 20:12:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.5.10/vkey-1.5.10.dmg"
+        sparkle:edSignature="xhz29psygJBN0PUuHuo+SEb0V9+REF6vftlIanh1cHUJ6F/AO02a/usXQK9/goeDl/IEghuf1ywm7St8/LTJBw=="
+        length="5374944"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.5.10 — "Updater Fixed":</h2>
+        <p>Hotfix khẩn cấp 2 lỗi update flow:</p>
+        <ul>
+          <li><strong>Sửa appcast.xml invalid</strong>: title "Privacy & Tidy" của 1.5.9 có ký tự <code>&amp;</code> chưa escape XML — làm XMLParser fail, Updater báo nhầm "Bạn đang sử dụng phiên bản mới nhất" trên 1.5.8. Đã sửa thành <code>&amp;amp;</code>.</li>
+          <li><strong>Harden Updater fallback</strong>: khi XML parse fail hoặc thiếu version, Updater giờ tự fallback về native Sparkle thay vì show "đã mới nhất" sai. Defense-in-depth phòng lỗi appcast XML lần sau.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
+      <title>Version 1.5.9 — "Privacy &amp; Tidy"</title>
       <sparkle:version>15090</sparkle:version>
       <sparkle:shortVersionString>1.5.9</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>

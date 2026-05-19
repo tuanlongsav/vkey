@@ -47,9 +47,22 @@ enum Updater {
           // didn't honour attribute quoting nuances.
           let summary = AppcastParser.parseTopItem(data: data)
 
-          let serverVersionCodeStr = summary?.versionCode ?? ""
-          let serverVersionStr = summary?.shortVersion ?? "1.5.0"
-          _ = summary?.enclosureURL  // available if we ever want to deep-link
+          // 1.5.10: nếu parse XML fail HOẶC thiếu version, fallback ngay sang
+          // native Sparkle (đừng show "đã là mới nhất" sai). Trước đây nếu
+          // appcast.xml có ký tự `&` chưa escape, parser trả nil shortVersion
+          // và Updater báo nhầm "server v1.5.0" với versionCode=0 — user
+          // thấy app báo "đã mới nhất" mặc dù thực ra có bản mới.
+          guard let summary = summary,
+                let serverVersionCodeStr = summary.versionCode,
+                let serverVersionCode = Int(serverVersionCodeStr),
+                serverVersionCode > 0
+          else {
+            updaterController.checkForUpdates(nil)
+            return
+          }
+
+          let serverVersionStr = summary.shortVersion ?? "?"
+          _ = summary.enclosureURL  // available if we ever want to deep-link
 
           let localVersionCodeStr =
             Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
@@ -57,7 +70,6 @@ enum Updater {
             Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
             ?? "1.5.0"
 
-          let serverVersionCode = Int(serverVersionCodeStr) ?? 0
           let localVersionCode = Int(localVersionCodeStr) ?? 0
 
           if localVersionCode < serverVersionCode {
