@@ -26,6 +26,12 @@ struct vkeyApp: App {
 
         SpellCheckView()
           .tabItem { Label("Chính tả", systemImage: "text.badge.checkmark") }
+
+        // 1.5.0: Usage Statistics + personal-data backup/restore. Tab is the
+        // single user-visible touchpoint for both features — keeping them
+        // together emphasises that statistics never leave the machine.
+        StatisticsView()
+          .tabItem { Label("Thống kê & Sao lưu", systemImage: "chart.bar.doc.horizontal") }
       }
     }
   }
@@ -45,7 +51,6 @@ struct MenuContentView: View {
 
 struct MainMenuView: View {
   @ObservedObject var appDelegate: AppDelegate
-  @Environment(\.openSettings) private var openSettings
   @Default(.smartSwitchEnabled) private var smartSwitchEnabled
   @Default(.spellCheckEnabled) private var spellCheckEnabled
 
@@ -87,8 +92,7 @@ struct MainMenuView: View {
       // Promote to .regular so the Settings window can become key — required for
       // KeyboardShortcuts.Recorder to receive keystrokes from the global event stream.
       NSApp.setActivationPolicy(.regular)
-      try? openSettings()
-      NSApp.activate(ignoringOtherApps: true)
+      appDelegate.openSettings()
     } label: {
       Label("Cài đặt", systemImage: "gearshape")
     }

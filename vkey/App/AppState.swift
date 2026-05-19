@@ -10,6 +10,9 @@ import Combine
 import Defaults
 import Foundation
 import KeyboardShortcuts
+import os.log
+
+private let appLog = OSLog(subsystem: "dev.longht.vkey", category: "AppState")
 
 class AppState: ObservableObject, FileMonitorDelegate {
 
@@ -133,9 +136,22 @@ class AppState: ObservableObject, FileMonitorDelegate {
 
     func registerSwitchFileMonitor() {
         let tmpPath = URL(fileURLWithPath: "/tmp/vkey_switch")
-        try? "".write(to: tmpPath, atomically: true, encoding: .utf8)
-        switchFileMonitor = try? FileMonitor(url: tmpPath)
-        switchFileMonitor?.delegate = self
+        do {
+            try "".write(to: tmpPath, atomically: true, encoding: .utf8)
+        } catch {
+            os_log("AppState: failed to seed %{public}@ — %{public}@",
+                   log: appLog, type: .error, tmpPath.path, error.localizedDescription)
+            // Continue: monitor init may still succeed if the file already exists.
+        }
+        do {
+            switchFileMonitor = try FileMonitor(url: tmpPath)
+            switchFileMonitor?.delegate = self
+        } catch {
+            os_log("AppState: FileMonitor init failed for %{public}@ — %{public}@. Smart Switch via /tmp signalling disabled.",
+                   log: appLog, type: .error, tmpPath.path, error.localizedDescription)
+            // Smart Switch via AX probing still works; the /tmp signalling is
+            // a secondary path (used by some launcher integrations).
+        }
     }
 
     func didReceive(changes: String) {

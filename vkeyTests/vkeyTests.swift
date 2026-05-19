@@ -7,6 +7,7 @@
 
 import XCTest
 import Defaults
+import AppKit
 
 @testable import vkey
 
@@ -1611,6 +1612,33 @@ final class TiengVietValidatorTests: XCTestCase {
     )
   }
 
+  func testCommitReplacementTargetIncludesEndingWhenCallerSwallowsIt() throws {
+    XCTAssertEqual(
+      InputProcessor.commitReplacementTarget(
+        word: "of",
+        endingChar: " ",
+        includeEndingChar: true
+      ),
+      "of "
+    )
+    XCTAssertEqual(
+      InputProcessor.commitReplacementTarget(
+        word: "of",
+        endingChar: ".",
+        includeEndingChar: true
+      ),
+      "of."
+    )
+    XCTAssertEqual(
+      InputProcessor.commitReplacementTarget(
+        word: "of",
+        endingChar: ".",
+        includeEndingChar: false
+      ),
+      "of"
+    )
+  }
+
   // MARK: - Lexicon / Spell Decision / Suggestion
 
   func testLexiconManagerEmbeddedDefaults() throws {
@@ -1792,5 +1820,676 @@ final class TiengVietValidatorTests: XCTestCase {
 
     XCTAssertFalse(tracker.detectFailure(telemetry: failure, appLikelySensitive: true))
     XCTAssertTrue(tracker.detectFailure(telemetry: failure, appLikelySensitive: true))
+  }
+
+  func testStepByStepUnicodeUnitsPreserveWholeCharacter() throws {
+    XCTAssertEqual(
+      EventSimulator.unicodeUnits(for: "ắ"),
+      String("ắ").utf16.map { UniChar($0) }
+    )
+    XCTAssertEqual(EventSimulator.unicodeUnits(for: "😀").count, 2)
+    XCTAssertEqual(EventSimulator.unicodeUnits(for: Character("a\u{0301}")).count, 2)
+  }
+
+  func testModifierOnlyHotkeyTogglesAfterPurePressAndFullRelease() throws {
+    let control = UInt64(NSEvent.ModifierFlags.control.rawValue)
+    let shift = UInt64(NSEvent.ModifierFlags.shift.rawValue)
+    let target = control | shift
+    let hook = EventHook(inputProcessor: InputProcessor(method: .Telex))
+
+    XCTAssertFalse(
+      hook.handleModifierOnlyHotkey(type: .flagsChanged, currentMods: target, modifierTarget: target)
+    )
+    XCTAssertFalse(
+      hook.handleModifierOnlyHotkey(type: .flagsChanged, currentMods: control, modifierTarget: target)
+    )
+    XCTAssertTrue(
+      hook.handleModifierOnlyHotkey(type: .flagsChanged, currentMods: 0, modifierTarget: target)
+    )
+  }
+
+  func testModifierOnlyHotkeyDoesNotToggleWhenExtraModifierIsAdded() throws {
+    let control = UInt64(NSEvent.ModifierFlags.control.rawValue)
+    let shift = UInt64(NSEvent.ModifierFlags.shift.rawValue)
+    let option = UInt64(NSEvent.ModifierFlags.option.rawValue)
+    let target = control | shift
+    let hook = EventHook(inputProcessor: InputProcessor(method: .Telex))
+
+    XCTAssertFalse(
+      hook.handleModifierOnlyHotkey(type: .flagsChanged, currentMods: target, modifierTarget: target)
+    )
+    XCTAssertFalse(
+      hook.handleModifierOnlyHotkey(
+        type: .flagsChanged,
+        currentMods: target | option,
+        modifierTarget: target
+      )
+    )
+    XCTAssertFalse(
+      hook.handleModifierOnlyHotkey(type: .flagsChanged, currentMods: 0, modifierTarget: target)
+    )
+  }
+
+  func testModifierOnlyHotkeyDoesNotToggleAfterInterveningKeyDown() throws {
+    let control = UInt64(NSEvent.ModifierFlags.control.rawValue)
+    let shift = UInt64(NSEvent.ModifierFlags.shift.rawValue)
+    let target = control | shift
+    let hook = EventHook(inputProcessor: InputProcessor(method: .Telex))
+
+    XCTAssertFalse(
+      hook.handleModifierOnlyHotkey(type: .flagsChanged, currentMods: target, modifierTarget: target)
+    )
+    XCTAssertFalse(
+      hook.handleModifierOnlyHotkey(type: .keyDown, currentMods: target, modifierTarget: target)
+    )
+    XCTAssertFalse(
+      hook.handleModifierOnlyHotkey(type: .flagsChanged, currentMods: 0, modifierTarget: target)
+    )
+  }
+}
+
+// MARK: - vkey 1.5.0 Phase 1 — Engine regression suite
+
+/// Tests added in the 1.5.0 engine pass:
+/// - Parametric tone placement for kiểu cũ vs kiểu mới (1.4)
+/// - chuaNguyenAmUO recomputed after typo correction (1.1)
+/// - Trie case-insensitive option (1.3)
+/// - Late D toggle shared between Telex & VNI (1.6)
+/// - pop() keeps tone when vowel remains (1.7)
+final class EngineV150Tests: XCTestCase {
+
+  private func telex(_ input: String) -> String {
+    let p = InputProcessor(method: .Telex)
+    p.newWord()
+    for c in input { p.push(char: c) }
+    return p.transformed
+  }
+
+  private func vni(_ input: String) -> String {
+    let p = InputProcessor(method: .VNI)
+    p.newWord()
+    for c in input { p.push(char: c) }
+    return p.transformed
+  }
+
+  // MARK: - 1.4 Tone placement parametric (kiểu cũ vs kiểu mới)
+
+  /// Pure transform that bypasses `Defaults` so the test works under XCTest
+  /// parallelization (the test plan has `parallelizable: true`, and `Defaults`
+  /// is a global UserDefaults wrapper — read/write races would otherwise flap).
+  ///
+  /// Drives a Telex engine to produce a TiengVietState, then calls
+  /// `TiengVietTransformer.transform` directly with an explicit `kieuMoi` flag.
+  private func telexTransform(_ input: String, kieuMoi: Bool) -> String {
+    let engine = Telex()
+    var state = TiengVietState.empty
+    for c in input {
+      let result = engine.push(char: c, state: state)
+      state = result.state
+    }
+    guard !state.isBlank else { return "" }
+
+    var finalDauMu = state.dauMu
+    let nguyenAmLower = String(state.thanhPhanTieng.nguyenAm).lowercased()
+    if state.dauMu == .khongMu, nguyenAmLower == "uye", !state.thanhPhanTieng.phuAmCuoi.isEmpty {
+      finalDauMu = .muUp
+    }
+    if state.dauMu == .khongMu, nguyenAmLower == "a",
+       String(state.thanhPhanTieng.phuAmCuoi).lowercased() == "k" {
+      finalDauMu = .muNgua
+    }
+
+    let finalDauThanh: DauThanh =
+      (state.dauThanh == .bang)
+        ? (state.thanhPhanTieng.uuTienDauThanh ?? state.dauThanh)
+        : state.dauThanh
+
+    return TiengVietTransformer.transform(
+      thanhPhanTieng: state.thanhPhanTieng,
+      dauThanh: finalDauThanh,
+      dauMu: finalDauMu,
+      gachD: state.gachD,
+      kieuMoi: kieuMoi
+    )
+  }
+
+  /// Pairs of (telex input, expected_kieuCu, expected_kieuMoi).
+  ///
+  /// - `oa`/`oe`/`uy` without a final consonant → tone splits between styles.
+  /// - With a final consonant (or 3-vowel block) both styles place the tone on
+  ///   the second vowel by phonological convention — so both columns match.
+  ///
+  /// Inputs that need breve (ă) use `aw`; inputs that need circumflex (ê/ô)
+  /// use the doubled-vowel Telex shortcut (`ee`/`oo`).
+  private let toneTable: [(input: String, kieuCu: String, kieuMoi: String)] = [
+    // === oa — true split ===
+    ("hoaf",   "hòa",   "hoà"),
+    ("hoas",   "hóa",   "hoá"),
+    ("xoar",   "xỏa",   "xoả"),
+    ("loax",   "lõa",   "loã"),
+    // === oa + final consonant — both styles agree ===
+    ("hoanf",   "hoàn",   "hoàn"),
+    ("toans",   "toán",   "toán"),
+    ("hoawcj",  "hoặc",   "hoặc"),  // o + ă (aw) + c — breve required
+    // === oe — true split ===
+    ("hoer",   "hỏe",   "hoẻ"),
+    ("loef",   "lòe",   "loè"),
+    // === uy — true split ===
+    ("thuys",  "thúy",   "thuý"),
+    ("quys",   "quý",    "quý"),    // qu is initial consonant → only y is vowel; both place on y
+    // === uy + final consonant — both styles agree ===
+    ("huyeetj", "huyệt", "huyệt"),  // uyê + t
+    ("khuyeenf","khuyền","khuyền"), // uyê + n + huyền
+  ]
+
+  func test_tonePlacement_parametric() throws {
+    for c in toneTable {
+      let gotCu = telexTransform(c.input, kieuMoi: false)
+      XCTAssertEqual(gotCu, c.kieuCu, "kiểu cũ: \(c.input) → expected \(c.kieuCu), got \(gotCu)")
+      let gotMoi = telexTransform(c.input, kieuMoi: true)
+      XCTAssertEqual(gotMoi, c.kieuMoi, "kiểu mới: \(c.input) → expected \(c.kieuMoi), got \(gotMoi)")
+    }
+  }
+
+  // MARK: - 1.1 chuaNguyenAmUO recomputed after typo correction
+
+  func test_chuaNguyenAmUO_afterOuSwap() {
+    // "bous" → typo recovery makes vowel "uo" → flag must be true so móc
+    // applies to both u and o → "buố"
+    let result = TiengVietParser.parse(Array("bou"), autoTypoCorrection: true)
+    XCTAssertEqual(String(result.nguyenAm).lowercased(), "uo")
+    XCTAssertTrue(
+      result.chuaNguyenAmUO,
+      "After 'ou'→'uo' typo swap, chuaNguyenAmUO must be re-derived from NguyenAmUO table"
+    )
+  }
+
+  func test_chuaNguyenAmUO_afterEiSwap() {
+    let result = TiengVietParser.parse(Array("vei"), autoTypoCorrection: true)
+    XCTAssertEqual(String(result.nguyenAm).lowercased(), "ie")
+    XCTAssertFalse(
+      result.chuaNguyenAmUO,
+      "After 'ei'→'ie' typo swap, chuaNguyenAmUO must be false (ie not in NguyenAmUO)"
+    )
+  }
+
+  // MARK: - 1.2 Parser is pure (Defaults not read inside)
+
+  func test_parser_pureWithoutDefaults() {
+    let prev = Defaults[.autoTypoCorrection]
+    defer { Defaults[.autoTypoCorrection] = prev }
+    Defaults[.autoTypoCorrection] = false
+
+    // Even with Defaults turned OFF, passing autoTypoCorrection:true must
+    // produce the corrected result. Proves Parser doesn't read Defaults.
+    let r = TiengVietParser.parse(Array("phuogn"), autoTypoCorrection: true)
+    XCTAssertEqual(String(r.phuAmCuoi).lowercased(), "ng")
+  }
+
+  // MARK: - 1.3 Trie case-insensitive
+
+  func test_trie_caseSensitiveByDefault() {
+    let t = Trie()
+    t.insert("hello")
+    XCTAssertNil(t.findLongestPrefix(in: "HELLO"))
+    XCTAssertEqual(t.findLongestPrefix(in: "hello world"), "hello")
+  }
+
+  func test_trie_caseInsensitiveFoldsBoth() {
+    let t = Trie(caseInsensitive: true)
+    t.insert("Hello")
+    XCTAssertEqual(t.findLongestPrefix(in: "HELLO world"), "Hello",
+                   "case-insensitive lookup returns the originally-stored casing")
+    XCTAssertEqual(t.findLongestPrefix(in: "hello"), "Hello")
+    XCTAssertTrue(t.contains("HELLO"))
+    XCTAssertTrue(t.contains("hELLo"))
+    XCTAssertFalse(t.contains("hel"), "prefix is not a stored end-of-word")
+  }
+
+  // MARK: - 1.6 Late D toggle works identically in Telex & VNI
+
+  func test_lateDToggle_telex() {
+    // "dinjhd" → "định" (j=nặng applied to i, then trailing d converts d→đ)
+    XCTAssertEqual(telex("dinjhd"), "định")
+  }
+
+  func test_lateDToggle_vni() {
+    // "dinh59" → "định" (5=nặng, trailing 9 toggles d→đ)
+    XCTAssertEqual(vni("dinh59"), "định")
+  }
+
+  // MARK: - 1.7 pop() contract
+
+  func test_pop_keepsToneWhenVowelRemains() {
+    // "tois" → "tói" (state has tone .sac); pop one char → "to" — vowel
+    // remains, but the trailing 's' was the tone trigger, so the popped
+    // state must drop the tone since 's' was the tone-key (engine pops it
+    // along with the visual character).
+    //
+    // What we DO want to lock: pop on a state with a vowel + tone that came
+    // from withTone() (not from a Telex 's'/'f' key) keeps the tone.
+    let s = TiengVietState.empty
+      .push("t").push("o").push("i")
+      .withTone(.sac)
+    XCTAssertEqual(s.transformed, "tói")
+    let popped = s.pop()
+    XCTAssertEqual(popped.dauThanh, .sac, "tone is preserved when a vowel remains")
+    XCTAssertEqual(popped.transformed, "tó")
+  }
+
+  func test_pop_clearsToneWhenNoVowel() {
+    let s = TiengVietState.empty.push("t").push("a").withTone(.sac)
+    XCTAssertEqual(s.transformed, "tá")
+    let popped = s.pop().pop() // remove both 'a' and 't'
+    XCTAssertTrue(popped.isBlank)
+    XCTAssertEqual(popped.dauThanh, .bang)
+    XCTAssertEqual(popped.dauMu, .khongMu)
+  }
+
+  // MARK: - 1.5 Double-horn applies only when first two vowels are u+o
+
+  func test_doubleHorn_onUoOnly() {
+    // "dduwowcj" → "được" — both u and o get the horn
+    XCTAssertEqual(telex("dduwowcj"), "được")
+  }
+
+  func test_horn_doesNotDoubleApplyOnNonUo() {
+    // "tuowi" should produce "tươi" (uoi vowel group is in NguyenAmUO → uo
+    // prefix gets double-horn, i untouched). Regression guard for 1.5.
+    XCTAssertEqual(telex("tuowi"), "tươi")
+  }
+}
+
+// MARK: - vkey 1.5.0 Phase 2 — Platform regression suite
+
+/// Phase 2 added an XMLParser-based appcast parser to replace fragile regex,
+/// plus a few platform contracts (run-loop source ownership, file-monitor
+/// non-UTF8 fallback). Only the appcast parser is testable without an event
+/// tap / root permission — the other contracts are exercised by smoke runs.
+final class AppcastParserTests: XCTestCase {
+
+  private let sampleAppcast = #"""
+  <?xml version="1.0" encoding="UTF-8"?>
+  <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <channel>
+      <title>vkey</title>
+      <item>
+        <title>Version 1.5.0</title>
+        <sparkle:version>15000</sparkle:version>
+        <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
+        <enclosure
+          url="https://example.com/vkey-1.5.0.dmg"
+          sparkle:edSignature="abc"
+          length="12345"
+          type="application/octet-stream" />
+      </item>
+      <item>
+        <title>Version 1.4.6</title>
+        <sparkle:version>14600</sparkle:version>
+        <sparkle:shortVersionString>1.4.6</sparkle:shortVersionString>
+        <enclosure url="https://example.com/vkey-1.4.6.dmg" length="1" type="x" />
+      </item>
+    </channel>
+  </rss>
+  """#
+
+  func test_parsesTopItemOnly() throws {
+    let data = sampleAppcast.data(using: .utf8)!
+    let summary = AppcastParser.parseTopItem(data: data)
+    XCTAssertEqual(summary?.versionCode, "15000")
+    XCTAssertEqual(summary?.shortVersion, "1.5.0")
+    XCTAssertEqual(summary?.enclosureURL, "https://example.com/vkey-1.5.0.dmg")
+  }
+
+  func test_returnsNilOnGarbage() {
+    let garbage = Data("not actually xml at all".utf8)
+    XCTAssertNil(AppcastParser.parseTopItem(data: garbage))
+  }
+
+  func test_emptyItemIsTolerated() throws {
+    let xml = #"""
+    <?xml version="1.0"?>
+    <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+      <channel><item></item></channel>
+    </rss>
+    """#
+    let summary = AppcastParser.parseTopItem(data: Data(xml.utf8))
+    XCTAssertNotNil(summary)
+    XCTAssertNil(summary?.versionCode)
+    XCTAssertNil(summary?.shortVersion)
+    XCTAssertNil(summary?.enclosureURL)
+  }
+}
+
+// MARK: - vkey 1.5.0 Phase 4 — Lexicon schema v5 + EnVnReference
+
+final class LexiconV150Tests: XCTestCase {
+
+  func test_lexiconPackage_decodesWithoutBilingualFields() throws {
+    // Old (v4) JSON: no en_vn_mapping, no _meta. Must still decode.
+    let oldJSON = #"""
+    {
+      "version": 4,
+      "vietnamese": ["và", "của"],
+      "english": ["of", "if"],
+      "keep": ["lisa"]
+    }
+    """#
+    let package = try JSONDecoder().decode(
+      LexiconUpdatePackage.self,
+      from: Data(oldJSON.utf8)
+    )
+    XCTAssertEqual(package.version, 4)
+    XCTAssertEqual(package.vietnamese, ["và", "của"])
+    XCTAssertNil(package.enVnMapping)
+    XCTAssertNil(package.vnEnMapping)
+    XCTAssertNil(package.meta)
+  }
+
+  func test_lexiconPackage_decodesV5Schema() throws {
+    let newJSON = #"""
+    {
+      "_meta": {
+        "version": 5,
+        "generated_at": "2026-05-19",
+        "sources": [
+          {
+            "name": "English Wiktionary",
+            "url": "https://kaikki.org",
+            "license": "CC BY-SA 4.0",
+            "used_for": "en_vn_mapping{}"
+          }
+        ],
+        "license_of_aggregate": "CC BY-SA 4.0 + GPL-3.0"
+      },
+      "version": 5,
+      "vietnamese": ["và"],
+      "english": ["of"],
+      "keep": [],
+      "en_vn_mapping": {
+        "and": ["và"],
+        "love": ["yêu", "tình yêu"]
+      },
+      "vn_en_mapping": {
+        "máy tính": ["computer"]
+      }
+    }
+    """#
+    let package = try JSONDecoder().decode(
+      LexiconUpdatePackage.self,
+      from: Data(newJSON.utf8)
+    )
+    XCTAssertEqual(package.version, 5)
+    XCTAssertEqual(package.enVnMapping?["and"], ["và"])
+    XCTAssertEqual(package.enVnMapping?["love"], ["yêu", "tình yêu"])
+    XCTAssertEqual(package.vnEnMapping?["máy tính"], ["computer"])
+    XCTAssertEqual(package.meta?.version, 5)
+    XCTAssertEqual(package.meta?.sources?.first?.license, "CC BY-SA 4.0")
+  }
+
+  func test_enVnReference_lookupIsCaseInsensitive() {
+    let ref = EnVnReference()
+    ref.load(
+      en2vn: ["Love": ["yêu", "tình yêu"], "computer": ["máy tính"]],
+      vn2en: ["máy tính": ["computer"]]
+    )
+    XCTAssertEqual(ref.lookupEnglish("LOVE"), ["yêu", "tình yêu"])
+    XCTAssertEqual(ref.lookupEnglish("love"), ["yêu", "tình yêu"])
+    XCTAssertEqual(ref.lookupEnglish("Computer"), ["máy tính"])
+    XCTAssertNil(ref.lookupEnglish("unknown"))
+    XCTAssertEqual(ref.lookupVietnamese("Máy Tính"), ["computer"])
+  }
+
+  func test_enVnReference_loadReplacesOldData() {
+    let ref = EnVnReference()
+    ref.load(en2vn: ["love": ["yêu"]], vn2en: nil)
+    XCTAssertNotNil(ref.lookupEnglish("love"))
+    ref.load(en2vn: ["work": ["công việc"]], vn2en: nil)
+    XCTAssertNil(ref.lookupEnglish("love"))
+    XCTAssertEqual(ref.lookupEnglish("work"), ["công việc"])
+  }
+
+  func test_entryCount_reflectsBothMaps() {
+    let ref = EnVnReference()
+    XCTAssertEqual(ref.entryCount.en, 0)
+    XCTAssertEqual(ref.entryCount.vn, 0)
+    ref.load(en2vn: ["a": ["A"], "b": ["B"]], vn2en: ["c": ["C"]])
+    XCTAssertEqual(ref.entryCount.en, 2)
+    XCTAssertEqual(ref.entryCount.vn, 1)
+  }
+}
+
+// MARK: - vkey 1.5.0 Phase 9 — UsageStatistics
+
+/// Tests use a per-test isolated `UsageStatistics(storageDir:)` so parallel
+/// XCTest scheduling (the test plan has `parallelizable: true`) cannot
+/// race on the singleton's in-memory or on-disk state.
+final class UsageStatisticsTests: XCTestCase {
+
+  private var stats: UsageStatistics!
+  private var tmpDir: URL!
+
+  override func setUp() {
+    super.setUp()
+    tmpDir = URL(fileURLWithPath: NSTemporaryDirectory())
+      .appendingPathComponent("vkey-stats-\(UUID().uuidString)", isDirectory: true)
+    stats = UsageStatistics(storageDir: tmpDir)
+    Defaults.reset(.userAllowWords)
+    Defaults.reset(.userKeepWords)
+    Defaults.reset(.userDenyWords)
+    Defaults[.statisticsEnabled] = true
+  }
+
+  override func tearDown() {
+    stats = nil
+    try? FileManager.default.removeItem(at: tmpDir)
+    Defaults.reset(.userAllowWords)
+    Defaults.reset(.userKeepWords)
+    Defaults.reset(.userDenyWords)
+    super.tearDown()
+  }
+
+  func test_recordCommit_incrementsAggregates() throws {
+    for _ in 0..<3 {
+      stats.recordCommit(
+        decision: .keepVietnamese,
+        rawInput: "viet",
+        transformed: "việt",
+        appBundleId: "com.apple.dt.Xcode"
+      )
+    }
+    // Let the async queue drain.
+    let exp = expectation(description: "queue drain")
+    DispatchQueue.global().asyncAfter(deadline: .now() + 0.05) { exp.fulfill() }
+    wait(for: [exp], timeout: 1.0)
+
+    let summary = stats.currentWeekSummary()
+    XCTAssertEqual(summary.wordsTotal, 3)
+    XCTAssertEqual(summary.wordsKeptVietnamese, 3)
+    XCTAssertTrue(summary.topVietnameseWords.contains { $0.word == "việt" && $0.count == 3 })
+    XCTAssertTrue(summary.topApps.contains { $0.word == "com.apple.dt.Xcode" })
+  }
+
+  func test_disabledByDefaults_noOps() throws {
+    Defaults[.statisticsEnabled] = false
+    defer { Defaults[.statisticsEnabled] = true }
+
+    stats.recordCommit(
+      decision: .keepVietnamese,
+      rawInput: "v", transformed: "v", appBundleId: nil
+    )
+    let exp = expectation(description: "queue drain")
+    DispatchQueue.global().asyncAfter(deadline: .now() + 0.05) { exp.fulfill() }
+    wait(for: [exp], timeout: 1.0)
+
+    XCTAssertEqual(stats.currentWeekSummary().wordsTotal, 0)
+  }
+
+  // The "weekly feedback" tests below exercise the pure-function core of the
+  // promotion logic (`UsageStatistics.computePromotion(...)`) rather than the
+  // instance method that touches global `Defaults`. The instance method is
+  // a thin wrapper around the pure function — running the pure function
+  // gives us deterministic results regardless of XCTest parallelization.
+
+  func test_computePromotion_englishAboveThreshold() {
+    let result = UsageStatistics.computePromotion(
+      enRestoreStreak: ["deploy": 5, "hello": 5],
+      vnKeepStreak: [:],
+      existingAllow: [], existingKeep: [], existingDeny: []
+    )
+    XCTAssertEqual(Set(result.allow), Set(["deploy", "hello"]))
+    XCTAssertTrue(result.keep.isEmpty)
+  }
+
+  func test_computePromotion_vietnameseAboveThreshold() {
+    let result = UsageStatistics.computePromotion(
+      enRestoreStreak: [:],
+      vnKeepStreak: ["việt": 5, "không": 7, "alphaonly": 6],
+      existingAllow: [], existingKeep: [], existingDeny: []
+    )
+    XCTAssertEqual(Set(result.keep), Set(["việt", "không"]),
+                   "ascii-only word should be skipped since it has no Vietnamese marker")
+  }
+
+  func test_computePromotion_belowThresholdSkipped() {
+    let result = UsageStatistics.computePromotion(
+      enRestoreStreak: ["deploy": 3],
+      vnKeepStreak: ["việt": 4],
+      existingAllow: [], existingKeep: [], existingDeny: [],
+      threshold: 5
+    )
+    XCTAssertTrue(result.allow.isEmpty)
+    XCTAssertTrue(result.keep.isEmpty)
+  }
+
+  func test_computePromotion_existingEntriesSkipped() {
+    let result = UsageStatistics.computePromotion(
+      enRestoreStreak: ["deploy": 5, "release": 5],
+      vnKeepStreak: ["việt": 5, "không": 5],
+      existingAllow: ["deploy"],
+      existingKeep: ["không"],
+      existingDeny: []
+    )
+    XCTAssertEqual(result.allow, ["release"])
+    XCTAssertEqual(result.keep, ["việt"])
+  }
+
+  func test_computePromotion_denyTrumpsEverything() {
+    let result = UsageStatistics.computePromotion(
+      enRestoreStreak: ["deploy": 99],
+      vnKeepStreak: ["việt": 99],
+      existingAllow: [],
+      existingKeep: [],
+      existingDeny: ["deploy", "việt"]
+    )
+    XCTAssertTrue(result.allow.isEmpty,
+                  "User has explicitly denied — promotion must skip even at high count")
+    XCTAssertTrue(result.keep.isEmpty)
+  }
+
+  func test_computePromotion_capsBatchSize() {
+    // Use letter-only labels so they pass the `isASCIIAlphabeticWord` guard
+    // (digits would be rejected). Generate 20 distinct ASCII words.
+    var streak: [String: Int] = [:]
+    let letters = "abcdefghijklmnopqrst"
+    for c in letters {
+      streak["alpha\(c)"] = 5
+    }
+    XCTAssertEqual(streak.count, 20)
+    let result = UsageStatistics.computePromotion(
+      enRestoreStreak: streak, vnKeepStreak: [:],
+      existingAllow: [], existingKeep: [], existingDeny: [],
+      maxBatch: 5
+    )
+    XCTAssertEqual(result.allow.count, 5)
+  }
+}
+
+// MARK: - vkey 1.5.0 Phase 10 — UserDataMigration
+
+final class UserDataMigrationTests: XCTestCase {
+
+  override func setUp() {
+    super.setUp()
+    // Baseline so the test starts from known defaults.
+    Defaults.reset(.userAllowWords)
+    Defaults.reset(.userKeepWords)
+    Defaults.reset(.userDenyWords)
+    Defaults.reset(.macros)
+    Defaults.reset(.perAppOverride)
+  }
+
+  func test_currentExport_capturesState() {
+    Defaults[.userAllowWords] = ["alpha", "beta"]
+    Defaults[.macros] = [Macro(from: "vn", to: "Việt Nam")]
+    Defaults[.perAppOverride] = ["com.apple.Terminal": "off"]
+    defer {
+      Defaults.reset(.userAllowWords)
+      Defaults.reset(.macros)
+      Defaults.reset(.perAppOverride)
+    }
+
+    let export = UserDataMigration.currentExport(includeStatistics: false)
+    XCTAssertEqual(export.schemaVersion, UserDataExport.currentSchemaVersion)
+    XCTAssertEqual(export.userAllowWords?.sorted(), ["alpha", "beta"])
+    XCTAssertEqual(export.macros?.first?.from, "vn")
+    XCTAssertEqual(export.perAppOverride?["com.apple.Terminal"], "off")
+  }
+
+  func test_encodeRoundTrip() throws {
+    let export = UserDataMigration.currentExport(includeStatistics: false)
+    let data = try UserDataMigration.encode(export)
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let decoded = try decoder.decode(UserDataExport.self, from: data)
+    XCTAssertEqual(decoded.schemaVersion, export.schemaVersion)
+    XCTAssertEqual(decoded.appVersion, export.appVersion)
+  }
+
+  func test_importMerge_keepsExistingEntries() {
+    Defaults[.userAllowWords] = ["existing"]
+    defer { Defaults.reset(.userAllowWords) }
+
+    let export = UserDataExport(
+      schemaVersion: 1, exportedAt: Date(),
+      appVersion: "1.5.0", appBuild: "15000",
+      typingMethod: nil, newStyleTonePlacement: nil, autoTypoCorrection: nil,
+      allowedZWJF: nil, hudEnabled: nil, modifierOnlyToggleHotkey: nil,
+      smartSwitchEnabled: nil, smartSwitchApps: nil, perAppOverride: nil,
+      spellCheckEnabled: nil, spellCheckInSentenceEnabled: nil,
+      englishAutoRestoreEnabled: nil, restorePolicy: nil,
+      dictionaryUpdateChannel: nil, dictionaryGitHubUpdateEnabled: nil,
+      suggestionEnabled: nil, autoApplyHighConfidenceSuggestion: nil,
+      useEnVnReference: nil,
+      personalDictionaryEnabled: nil,
+      userAllowWords: ["fresh"], userKeepWords: nil, userDenyWords: nil,
+      macros: nil, statistics: nil
+    )
+    let changes = UserDataMigration.importExport(export, replaceLists: false)
+    XCTAssertTrue(changes.contains { $0.contains("Allow words: +1") })
+    XCTAssertEqual(Set(Defaults[.userAllowWords]), Set(["existing", "fresh"]))
+  }
+
+  func test_importReplace_overwritesLists() {
+    Defaults[.userAllowWords] = ["existing"]
+    defer { Defaults.reset(.userAllowWords) }
+
+    let export = UserDataExport(
+      schemaVersion: 1, exportedAt: Date(),
+      appVersion: "1.5.0", appBuild: "15000",
+      typingMethod: nil, newStyleTonePlacement: nil, autoTypoCorrection: nil,
+      allowedZWJF: nil, hudEnabled: nil, modifierOnlyToggleHotkey: nil,
+      smartSwitchEnabled: nil, smartSwitchApps: nil, perAppOverride: nil,
+      spellCheckEnabled: nil, spellCheckInSentenceEnabled: nil,
+      englishAutoRestoreEnabled: nil, restorePolicy: nil,
+      dictionaryUpdateChannel: nil, dictionaryGitHubUpdateEnabled: nil,
+      suggestionEnabled: nil, autoApplyHighConfidenceSuggestion: nil,
+      useEnVnReference: nil,
+      personalDictionaryEnabled: nil,
+      userAllowWords: ["fresh"], userKeepWords: nil, userDenyWords: nil,
+      macros: nil, statistics: nil
+    )
+    UserDataMigration.importExport(export, replaceLists: true)
+    XCTAssertEqual(Defaults[.userAllowWords], ["fresh"])
   }
 }

@@ -19,6 +19,10 @@ private let kModifierMask: UInt64 =
 class EventHook {
 
   var eventTap: CFMachPort?
+  /// Run-loop source paired with `eventTap`. Stored so `destroy()` and
+  /// `unregisterEventTap` can remove the exact source that was added,
+  /// instead of creating a fresh (and never-actually-attached) one.
+  private var runLoopSource: CFRunLoopSource?
   var keyLayout: KeyboardUS
   var inputProcessor: InputProcessor
   var processing = false
@@ -40,6 +44,49 @@ class EventHook {
     self.inputProcessor = inputProcessor
   }
 
+  @discardableResult
+  func handleModifierOnlyHotkey(
+    type: CGEventType,
+    currentMods: UInt64,
+    modifierTarget: UInt64
+  ) -> Bool {
+    guard modifierTarget != 0 else { return false }
+
+    if type == .flagsChanged {
+      if currentMods == modifierTarget && modifierArmedMask == 0 {
+        modifierArmedMask = modifierTarget
+        modifierKeyUsedDuringArm = false
+        return false
+      }
+
+      guard modifierArmedMask != 0 else { return false }
+
+      let hasExtraModifier = (currentMods & ~modifierTarget) != 0
+      if hasExtraModifier {
+        modifierArmedMask = 0
+        modifierKeyUsedDuringArm = false
+        return false
+      }
+
+      if currentMods == 0 {
+        let fire = !modifierKeyUsedDuringArm
+        modifierArmedMask = 0
+        modifierKeyUsedDuringArm = false
+        return fire
+      }
+
+      // The user released part of the target combo. Keep waiting until all
+      // target modifiers are up so a normal one-by-one release still toggles.
+      return false
+    }
+
+    if type == .keyDown && modifierArmedMask != 0 {
+      modifierKeyUsedDuringArm = true
+    }
+
+    return false
+  }
+
   func setEnabled(_ value: Bool) {
     self.processing = value
     self.inputProcessor.newWord()
@@ -57,6 +104,10 @@ class EventHook {
       CFMachPortInvalidate(eventTap)
       unregisterEventTap(eventTap)
     }
+  }
+
+  deinit {
+    destroy()
   }
 
   // Sets up the event tap to listen for keyboard and mouse events.
@@ -88,14 +139,19 @@ class EventHook {
     CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
     CGEvent.tapEnable(tap: eventTap, enable: true)
     self.eventTap = eventTap
+    self.runLoopSource = runLoopSource
     self.appState = appState
   }
 
-  // Unregisters the event tap from the run loop.
+  /// Unregisters the event tap from the run loop. Uses the run-loop source
+  /// captured in `setupEventTap`; creating a fresh source here (the previous
+  /// behaviour) would leak the original and remove a source that was never
+  /// actually added.
   func unregisterEventTap(_ eventTap: CFMachPort) {
-    if let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0) {
-      CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
+    if let source = self.runLoopSource {
+      CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
     }
+    self.runLoopSource = nil
     self.eventTap = nil
   }
 }
@@ -167,26 +223,16 @@ func eventTapCallback(
   // intervening keyDown.
   let modifierTarget = UInt64(Defaults[.modifierOnlyToggleHotkey])
   if modifierTarget != 0 {
-    if type == .flagsChanged {
-      let currentMods = event.flags.rawValue & kModifierMask
-      if currentMods == modifierTarget && eventHook.modifierArmedMask == 0 {
-        // Target combo exactly pressed — arm
-        eventHook.modifierArmedMask = modifierTarget
-        eventHook.modifierKeyUsedDuringArm = false
-      } else if eventHook.modifierArmedMask != 0 && currentMods != modifierTarget {
-        // Some modifier was released or extra modifier added — fire if clean
-        let fire = !eventHook.modifierKeyUsedDuringArm
-        eventHook.modifierArmedMask = 0
-        eventHook.modifierKeyUsedDuringArm = false
-        if fire, let appState = eventHook.appState {
-          DispatchQueue.main.async {
-            appState.setEnabled(set: !appState.enabled)
-          }
-        }
+    let currentMods = event.flags.rawValue & kModifierMask
+    let shouldToggle = eventHook.handleModifierOnlyHotkey(
+      type: type,
+      currentMods: currentMods,
+      modifierTarget: modifierTarget
+    )
+    if shouldToggle, let appState = eventHook.appState {
+      DispatchQueue.main.async {
+        appState.setEnabled(set: !appState.enabled)
       }
-    } else if type == .keyDown && eventHook.modifierArmedMask != 0 {
-      // Any keyDown while armed disqualifies this press as a "pure" toggle
-      eventHook.modifierKeyUsedDuringArm = true
     }
   }
 
@@ -200,6 +246,9 @@ func eventTapCallback(
           appState.enabledBeforeSmartSwitch = appState.enabled
           appState.smartSwitchActive = true
           appState.setEnabledWithoutPersist(false)
+          // 1.5.0: record fire for weekly stats. Async-recorded inside
+          // UsageStatistics so the event tap callback stays fast.
+          UsageStatistics.shared.recordSmartSwitchFire(toApp: focusedBundleId)
         }
       } else if appState.smartSwitchActive {
         appState.smartSwitchActive = false

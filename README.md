@@ -1,8 +1,11 @@
 # vkey
 
-Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
+Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 13 Ventura trở lên.
+
+**Phiên bản hiện tại: 1.5.0 — "Bilingual Reborn"** ([CHANGELOG](CHANGELOG.md))
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
+![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
 > **vkey là một bản fork mở rộng từ [Caffee](https://github.com/khanhicetea/Caffee)** của tác giả Khanh Nguyen ([@khanhicetea](https://github.com/khanhicetea)). Toàn bộ engine xử lý âm tiết tiếng Việt (Telex / VNI / Parser / Transformer / Validator) cùng kiến trúc Platform-Layer ban đầu đều do tác giả gốc xây dựng. 
 > 
@@ -31,6 +34,9 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ Khởi động cùng macOS (tuỳ chọn).
 - ✅ Hoạt động xuyên QWERTZ / AZERTY / Dvorak (dùng physical key code → mapping QWERTY position cho Telex/VNI).
 - ✅ **Cập nhật trực tiếp (Sparkle Integration)**: Tải và cài đặt trực tiếp bản cập nhật mới nhanh gọn, an toàn.
+- ✅ **Thống kê sử dụng & tự học hành vi (mới ở v1.5.0)**: Theo dõi cục bộ (không gửi đi đâu) các từ bạn gõ nhiều nhất trong tuần. Mỗi tuần, các từ tiếng Anh được khôi phục ≥5 lần tự động được thêm vào danh sách `Allow` để lần sau bộ gõ nhận diện nhanh hơn; các từ tiếng Việt được giữ nguyên ≥5 lần được thêm vào danh sách `Keep` để không bao giờ bị auto-restore nhầm sang tiếng Anh. Có thể tắt hoàn toàn hoặc xóa dữ liệu trong tab "Thống kê & Sao lưu".
+- ✅ **Sao lưu & khôi phục dữ liệu cá nhân (mới ở v1.5.0)**: Xuất / nhập JSON gồm toàn bộ Cài đặt, Macro, từ điển cá nhân, Smart Switch, per-app override, thống kê. Khi cập nhật phiên bản, app tự động hỏi sao lưu trước khi tiếp tục.
+- ✅ **Từ điển tham chiếu Anh-Việt (mới ở v1.5.0)**: 110+ cặp từ song ngữ giúp bộ gõ phân biệt tiếng Anh / tiếng Việt chính xác hơn. Nguồn: Wiktionary (CC BY-SA 4.0) — xem [LICENSE-DATA.md](LICENSE-DATA.md).
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
 
 ## Hình ảnh giao diện
@@ -61,7 +67,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 
 ### Build từ source
 
-Yêu cầu: macOS 14+, Xcode 16+ (Swift 5+).
+Yêu cầu: macOS 13+, Xcode 15.3+ (Swift 5.10+).
 
 ```bash
 git clone https://github.com/tuanlongsav/vkey.git
@@ -126,6 +132,18 @@ vkey là một sản phẩm nguồn mở phát triển vì cộng đồng, kế 
 - **vkey** © 2026 longht ([@tuanlongsav](https://github.com/tuanlongsav)) — các tính năng mở rộng và hoàn thiện hệ thống.
 
 Mỗi file source vẫn giữ header gốc của tác giả Caffee khi có. Vui lòng tôn trọng attribution khi tiếp tục fork.
+
+### Nguồn dữ liệu từ điển (bổ sung từ v1.5.0)
+
+vkey 1.5.0 tích hợp dữ liệu từ điển song ngữ Anh-Việt từ các nguồn mở sau, tuân thủ đầy đủ điều khoản license của từng nguồn:
+
+- **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** © Luông Hiếu Thi ([@hieuthi](https://github.com/hieuthi)) — 7.184 âm tiết tiếng Việt chuẩn (`vietnamese[]`).
+- **English Wiktionary** qua **[Wiktextract](https://github.com/tatuylonen/wiktextract)** + **[Kaikki.org](https://kaikki.org)** — Dữ liệu cặp từ Anh↔Việt (`en_vn_mapping`). Phân phối lại theo **CC BY-SA 4.0**.
+- **[wordfreq](https://github.com/rspeer/wordfreq)** © Robyn Speer — Bảng tần suất từ tiếng Anh để chọn lọc `english[]`. MIT license cho tool, CC BY-SA 4.0 cho phần data nguồn Wiktionary.
+
+Dữ liệu phái sinh nằm trong `lexicon/lexicon-update.json` và được phát hành lại theo **CC BY-SA 4.0** (data) song song với **GPL-3.0** (code). Xem chi tiết tại [`LICENSE-DATA.md`](LICENSE-DATA.md).
+
+Quy trình build lexicon: `Tools/build_lexicon.py` (yêu cầu `pip install wordfreq requests`).
 
 ### Lưu ý về tên gọi
 

@@ -35,7 +35,6 @@
 /// - d99 → hủy gạch ngang, in số 9
 
 import Foundation
-import Defaults
 
 class VNI: TypingMethod {
 
@@ -84,14 +83,8 @@ class VNI: TypingMethod {
     }
 
     // Xử lý phím 9 gõ cuối từ để gạch D (Late D toggle, ví dụ: dinh9 -> định)
-    if Defaults[.autoTypoCorrection],
-       state.chuKhongDau.count >= 3,
-       let chuCaiDau = state.chuKhongDau.first,
-       (chuCaiDau == "d" || chuCaiDau == "D"),
-       !state.gachD,
-       (char == "9")
-    {
-      return (state.withGachD(), true)
+    if let toggled = state.tryLateDToggle(char: char, triggerChars: ["9"]) {
+      return (toggled, true)
     }
 
     // Xử lý các phím số dấu (chỉ khi đã có nguyên âm)

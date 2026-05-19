@@ -1,5 +1,36 @@
 {
-  "version": 4,
+  "_meta": {
+    "version": 5,
+    "generated_at": "2026-05-19",
+    "sources": [
+      {
+        "name": "common-vietnamese-syllables",
+        "url": "https://github.com/vietnameselanguage/syllable",
+        "license": "Open / public (per upstream project)",
+        "used_for": "vietnamese[]"
+      },
+      {
+        "name": "English Wiktionary via Wiktextract / Kaikki.org",
+        "url": "https://kaikki.org/dictionary/rawdata.html",
+        "license": "CC BY-SA 4.0",
+        "used_for": "en_vn_mapping{}"
+      },
+      {
+        "name": "wordfreq (Robyn Speer)",
+        "url": "https://github.com/rspeer/wordfreq",
+        "license": "MIT (data: CC BY-SA 4.0 for Wiktionary-derived portion)",
+        "used_for": "english[] frequency selection"
+      },
+      {
+        "name": "Hand-curated seed (vkey)",
+        "url": "https://github.com/tuanlongsav/vkey",
+        "license": "GPL-3.0 / CC BY-SA 4.0",
+        "used_for": "en_vn_mapping{} bootstrap"
+      }
+    ],
+    "license_of_aggregate": "CC BY-SA 4.0 (data) + GPL-3.0 (code)"
+  },
+  "version": 5,
   "vietnamese": [
     "và",
     "của",
@@ -7319,5 +7350,368 @@
     "maria",
     "para",
     "sara"
-  ]
+  ],
+  "en_vn_mapping": {
+    "and": [
+      "và"
+    ],
+    "or": [
+      "hoặc",
+      "hay"
+    ],
+    "of": [
+      "của"
+    ],
+    "if": [
+      "nếu"
+    ],
+    "but": [
+      "nhưng"
+    ],
+    "with": [
+      "với"
+    ],
+    "for": [
+      "cho"
+    ],
+    "the": [
+      "cái",
+      "con"
+    ],
+    "this": [
+      "này"
+    ],
+    "that": [
+      "đó",
+      "kia"
+    ],
+    "all": [
+      "tất cả"
+    ],
+    "some": [
+      "một số",
+      "vài"
+    ],
+    "many": [
+      "nhiều"
+    ],
+    "few": [
+      "ít"
+    ],
+    "name": [
+      "tên"
+    ],
+    "house": [
+      "nhà"
+    ],
+    "country": [
+      "nước",
+      "quốc gia"
+    ],
+    "city": [
+      "thành phố"
+    ],
+    "school": [
+      "trường",
+      "trường học"
+    ],
+    "book": [
+      "sách"
+    ],
+    "table": [
+      "bàn"
+    ],
+    "chair": [
+      "ghế"
+    ],
+    "water": [
+      "nước"
+    ],
+    "food": [
+      "thức ăn",
+      "đồ ăn"
+    ],
+    "money": [
+      "tiền"
+    ],
+    "time": [
+      "thời gian",
+      "giờ"
+    ],
+    "day": [
+      "ngày"
+    ],
+    "night": [
+      "đêm"
+    ],
+    "year": [
+      "năm"
+    ],
+    "people": [
+      "người",
+      "mọi người"
+    ],
+    "friend": [
+      "bạn"
+    ],
+    "family": [
+      "gia đình"
+    ],
+    "love": [
+      "tình yêu",
+      "yêu"
+    ],
+    "life": [
+      "cuộc sống",
+      "đời"
+    ],
+    "work": [
+      "công việc",
+      "việc",
+      "làm việc"
+    ],
+    "home": [
+      "nhà"
+    ],
+    "world": [
+      "thế giới"
+    ],
+    "music": [
+      "âm nhạc",
+      "nhạc"
+    ],
+    "phone": [
+      "điện thoại"
+    ],
+    "car": [
+      "xe hơi",
+      "ô tô"
+    ],
+    "see": [
+      "thấy",
+      "nhìn"
+    ],
+    "go": [
+      "đi"
+    ],
+    "come": [
+      "đến"
+    ],
+    "do": [
+      "làm"
+    ],
+    "say": [
+      "nói"
+    ],
+    "think": [
+      "nghĩ"
+    ],
+    "know": [
+      "biết"
+    ],
+    "want": [
+      "muốn"
+    ],
+    "have": [
+      "có"
+    ],
+    "make": [
+      "làm",
+      "tạo"
+    ],
+    "find": [
+      "tìm"
+    ],
+    "give": [
+      "cho",
+      "đưa"
+    ],
+    "take": [
+      "lấy",
+      "nhận"
+    ],
+    "use": [
+      "dùng",
+      "sử dụng"
+    ],
+    "read": [
+      "đọc"
+    ],
+    "write": [
+      "viết"
+    ],
+    "listen": [
+      "nghe"
+    ],
+    "speak": [
+      "nói"
+    ],
+    "learn": [
+      "học"
+    ],
+    "teach": [
+      "dạy"
+    ],
+    "buy": [
+      "mua"
+    ],
+    "sell": [
+      "bán"
+    ],
+    "good": [
+      "tốt"
+    ],
+    "bad": [
+      "xấu",
+      "tệ"
+    ],
+    "big": [
+      "to",
+      "lớn"
+    ],
+    "small": [
+      "nhỏ"
+    ],
+    "happy": [
+      "vui",
+      "hạnh phúc"
+    ],
+    "sad": [
+      "buồn"
+    ],
+    "fast": [
+      "nhanh"
+    ],
+    "slow": [
+      "chậm"
+    ],
+    "easy": [
+      "dễ"
+    ],
+    "hard": [
+      "khó"
+    ],
+    "new": [
+      "mới"
+    ],
+    "old": [
+      "cũ",
+      "già"
+    ],
+    "computer": [
+      "máy tính"
+    ],
+    "developer": [
+      "lập trình viên",
+      "nhà phát triển"
+    ],
+    "code": [
+      "mã"
+    ],
+    "function": [
+      "hàm",
+      "chức năng"
+    ],
+    "class": [
+      "lớp"
+    ],
+    "variable": [
+      "biến"
+    ],
+    "test": [
+      "kiểm tra",
+      "thử nghiệm"
+    ],
+    "deploy": [
+      "triển khai"
+    ],
+    "release": [
+      "phát hành"
+    ],
+    "version": [
+      "phiên bản"
+    ],
+    "update": [
+      "cập nhật"
+    ],
+    "fix": [
+      "sửa"
+    ],
+    "bug": [
+      "lỗi"
+    ],
+    "feature": [
+      "tính năng"
+    ],
+    "design": [
+      "thiết kế"
+    ],
+    "user": [
+      "người dùng"
+    ],
+    "server": [
+      "máy chủ"
+    ],
+    "client": [
+      "máy khách"
+    ],
+    "database": [
+      "cơ sở dữ liệu"
+    ],
+    "file": [
+      "tệp",
+      "tập tin"
+    ],
+    "folder": [
+      "thư mục"
+    ],
+    "internet": [
+      "mạng",
+      "internet"
+    ],
+    "website": [
+      "trang web"
+    ],
+    "email": [
+      "thư điện tử"
+    ],
+    "password": [
+      "mật khẩu"
+    ],
+    "username": [
+      "tên đăng nhập"
+    ],
+    "login": [
+      "đăng nhập"
+    ],
+    "register": [
+      "đăng ký"
+    ],
+    "business": [
+      "doanh nghiệp",
+      "kinh doanh"
+    ],
+    "company": [
+      "công ty"
+    ],
+    "office": [
+      "văn phòng"
+    ],
+    "meeting": [
+      "cuộc họp"
+    ],
+    "project": [
+      "dự án"
+    ],
+    "team": [
+      "nhóm",
+      "đội"
+    ],
+    "manager": [
+      "quản lý"
+    ],
+    "report": [
+      "báo cáo"
+    ]
+  }
 }

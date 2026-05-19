@@ -9,22 +9,31 @@ import AppKit
 import SwiftUI
 import Defaults
 
-class ToggleHUDWindow {
-    
+/// HUD overlay shown when the input mode toggles between VI and EN.
+///
+/// **Thread-safety (1.5.0)**: this class is `@MainActor`-isolated. All AppKit
+/// state (`panel`, `hostingController`, `hideTimer`) is mutated only on the
+/// main thread. Call `ToggleHUDWindow.shared.show(isEnabled:)` from a non-main
+/// thread via `DispatchQueue.main.async { … }`, or from an `async` context
+/// using `await`. Previously the singleton was free-threaded which let the
+/// event tap race with the main thread while constructing the panel.
+@MainActor
+final class ToggleHUDWindow {
+
     // MARK: - Singleton
     static let shared = ToggleHUDWindow()
-    
+
     // MARK: - Properties
     private var panel: NSPanel?
     private var hideTimer: Timer?
     private var hostingController: NSHostingController<ToggleHUDView>?
     private let viewModel = ToggleHUDViewModel()
-    
+
     // MARK: - Initialization
     private init() {}
-    
+
     // MARK: - Public API
-    
+
     /// Hiển thị HUD thông báo trạng thái bật/tắt Tiếng Việt
     /// - Parameters:
     ///   - isEnabled: Trạng thái bật (true = Tiếng Việt, false = Tiếng Anh)
@@ -141,7 +150,7 @@ private struct ToggleHUDView: View {
                     : AnyShapeStyle(Color.secondary.gradient)
                 )
                 .frame(width: 44, height: 44)
-                .contentTransition(.symbolEffect(.replace))
+                .vkeySymbolReplacementTransition()
             
             // Nhãn hiển thị ngôn ngữ (bảo đảm không bị nén hoặc cắt ngắn)
             Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
@@ -178,5 +187,16 @@ private struct ToggleHUDView: View {
                 )
         )
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func vkeySymbolReplacementTransition() -> some View {
+        if #available(macOS 14.0, *) {
+            self.contentTransition(.symbolEffect(.replace))
+        } else {
+            self
+        }
     }
 }

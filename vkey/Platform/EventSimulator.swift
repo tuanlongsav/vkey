@@ -38,9 +38,20 @@ struct EventSendTelemetry {
 
 class EventSimulator {
   /// Dedicated serial queue for event simulation to avoid blocking the event tap callback.
-  /// Strategies that use usleep (stepByStep, hybrid) dispatch to this queue so the
-  /// CGEvent tap callback returns immediately, preventing macOS from disabling the tap.
+  /// **All** sending strategies dispatch to this queue (since 1.5.0) so the
+  /// CGEvent tap callback returns immediately, preventing macOS from disabling
+  /// the tap when the system is under load. Earlier versions ran `.batch` sync,
+  /// which produced inconsistent semantics across strategies — the tap would
+  /// occasionally be blocked long enough to trigger `tapDisabledByTimeout`.
   private static let simulationQueue = DispatchQueue(label: "dev.longht.vkey.eventSimulator", qos: .userInteractive)
+
+  /// Hardcoded macOS virtual key codes used by the simulator. US-layout
+  /// positions; these are physical-key codes so they work even on QWERTZ /
+  /// AZERTY / Dvorak keymaps.
+  private enum KeyCode {
+    static let delete: CGKeyCode = 0x33      // Backspace / Delete-Left
+    static let leftArrow: CGKeyCode = 0x7B
+  }
 
   /// Per-app sending strategy configuration.
   /// Apps are checked in order - first match wins.
@@ -109,8 +120,8 @@ class EventSimulator {
 
     guard
       let source = eventSource,
-      let downEvent = CGEvent(keyboardEventSource: source, virtualKey: 0x33, keyDown: true),
-      let upEvent = CGEvent(keyboardEventSource: source, virtualKey: 0x33, keyDown: false)
+      let downEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: true),
+      let upEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: false)
     else {
       return false
     }
@@ -171,8 +182,8 @@ class EventSimulator {
     var createdAnyEvent = false
     let chars = Array(str)
     for (index, char) in chars.enumerated() {
-      guard let scalar = char.unicodeScalars.first else { continue }
-      let uniChar = UniChar(scalar.value)
+      let uniChars = unicodeUnits(for: char)
+      guard !uniChars.isEmpty else { continue }
 
       if
         let downEvent = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
@@ -182,8 +193,8 @@ class EventSimulator {
         downEvent.flags = .maskNonCoalesced
         upEvent.flags = .maskNonCoalesced
 
-        downEvent.keyboardSetUnicodeString(stringLength: 1, unicodeString: [uniChar])
-        upEvent.keyboardSetUnicodeString(stringLength: 1, unicodeString: [uniChar])
+        downEvent.keyboardSetUnicodeString(stringLength: uniChars.count, unicodeString: uniChars)
+        upEvent.keyboardSetUnicodeString(stringLength: uniChars.count, unicodeString: uniChars)
 
         downEvent.post(tap: .cgSessionEventTap)
         upEvent.post(tap: .cgSessionEventTap)
@@ -194,6 +205,10 @@ class EventSimulator {
       }
     }
     return createdAnyEvent
+  }
+
+  static func unicodeUnits(for char: Character) -> [UniChar] {
+    String(char).utf16.map { UniChar($0) }
   }
 
   static func sendReplacement(
@@ -213,14 +228,19 @@ class EventSimulator {
 
     switch strategy {
     case .batch:
-      // Batch has no delays, safe to run synchronously on the event tap thread
+      // 1.5.0: even .batch now dispatches to simulationQueue so the event tap
+      // callback never blocks. Ordering with the user's next keystroke is
+      // preserved because simulationQueue is serial and the system queues
+      // pending events behind our outgoing post() calls.
       let source = CGEventSource(stateID: .privateState)
-      let backspaceOK = sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
-      let stringOK = sendString(String(diffChars), source: source)
+      simulationQueue.async {
+        sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
+        sendString(String(diffChars), source: source)
+      }
       return EventSendTelemetry(
         attemptedTransform: true,
-        createdEvents: backspaceOK && stringOK,
-        usedAsyncQueue: false,
+        createdEvents: true,
+        usedAsyncQueue: true,
         touchedCharacters: touchedCharacters
       )
 
@@ -281,10 +301,9 @@ class EventSimulator {
     let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
     guard let source = eventSource else { return }
 
-    // Left arrow key code: 0x7B
     guard
-      let downEvent = CGEvent(keyboardEventSource: source, virtualKey: 0x7B, keyDown: true),
-      let upEvent = CGEvent(keyboardEventSource: source, virtualKey: 0x7B, keyDown: false)
+      let downEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.leftArrow, keyDown: true),
+      let upEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.leftArrow, keyDown: false)
     else { return }
 
     downEvent.flags = [.maskShift, .maskNonCoalesced]
@@ -318,28 +337,18 @@ class EventSimulator {
     switch strategy {
     case .batch:
       let source = CGEventSource(stateID: .privateState)
-      sendShiftLeft(selectLeftCount, source: source)
-      if !diffChars.isEmpty {
-        let sent = sendString(String(diffChars), source: source)
-        return EventSendTelemetry(
-          attemptedTransform: true,
-          createdEvents: sent,
-          usedAsyncQueue: false,
-          touchedCharacters: touchedCharacters
-        )
-      } else if selectLeftCount > 0 {
-        let sent = sendBackspace(1, source: source)
-        return EventSendTelemetry(
-          attemptedTransform: true,
-          createdEvents: sent,
-          usedAsyncQueue: false,
-          touchedCharacters: touchedCharacters
-        )
+      simulationQueue.async {
+        sendShiftLeft(selectLeftCount, source: source)
+        if !diffChars.isEmpty {
+          sendString(String(diffChars), source: source)
+        } else if selectLeftCount > 0 {
+          sendBackspace(1, source: source)
+        }
       }
       return EventSendTelemetry(
         attemptedTransform: true,
         createdEvents: true,
-        usedAsyncQueue: false,
+        usedAsyncQueue: true,
         touchedCharacters: touchedCharacters
       )
 

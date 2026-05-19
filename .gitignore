@@ -1,6 +1,14 @@
 # Created by https://www.toptal.com/developers/gitignore/api/macos,swift
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,swift
 
+# Sparkle private key (1.5.0) — never commit
+*.key
+vkey_private_key.key
+
+# Code coverage artifacts
+*.profraw
+*.profdata
+
 ### macOS ###
 # General
 .DS_Store

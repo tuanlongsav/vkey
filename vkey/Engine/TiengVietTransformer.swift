@@ -90,7 +90,14 @@ enum TiengVietTransformer {
       return false
     }
 
-    let datDauMocUO = (dauMu == .muMoc) && tieng.chuaNguyenAmUO
+    let datDauMocUO = (dauMu == .muMoc)
+      && tieng.chuaNguyenAmUO
+      && soNguyenAm >= 2
+      // Defensive check: ensure the first two vowels really are u + o regardless
+      // of how chuaNguyenAmUO got set. Prevents accidental double-horn on other
+      // vowel groups if a future parser bug flags them as UO.
+      && tieng.nguyenAm[0].lowercased() == "u"
+      && tieng.nguyenAm[1].lowercased() == "o"
 
     // Trường hợp đặc biệt: "uo" + dấu móc → "ươ" (LUÔN đặt dấu cho CẢ HAI nguyên âm)
     if datDauMocUO && thuDatDauMu(1) {

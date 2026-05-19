@@ -1,5 +1,6 @@
 import Cocoa
 import Combine
+import Defaults
 import Foundation
 import SwiftUI
 
@@ -12,6 +13,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
   @Published var appState = AppState()
   @Published var isTrusted = false
+
+  /// Polling timer for Accessibility-permission grant. Stored so we can
+  /// invalidate it on max-retry or app termination.
+  private var trustCheckTimer: Timer?
+  private var trustCheckRetries = 0
+  /// Stop polling after ~60s — beyond that the user almost certainly hasn't
+  /// granted permission (or never will in this session). A one-time NSAlert
+  /// then guides them to System Settings.
+  private let maxTrustCheckRetries = 30
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     // Hide dock icon since we use MenuBarExtra
@@ -52,22 +62,67 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       openGuide()
     }
     
-    // Periodically check trust status if not trusted
+    // Periodically check trust status if not trusted. Capped at
+    // `maxTrustCheckRetries` to avoid polling forever (e.g. when the user
+    // permanently denies Accessibility). After the cap, an NSAlert nudges
+    // them to System Settings → Privacy & Security → Accessibility.
     if !isTrusted {
-        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] timer in
-            self?.checkTrustStatus()
-            if self?.isTrusted == true {
-                timer.invalidate()
-                self?.setupTrustedSession()
-            }
+      trustCheckRetries = 0
+      trustCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) {
+        [weak self] timer in
+        guard let self else {
+          timer.invalidate()
+          return
         }
+        self.checkTrustStatus()
+        if self.isTrusted {
+          timer.invalidate()
+          self.trustCheckTimer = nil
+          self.setupTrustedSession()
+          return
+        }
+        self.trustCheckRetries += 1
+        if self.trustCheckRetries >= self.maxTrustCheckRetries {
+          timer.invalidate()
+          self.trustCheckTimer = nil
+          self.showAccessibilityHelpAlert()
+        }
+      }
     }
     
     // Check for updates silently on launch
     Updater.checkForUpdates(manual: false)
-    
+
     // Check for dictionary updates on launch
     LexiconManager.shared.checkAndPromptForDictionaryUpdate()
+
+    // 1.5.0: run the weekly stats → personal-dictionary feedback loop, but at
+    // most once per ISO week. The summary is computed regardless; promotion
+    // logic inside `performWeeklyFeedback` is itself idempotent.
+    runWeeklyFeedbackIfDue()
+
+    // 1.5.0: prompt for a personal-data backup the first launch after a
+    // version upgrade (gated by Defaults[.autoBackupOnUpgrade]).
+    UserDataMigration.handleVersionChange()
+  }
+
+  /// Gate `performWeeklyFeedback()` so it fires once per ISO week even if
+  /// the user opens the app several times. We track the last-run week id in
+  /// `Defaults[.lastFeedbackWeekId]`.
+  private func runWeeklyFeedbackIfDue() {
+    let cal = Calendar(identifier: .iso8601)
+    let now = Date()
+    let weekId = String(format: "%04d-W%02d",
+                        cal.component(.yearForWeekOfYear, from: now),
+                        cal.component(.weekOfYear, from: now))
+    guard Defaults[.lastFeedbackWeekId] != weekId else { return }
+    // Run on a background queue so we don't delay app launch.
+    DispatchQueue.global(qos: .utility).async {
+      _ = UsageStatistics.shared.performWeeklyFeedback()
+      DispatchQueue.main.async {
+        Defaults[.lastFeedbackWeekId] = weekId
+      }
+    }
   }
   
   func checkTrustStatus() {
@@ -182,6 +237,72 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
   // Cleans up before the application terminates
   func applicationWillTerminate(_ aNotification: Notification) {
+    trustCheckTimer?.invalidate()
+    trustCheckTimer = nil
+    LexiconManager.shared.cancelInFlightDownloads()
     appState.eventHook.destroy()
+  }
+
+  /// Shown after the trust polling loop has given up. The alert links the
+  /// user to System Settings so they can grant Accessibility manually, and
+  /// offers a "Try again" path that restarts polling.
+  private func showAccessibilityHelpAlert() {
+    let alert = NSAlert()
+    alert.messageText = "vkey cần quyền Trợ năng (Accessibility)"
+    alert.informativeText = """
+    vkey cần được cấp quyền Accessibility để có thể chuyển ký tự bạn gõ \
+    thành tiếng Việt. Vui lòng mở:
+
+    System Settings → Privacy & Security → Accessibility
+
+    rồi bật toggle cho vkey. Sau đó nhấn "Thử lại" để vkey tiếp tục.
+    """
+    alert.addButton(withTitle: "Mở Cài đặt")
+    alert.addButton(withTitle: "Thử lại")
+    alert.addButton(withTitle: "Để sau")
+    alert.alertStyle = .warning
+
+    NSApp.setActivationPolicy(.regular)
+    NSApp.activate(ignoringOtherApps: true)
+
+    switch alert.runModal() {
+    case .alertFirstButtonReturn:
+      // Open the Accessibility pane directly. URL accepted by macOS 13+.
+      if let url = URL(
+        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+      ) {
+        NSWorkspace.shared.open(url)
+      }
+      restartTrustCheckLoop()
+    case .alertSecondButtonReturn:
+      restartTrustCheckLoop()
+    default:
+      break
+    }
+  }
+
+  private func restartTrustCheckLoop() {
+    trustCheckRetries = 0
+    trustCheckTimer?.invalidate()
+    trustCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) {
+      [weak self] timer in
+      guard let self else {
+        timer.invalidate()
+        return
+      }
+      self.checkTrustStatus()
+      if self.isTrusted {
+        timer.invalidate()
+        self.trustCheckTimer = nil
+        self.setupTrustedSession()
+        return
+      }
+      self.trustCheckRetries += 1
+      if self.trustCheckRetries >= self.maxTrustCheckRetries {
+        timer.invalidate()
+        self.trustCheckTimer = nil
+        self.showAccessibilityHelpAlert()
+      }
+    }
   }
 }

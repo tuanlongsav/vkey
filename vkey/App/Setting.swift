@@ -138,6 +138,36 @@ extension Defaults.Keys {
   /// Thời điểm cuối cùng kiểm tra cập nhật từ điển từ GitHub.
   static let lastDictionaryCheckDate = Key<Date?>("last-dictionary-check-date", default: nil)
 
+  // MARK: - 1.5.0 — Bilingual reference & new feature gates
+
+  /// Bật tham chiếu Anh-Việt (`en_vn_mapping`) khi `SpellDecisionEngine`
+  /// quyết định giữ/khôi phục từ. Tắt thì hành vi y hệt 1.4.x.
+  static let useEnVnReference = Key<Bool>("use-en-vn-reference", default: true)
+
+  /// Hiển thị HUD dịch nghĩa Anh→Việt khi user gõ từ tiếng Anh trong chế độ VI.
+  static let translationHUDEnabled = Key<Bool>("translation-hud-enabled", default: false)
+
+  /// Thời gian (ms) HUD dịch nghĩa hiển thị trước khi tự ẩn.
+  static let translationHUDDurationMs = Key<Double>("translation-hud-duration-ms", default: 1500)
+
+  /// Programming Mode — tạm dừng VN sau các ký tự code phổ biến ({, (, [, =, :, ;, <).
+  /// Mặc định off vì làm thay đổi hành vi gõ trong context đời thường.
+  static let programmingMode = Key<Bool>("programming-mode", default: false)
+
+  /// Bật ghi thống kê sử dụng (chỉ lưu local, không gửi đi đâu).
+  static let statisticsEnabled = Key<Bool>("statistics-enabled", default: true)
+
+  /// Override per-app kiểu gõ. Key là bundleID, value là một trong:
+  /// "auto" (default), "telex", "vni", "off". Phase 5.1.
+  static let perAppOverride = Key<[String: String]>("per-app-override", default: [:])
+
+  /// Tuần ISO đã chạy weekly feedback gần nhất (vd "2026-W21"). Dùng để
+  /// đảm bảo `performWeeklyFeedback()` chỉ chạy 1 lần mỗi tuần.
+  static let lastFeedbackWeekId = Key<String>("last-feedback-week-id", default: "")
+
+  /// Tự động hỏi sao lưu dữ liệu khi phát hiện app cập nhật.
+  static let autoBackupOnUpgrade = Key<Bool>("auto-backup-on-upgrade", default: true)
+
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value
 }

@@ -6,22 +6,28 @@
 //
 
 import Foundation
-import Defaults
 
-/// TiengVietParser - Hàm thuần phân tích, không có side effects
+/// TiengVietParser - Hàm thuần phân tích, không có side effects.
 ///
-/// Chuyển đổi mảng ký tự chưa có dấu thành cấu trúc ThanhPhanTieng
-/// Quy trình: Phụ âm đầu → Nguyên âm → Phụ âm cuối → Phần dư
+/// Chuyển đổi mảng ký tự chưa có dấu thành cấu trúc ThanhPhanTieng.
+/// Quy trình: Phụ âm đầu → Nguyên âm → Phụ âm cuối → Phần dư.
+///
+/// Parser **không** đọc `Defaults` — mọi tuỳ chọn (vd autoTypoCorrection)
+/// được truyền vào qua tham số. `TiengVietState` là điểm đọc Defaults duy
+/// nhất và truyền cờ xuống. Điều này cho phép unit test dễ dàng và tách
+/// rõ trách nhiệm giữa pure logic và stateful UI layer.
 enum TiengVietParser {
 
   // MARK: - API chính
 
-  /// Phân tích chuỗi ký tự thành các thành phần âm tiết tiếng Việt
-  /// - Parameter chuKhongDau: Mảng ký tự chưa có dấu (từ bàn phím)
+  /// Phân tích chuỗi ký tự thành các thành phần âm tiết tiếng Việt.
+  /// - Parameters:
+  ///   - chuKhongDau: Mảng ký tự chưa có dấu (từ bàn phím)
+  ///   - autoTypoCorrection: Bật/tắt sửa lỗi gõ nhầm tự động
   /// - Returns: ThanhPhanTieng với các thành phần đã phân tích
-  static func parse(_ chuKhongDau: [Character]) -> ThanhPhanTieng {
+  static func parse(_ chuKhongDau: [Character], autoTypoCorrection: Bool = true) -> ThanhPhanTieng {
     var result = rawParse(chuKhongDau)
-    if Defaults[.autoTypoCorrection] {
+    if autoTypoCorrection {
       applyTypoCorrections(to: &result, originalInput: chuKhongDau)
     }
     return result
@@ -112,6 +118,14 @@ enum TiengVietParser {
     return result
   }
 
+  /// Re-compute whether the given vowel group should be flagged as a "uo"-class
+  /// vowel (móc on both u and o → "ươ"). Reads from `TiengViet.NguyenAmUO` so
+  /// future additions to that table propagate without code changes here.
+  private static func isNguyenAmUO(_ nguyenAm: [Character]) -> Bool {
+    let key = String(nguyenAm).lowercased()
+    return TiengViet.NguyenAmUO.contains { $0.lowercased() == key }
+  }
+
   /// Auto-correct common adjacent-key ordering mistakes before validation.
   private static func applyTypoCorrections(to result: inout ThanhPhanTieng, originalInput: [Character]) {
     // "veit" -> "viet": users sometimes type the second "e" before "i"
@@ -131,7 +145,10 @@ enum TiengVietParser {
       result.nguyenAm = reparsed.nguyenAm
       result.phuAmCuoi = reparsed.phuAmCuoi
       result.conLai = reparsed.conLai
-      result.chuaNguyenAmUO = false
+      // chuaNguyenAmUO recomputed by finishParsing against NguyenAmUO table —
+      // never hardcode here, otherwise new vowel patterns added to that table
+      // would not propagate through typo recovery.
+      result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
     }
 
     // "bous" -> "buos" (to become "buốt" when tone/diacritics applied)
@@ -151,7 +168,7 @@ enum TiengVietParser {
       result.nguyenAm = reparsed.nguyenAm
       result.phuAmCuoi = reparsed.phuAmCuoi
       result.conLai = reparsed.conLai
-      result.chuaNguyenAmUO = true
+      result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
     }
 
     // "haois" -> "hoais" (to become "hoái")
@@ -172,7 +189,7 @@ enum TiengVietParser {
       result.nguyenAm = reparsed.nguyenAm
       result.phuAmCuoi = reparsed.phuAmCuoi
       result.conLai = reparsed.conLai
-      result.chuaNguyenAmUO = false
+      result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
     }
 
     // "haoc" -> "hoac" (to become "hoác").
@@ -195,7 +212,7 @@ enum TiengVietParser {
         result.nguyenAm = reparsed.nguyenAm
         result.phuAmCuoi = reparsed.phuAmCuoi
         result.conLai = reparsed.conLai
-        result.chuaNguyenAmUO = false
+        result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
       }
     }
 

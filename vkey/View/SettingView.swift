@@ -120,7 +120,7 @@ final class FlexibleShortcutButton: NSButton {
 
     let modifiers = event.modifierFlags
       .intersection(.deviceIndependentFlagsMask)
-      .intersection([.command, .option, .control, .shift, .function])
+      .intersection([.command, .option, .control, .shift])
     let modifierRaw = Int(modifiers.rawValue)
 
     // .flagsChanged: track modifier-only intent.
@@ -290,6 +290,7 @@ struct SpellCheckView: View {
     @Default(.suggestionEnabled) private var suggestionEnabled
     @Default(.autoApplyHighConfidenceSuggestion) private var autoApplyHighConfidenceSuggestion
     @Default(.personalDictionaryEnabled) private var personalDictionaryEnabled
+    @Default(.useEnVnReference) private var useEnVnReference
 
     @State private var isUpdatingFromGitHub = false
     @State private var gitHubUpdateStatus = ""
@@ -301,7 +302,7 @@ struct SpellCheckView: View {
                 Section {
                     Toggle(isOn: Binding(
                         get: {
-                            spellCheckEnabled && spellCheckInSentenceEnabled && englishAutoRestoreEnabled && suggestionEnabled && autoApplyHighConfidenceSuggestion && personalDictionaryEnabled && (dictionaryUpdateChannel == .hybrid ? dictionaryGitHubUpdateEnabled : true)
+                            spellCheckEnabled && spellCheckInSentenceEnabled && englishAutoRestoreEnabled && suggestionEnabled && autoApplyHighConfidenceSuggestion && personalDictionaryEnabled && useEnVnReference && (dictionaryUpdateChannel == .hybrid ? dictionaryGitHubUpdateEnabled : true)
                         },
                         set: { newValue in
                             spellCheckEnabled = newValue
@@ -310,6 +311,7 @@ struct SpellCheckView: View {
                             suggestionEnabled = newValue
                             autoApplyHighConfidenceSuggestion = newValue
                             personalDictionaryEnabled = newValue
+                            useEnVnReference = newValue
                             if dictionaryUpdateChannel == .hybrid {
                                 dictionaryGitHubUpdateEnabled = newValue
                             }
@@ -424,7 +426,7 @@ struct SpellCheckView: View {
                             Label("Tự động khôi phục tiếng Anh", systemImage: "arrow.uturn.backward")
                         }
                         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                        
+
                         if englishAutoRestoreEnabled {
                             Picker(selection: $restorePolicy) {
                                 Text("Ưu tiên tiếng Việt").tag(RestorePolicy.vietnameseFirst)
@@ -434,8 +436,25 @@ struct SpellCheckView: View {
                                 Label("Chính sách khôi phục", systemImage: "slider.horizontal.3")
                             }
                             .pickerStyle(.segmented)
-                            
+
                             Text("Lựa chọn cách xử lý đối với các từ mơ hồ giữa tiếng Việt và tiếng Anh (ví dụ: 'of', 'if', 'see', 'tee').")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, -4)
+
+                            // 1.5.0: bilingual reference toggle. When on,
+                            // SpellDecisionEngine consults the en_vn_mapping
+                            // shipped in lexicon-update.json (schema v5) so
+                            // that common English words like "computer",
+                            // "developer", "design" are restored cleanly
+                            // even if they're not in the legacy `english[]`
+                            // list.
+                            Toggle(isOn: $useEnVnReference) {
+                                Label("Dùng từ điển tham chiếu Anh-Việt", systemImage: "character.book.closed")
+                            }
+                            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                            Text("Mở rộng nhận diện tiếng Anh bằng từ điển song ngữ (mới ở v1.5.0). Nguồn dữ liệu: Wiktionary qua Wiktextract/Kaikki.org (CC BY-SA 4.0) — xem LICENSE-DATA.md.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .padding(.top, -4)
@@ -613,4 +632,3 @@ struct PersonalDictionaryEditorView: View {
         }
     }
 }
-

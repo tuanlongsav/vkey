@@ -1,6 +1,101 @@
 # vkey Changelog
 
-> **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9, v1.4.0, v1.4.1, v1.4.2, v1.4.3, v1.4.4, v1.4.5 và v1.4.6, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi) để mang lại trải nghiệm tối ưu nhất cho người dùng.
+> **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
+
+## [1.5.0] - 2026-05-19 — "Bilingual Reborn"
+
+Phiên bản đại tu lớn nhất kể từ 1.3.x: tái cấu trúc kiến trúc, hoàn thiện engine bộ gõ và mở đường cho tính năng song ngữ Anh-Việt.
+
+### 🔧 Sửa lỗi Engine tiếng Việt (Phase 1)
+
+- **Recompute `chuaNguyenAmUO` sau typo correction**: trước đây 4 nhánh sửa lỗi gõ nhầm (`ei→ie`, `ou→uo`, `aoi→oai`, `ao→oa+cuối`) gán cứng cờ `chuaNguyenAmUO` (true/false). Khi mở rộng bảng `NguyenAmUO` về sau, hardcode này sai. Giờ luôn tính lại từ bảng — tiến tới `được`, `được`, `tươi`, `tướng` đều hoạt động đồng nhất.
+- **Purify `TiengVietParser`**: parser không còn đọc `Defaults` bên trong — cờ `autoTypoCorrection` truyền qua tham số. Unit test bật/tắt không cần stub UserDefaults.
+- **Hoàn thiện quy tắc đặt dấu kiểu cũ/mới**: bổ sung parametric test cho `oa/oe/uy/oai/uây/uyê` với và không có phụ âm cuối, cả 2 cờ. Đảm bảo `hoà ↔ hòa`, `khoẻ ↔ khỏe`, `thuý ↔ thúy` đúng ở từng kiểu.
+- **Trie case-insensitive**: thêm `Trie(caseInsensitive: true)` cho lexicon (giữ semantics cũ cho âm tiết). Lookup không phân biệt hoa thường khi cần.
+- **Tách "Late D toggle" thành extension chung**: 10 dòng code lặp giữa Telex và VNI giờ tập trung ở `TiengVietState.tryLateDToggle(char:triggerChars:)`. Không thay đổi hành vi, chỉ sạch hơn.
+- **Defensive double-horn validation**: dấu móc kép trên `uo → ươ` giờ kiểm tra explicit nguyên âm là u+o trước khi áp dụng, phòng khi parser flag sai.
+
+### 🛡️ Sửa lỗi Platform & App layer (Phase 2)
+
+- **Sửa rò `CFRunLoopSource` ở `EventHook`**: trước đây tạo source mới mỗi lần `unregister`, source gốc không bao giờ được remove. Giờ lưu trong ivar và dùng lại.
+- **Bỏ force-unwrap UTF-8 ở `FileMonitor`**: dữ liệu không phải UTF-8 từ `/tmp/vkey_switch` không còn crash app.
+- **Đồng bộ chiến lược gửi events**: tất cả 3 strategy (`.batch`/`.stepByStep`/`.hybrid`) trong `EventSimulator` giờ async qua `simulationQueue`. Event tap callback không bị block, tránh `tapDisabledByTimeout` khi máy bận.
+- **`ToggleHUDWindow` `@MainActor`**: singleton HUD giờ thread-safe; mọi truy cập từ event tap phải qua main queue.
+- **Trust check timer có max retry**: timer kiểm tra Accessibility permission dừng sau 30 lần (≈60s), hiển thị NSAlert hướng dẫn user mở System Settings thay vì polling vô hạn.
+- **Log lỗi `FileMonitor` ở `AppState`**: thay `try?` nuốt lỗi bằng do/catch với `os_log`. Smart Switch via `/tmp` không còn fail im lặng.
+- **URL guards + URLSession cancel**: bỏ `URL(string: "...")!` force-unwrap trong `LexiconManager`. Lưu in-flight task, cancel trong `applicationWillTerminate`.
+- **`Updater` chuyển từ regex sang `XMLParser`**: parser appcast mới của Foundation, ổn định với multi-line XML và attribute quoting.
+- **`EventSimulator` keycode hardcode → named constants** (Backspace 0x33, Left Arrow 0x7B).
+
+### 🏗️ Tái cấu trúc kiến trúc (Phase 3)
+
+`App/InputProcessor.swift` từ **8552 dòng** rút xuống còn **814 dòng**. Code lexicon được tách thành module riêng:
+
+- `Lexicon/Lexicon.swift` — Protocol + `InMemoryLexicon` + `SpellDecision` + String extensions.
+- `Lexicon/EmbeddedLexiconData.swift` — 7184 syllable VN + EN baseline + keep + legacy restore pairs.
+- `Lexicon/LexiconUpdatePackage.swift` — Codable schema v5 (xem dưới).
+- `Lexicon/LexiconManager.swift` — Load / reload / download.
+- `Lexicon/SuggestionService.swift` — Levenshtein + heuristic spell suggestions.
+- `Lexicon/EnVnReference.swift` — **MỚI** — Bilingual lookup Anh ↔ Việt.
+- `Input/SpellDecisionEngine.swift` — Tách khỏi InputProcessor.
+
+### 📚 Từ điển song ngữ Anh-Việt — Schema v5 (Phase 4)
+
+- **`lexicon-update.json` schema v5** thêm 3 trường optional (backward-compatible — app cũ vẫn đọc được):
+  - `_meta` — block metadata + attribution + license.
+  - `en_vn_mapping` — bản đồ Anh → [Việt candidates]. v1.5.0 ship sẵn 110 cặp core (programming, business, đời sống).
+  - `vn_en_mapping` — bản đồ Việt → [Anh candidates] (dành cho Dictionary Browser sau).
+  - `macros_recommended` — gợi ý macro để onboarding import.
+- **`EnVnReference` integration**: `SpellDecisionEngine` consult bản đồ này khi quyết định "giữ tiếng Việt hay khôi phục tiếng Anh". Bật/tắt qua `Cài đặt → Chính tả & Từ điển → Dùng từ điển tham chiếu Anh-Việt` (mặc định bật).
+- **Tools/build_lexicon.py**: script Python để build `lexicon-update.json` từ Kaikki/Wiktextract + wordfreq. Bao gồm `SEED_EN_VN_MAPPING` curate sẵn.
+- **`LICENSE-DATA.md`**: clarify dual-license — code GPL-3.0, data CC BY-SA 4.0.
+
+### ✨ Tính năng người dùng (Phase 5/6)
+
+- **Macro Import/Export**: nút "Xuất" và "Nhập" trong `Cài đặt → Macro`. JSON format, idempotent merge (bỏ qua trùng `from`).
+- **Defaults mới cho roadmap 1.5.x**: `translationHUDEnabled`, `programmingMode`, `perAppOverride`. UI cho Translation HUD / Programming Mode / Per-app override / CLI `vkeyctl` được lên kế hoạch trong 1.5.x patch series.
+
+### 📊 Thống kê sử dụng & vòng lặp học hành vi (Phase 9)
+
+- **`Stats/UsageStatistics`** — bộ đếm local-only, lưu tại `~/Library/Application Support/vkey/stats/`. Mỗi ISO-week một file JSON, rotate giữ 4 tuần gần nhất.
+- **Đo lường**: tổng số từ commit, số từ giữ tiếng Việt / khôi phục tiếng Anh / giữ raw / được gợi ý, số lần Smart Switch kích hoạt, top 20 từ tiếng Việt + tiếng Anh, top app dùng nhiều nhất.
+- **Vòng lặp học hành vi**: mỗi tuần (chạy 1 lần khi mở app trong tuần mới), `performWeeklyFeedback()` quét streak từ bucket hiện tại, **promote** các từ đáp ứng ngưỡng vào từ điển cá nhân:
+  - Từ tiếng Anh xuất hiện ≥ 5 lần và luôn được restore → vào `userAllowWords` (bộ gõ nhận diện là tiếng Anh nhanh hơn lần sau).
+  - Từ tiếng Việt xuất hiện ≥ 5 lần và luôn được giữ → vào `userKeepWords` (không bao giờ bị auto-restore nhầm sang tiếng Anh).
+  - Tôn trọng `userDenyWords` (không promote nếu user đã chặn).
+  - Cap 10 từ/tuần để tránh phình từ điển cá nhân.
+- **UI**: tab "Thống kê & Sao lưu" trong Settings — xem snapshot tuần này, top từ, top app, nút "Chạy đồng bộ Personal Dictionary ngay", "Xóa toàn bộ dữ liệu".
+- **Cam kết riêng tư**: không có request mạng, không có telemetry. Có thể tắt qua `Defaults[.statisticsEnabled]` hoặc xóa toàn bộ qua nút Settings.
+
+### 💾 Sao lưu & Khôi phục dữ liệu cá nhân (Phase 10)
+
+- **`UserDataMigration.currentExport()`** — Codable struct ghi lại mọi state người dùng: Defaults toàn bộ (typing method, kiểu đặt dấu, smart switch, spell check, restore policy, …), macros, allow/keep/deny lists, smart switch apps, per-app override, optional snapshot thống kê.
+- **Xuất JSON**: nút "Xuất dữ liệu cá nhân" trong tab "Thống kê & Sao lưu". File mặc định tên `vkey-backup-<version>-<timestamp>.json`, lưu ở `~/Library/Application Support/vkey/backups/`.
+- **Nhập JSON**: nút "Nhập từ tệp sao lưu". 2 chế độ:
+  - **Gộp** (mặc định, an toàn): giữ dữ liệu hiện tại + thêm cái mới (không trùng).
+  - **Ghi đè**: thay toàn bộ list bằng dữ liệu trong file.
+- **Tự động hỏi sao lưu khi upgrade**: app phát hiện `CFBundleShortVersionString` thay đổi → hiển thị NSAlert "Bạn vừa nâng từ vX lên vY. Sao lưu ngay?". Có nút "Không hiện lại". Stamp version sau khi user xử lý xong dialog.
+- **Schema-versioned**: `UserDataExport.schemaVersion` để app tương lai vẫn đọc được backup cũ; optional field cho forward-compat.
+
+### 🛡️ Test isolation cải thiện
+
+- Test plan tắt parallelization (tránh race trên Defaults global mà nhiều test mới đụng đến).
+- Promotion logic tách thành `UsageStatistics.computePromotion(...)` pure function — test deterministic không phụ thuộc state singleton.
+
+### 🧪 Test coverage
+
+- 12 test mới cho engine (kiểu cũ/mới parametric, typo recovery flag, Trie case-insensitive, late-D toggle, pop() contract).
+- 3 test cho `AppcastParser`.
+- 5 test cho lexicon schema v5 + `EnVnReference`.
+- 7 test cho `UsageStatistics` + `computePromotion` (pure, deterministic).
+- 4 test cho `UserDataMigration` (encode/decode/merge/replace).
+- Tổng test pass: **195+** (từ 147 ở 1.4.6).
+
+### 📄 Tài liệu
+
+- `LICENSE-DATA.md` — license riêng cho file dữ liệu.
+- `README.md` — bổ sung mục "Nguồn dữ liệu từ điển" và credits cho Wiktionary/Kaikki/wordfreq.
+- `app-arch.md` — cập nhật sơ đồ module phản ánh tách Lexicon/Input.
 
 ## [1.4.6] - 2026-05-19
 

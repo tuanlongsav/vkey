@@ -1,0 +1,542 @@
+//
+//  UsageStatistics.swift
+//  vkey
+//
+//  Local-only usage tracking, introduced in 1.5.0 (the "Bilingual Reborn"
+//  patch series escalates this from "deferred" to "shipping" because the
+//  data also feeds the personal-dictionary auto-promotion in
+//  `performWeeklyFeedback()`).
+//
+//  Privacy contract (cam kết riêng tư):
+//
+//  1. Tất cả dữ liệu nằm dưới `~/Library/Application Support/vkey/stats/`
+//     trên máy người dùng. Không có lệnh gọi mạng nào trong file này.
+//  2. Người dùng có thể tắt qua `Defaults[.statisticsEnabled]`. Khi tắt,
+//     `recordCommit(...)` no-op ngay lập tức.
+//  3. Người dùng có thể clear toàn bộ data thông qua
+//     `UsageStatistics.shared.clearAll()` (gọi từ Settings UI).
+//  4. Mỗi tuần ISO-week có một file riêng (`2026-W21.json`); rotate giữ
+//     4 tuần gần nhất.
+//
+
+import Defaults
+import Foundation
+import os.log
+
+private let log = OSLog(subsystem: "dev.longht.vkey", category: "UsageStatistics")
+
+// MARK: - Public types
+
+/// Snapshot tóm tắt một tuần đã đóng (hoặc tuần hiện tại đến thời điểm hỏi).
+public struct UsageSummary: Codable, Equatable {
+  /// ISO week id, ví dụ "2026-W21". Khoá unique giữa các file lưu.
+  let weekId: String
+  /// Thời điểm tuần kết thúc (ISO-8601). Dùng để rotate.
+  let weekEnd: Date
+
+  // Counters
+  let wordsTotal: Int
+  let wordsKeptVietnamese: Int
+  let wordsRestoredEnglish: Int
+  let wordsKeptRaw: Int
+  let wordsSuggested: Int
+
+  let smartSwitchFires: Int
+  let typoCorrectionsApplied: Int
+
+  // Frequency tables — capped at top 20 to keep file size predictable.
+  let topVietnameseWords: [WordCount]
+  let topEnglishWords: [WordCount]
+  let topApps: [WordCount]
+
+  /// Words promoted to the user's personal dictionary during this week's
+  /// feedback pass. Surfaced so the Settings UI can show
+  /// "đã thêm 3 từ vào danh sách Allow".
+  let promotedToAllow: [String]
+  let promotedToKeep: [String]
+}
+
+public struct WordCount: Codable, Equatable {
+  let word: String
+  let count: Int
+}
+
+// MARK: - UsageStatistics
+
+/// Tracker singleton. Stateful but thread-safe via a serial queue.
+final class UsageStatistics {
+
+  static let shared = UsageStatistics()
+
+  // MARK: Hot path counters (current week)
+
+  private var counters = WeekBucket()
+  private let queue = DispatchQueue(label: "dev.longht.vkey.stats", qos: .utility)
+
+  // MARK: Storage
+
+  /// `~/Library/Application Support/vkey/stats/` by default. Tests can pass
+  /// a private directory through the test-only initializer so parallel
+  /// suites don't share on-disk state.
+  let storageDir: URL
+
+  /// Test-only initializer. Production code uses `.shared`.
+  init(storageDir: URL? = nil) {
+    let resolved: URL
+    if let custom = storageDir {
+      resolved = custom
+    } else {
+      let appSupport = FileManager.default.urls(
+        for: .applicationSupportDirectory, in: .userDomainMask
+      ).first
+      resolved = (appSupport ?? URL(fileURLWithPath: "/tmp"))
+        .appendingPathComponent("vkey/stats", isDirectory: true)
+    }
+    try? FileManager.default.createDirectory(
+      at: resolved, withIntermediateDirectories: true, attributes: nil
+    )
+    self.storageDir = resolved
+    loadCurrentWeekIfNeeded()
+  }
+
+  /// Pending flush task token — set when a counter changes, cleared when
+  /// flushed. Keeps disk writes throttled to one per ~10 seconds.
+  private var pendingFlushItem: DispatchWorkItem?
+
+  /// Limit on the number of weekly files we keep on disk. Older files get
+  /// deleted automatically during flush.
+  private let maxWeeksRetained = 4
+
+  /// Word-count cap per category to keep memory + disk bounded.
+  private let topNCap = 20
+
+  /// Minimum repetitions before a word is eligible for personal-dictionary
+  /// promotion. Conservative — 5 confirmed commits in a week is a strong
+  /// signal but not so high we miss common patterns.
+  private let promotionThreshold = 5
+
+  // MARK: - Hot path
+
+  /// Called from `InputProcessor.applySpellDecisionOnCommit(...)` for every
+  /// committed word. The `decision` tells us what we did with the word.
+  /// Bundle ID of the foreground app helps build the top-apps chart.
+  func recordCommit(
+    decision: SpellDecision,
+    rawInput: String,
+    transformed: String,
+    appBundleId: String?,
+    typoCorrectionApplied: Bool = false
+  ) {
+    guard Defaults[.statisticsEnabled] else { return }
+    queue.async { [weak self] in
+      self?.applyCommit(
+        decision: decision,
+        rawInput: rawInput,
+        transformed: transformed,
+        appBundleId: appBundleId,
+        typoCorrectionApplied: typoCorrectionApplied
+      )
+    }
+  }
+
+  /// Called from `EventHook` when Smart Switch auto-disables / restores VN
+  /// because the user moved to a launcher app.
+  func recordSmartSwitchFire(toApp: String?) {
+    guard Defaults[.statisticsEnabled] else { return }
+    queue.async { [weak self] in
+      guard let self else { return }
+      self.rotateIfNeeded()
+      self.counters.smartSwitchFires += 1
+      if let app = toApp {
+        self.counters.appCounts[app, default: 0] += 1
+      }
+      self.scheduleFlush()
+    }
+  }
+
+  // MARK: - Public reads
+
+  /// Current (incomplete) week's snapshot.
+  func currentWeekSummary() -> UsageSummary {
+    queue.sync {
+      rotateIfNeeded()
+      return counters.summary(promotedAllow: [], promotedKeep: [])
+    }
+  }
+
+  /// All closed-week snapshots on disk, newest first.
+  func historicalSummaries() -> [UsageSummary] {
+    queue.sync {
+      let urls = (try? FileManager.default.contentsOfDirectory(
+        at: storageDir, includingPropertiesForKeys: nil
+      )) ?? []
+      var out: [UsageSummary] = []
+      for url in urls where url.pathExtension == "json" && url.lastPathComponent != "current.json" {
+        if let data = try? Data(contentsOf: url),
+           let summary = try? JSONDecoder().decode(UsageSummary.self, from: data) {
+          out.append(summary)
+        }
+      }
+      out.sort { $0.weekId > $1.weekId }
+      return out
+    }
+  }
+
+  /// Combined snapshot (current + historical) for export/backup.
+  func allSummariesForExport() -> [UsageSummary] {
+    [currentWeekSummary()] + historicalSummaries()
+  }
+
+  /// Promote frequently-confirmed words into the user's personal dictionary.
+  /// Returns the summary of the closed week so the UI can show what changed.
+  ///
+  /// Called once per app launch (with a guard that runs the closing logic
+  /// at most once per ISO week). Also exposed publicly so a Settings button
+  /// can trigger it on demand for the previous week.
+  ///
+  /// Promotion rules (conservative, to avoid surprising the user):
+  /// - Vietnamese word seen ≥ `promotionThreshold` times AND `kept` every time
+  ///   → add to `userKeepWords` (so future occurrences are never auto-restored
+  ///     to English).
+  /// - English word seen ≥ `promotionThreshold` times AND restored every time
+  ///   → add to `userAllowWords` (so future occurrences are recognised as
+  ///     English faster, even if not in the embedded lexicon).
+  /// - Existing user entries are never touched, never removed.
+  /// - A hardcoded ignore list (the lexicon's `keep[]`) is respected.
+  @discardableResult
+  func performWeeklyFeedback() -> UsageSummary {
+    queue.sync {
+      rotateIfNeeded()
+      let promoted = promoteFrequentWords()
+      let summary = counters.summary(
+        promotedAllow: promoted.allow,
+        promotedKeep: promoted.keep
+      )
+      // Write back including the promotion log so the user can see history.
+      persistCurrentWeek(includingPromotionLog: promoted)
+      return summary
+    }
+  }
+
+  /// Clear *all* stats (current week + history). Triggered from Settings.
+  func clearAll() {
+    queue.sync {
+      counters = WeekBucket(weekId: counters.weekId, weekEnd: counters.weekEnd)
+      let urls = (try? FileManager.default.contentsOfDirectory(
+        at: storageDir, includingPropertiesForKeys: nil
+      )) ?? []
+      for url in urls {
+        try? FileManager.default.removeItem(at: url)
+      }
+    }
+  }
+
+  // MARK: - Internal: bucket + rotation
+
+  private struct WeekBucket: Codable {
+    var weekId: String
+    var weekEnd: Date
+
+    var wordsTotal: Int = 0
+    var wordsKeptVietnamese: Int = 0
+    var wordsRestoredEnglish: Int = 0
+    var wordsKeptRaw: Int = 0
+    var wordsSuggested: Int = 0
+    var smartSwitchFires: Int = 0
+    var typoCorrectionsApplied: Int = 0
+
+    var vnWordCounts: [String: Int] = [:]
+    var enWordCounts: [String: Int] = [:]
+    var appCounts: [String: Int] = [:]
+
+    /// Track "kept" / "restored" event counts per token so we have a
+    /// confidence signal for personal-dictionary promotion.
+    var vnKeepStreak: [String: Int] = [:]   // word → times kept
+    var enRestoreStreak: [String: Int] = [:] // raw → times restored
+
+    init(weekId: String = WeekBucket.currentWeekId(),
+         weekEnd: Date = WeekBucket.endOfCurrentWeek()) {
+      self.weekId = weekId
+      self.weekEnd = weekEnd
+    }
+
+    func summary(promotedAllow: [String], promotedKeep: [String]) -> UsageSummary {
+      func top(_ counts: [String: Int], n: Int) -> [WordCount] {
+        counts.sorted { lhs, rhs in
+          lhs.value > rhs.value
+            || (lhs.value == rhs.value && lhs.key < rhs.key)
+        }
+        .prefix(n)
+        .map { WordCount(word: $0.key, count: $0.value) }
+      }
+      return UsageSummary(
+        weekId: weekId,
+        weekEnd: weekEnd,
+        wordsTotal: wordsTotal,
+        wordsKeptVietnamese: wordsKeptVietnamese,
+        wordsRestoredEnglish: wordsRestoredEnglish,
+        wordsKeptRaw: wordsKeptRaw,
+        wordsSuggested: wordsSuggested,
+        smartSwitchFires: smartSwitchFires,
+        typoCorrectionsApplied: typoCorrectionsApplied,
+        topVietnameseWords: top(vnWordCounts, n: 20),
+        topEnglishWords: top(enWordCounts, n: 20),
+        topApps: top(appCounts, n: 10),
+        promotedToAllow: promotedAllow,
+        promotedToKeep: promotedKeep
+      )
+    }
+
+    static func currentWeekId() -> String {
+      let cal = Calendar(identifier: .iso8601)
+      let now = Date()
+      let year = cal.component(.yearForWeekOfYear, from: now)
+      let week = cal.component(.weekOfYear, from: now)
+      return String(format: "%04d-W%02d", year, week)
+    }
+
+    static func endOfCurrentWeek() -> Date {
+      var cal = Calendar(identifier: .iso8601)
+      cal.firstWeekday = 2  // Monday — matches ISO
+      let now = Date()
+      let comps = cal.dateComponents(
+        [.yearForWeekOfYear, .weekOfYear, .weekday, .hour, .minute, .second],
+        from: now
+      )
+      var endComps = DateComponents()
+      endComps.yearForWeekOfYear = comps.yearForWeekOfYear
+      endComps.weekOfYear = comps.weekOfYear
+      endComps.weekday = 1  // Sunday in ISO is the last day of the week
+      endComps.hour = 23
+      endComps.minute = 59
+      endComps.second = 59
+      return cal.date(from: endComps) ?? now
+    }
+  }
+
+  private func loadCurrentWeekIfNeeded() {
+    let url = storageDir.appendingPathComponent("current.json")
+    guard let data = try? Data(contentsOf: url),
+          let loaded = try? JSONDecoder().decode(WeekBucket.self, from: data),
+          loaded.weekId == WeekBucket.currentWeekId() else {
+      return
+    }
+    queue.sync { counters = loaded }
+  }
+
+  private func rotateIfNeeded() {
+    let current = WeekBucket.currentWeekId()
+    guard counters.weekId != current else { return }
+
+    // Persist the closing week as its own file, with no further promotion
+    // log (caller of `performWeeklyFeedback` decides whether to promote).
+    let closedURL = storageDir.appendingPathComponent("\(counters.weekId).json")
+    if let data = try? JSONEncoder.indented.encode(
+      counters.summary(promotedAllow: [], promotedKeep: [])
+    ) {
+      try? data.write(to: closedURL, options: .atomic)
+    }
+    os_log("UsageStatistics: rotated week %{public}@ → %{public}@",
+           log: log, type: .info, counters.weekId, current)
+
+    // Reset counters for the new week.
+    counters = WeekBucket()
+    try? FileManager.default.removeItem(at: storageDir.appendingPathComponent("current.json"))
+
+    pruneOldWeeks()
+  }
+
+  private func pruneOldWeeks() {
+    let urls = (try? FileManager.default.contentsOfDirectory(
+      at: storageDir, includingPropertiesForKeys: nil
+    )) ?? []
+    let closed = urls
+      .filter { $0.pathExtension == "json" && $0.lastPathComponent != "current.json" }
+      .sorted { $0.lastPathComponent > $1.lastPathComponent }
+    for url in closed.dropFirst(maxWeeksRetained) {
+      try? FileManager.default.removeItem(at: url)
+    }
+  }
+
+  // MARK: - Internal: bookkeeping
+
+  private func applyCommit(
+    decision: SpellDecision,
+    rawInput: String,
+    transformed: String,
+    appBundleId: String?,
+    typoCorrectionApplied: Bool
+  ) {
+    rotateIfNeeded()
+    counters.wordsTotal += 1
+
+    let rawToken = rawInput.normalizedDictionaryToken
+    let vnToken = transformed.normalizedDictionaryToken
+
+    switch decision {
+    case .keepVietnamese:
+      counters.wordsKeptVietnamese += 1
+      if !vnToken.isEmpty {
+        counters.vnWordCounts[vnToken, default: 0] += 1
+        counters.vnKeepStreak[vnToken, default: 0] += 1
+      }
+    case .restoreRawEnglish:
+      counters.wordsRestoredEnglish += 1
+      if !rawToken.isEmpty {
+        counters.enWordCounts[rawToken, default: 0] += 1
+        counters.enRestoreStreak[rawToken, default: 0] += 1
+      }
+    case .keepRaw:
+      counters.wordsKeptRaw += 1
+      if !rawToken.isEmpty {
+        // Track raw too — could be a name or technical term the user uses
+        // often. They become candidates for personal dictionary later.
+        counters.enWordCounts[rawToken, default: 0] += 1
+      }
+    case .suggest:
+      counters.wordsSuggested += 1
+    }
+
+    if typoCorrectionApplied {
+      counters.typoCorrectionsApplied += 1
+    }
+    if let app = appBundleId, !app.isEmpty {
+      counters.appCounts[app, default: 0] += 1
+    }
+
+    // Cap the per-bucket sizes so a runaway map can't blow disk.
+    trimDict(&counters.vnWordCounts, max: 500)
+    trimDict(&counters.enWordCounts, max: 500)
+
+    scheduleFlush()
+  }
+
+  private func trimDict(_ dict: inout [String: Int], max: Int) {
+    guard dict.count > max else { return }
+    let keepers = dict.sorted { $0.value > $1.value }.prefix(max)
+    dict = Dictionary(uniqueKeysWithValues: keepers.map { ($0.key, $0.value) })
+  }
+
+  private func scheduleFlush() {
+    pendingFlushItem?.cancel()
+    let item = DispatchWorkItem { [weak self] in
+      self?.flushNow()
+    }
+    pendingFlushItem = item
+    queue.asyncAfter(deadline: .now() + 10, execute: item)
+  }
+
+  private func flushNow() {
+    let url = storageDir.appendingPathComponent("current.json")
+    if let data = try? JSONEncoder.indented.encode(counters) {
+      try? data.write(to: url, options: .atomic)
+    }
+  }
+
+  // MARK: - Promotion (weekly feedback loop)
+
+  struct PromotionResult: Equatable {
+    let allow: [String]
+    let keep: [String]
+  }
+
+  /// Pure-function core of the promotion logic. Exposed `internal` so tests
+  /// can drive it without sharing process-wide `Defaults` state — the
+  /// instance method below reads/writes Defaults and delegates here.
+  ///
+  /// - Parameters:
+  ///   - enRestoreStreak: Map of `raw english token → times restored` within
+  ///     the current week's bucket.
+  ///   - vnKeepStreak: Map of `transformed VN word → times kept`.
+  ///   - existingAllow / existingKeep / existingDeny: User's current
+  ///     personal dictionary sets, already normalised.
+  ///   - threshold: Min repeats before a token is eligible for promotion.
+  ///   - maxBatch: Cap on promoted entries per category per call.
+  static func computePromotion(
+    enRestoreStreak: [String: Int],
+    vnKeepStreak: [String: Int],
+    existingAllow: Set<String>,
+    existingKeep: Set<String>,
+    existingDeny: Set<String>,
+    threshold: Int = 5,
+    maxBatch: Int = 10
+  ) -> PromotionResult {
+    var newAllow: [String] = []
+    for (token, count) in enRestoreStreak where count >= threshold {
+      let n = token.normalizedDictionaryToken
+      guard n.count >= 2, n.isASCIIAlphabeticWord else { continue }
+      if existingAllow.contains(n) || existingDeny.contains(n) { continue }
+      newAllow.append(n)
+    }
+
+    var newKeep: [String] = []
+    for (token, count) in vnKeepStreak where count >= threshold {
+      let n = token.normalizedDictionaryToken
+      guard n.count >= 2 else { continue }
+      if existingKeep.contains(n) || existingDeny.contains(n) { continue }
+      // Only promote actual Vietnamese-looking words (contain at least one
+      // diacritic / non-ASCII char). Otherwise the user already typed it as
+      // pure ASCII and we'd be adding noise.
+      let hasNonAscii = n.unicodeScalars.contains { $0.value > 127 }
+      guard hasNonAscii else { continue }
+      newKeep.append(n)
+    }
+
+    return PromotionResult(
+      allow: Array(newAllow.prefix(maxBatch)),
+      keep: Array(newKeep.prefix(maxBatch))
+    )
+  }
+
+  private func promoteFrequentWords() -> PromotionResult {
+    let existingAllow = Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken })
+    let existingKeep = Set(Defaults[.userKeepWords].map { $0.normalizedDictionaryToken })
+    let existingDeny = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
+
+    let result = Self.computePromotion(
+      enRestoreStreak: counters.enRestoreStreak,
+      vnKeepStreak: counters.vnKeepStreak,
+      existingAllow: existingAllow,
+      existingKeep: existingKeep,
+      existingDeny: existingDeny,
+      threshold: promotionThreshold
+    )
+
+    if !result.allow.isEmpty {
+      var current = Defaults[.userAllowWords]
+      for w in result.allow where !current.contains(w) { current.append(w) }
+      Defaults[.userAllowWords] = current
+    }
+    if !result.keep.isEmpty {
+      var current = Defaults[.userKeepWords]
+      for w in result.keep where !current.contains(w) { current.append(w) }
+      Defaults[.userKeepWords] = current
+    }
+
+    return result
+  }
+
+  private func persistCurrentWeek(includingPromotionLog promoted: PromotionResult) {
+    let summary = counters.summary(
+      promotedAllow: promoted.allow,
+      promotedKeep: promoted.keep
+    )
+    let url = storageDir.appendingPathComponent("\(counters.weekId).json")
+    if let data = try? JSONEncoder.indented.encode(summary) {
+      try? data.write(to: url, options: .atomic)
+    }
+    // Keep the running bucket too so the UI shows up-to-date numbers.
+    flushNow()
+  }
+}
+
+// MARK: - File-private helpers
+
+private extension JSONEncoder {
+  static let indented: JSONEncoder = {
+    let e = JSONEncoder()
+    e.outputFormatting = [.prettyPrinted, .sortedKeys]
+    e.dateEncodingStrategy = .iso8601
+    return e
+  }()
+}

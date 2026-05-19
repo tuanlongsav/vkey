@@ -6,6 +6,9 @@
 //
 
 import Foundation
+import os.log
+
+private let log = OSLog(subsystem: "dev.longht.vkey", category: "FileMonitor")
 
 protocol FileMonitorDelegate: AnyObject {
   func didReceive(changes: String)
@@ -53,7 +56,14 @@ final class FileMonitor {
     }
 
     let newData = self.fileHandle.readDataToEndOfFile()
-    let string = String(data: newData, encoding: .utf8)!
+    // Non-UTF8 garbage in /tmp/vkey_switch should never crash the IME. Drop
+    // the chunk and keep monitoring — the next legitimate write will be a
+    // full UTF-8 message we can parse.
+    guard let string = String(data: newData, encoding: .utf8) else {
+      os_log("FileMonitor: dropping %d non-UTF8 bytes from %@",
+             log: log, type: .default, newData.count, url.path)
+      return
+    }
     self.delegate?.didReceive(changes: string)
   }
 }

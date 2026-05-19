@@ -58,9 +58,15 @@ struct TiengVietState {
 
   // MARK: - Computed Properties
 
-  /// Các thành phần âm tiết đã phân tích - cached để tránh parse lại nhiều lần
+  /// Các thành phần âm tiết đã phân tích - cached để tránh parse lại nhiều lần.
+  ///
+  /// `TiengVietState` là điểm đọc Defaults duy nhất; Parser nhận cờ qua tham số
+  /// để giữ thuần (testable mà không cần stub Defaults).
   var thanhPhanTieng: ThanhPhanTieng {
-    _cachedThanhPhan ?? TiengVietParser.parse(chuKhongDau)
+    _cachedThanhPhan ?? TiengVietParser.parse(
+      chuKhongDau,
+      autoTypoCorrection: Defaults[.autoTypoCorrection]
+    )
   }
 
   /// Chuỗi đã biến đổi với dấu tiếng Việt
@@ -117,7 +123,10 @@ extension TiengVietState {
       dauThanh: dauThanh,
       dauMu: dauMu,
       gachD: gachD,
-      cachedThanhPhan: TiengVietParser.parse(newChuKhongDau)
+      cachedThanhPhan: TiengVietParser.parse(
+        newChuKhongDau,
+        autoTypoCorrection: Defaults[.autoTypoCorrection]
+      )
     )
   }
 
@@ -126,7 +135,10 @@ extension TiengVietState {
     guard !chuKhongDau.isEmpty else { return self }
 
     let newChuKhongDau = Array(chuKhongDau.dropLast())
-    let newThanhPhan = TiengVietParser.parse(newChuKhongDau)
+    let newThanhPhan = TiengVietParser.parse(
+      newChuKhongDau,
+      autoTypoCorrection: Defaults[.autoTypoCorrection]
+    )
 
     // Reset dấu nếu không còn nguyên âm
     var newDauMu = dauMu
@@ -186,7 +198,31 @@ extension TiengVietState {
       dauThanh: dauThanh,
       dauMu: dauMu,
       gachD: gachD,
-      cachedThanhPhan: TiengVietParser.parse(keys)
+      cachedThanhPhan: TiengVietParser.parse(
+        keys,
+        autoTypoCorrection: Defaults[.autoTypoCorrection]
+      )
     )
+  }
+
+  /// Late D toggle: cho phép gõ phím gạch-d ("d" với Telex hoặc "9" với VNI)
+  /// ở cuối từ để chuyển d → đ trên phụ âm đầu, ví dụ `dinjhd` → `định`.
+  ///
+  /// Trước Phase 1.6 logic này được lặp y hệt trong Telex/VNI; nay tập trung
+  /// ở đây để hai engine cùng gọi và dễ test.
+  ///
+  /// - Parameters:
+  ///   - char: Ký tự vừa gõ
+  ///   - triggerChars: Tập ký tự kích hoạt (Telex: ["d","D"]; VNI: ["9"])
+  /// - Returns: State mới sau khi áp gachD, hoặc nil nếu điều kiện không đủ
+  func tryLateDToggle(char: Character, triggerChars: Set<Character>) -> TiengVietState? {
+    guard Defaults[.autoTypoCorrection],
+      chuKhongDau.count >= 3,
+      let chuCaiDau = chuKhongDau.first,
+      chuCaiDau == "d" || chuCaiDau == "D",
+      !gachD,
+      triggerChars.contains(char)
+    else { return nil }
+    return withGachD()
   }
 }
