@@ -267,7 +267,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     switch alert.runModal() {
     case .alertFirstButtonReturn:
-      // Open the Accessibility pane directly. URL accepted by macOS 13+.
+      // Open the Accessibility pane directly. URL accepted by macOS 14+.
       if let url = URL(
         string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
       ) {

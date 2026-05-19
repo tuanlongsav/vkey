@@ -66,7 +66,7 @@ Ví dụ:
   <title>Version 1.4.2</title>
   <sparkle:version>14200</sparkle:version>
   <sparkle:shortVersionString>1.4.2</sparkle:shortVersionString>
-  <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+  <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
   <pubDate>Tue, 19 May 2026 10:00:00 +0700</pubDate>
   <enclosure
     url="https://github.com/tuanlongsav/vkey/releases/download/v1.4.2/vkey-1.4.2.dmg"

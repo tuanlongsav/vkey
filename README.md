@@ -1,6 +1,6 @@
 # vkey
 
-Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 13 Ventura trở lên.
+Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
 **Phiên bản hiện tại: 1.5.0 — "Bilingual Reborn"** ([CHANGELOG](CHANGELOG.md))
 
@@ -67,7 +67,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 
 ### Build từ source
 
-Yêu cầu: macOS 13+, Xcode 15.3+ (Swift 5.10+).
+Yêu cầu: macOS 14+ (Sonoma), Xcode 15.3+ (Swift 5.10+).
 
 ```bash
 git clone https://github.com/tuanlongsav/vkey.git

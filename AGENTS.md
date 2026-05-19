@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 vkey is a macOS Vietnamese Input Method Editor (IME) - a native keyboard input system for typing Vietnamese with diacritical marks. It supports Telex and VNI input methods with app-specific input mode memory.
 
-**Target**: macOS 13+ Ventura
+**Target**: macOS 14+ Sonoma
 **Language**: Swift
 **Frameworks**: AppKit, SwiftUI
 
