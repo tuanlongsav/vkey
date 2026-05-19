@@ -82,23 +82,98 @@ ditto /tmp/vkey-release/Build/Products/Release/vkey.app /Applications/vkey.app
 
 ## Sử dụng
 
+### Thao tác nhanh trên Menu Bar
+
+Click icon cờ trên menu bar để mở các tác vụ nhanh.
+
 | Tác vụ | Cách dùng |
 |--------|----------|
-| Chuyển VN ↔ EN | Nhấn + nhả **⌃⇧** (Control + Shift) đồng thời |
-| Đổi phím tắt | Menu vkey → Cài đặt → tab Chung → dòng "Phím tắt" → bấm vào nút và nhập tổ hợp mới |
-| Bật/tắt thông báo HUD | Menu → Cài đặt → tab Chung → "Hiển thị thông báo khi chuyển VI/EN" |
-| Bật/tắt từ menu | Click cờ trên menu bar → "Chuyển đổi bộ gõ 🇻🇳 \| 🇺🇸" |
-| Đổi kiểu gõ | Menu → "Kiểu Telex" / "Kiểu VNI" |
-| Đổi kiểu đặt dấu | Menu → Cài đặt → Chung → "Kiểu đặt dấu" (mới/cũ) |
-| Thêm macro | Menu → Cài đặt → tab Macro → bấm "Thêm" |
-| Ủng hộ tác giả | Menu → "Ủng hộ tác giả" (Quét mã VietQR) |
-| Kiểm tra cập nhật | Menu → "Kiểm tra cập nhật" |
+| Chuyển VN ↔ EN bằng phím tắt | Nhấn + nhả **⌃⇧** (Control + Shift) đồng thời (mặc định) |
+| Chuyển VN ↔ EN từ menu | Menu → **"Chuyển đổi bộ gõ 🇻🇳 \| 🇺🇸"** |
+| Đổi kiểu gõ | Menu → **"Kiểu Telex"** / **"Kiểu VNI"** (✓ ở dòng đang chọn) |
+| Bật/tắt nhanh Smart Switch | Menu → **"Smart Switch"** (✓ khi đang bật) |
+| Bật/tắt nhanh Sửa lỗi chính tả | Menu → **"Sửa lỗi chính tả"** (✓ khi đang bật) |
+| Mở cửa sổ Cài đặt | Menu → **"Cài đặt"** |
+| Ủng hộ tác giả | Menu → **"Ủng hộ tác giả"** (quét mã VietQR) |
+| Trang dự án trên GitHub | Menu → **"Thông tin dự án"** |
+| Kiểm tra cập nhật thủ công | Menu → **"Kiểm tra cập nhật"** |
+| Thoát vkey | Menu → **"Thoát"** |
 
 **Trạng thái icon menu bar:**
 - 🇻🇳 cờ Việt Nam: đang gõ tiếng Việt
 - 🇺🇸 cờ Mỹ: đang gõ tiếng Anh
 - 🔒 ổ khoá: đang ở ô password (vkey tự bypass)
 - ⚙️ bánh răng có dấu hỏi: chưa cấp quyền Accessibility
+
+### Cài đặt → tab **Chung**
+
+| Mục | Tác dụng |
+|-----|---------|
+| Bật / Tắt gõ TV | Toggle tổng — bật để gõ tiếng Việt, tắt để gõ thẳng tiếng Anh |
+| Tự khởi động cùng hệ thống | Đăng ký vkey vào Login Items macOS |
+| Kiểu gõ | Telex / VNI (segmented) |
+| Phụ âm `z`, `w`, `j`, `f` | Cho phép coi chúng là phụ âm hợp lệ khi parse âm tiết |
+| Tự động sửa lỗi gõ nhầm | Bật/tắt Auto Typo Correction (`thfi → thì`, `dinhjd → định`, `veeitj → việt`, `phuowgn → phương` …) |
+| Hiển thị thông báo khi chuyển VI/EN | Bật/tắt Glassmorphic Toggle HUD ở giữa màn hình |
+| Kiểu đặt dấu | **Kiểu mới** (thuỷ, khoẻ, hoà, uý) ⟷ **Kiểu cũ** (thủy, khỏe, hòa, úy) |
+| Phím tắt | Bấm vào nút → nhập tổ hợp (`⌃⇧Z`) hoặc nhấn-thả modifier (`⌃⇧`) để dùng modifier-only. Backspace để xoá phím tắt, Esc để huỷ |
+
+### Cài đặt → tab **Smart Switch**
+
+| Tác vụ | Cách dùng |
+|--------|----------|
+| Bật/tắt Smart Switch | Toggle ở đầu tab (hoặc nút nhanh ngoài menu bar) |
+| Thêm ứng dụng "luôn dùng tiếng Anh" | Nhập Bundle ID rồi bấm **"Thêm"** (có sẵn các mẫu phổ biến: Xcode, VSCode, Terminal…) |
+| Lấy Bundle ID của app đang chạy | Mở Terminal, gõ `osascript -e 'id of app "Tên Ứng Dụng"'` |
+| Xoá app khỏi danh sách | Chọn dòng → bấm **🗑** |
+
+### Cài đặt → tab **Macro**
+
+| Tác vụ | Cách dùng |
+|--------|----------|
+| Thêm macro mới | Bấm **"Thêm"** → điền cột "Viết tắt" và "Cụm dài" |
+| Xoá macro | Chọn dòng → bấm **"Xoá"** |
+| Xuất macro ra JSON | Bấm **"Xuất"** — lưu file JSON để chia sẻ giữa máy |
+| Nhập macro từ JSON | Bấm **"Nhập"** — gộp vào danh sách hiện tại, bỏ qua trùng |
+| Kích hoạt khi gõ | Gõ phần "Viết tắt" rồi nhấn **Space** hoặc **dấu câu**, vkey thay bằng "Cụm dài" |
+
+### Cài đặt → tab **Chính tả**
+
+| Mục | Tác dụng |
+|-----|---------|
+| Kích hoạt nhanh tất cả tính năng mới | Toggle gộp — bật/tắt cùng lúc mọi tính năng chính tả + từ điển bên dưới |
+| Kiểm tra chính tả | Bật cơ chế 6-bước check + Vowel Inclusion Pairs (chặn gõ dấu sai cấu trúc âm tiết) |
+| Kiểm tra trong câu | Mở rộng kiểm tra cho từ ở giữa câu (không chỉ từ vừa gõ) |
+| Nguồn từ điển | **Chỉ từ điển nhúng** (7.184 âm tiết offline) hoặc **Nhúng + Cập nhật cục bộ** (cho phép update) |
+| Tự động tải từ GitHub | Khi chọn "Nhúng + Cập nhật": cho phép vkey tải `lexicon-update.json` mới nhất từ repo |
+| Cập nhật từ điển ngay | Bấm để force-download bản mới nhất từ GitHub |
+| Sử dụng từ điển cá nhân | Bật danh sách Allow / Keep / Deny do bạn tự định nghĩa |
+| Quản lý từ điển cá nhân | Mở editor → thêm / xoá từ trong 3 danh sách Allow / Keep / Deny |
+| Tự động khôi phục tiếng Anh | Bật Space Restore (`ò → of`, `ì → if`, `sê → see`, `tê → tee`…) |
+| Chính sách khôi phục | **Ưu tiên tiếng Việt** / **Cân bằng** / **Ưu tiên tiếng Anh** cho từ mơ hồ |
+| Dùng từ điển tham chiếu Anh-Việt | Bật 110 cặp song ngữ từ Wiktionary (mới ở 1.5.0) |
+| Gợi ý sửa lỗi chính tả | Hiện gợi ý khi gõ sai (dựa trên Levenshtein + heuristic) |
+| Tự động sửa khi tin cậy cao | Áp dụng gợi ý luôn nếu độ tin cậy ≥ 88% |
+
+### Cài đặt → tab **Thống kê & Sao lưu**
+
+| Mục | Tác dụng |
+|-----|---------|
+| Ghi nhận thống kê sử dụng | Bật/tắt log cục bộ (`~/Library/Application Support/vkey/stats/`) |
+| Chạy đồng bộ Personal Dictionary ngay | Promote thủ công các từ ≥5 lần trong tuần vào Allow/Keep |
+| Xóa toàn bộ dữ liệu thống kê | Reset cả tuần này lẫn các tuần đã đóng |
+| Tự động hỏi sao lưu khi cập nhật app | Hiện prompt xuất JSON trước khi app chạy phiên bản mới |
+| Xuất dữ liệu cá nhân | Lưu JSON gồm Cài đặt + Macro + từ điển cá nhân + Smart Switch + per-app + thống kê |
+| Nhập từ tệp sao lưu | Chọn **"Gộp"** (giữ dữ liệu hiện tại) hoặc **"Ghi đè toàn bộ"** |
+
+### Phím gõ đặc biệt khi đang gõ
+
+| Phím | Tác dụng |
+|------|---------|
+| **Space** sau từ tiếng Anh bị gõ nhầm | Tự khôi phục về tiếng Anh (Space Restore) |
+| **Esc** giữa chừng | Hoàn tác về phím thô ban đầu, reset bộ đệm |
+| Gõ đúp `ss`, `ff`, `rr`, `xx`, `jj` | Giữ nguyên đúp (không bị toggle dấu) — cho từ tiếng Anh như `staff`, `off`, `class`, `pass` |
+| Click chuột vào ô khác giữa từ | Reset bộ đệm sạch sẽ — không dính chữ qua ô khác |
 
 ## FAQ
 
