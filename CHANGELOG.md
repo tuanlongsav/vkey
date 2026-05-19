@@ -2,6 +2,26 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.5.6] - 2026-05-19 — "Pick a Look"
+
+Hotfix sau 1.5.5: thêm theme thứ 3 (Emoji) + sửa nút duplicate trong tab Chính tả.
+
+### Theme picker mở lại
+
+- Submenu **"Giao diện ứng dụng"** trong menu bar (đã ẩn ở 1.5.4) giờ mở lại với **3 lựa chọn**:
+  - **Mặc định**: SF Symbol gốc, không hiệu ứng (đơn giản, gọn).
+  - **3D bóng bẩy**: SF Symbol + 4-stop gradient + double shadow + `.hierarchical` — vẫn là default.
+  - **Emoji vui tươi** (mới): thay từng SF Symbol bằng Unicode emoji tương ứng. Mapping ~60 symbol: `gearshape` → ⚙️, `lightbulb` → 💡, `arrow.left.arrow.right.circle` → 🔁, `text.cursor` → 📝, `sparkles` → ✨, `chart.bar.doc.horizontal` → 📊, …. Cảm hứng từ emoji headers trong CHANGELOG.
+- Code: thêm enum case `AppTheme.emoji` + `ThemedSymbol.emojiFor(_:)` static map. Fallback về `Image(systemName:)` nếu symbol chưa có mapping.
+- Default theme vẫn là `.threeD`. User chuyển sang `.emoji` từ menu bar bất cứ lúc nào.
+
+### Sửa lỗi UI
+
+- **Tab Chính tả: gộp 2 button mở Editor**. 1.5.5 lỡ tạo 2 button cùng mở `PersonalDictionaryEditorView`:
+  - "Quản lý từ điển cá nhân" trong Section "Từ điển cá nhân" (gated trên `personalDictionaryEnabled`).
+  - "Mở từ điển cá nhân để chỉnh sửa" trong Section "Học hành vi từ Thống kê".
+- 1.5.6: giữ button **"Quản lý từ điển cá nhân"** + bỏ gate `personalDictionaryEnabled` để **luôn hiển thị**. Bỏ button duplicate ở Section "Học hành vi". Helper text Section "Học hành vi" giờ trỏ user lên Section trên.
+
 ## [1.5.5] - 2026-05-19 — "Learn From Me"
 
 vkey giờ học hành vi user và đề xuất tự động dựa trên Thống kê.

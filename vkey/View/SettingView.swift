@@ -411,23 +411,27 @@ struct SpellCheckView: View {
                             .foregroundStyle(.secondary)
                             .padding(.top, -4)
 
-                        if personalDictionaryEnabled {
-                            HStack {
-                                Spacer()
-                                Button(action: { showingPersonalDictEditor = true }) {
-                                    Label("Quản lý từ điển cá nhân", themedSymbol: "pencil.and.outline")
-                                }
-                                Spacer()
+                        // 1.5.6: button luôn hiển thị (kể cả khi toggle tắt) để user
+                        // còn có chỗ chỉnh sửa cố định 1 nơi. Cũng dùng cho user
+                        // bật "Tự động cập nhật từ Thống kê" ở Section bên dưới
+                        // — họ vẫn cần chỗ chỉnh sửa khi auto promote sai.
+                        HStack {
+                            Spacer()
+                            Button(action: { showingPersonalDictEditor = true }) {
+                                Label("Quản lý từ điển cá nhân", themedSymbol: "pencil.and.outline")
                             }
-                            .padding(.top, 4)
+                            Spacer()
                         }
+                        .padding(.top, 4)
                     } header: {
                         Text("Từ điển cá nhân")
                     }
 
                     // Section 6: Auto-feedback từ Thống kê (1.5.5+).
                     // Thay Section "Từ điển GitHub" cũ — auto-fetch GitHub mỗi
-                    // 24h vẫn chạy ngầm (không cần button manual).
+                    // 24h vẫn chạy ngầm (không cần button manual). 1.5.6: bỏ
+                    // button "Mở từ điển" duplicate — user dùng button trong
+                    // Section "Từ điển cá nhân" ở trên.
                     Section {
                         Toggle(isOn: $autoPersonalDictFeedback) {
                             Label("Tự động cập nhật từ điển cá nhân",
@@ -435,21 +439,9 @@ struct SpellCheckView: View {
                         }
                         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                        Text("Mỗi tuần, vkey tự xem các từ bạn gõ nhiều và thêm vào danh sách Allow / Keep để bộ gõ học hành vi của bạn. Có thể chỉnh sửa bằng tay nếu auto promote sai.")
+                        Text("Mỗi tuần, vkey tự xem các từ bạn gõ nhiều và thêm vào danh sách Allow / Keep để bộ gõ học hành vi của bạn. Có thể chỉnh sửa bằng tay qua nút \"Quản lý từ điển cá nhân\" ở Section trên nếu auto promote sai.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-
-                        HStack {
-                            Spacer()
-                            Button {
-                                showingPersonalDictEditor = true
-                            } label: {
-                                Label("Mở từ điển cá nhân để chỉnh sửa",
-                                      themedSymbol: "pencil.and.outline")
-                            }
-                            Spacer()
-                        }
-                        .padding(.top, 4)
                     } header: {
                         Text("Học hành vi từ Thống kê")
                     }

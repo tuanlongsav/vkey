@@ -62,6 +62,7 @@ struct MainMenuView: View {
   @Default(.smartSwitchEnabled) private var smartSwitchEnabled
   @Default(.spellCheckEnabled) private var spellCheckEnabled
   @Default(.macroEnabled) private var macroEnabled
+  @Default(.appTheme) private var appTheme
 
   var body: some View {
     // MenuBarExtra (`.menu` style) renders SwiftUI Buttons as NSMenuItem.
@@ -134,10 +135,29 @@ struct MainMenuView: View {
       )
     }
 
-    // 1.5.4: theme picker tạm thời ẩn — chỉ dùng theme .threeD làm default
-    // mới. Khi có bộ artwork bitmap PDF cho `Icons3D/`, mở lại submenu
-    // "Giao diện ứng dụng" để cho phép switch giữa các bộ icon. Code
-    // ThemedSymbol + AppTheme enum + key `appTheme` vẫn giữ nguyên.
+    // 1.5.6: theme picker mở lại với 3 lựa chọn (Mặc định / 3D / Emoji).
+    Menu {
+      Button { appTheme = .default } label: {
+        Label(
+          appTheme == .default ? "Mặc định  ✓" : "Mặc định",
+          themedSymbol: "circle"
+        )
+      }
+      Button { appTheme = .threeD } label: {
+        Label(
+          appTheme == .threeD ? "3D bóng bẩy  ✓" : "3D bóng bẩy",
+          themedSymbol: "cube"
+        )
+      }
+      Button { appTheme = .emoji } label: {
+        Label(
+          appTheme == .emoji ? "Emoji vui tươi  ✓" : "Emoji vui tươi",
+          themedSymbol: "sparkles"
+        )
+      }
+    } label: {
+      Label("Giao diện ứng dụng", themedSymbol: "paintbrush")
+    }
 
     Divider()
 

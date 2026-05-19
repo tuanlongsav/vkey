@@ -6,18 +6,20 @@
 //  `Image(systemName:)` ở mọi nơi không phải là menu bar state flag /
 //  AppIcon (giữ nguyên flag VN/US PNG và AppIcon mặc định).
 //
-//  Hai theme:
+//  Ba theme:
 //
 //  - `.default`: render SF Symbol gốc, không hiệu ứng.
-//  - `.threeD`: ưu tiên 1 bitmap PDF ở `Assets.xcassets/Icons3D/<name>`
-//    (Phase 6b — designer có thể drop artwork sau). Nếu chưa có asset,
-//    fallback runtime: SF Symbol + `.symbolRenderingMode(.multicolor)` +
-//    `.symbolVariant(.fill)` + LinearGradient foreground + shadow để
-//    mang cảm giác "3D-ish" / glossy.
+//  - `.threeD` (default ở 1.5.4+): ưu tiên bitmap PDF ở
+//    `Assets.xcassets/Icons3D/<name>` nếu có; nếu không, runtime
+//    fallback: SF Symbol + 4-stop gradient + double shadow +
+//    `.hierarchical` rendering — "bóng bẩy" 3D.
+//  - `.emoji` (mới ở 1.5.6): thay SF Symbol bằng Unicode emoji
+//    tương ứng (vd `gearshape` → ⚙️, `lightbulb` → 💡). Map ở
+//    `Self.emojiFor(_:)` bên dưới. Nếu không có mapping, fallback
+//    về SF Symbol gốc.
 //
 //  Đối với `Label(_, systemImage:)`, dùng extension
-//  `Label(_, themedSymbol:)` thay vì wrap thủ công ThemedSymbol +
-//  Text trong icon builder.
+//  `Label(_, themedSymbol:)` thay vì wrap thủ công.
 //
 
 import AppKit
@@ -38,13 +40,8 @@ struct ThemedSymbol: View {
           .resizable()
           .aspectRatio(contentMode: .fit)
       } else {
-        // Runtime fallback — 1.5.5 enhanced glossy:
-        //  - 4-stop gradient mô phỏng ball lighting (top bright → mid
-        //    dim → bottom bump để giả lập đáy phản chiếu).
-        //  - Double shadow: outer accent halo + inner sharper drop
-        //    để icon "nổi" hơn so với background.
-        //  - `.hierarchical` rendering giúp SF Symbol multi-layer
-        //    nhận gradient nhất quán.
+        // 4-stop gradient mô phỏng ball lighting + double shadow
+        // (accent halo + black drop) cho cảm giác "nổi 3D".
         Image(systemName: name)
           .symbolRenderingMode(.hierarchical)
           .symbolVariant(.fill)
@@ -62,6 +59,109 @@ struct ThemedSymbol: View {
           .shadow(color: .accentColor.opacity(0.35), radius: 4, x: 0, y: 2)
           .shadow(color: .black.opacity(0.20),       radius: 1, x: 0, y: 0.5)
       }
+    case .emoji:
+      if let glyph = Self.emojiFor(name) {
+        Text(glyph)
+      } else {
+        // Fallback nếu thiếu mapping — vẫn render SF Symbol gốc để
+        // không bị "?".
+        Image(systemName: name)
+      }
+    }
+  }
+
+  /// Map SF Symbol name → Unicode emoji glyph. Bao phủ ~60 symbol vkey
+  /// đang dùng. Nếu thiếu mapping, caller nhận `nil` và fallback về
+  /// `Image(systemName:)` gốc.
+  static func emojiFor(_ name: String) -> String? {
+    switch name {
+    // Menu Bar
+    case "arrow.left.arrow.right.square":     return "🔄"
+    case "keyboard":                          return "⌨️"
+    case "keyboard.badge.ellipsis":           return "⌨️"
+    case "gearshape":                         return "⚙️"
+    case "arrow.left.arrow.right.circle":     return "🔁"
+    case "arrow.left.arrow.right.circle.fill":return "🔁"
+    case "checkmark.circle":                  return "✅"
+    case "checkmark.circle.fill":             return "✅"
+    case "text.cursor":                       return "📝"
+    case "cup.and.saucer":                    return "☕"
+    case "info.circle":                       return "ℹ️"
+    case "arrow.triangle.2.circlepath":       return "🔄"
+    case "power":                             return "🔌"
+
+    // Menu bar state (sẽ không thực sự render qua ThemedSymbol nhưng
+    // map sẵn cho an toàn nếu có nơi nào đó dùng nhầm)
+    case "gear.badge.questionmark":           return "⚙️"
+    case "lock.square":                       return "🔒"
+
+    // Settings tabs
+    case "gear":                              return "⚙️"
+    case "text.badge.checkmark":              return "✅"
+    case "chart.bar.doc.horizontal":          return "📊"
+
+    // Tab Chung
+    case "arrow.up.right.square":             return "🚀"
+    case "abc":                               return "🔤"
+    case "character":                         return "🔠"
+    case "sparkles":                          return "✨"
+    case "macwindow.badge.plus":              return "🪟"
+    case "textformat":                        return "🅰️"
+    case "command":                           return "⌘"
+
+    // Tab Chính tả
+    case "text.justify.left":                 return "📃"
+    case "lightbulb":                         return "💡"
+    case "lightbulb.fill":                    return "💡"
+    case "wand.and.stars":                    return "🪄"
+    case "arrow.uturn.backward":              return "↩️"
+    case "slider.horizontal.3":               return "🎚️"
+    case "character.book.closed":             return "📖"
+    case "person.circle":                     return "👤"
+    case "person.crop.circle.badge.checkmark":return "👤"
+    case "pencil.and.outline":                return "✏️"
+    case "book":                              return "📚"
+    case "arrow.down.circle":                 return "⬇️"
+
+    // Tab Macro
+    case "plus":                              return "➕"
+    case "trash":                             return "🗑️"
+    case "square.and.arrow.up":               return "📤"
+    case "square.and.arrow.down":             return "📥"
+
+    // Tab Smart Switch
+    case "app.dashed":                        return "📱"
+    case "plus.circle":                       return "➕"
+    case "terminal":                          return "💻"
+    case "terminal.fill":                     return "💻"
+    case "curlybraces":                       return "🔧"
+    case "hammer":                            return "🔨"
+    case "hat.3":                             return "🎩"
+    case "magnifyingglass":                   return "🔍"
+    case "magnifyingglass.circle":            return "🔍"
+
+    // Tab Thống kê
+    case "chart.bar":                         return "📊"
+    case "arrow.triangle.merge":              return "🔀"
+    case "shippingbox.and.arrow.backward":    return "📦"
+
+    // Onboarding / Guide / Upgrade
+    case "1.circle.fill":                     return "1️⃣"
+    case "2.circle.fill":                     return "2️⃣"
+    case "3.circle.fill":                     return "3️⃣"
+    case "arrow.right":                       return "➡️"
+    case "checkmark":                         return "✓"
+    case "exclamationmark.triangle.fill":     return "⚠️"
+    case "gear.badge":                        return "⚙️"
+    case "gear.badge.checkmark":              return "✅"
+    case "arrow.clockwise":                   return "🔄"
+
+    // Theme picker submenu
+    case "paintbrush":                        return "🎨"
+    case "circle":                            return "⚪"
+    case "cube":                              return "🧊"
+
+    default:                                  return nil
     }
   }
 }

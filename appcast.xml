@@ -6,6 +6,33 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.5.6 — "Pick a Look"</title>
+      <sparkle:version>15060</sparkle:version>
+      <sparkle:shortVersionString>1.5.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 17:10:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.5.6/vkey-1.5.6.dmg"
+        sparkle:edSignature="TZWtr+XkVTxJNMLWcKeF/85IBGmup4g2hrNTGjmv3Tuq5ji1XNW1laVTx1+EbjYA+f3qbdkgVjGzO5/LRW+PBg=="
+        length="5343216"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.5.6 — "Pick a Look":</h2>
+        <p>Hotfix sau 1.5.5: thêm theme Emoji + sửa nút duplicate trong tab Chính tả.</p>
+        <ul>
+          <li><strong>Theme picker mở lại với 3 lựa chọn</strong> trong menu bar → "Giao diện ứng dụng":
+            <ul>
+              <li><strong>Mặc định</strong>: SF Symbol gốc, không hiệu ứng.</li>
+              <li><strong>3D bóng bẩy</strong> (đang là default): gradient + double shadow.</li>
+              <li><strong>Emoji vui tươi</strong> (mới): thay icon bằng Unicode emoji — ⚙️ cho Cài đặt, 💡 cho Gợi ý, 🔁 cho Smart Switch, 📝 cho Macro, 🎨 cho Giao diện…</li>
+            </ul>
+          </li>
+          <li><strong>Sửa lỗi 2 nút trùng</strong>: tab Chính tả từng có cả "Quản lý từ điển cá nhân" và "Mở từ điển cá nhân để chỉnh sửa" cùng mở 1 sheet. Gộp về 1 nút duy nhất ("Quản lý từ điển cá nhân") trong Section "Từ điển cá nhân", luôn hiển thị kể cả khi toggle dict tắt.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.5.5 — "Learn From Me"</title>
       <sparkle:version>15050</sparkle:version>
       <sparkle:shortVersionString>1.5.5</sparkle:shortVersionString>

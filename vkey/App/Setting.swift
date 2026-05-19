@@ -53,13 +53,16 @@ enum RestorePolicy: String, CaseIterable, Defaults.Serializable {
   case englishFirst
 }
 
-/// Giao diện ứng dụng. `.default` dùng SF Symbol gốc; `.threeD` áp gradient +
-/// shadow + multicolor lên SF Symbol (hoặc dùng asset PDF trong
-/// `Assets.xcassets/Icons3D/` nếu có) để mang lại cảm giác bóng bẩy hơn.
+/// Giao diện ứng dụng. 3 theme khả dụng:
+/// - `.default`: SF Symbol gốc, không hiệu ứng.
+/// - `.threeD`: SF Symbol + gradient + shadow + multicolor — "bóng bẩy" 3D.
+/// - `.emoji`: thay SF Symbol bằng Unicode emoji tương ứng (vd
+///   `gearshape` → ⚙️, `lightbulb` → 💡) — vui tươi, dễ phân biệt.
 /// Không ảnh hưởng menu bar state flag (vn-flag/us-flag) và AppIcon.
 enum AppTheme: String, CaseIterable, Defaults.Serializable {
   case `default`
   case threeD
+  case emoji
 }
 
 extension Defaults.Keys {
