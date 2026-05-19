@@ -53,6 +53,22 @@ enum RestorePolicy: String, CaseIterable, Defaults.Serializable {
   case englishFirst
 }
 
+/// Đề xuất pending để bổ sung vào personal dictionary (1.6.0+).
+/// Thay thế cho cơ chế auto-promote cũ — giờ chỉ compute đề xuất,
+/// user review qua sheet rồi quyết định thêm.
+struct PendingDictSuggestion: Codable, Hashable, Identifiable, Defaults.Serializable {
+  enum Kind: String, Codable {
+    case allow  // gợi ý vào userAllowWords (raw tiếng Anh user gõ nhiều)
+    case keep   // gợi ý vào userKeepWords (giữ nguyên tiếng Việt)
+  }
+
+  var id: String { kind.rawValue + "_" + word.lowercased() }
+  var word: String
+  var count: Int
+  var kind: Kind
+  var suggestedAt: Date
+}
+
 /// Giao diện ứng dụng. 3 theme khả dụng:
 /// - `.default`: SF Symbol gốc, không hiệu ứng.
 /// - `.threeD`: SF Symbol + gradient + shadow + multicolor — "bóng bẩy" 3D.
@@ -182,7 +198,43 @@ extension Defaults.Keys {
   /// Việt / Anh user gõ ≥5 lần/tuần vào personal dictionary (Allow/Keep).
   /// Mặc định bật. User có thể tắt nếu muốn personal dict chỉ chỉnh tay.
   /// Manual button trong tab Thống kê vẫn chạy được bất kể flag này (1.5.5+).
+  /// 1.6.0+: KHÔNG còn auto-write nữa — compute pending suggestions thay vì.
   static let autoPersonalDictFeedback = Key<Bool>("auto-personal-dict-feedback", default: true)
+
+  /// Thời điểm cuối cùng app check update (1.6.0+). Throttle background
+  /// auto-check thành 1 lần/ngày (kiểm tra lần đầu mỗi ngày, thường vào
+  /// sáng khi user mở máy). Manual button "Kiểm tra cập nhật" không bị
+  /// throttle.
+  static let lastUpdateCheckDate = Key<Date?>("last-update-check-date", default: nil)
+
+  /// Build version của bản update gần nhất đã hiện notification banner
+  /// cho user (1.6.0+). Tránh spam: nếu user đã thấy notification về
+  /// build N mà chưa update, không hiện lại banner mỗi ngày.
+  /// Reset = 0 sẽ enable notification lại.
+  static let lastNotifiedUpdateBuild = Key<Int>("last-notified-update-build", default: 0)
+
+  /// Danh sách đề xuất pending — chờ user review qua
+  /// `PersonalDictSuggestionSheet` (1.6.0+). Mỗi lần
+  /// `performWeeklyFeedback` chạy, app ADD entries mới (dedupe by `id`).
+  /// User accept → vào `userAllowWords` / `userKeepWords` + xoá khỏi
+  /// pending. User dismiss → xoá khỏi pending.
+  static let pendingDictSuggestions = Key<[PendingDictSuggestion]>(
+    "pending-dict-suggestions",
+    default: []
+  )
+
+  /// Word Prediction (1.6.0+, thử nghiệm). Default OFF — opt-in.
+  /// Khi bật: sau khi commit 1 từ + space, vkey đoán từ tiếp theo và
+  /// hiển thị HUD nổi gần cursor. Nhấn Tab để chấp nhận.
+  static let wordPredictionEnabled = Key<Bool>("word-prediction-enabled", default: false)
+
+  /// Bigram counts: previous word → next word → count. Học từ history
+  /// user gõ (1.6.0+).
+  static let userBigrams = Key<[String: [String: Int]]>("user-bigrams", default: [:])
+
+  /// Trigram counts: "prev2|prev1" → next word → count. Compose key
+  /// bằng `|` để giảm nested level (Defaults serializer dễ hơn).
+  static let userTrigrams = Key<[String: [String: Int]]>("user-trigrams", default: [:])
 
   /// Giao diện ứng dụng — `.threeD` là default mới ở 1.5.4 (gradient +
   /// shadow + multicolor trên SF Symbol). UI picker tạm thời ẩn — sẽ

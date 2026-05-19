@@ -457,6 +457,13 @@ class InputProcessor {
   /// Track pasteboard change count to detect external paste operations
   private var lastPasteboardChangeCount: Int = NSPasteboard.general.changeCount
 
+  // 1.6.0: Word prediction state — track 2 previous committed words để
+  // feed bigram + trigram model. `activePrediction` lưu prediction đang
+  // hiển thị trên HUD; nếu user nhấn Tab → accept và inject.
+  private var prev1Committed: String? = nil
+  private var prev2Committed: String? = nil
+  private var activePrediction: String? = nil
+
   // MARK: - Convenience accessors (preserve existing API for tests)
 
   public var keys: [Character] {
@@ -557,6 +564,31 @@ class InputProcessor {
   // MARK: - Private Event Handlers
 
   private func handleTaskKey(_ taskKey: TaskKey, event: CGEvent) -> Unmanaged<CGEvent>? {
+    // 1.6.0: Tab + có prediction active + feature bật → accept prediction.
+    // Chỉ ăn Tab khi tất cả điều kiện match; nếu không, pass-through để
+    // app khác (vd form input) nhận Tab bình thường.
+    if taskKey == .Tab,
+       let prediction = activePrediction,
+       Defaults[.wordPredictionEnabled],
+       wordBuffer.wordState.isBlank  // chỉ accept khi user vừa commit xong word
+    {
+      let toInsert = "\(prediction) "
+      let telemetry = EventSimulator.sendReplacement(
+        backspaceCount: 0,
+        diffChars: Array(toInsert),
+        strategy: strategyTracker.currentStrategy
+      )
+      observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
+      DispatchQueue.main.async {
+        PredictionHUDWindow.shared.hide()
+      }
+      // Update prediction chain — prediction giờ trở thành prev1.
+      prev2Committed = prev1Committed
+      prev1Committed = prediction.lowercased()
+      activePrediction = nil
+      return nil  // swallow Tab
+    }
+
     if InputProcessor.NewWordTaskKeys.contains(taskKey) {
       // Only expand macros on Space — Tab/Enter often have form-submission semantics
       // we don't want to swallow.
@@ -714,6 +746,34 @@ class InputProcessor {
       transformed: current,
       appBundleId: activeApp.isEmpty ? nil : activeApp
     )
+
+    // 1.6.0: Word prediction learning + lookup. Học passively từ commit;
+    // chỉ trigger HUD khi user bật toggle `wordPredictionEnabled`.
+    let committedToken = current.normalizedDictionaryToken
+    PredictionEngine.shared.learnTransition(
+      prev2: prev2Committed,
+      prev1: prev1Committed,
+      current: committedToken
+    )
+    // Slide window
+    prev2Committed = prev1Committed
+    prev1Committed = committedToken
+
+    if Defaults[.wordPredictionEnabled],
+       let prediction = PredictionEngine.shared.topPrediction(
+         prev2: prev2Committed, prev1: prev1Committed ?? ""
+       )
+    {
+      activePrediction = prediction
+      DispatchQueue.main.async {
+        PredictionHUDWindow.shared.show(prediction: prediction)
+      }
+    } else {
+      activePrediction = nil
+      DispatchQueue.main.async {
+        PredictionHUDWindow.shared.hide()
+      }
+    }
 
     switch decision {
     case .keepVietnamese, .keepRaw:

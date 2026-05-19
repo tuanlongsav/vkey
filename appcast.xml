@@ -6,6 +6,31 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.6.0 — "Smart Suggestions &amp; Prediction"</title>
+      <sparkle:version>16000</sparkle:version>
+      <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 21:30:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.6.0/vkey-1.6.0.dmg"
+        sparkle:edSignature="8a7hUjh5k0nn5LYlk4I3Jn082dnj4YchgvJPCyPXRvHHLL5qasCQ6IiBjtN44yDwDsa7NrpWICQ7CjHlhCUcAw=="
+        length="5557929"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.6.0 — "Smart Suggestions &amp; Prediction":</h2>
+        <p>Bản nâng cấp lớn về trải nghiệm gợi ý &amp; dự đoán: gợi ý từ điển cá nhân chuyển sang chế độ review, thêm dự đoán từ tiếp theo (HUD nổi), và nhiều cải tiến chất lượng cuộc sống.</p>
+        <ul>
+          <li><strong>Thông báo cập nhật tự động</strong>: Updater throttle 1 lần/ngày (key <code>lastUpdateCheckDate</code>) — không spam, không bỏ sót bản mới.</li>
+          <li><strong>Stats lưu bền vững</strong>: <code>UsageStatistics</code> giờ flush đồng bộ (<code>flushSynchronously</code>) khi app quit, Codable backward-compat với schema cũ — không còn mất dữ liệu thống kê khi đóng app đột ngột.</li>
+          <li><strong>Tab Thống kê sắp xếp lại</strong>: thứ tự Sections tự nhiên hơn (Top từ → Top app → Tổng quan → Quản lý), phù hợp luồng xem-rồi-xoá.</li>
+          <li><strong>Gợi ý từ điển cá nhân — chế độ Review</strong>: thay vì auto-promote silent, vkey giờ mở <code>PersonalDictSuggestionSheet</code> để user duyệt từng cụm gõ ≥10 lần. Tránh add bừa "tcb", "nb"… vào personal dict.</li>
+          <li><strong>Dự đoán từ tiếp theo (mới)</strong>: HUD nổi cạnh caret hiển thị 1–3 ứng viên dựa trên hybrid model (bigram + trigram) nhúng sẵn. <strong>Mặc định TẮT</strong> — bật ở tab Chính tả → "Dự đoán từ" nếu muốn dùng. Default off vì tính năng còn beta và một số user thấy nhiễu.</li>
+          <li><strong>Đổi tên menu</strong>: "Chuyển đổi 🇻🇳 | 🇺🇸" → "Chuyển đổi ngôn ngữ 🇻🇳 | 🇺🇸" — rõ nghĩa hơn cho user mới.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.5.10 — "Updater Fixed"</title>
       <sparkle:version>15100</sparkle:version>
       <sparkle:shortVersionString>1.5.10</sparkle:shortVersionString>

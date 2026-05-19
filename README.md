@@ -2,7 +2,7 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 1.5.10 — "Updater Fixed"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 1.6.0 — "Smart Suggestions & Prediction"** ([CHANGELOG](CHANGELOG.md))
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
@@ -104,7 +104,7 @@ Click icon cờ trên menu bar để mở các tác vụ nhanh.
 | Tác vụ | Cách dùng |
 |--------|----------|
 | Chuyển VN ↔ EN bằng phím tắt | Nhấn + nhả **⌃⇧** (Control + Shift) đồng thời (mặc định) |
-| Chuyển VN ↔ EN từ menu | Menu → **"Chuyển đổi 🇻🇳 \| 🇺🇸"** |
+| Chuyển VN ↔ EN từ menu | Menu → **"Chuyển đổi ngôn ngữ 🇻🇳 \| 🇺🇸"** |
 | Đổi kiểu gõ | Menu → **"Kiểu Telex"** / **"Kiểu VNI"** (✓ ở dòng đang chọn) |
 | Bật/tắt nhanh Smart Switch | Menu → **"Smart Switch"** (✓ khi đang bật) |
 | Bật/tắt nhanh Sửa lỗi chính tả | Menu → **"Sửa lỗi chính tả"** (✓ khi đang bật) |

@@ -2,6 +2,46 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.6.0] - 2026-05-19 — "Smart Suggestions & Prediction"
+
+Bản nâng cấp lớn về trải nghiệm gợi ý & dự đoán: gợi ý từ điển cá nhân chuyển sang chế độ review, thêm dự đoán từ tiếp theo qua HUD nổi, và 4 cải tiến chất lượng cuộc sống.
+
+### Thông báo cập nhật tự động (throttle 1 lần/ngày)
+
+- `Updater` giờ tự động kiểm tra bản mới khi app launch — nhưng throttle 1 lần/24h qua key `lastUpdateCheckDate` để không spam network/UI.
+- Khi có bản mới: hiển thị notification chuẩn macOS thay vì phải user manual bấm "Kiểm tra cập nhật" trong menu bar.
+- Manual check (bấm menu) vẫn bypass throttle để user có thể force kiểm tra bất cứ lúc nào.
+
+### Stats lưu bền vững (flushSynchronously + Codable backward-compat)
+
+- `UsageStatistics.flushSynchronously()` mới — gọi từ `applicationWillTerminate` để đảm bảo counters write đến disk trước khi process exit. Trước đây dùng async write, nếu user quit nhanh có thể mất 1-2 phút dữ liệu cuối cùng.
+- Codable schema giờ có optional/default cho các field mới (vd `predictionEngineEnabled` history), backward-compat với JSON v1.5.x — user upgrade không mất stats cũ.
+
+### Tab Thống kê — sắp xếp lại Sections
+
+- Thứ tự mới: **Top từ tiếng Việt** → **Top từ tiếng Anh / raw** → **Top app** → **Tổng quan** → **Quản lý dữ liệu**.
+- Phù hợp luồng user thực tế: vào tab → xem từ phổ biến → xem app phổ biến → xem tổng → cuối cùng mới đến nút reset/export. Trước đây "Tổng quan" ở đầu khiến user phải scroll xuống để xem chi tiết.
+
+### Gợi ý từ điển cá nhân — chế độ Review (thay auto-promote)
+
+- Trước đây: cụm gõ ≥10 lần (`vnKeepStreak ≥ 10`) tự động vào personal allow-dict — silent, không hỏi user.
+- Vấn đề: tích luỹ rác như "tcb", "nb", "asdf"… vì user chỉ gõ thử nghiệm, không phải intent thật.
+- **1.6.0**: hiển thị `PersonalDictSuggestionSheet` mỗi tuần (hoặc khi user mở từ tab Thống kê). User check ✓/✗ từng cụm trước khi vào personal dict.
+- Streak tracking vẫn chạy, nhưng promote = user-driven, không silent.
+
+### Dự đoán từ tiếp theo (mới — default OFF)
+
+- `PredictionEngine` mới: hybrid bigram + trigram model từ `EmbeddedBigrams` (data nhúng sẵn ~50K từ phổ biến tiếng Việt).
+- Khi user gõ space, engine match context 2-gram + 3-gram → trả về top 1–3 ứng viên.
+- `PredictionHUDWindow`: NSWindow `.popUpMenu` level, nổi cạnh caret position (qua AX API). Render 1–3 chips với keyboard shortcut (Tab để accept top, ⌥+1/2/3 để chọn).
+- **Default OFF** — tính năng beta, một số user thấy nhiễu khi gõ nhanh. Bật ở Cài đặt → tab Chính tả → toggle "Dự đoán từ".
+- Không ảnh hưởng performance khi tắt (engine init lazy, HUD không tạo).
+
+### Đổi tên menu — rõ nghĩa hơn
+
+- `"Chuyển đổi 🇻🇳 | 🇺🇸"` → `"Chuyển đổi ngôn ngữ 🇻🇳 | 🇺🇸"`.
+- User mới đôi khi không hiểu "Chuyển đổi" nghĩa là gì — thêm chữ "ngôn ngữ" để self-explanatory. Menu width tăng nhẹ nhưng vẫn gọn hơn 1.5.8 trở về trước.
+
 ## [1.5.10] - 2026-05-19 — "Updater Fixed"
 
 Hotfix khẩn cấp 2 lỗi update flow phát hiện sau 1.5.9.

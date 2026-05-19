@@ -290,8 +290,11 @@ struct SpellCheckView: View {
     @Default(.personalDictionaryEnabled) private var personalDictionaryEnabled
     @Default(.useEnVnReference) private var useEnVnReference
     @Default(.autoPersonalDictFeedback) private var autoPersonalDictFeedback
+    @Default(.pendingDictSuggestions) private var pendingSuggestions
+    @Default(.wordPredictionEnabled) private var wordPredictionEnabled
 
     @State private var showingPersonalDictEditor = false
+    @State private var showingSuggestionSheet = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -427,23 +430,48 @@ struct SpellCheckView: View {
                         Text("Từ điển cá nhân")
                     }
 
-                    // Section 6: Auto-feedback từ Thống kê (1.5.5+).
-                    // Thay Section "Từ điển GitHub" cũ — auto-fetch GitHub mỗi
-                    // 24h vẫn chạy ngầm (không cần button manual). 1.5.6: bỏ
-                    // button "Mở từ điển" duplicate — user dùng button trong
-                    // Section "Từ điển cá nhân" ở trên.
+                    // Section 6: Auto-feedback đề xuất từ Thống kê (1.6.0+).
+                    // Thay đổi semantic: KHÔNG còn auto-write nữa — chỉ compute
+                    // đề xuất pending. User review qua sheet, chốt thêm.
                     Section {
                         Toggle(isOn: $autoPersonalDictFeedback) {
-                            Label("Tự động cập nhật từ điển cá nhân",
+                            Label("Tự động compute đề xuất hàng tuần",
                                   themedSymbol: "person.crop.circle.badge.checkmark")
                         }
                         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                        Text("Mỗi tuần, vkey tự xem các từ bạn gõ nhiều và thêm vào danh sách Allow / Keep để bộ gõ học hành vi của bạn. Có thể chỉnh sửa bằng tay qua nút \"Quản lý từ điển cá nhân\" ở Section trên nếu auto promote sai.")
+                        Text("Mỗi tuần, vkey nhận thấy các từ bạn gõ nhiều và tạo danh sách ĐỀ XUẤT thêm vào Allow / Keep. Bạn review, sửa loại, rồi quyết định thêm — vkey KHÔNG tự ý ghi vào từ điển cá nhân (tránh sai).")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        HStack {
+                            Spacer()
+                            Button {
+                                showingSuggestionSheet = true
+                            } label: {
+                                Label("Xem đề xuất pending (\(pendingSuggestions.count))",
+                                      themedSymbol: "tray.full")
+                            }
+                            .disabled(pendingSuggestions.isEmpty)
+                            Spacer()
+                        }
+                        .padding(.top, 4)
+                    } header: {
+                        Text("Học hành vi từ Thống kê")
+                    }
+
+                    // Section 7: Đoán từ tiếp theo — 1.6.0 thử nghiệm.
+                    Section {
+                        Toggle(isOn: $wordPredictionEnabled) {
+                            Label("Đoán từ tiếp theo", themedSymbol: "wand.and.stars")
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                        Text("Sau khi gõ xong 1 từ + dấu cách, vkey hiển thị HUD nhỏ gần cursor với từ đoán tiếp theo (vd \"tiếp\" → \"theo\"). Nhấn ⇥ Tab để chấp nhận; phím khác → bỏ qua. Tính năng thử nghiệm — học từ thói quen gõ của bạn.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } header: {
-                        Text("Học hành vi từ Thống kê")
+                        Text("Đoán từ tiếp theo (thử nghiệm)")
                     }
                 }
             }
@@ -453,6 +481,9 @@ struct SpellCheckView: View {
         .frame(width: 440, height: 560)
         .sheet(isPresented: $showingPersonalDictEditor) {
             PersonalDictionaryEditorView()
+        }
+        .sheet(isPresented: $showingSuggestionSheet) {
+            PersonalDictSuggestionSheet()
         }
     }
 }

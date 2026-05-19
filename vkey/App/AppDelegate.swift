@@ -3,13 +3,14 @@ import Combine
 import Defaults
 import Foundation
 import SwiftUI
+import UserNotifications
 
 extension Notification.Name {
   static let vkeyOnboardingDidComplete = Notification.Name("vkeyOnboardingDidComplete")
 }
 
 // AppDelegate manages the application lifecycle and background services
-class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
+class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNotificationCenterDelegate {
 
   @Published var appState = AppState()
   @Published var isTrusted = false
@@ -26,6 +27,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   func applicationDidFinishLaunching(_ notification: Notification) {
     // Hide dock icon since we use MenuBarExtra
     NSApp.setActivationPolicy(.accessory)
+
+    // 1.6.0: setup UN center delegate + xin permission cho update banner.
+    UNUserNotificationCenter.current().delegate = self
+    UNUserNotificationCenter.current().requestAuthorization(
+      options: [.alert, .sound]
+    ) { _, _ in
+      // Ignore errors — user can grant later via System Settings.
+      // Sparkle's own dialog vẫn là backup nếu user reject banner.
+    }
 
     // 1.5.5: seed/migrate bộ macro mặc định. Idempotent — chỉ chạy migration
     // 1 lần khi user lên version mới. Chi tiết trong `DefaultMacros.swift`.
@@ -239,6 +249,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     trustCheckTimer = nil
     LexiconManager.shared.cancelInFlightDownloads()
     appState.eventHook.destroy()
+    // 1.6.0: ensure stats persist trước khi exit (vd Sparkle restart sau
+    // install). Bình thường scheduleFlush debounce 10s, nhưng terminate
+    // race không thể đợi.
+    UsageStatistics.shared.flushSynchronously()
   }
 
   /// Shown after the trust polling loop has given up. The alert links the
@@ -277,6 +291,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     default:
       break
     }
+  }
+
+  // MARK: - UNUserNotificationCenterDelegate (1.6.0+)
+
+  /// Khi app đang foreground và banner update tới, hiển thị banner luôn
+  /// (mặc định macOS suppress notification của foreground app).
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    completionHandler([.banner, .sound])
+  }
+
+  /// User click banner → mở Sparkle dialog với option Install Update.
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    if response.notification.request.identifier.hasPrefix("vkey-update-") {
+      // Trigger Sparkle manual check → dialog Install.
+      Updater.checkForUpdates(manual: true)
+    }
+    completionHandler()
   }
 
   /// Seed / migrate bộ macro mặc định. Idempotent — chạy mỗi launch nhưng

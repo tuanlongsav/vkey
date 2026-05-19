@@ -6,8 +6,10 @@
 //
 
 import AppKit
+import Defaults
 import Foundation
 import Sparkle
+import UserNotifications
 
 enum Updater {
   // Share a single global controller instance to manage updates silently in the background
@@ -88,8 +90,90 @@ enum Updater {
         }
       }.resume()
     } else {
-      // Silent automatic check in background on application launch
+      // 1.6.0: throttle background auto-check thành 1 lần/ngày (user
+      // muốn "lần đầu mở máy buổi sáng", interpret là lần đầu launch
+      // mỗi ngày). Quit+relaunch trong ngày → skip.
+      guard shouldRunAutoCheckToday() else { return }
+      Defaults[.lastUpdateCheckDate] = Date()
+
+      // Sparkle native background check + bổ sung Notification Center
+      // banner cho visibility.
       updaterController.updater.checkForUpdatesInBackground()
+      scheduleProactiveNotificationCheck()
+    }
+  }
+
+  // MARK: - 1.6.0: Throttle + Notification Center banner
+
+  /// Trả true nếu chưa check trong ngày hôm nay.
+  private static func shouldRunAutoCheckToday() -> Bool {
+    guard let lastCheck = Defaults[.lastUpdateCheckDate] else {
+      return true   // Chưa check bao giờ → check ngay.
+    }
+    return !Calendar.current.isDateInToday(lastCheck)
+  }
+
+  /// Sau 5s từ launch, parse appcast lần nữa qua AppcastParser custom.
+  /// Nếu thấy version mới (so với CFBundleVersion local) VÀ chưa hiện
+  /// notification banner cho version đó → post UNNotification banner.
+  /// Layer 2 cho Sparkle's own dialog — đảm bảo user thấy ngay cả khi
+  /// app chạy ẩn ở menu bar.
+  private static func scheduleProactiveNotificationCheck() {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+      fetchAndNotifyIfNewer()
+    }
+  }
+
+  private static func fetchAndNotifyIfNewer() {
+    guard let url = URL(
+      string: "https://api.github.com/repos/tuanlongsav/vkey/contents/appcast.xml"
+    ) else { return }
+    var request = URLRequest(url: url)
+    request.cachePolicy = .reloadIgnoringLocalCacheData
+    request.setValue("application/vnd.github.v3.raw", forHTTPHeaderField: "Accept")
+
+    URLSession.shared.dataTask(with: request) { data, response, error in
+      guard error == nil,
+        let http = response as? HTTPURLResponse,
+        http.statusCode == 200,
+        let data = data,
+        let summary = AppcastParser.parseTopItem(data: data),
+        let codeStr = summary.versionCode,
+        let serverCode = Int(codeStr),
+        serverCode > 0
+      else { return }
+
+      let localCodeStr = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+      let localCode = Int(localCodeStr) ?? 0
+      guard serverCode > localCode else { return }
+
+      // Đã notify version này rồi → skip.
+      if Defaults[.lastNotifiedUpdateBuild] >= serverCode { return }
+
+      DispatchQueue.main.async {
+        Defaults[.lastNotifiedUpdateBuild] = serverCode
+        postUpdateNotification(
+          version: summary.shortVersion ?? "?",
+          build: serverCode
+        )
+      }
+    }.resume()
+  }
+
+  private static func postUpdateNotification(version: String, build: Int) {
+    let content = UNMutableNotificationContent()
+    content.title = "Có bản vkey mới: v\(version)"
+    content.body = "Click để xem & cài đặt qua Sparkle."
+    content.sound = .default
+
+    let request = UNNotificationRequest(
+      identifier: "vkey-update-\(build)",
+      content: content,
+      trigger: nil
+    )
+    UNUserNotificationCenter.current().add(request) { _ in
+      // Ignore errors — nếu user chưa cho permission, alert sẽ
+      // không hiện. Sparkle dialog vẫn còn là backup.
     }
   }
 }

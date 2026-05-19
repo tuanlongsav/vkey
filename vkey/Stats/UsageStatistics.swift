@@ -259,13 +259,14 @@ final class UsageStatistics {
   func performWeeklyFeedback() -> UsageSummary {
     queue.sync {
       rotateIfNeeded()
-      let promoted = promoteFrequentWords()
-      let summary = counters.summary(
-        promotedAllow: promoted.allow,
-        promotedKeep: promoted.keep
-      )
-      // Write back including the promotion log so the user can see history.
-      persistCurrentWeek(includingPromotionLog: promoted)
+      // 1.6.0: KHÔNG auto-promote vào userAllowWords / userKeepWords nữa.
+      // Compute pending suggestions cho user review qua sheet.
+      let suggestions = computePendingSuggestions()
+      appendToPendingSuggestions(suggestions)
+      // Legacy promoted fields in UsageSummary giữ rỗng — pending list
+      // là nơi mới track promotions.
+      let summary = counters.summary(promotedAllow: [], promotedKeep: [])
+      persistCurrentWeek(includingPromotionLog: PromotionResult(allow: [], keep: []))
       return summary
     }
   }
@@ -301,6 +302,17 @@ final class UsageStatistics {
         self.counters.appCounts.removeValue(forKey: word)
       }
       self.scheduleFlush()
+    }
+  }
+
+  /// Synchronous flush — force write current counters to disk ngay
+  /// trước khi return. Gọi từ `applicationWillTerminate` để đảm bảo
+  /// in-memory state không mất khi app exit (vd Sparkle restart sau
+  /// install). Bình thường `scheduleFlush()` debounce 10s là đủ, nhưng
+  /// terminate race không thể đợi.
+  func flushSynchronously() {
+    queue.sync { [weak self] in
+      self?.flushNow()
     }
   }
 
@@ -344,6 +356,39 @@ final class UsageStatistics {
          weekEnd: Date = WeekBucket.endOfCurrentWeek()) {
       self.weekId = weekId
       self.weekEnd = weekEnd
+    }
+
+    enum CodingKeys: String, CodingKey {
+      case weekId, weekEnd
+      case wordsTotal, wordsKeptVietnamese, wordsRestoredEnglish
+      case wordsKeptRaw, wordsSuggested, smartSwitchFires
+      case typoCorrectionsApplied
+      case vnWordCounts, enWordCounts, appCounts
+      case vnKeepStreak, enRestoreStreak
+    }
+
+    /// 1.6.0: backward-compat Codable. Mọi field optional với fallback
+    /// default — đảm bảo file `current.json` từ phiên bản cũ (thiếu
+    /// field) hoặc mới hơn (extra field SwiftUI ignore) đều decode được
+    /// thay vì throw → tạo bucket rỗng → data "biến mất".
+    init(from decoder: Decoder) throws {
+      let c = try decoder.container(keyedBy: CodingKeys.self)
+      self.weekId = try c.decodeIfPresent(String.self, forKey: .weekId)
+                    ?? WeekBucket.currentWeekId()
+      self.weekEnd = try c.decodeIfPresent(Date.self, forKey: .weekEnd)
+                    ?? WeekBucket.endOfCurrentWeek()
+      self.wordsTotal = try c.decodeIfPresent(Int.self, forKey: .wordsTotal) ?? 0
+      self.wordsKeptVietnamese = try c.decodeIfPresent(Int.self, forKey: .wordsKeptVietnamese) ?? 0
+      self.wordsRestoredEnglish = try c.decodeIfPresent(Int.self, forKey: .wordsRestoredEnglish) ?? 0
+      self.wordsKeptRaw = try c.decodeIfPresent(Int.self, forKey: .wordsKeptRaw) ?? 0
+      self.wordsSuggested = try c.decodeIfPresent(Int.self, forKey: .wordsSuggested) ?? 0
+      self.smartSwitchFires = try c.decodeIfPresent(Int.self, forKey: .smartSwitchFires) ?? 0
+      self.typoCorrectionsApplied = try c.decodeIfPresent(Int.self, forKey: .typoCorrectionsApplied) ?? 0
+      self.vnWordCounts = try c.decodeIfPresent([String: Int].self, forKey: .vnWordCounts) ?? [:]
+      self.enWordCounts = try c.decodeIfPresent([String: Int].self, forKey: .enWordCounts) ?? [:]
+      self.appCounts = try c.decodeIfPresent([String: Int].self, forKey: .appCounts) ?? [:]
+      self.vnKeepStreak = try c.decodeIfPresent([String: Int].self, forKey: .vnKeepStreak) ?? [:]
+      self.enRestoreStreak = try c.decodeIfPresent([String: Int].self, forKey: .enRestoreStreak) ?? [:]
     }
 
     func summary(promotedAllow: [String], promotedKeep: [String]) -> UsageSummary {
@@ -574,32 +619,65 @@ final class UsageStatistics {
     )
   }
 
-  private func promoteFrequentWords() -> PromotionResult {
+  /// 1.6.0: thay vì auto-write vào `userAllowWords` / `userKeepWords`,
+  /// compute SUGGESTIONS và append vào `pendingDictSuggestions`. User
+  /// review qua `PersonalDictSuggestionSheet` rồi chốt thêm hoặc bỏ qua.
+  ///
+  /// Filter:
+  /// - Loại từ đã có trong `userAllowWords` / `userKeepWords` / `userDenyWords`.
+  /// - Loại từ đã có trong built-in lexicon `LexiconManager.isVietnameseWord`
+  ///   (cho keep — không cần override; cho allow — nếu là VN word thì sai
+  ///   mục đích).
+  /// - Note: filter "lỗi gõ" qua SuggestionService có thể thêm sau khi
+  ///   verify API signature. MVP: chỉ check existing dictionaries.
+  private func computePendingSuggestions() -> [PendingDictSuggestion] {
     let existingAllow = Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken })
     let existingKeep = Set(Defaults[.userKeepWords].map { $0.normalizedDictionaryToken })
     let existingDeny = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
+    let now = Date()
+    var out: [PendingDictSuggestion] = []
 
-    let result = Self.computePromotion(
-      enRestoreStreak: counters.enRestoreStreak,
-      vnKeepStreak: counters.vnKeepStreak,
-      existingAllow: existingAllow,
-      existingKeep: existingKeep,
-      existingDeny: existingDeny,
-      threshold: promotionThreshold
-    )
-
-    if !result.allow.isEmpty {
-      var current = Defaults[.userAllowWords]
-      for w in result.allow where !current.contains(w) { current.append(w) }
-      Defaults[.userAllowWords] = current
-    }
-    if !result.keep.isEmpty {
-      var current = Defaults[.userKeepWords]
-      for w in result.keep where !current.contains(w) { current.append(w) }
-      Defaults[.userKeepWords] = current
+    // Allow candidates: enRestoreStreak ≥ threshold, ASCII-only.
+    for (token, count) in counters.enRestoreStreak where count >= promotionThreshold {
+      let n = token.normalizedDictionaryToken
+      guard n.count >= 2, n.isASCIIAlphabeticWord else { continue }
+      if existingAllow.contains(n) || existingDeny.contains(n) { continue }
+      // Loại nếu LexiconManager nhận là tiếng Việt (sai mục đích allow).
+      if LexiconManager.shared.isVietnameseWord(n) { continue }
+      out.append(PendingDictSuggestion(
+        word: n, count: count, kind: .allow, suggestedAt: now
+      ))
     }
 
-    return result
+    // Keep candidates: vnKeepStreak ≥ threshold, has non-ASCII diacritic.
+    for (token, count) in counters.vnKeepStreak where count >= promotionThreshold {
+      let n = token.normalizedDictionaryToken
+      guard n.count >= 2 else { continue }
+      if existingKeep.contains(n) || existingDeny.contains(n) { continue }
+      let hasNonAscii = n.unicodeScalars.contains { $0.value > 127 }
+      guard hasNonAscii else { continue }
+      // Loại nếu đã có trong built-in vnLexicon — không cần override
+      // (lexicon đã nhận là VN; userKeep chỉ cần cho từ riêng tư).
+      if LexiconManager.shared.isVietnameseWord(n) { continue }
+      out.append(PendingDictSuggestion(
+        word: n, count: count, kind: .keep, suggestedAt: now
+      ))
+    }
+
+    return out
+  }
+
+  /// Append suggestions vào pending list, dedupe theo `id`. Public-equivalent
+  /// gọi trên main thread sau khi compute.
+  private func appendToPendingSuggestions(_ new: [PendingDictSuggestion]) {
+    DispatchQueue.main.async {
+      var pending = Defaults[.pendingDictSuggestions]
+      let existingIds = Set(pending.map { $0.id })
+      for s in new where !existingIds.contains(s.id) {
+        pending.append(s)
+      }
+      Defaults[.pendingDictSuggestions] = pending
+    }
   }
 
   private func persistCurrentWeek(includingPromotionLog promoted: PromotionResult) {

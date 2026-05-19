@@ -16,16 +16,18 @@ import UniformTypeIdentifiers
 struct StatisticsView: View {
   @Default(.statisticsEnabled) private var statisticsEnabled
   @Default(.autoBackupOnUpgrade) private var autoBackupOnUpgrade
+  @Default(.pendingDictSuggestions) private var pendingSuggestions
 
   @State private var currentSummary: UsageSummary?
   @State private var historical: [UsageSummary] = []
   @State private var lastFeedbackChanges: String = ""
   @State private var backupStatus: String = ""
+  @State private var showingSuggestionSheet = false
 
   var body: some View {
     VStack(spacing: 0) {
       Form {
-        // MARK: Stats toggle + privacy note
+        // MARK: 1. Stats toggle + privacy note
         Section {
           Toggle(isOn: $statisticsEnabled) {
             Label("Ghi nhận thống kê sử dụng", themedSymbol: "chart.bar")
@@ -39,8 +41,82 @@ struct StatisticsView: View {
           Text("Quyền riêng tư")
         }
 
+        // MARK: 2. Backup / Restore — 1.6.0: move up ngay sau toggle.
+        // Luôn hiển thị (không gate trên statisticsEnabled) vì backup là
+        // utility độc lập với việc bật/tắt ghi nhận.
+        Section {
+          Toggle(isOn: $autoBackupOnUpgrade) {
+            Label("Tự động hỏi sao lưu khi cập nhật app", themedSymbol: "shippingbox.and.arrow.backward")
+          }
+          .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+          HStack {
+            Spacer()
+            Button(action: exportNow) {
+              Label("Xuất dữ liệu cá nhân", themedSymbol: "square.and.arrow.up")
+            }
+            Button(action: importNow) {
+              Label("Nhập từ tệp sao lưu", themedSymbol: "square.and.arrow.down")
+            }
+            Spacer()
+          }
+          if !backupStatus.isEmpty {
+            Text(backupStatus)
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .frame(maxWidth: .infinity, alignment: .center)
+              .padding(.top, 2)
+          }
+
+          Text("File JSON gồm Cài đặt, Macro, Từ điển cá nhân (allow/keep/deny), Smart Switch, Per-app override, và thống kê. Tất cả lưu local, không gửi đi đâu.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        } header: {
+          Text("Sao lưu & Khôi phục dữ liệu cá nhân")
+        }
+
+        // MARK: 3. Đồng bộ Personal Dictionary — 1.6.0: move up.
+        // Luôn hiển thị; runFeedback compute đề xuất (không auto-write).
+        Section {
+          HStack {
+            Spacer()
+            Button(action: runFeedback) {
+              Label("Chạy compute đề xuất ngay", themedSymbol: "arrow.triangle.merge")
+            }
+            .help("Compute đề xuất từ thống kê tuần này.")
+            Spacer()
+            Button {
+              showingSuggestionSheet = true
+            } label: {
+              Label("Xem đề xuất (\(pendingSuggestions.count))",
+                    themedSymbol: "tray.full")
+            }
+            .disabled(pendingSuggestions.isEmpty)
+            .help("Review và chốt thêm các từ đề xuất vào từ điển cá nhân.")
+            Spacer()
+          }
+          if !lastFeedbackChanges.isEmpty {
+            Text(lastFeedbackChanges)
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .frame(maxWidth: .infinity, alignment: .center)
+              .padding(.top, 2)
+          }
+
+          HStack {
+            Spacer()
+            Button(role: .destructive, action: clearStats) {
+              Label("Xóa toàn bộ dữ liệu thống kê", themedSymbol: "trash")
+            }
+            .help("Xóa cả tuần này và các tuần đã đóng (~/Library/Application Support/vkey/stats/).")
+            Spacer()
+          }
+        } header: {
+          Text("Đồng bộ hành vi vào Personal Dictionary")
+        }
+
+        // MARK: 4. Current week summary (chỉ hiện khi statisticsEnabled)
         if statisticsEnabled, let s = currentSummary {
-          // MARK: Current week summary
           Section {
             statRow("Tổng số từ đã commit", value: "\(s.wordsTotal)")
             statRow("Giữ tiếng Việt", value: "\(s.wordsKeptVietnamese)")
@@ -52,8 +128,7 @@ struct StatisticsView: View {
             Text("Tuần này — \(s.weekId)")
           }
 
-          // MARK: Top words this week — 1.5.9: thêm trash button mỗi row
-          // để user xoá cụm từ cụ thể nếu không muốn auto-promote.
+          // MARK: 5-7. Top words & apps (per-row delete)
           if !s.topVietnameseWords.isEmpty {
             Section {
               ForEach(s.topVietnameseWords.prefix(10), id: \.word) { wc in
@@ -86,68 +161,6 @@ struct StatisticsView: View {
               Text("Top app dùng nhiều")
             }
           }
-
-          // MARK: Manual feedback trigger
-          Section {
-            HStack {
-              Spacer()
-              Button(action: runFeedback) {
-                Label("Chạy đồng bộ Personal Dictionary ngay", themedSymbol: "arrow.triangle.merge")
-              }
-              .help("Đẩy các từ bạn gõ nhiều lần tuần này vào từ điển cá nhân (Allow / Keep) để lần sau bộ gõ xử lý nhanh hơn.")
-              Spacer()
-            }
-            if !lastFeedbackChanges.isEmpty {
-              Text(lastFeedbackChanges)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 2)
-            }
-
-            HStack {
-              Spacer()
-              Button(role: .destructive, action: clearStats) {
-                Label("Xóa toàn bộ dữ liệu thống kê", themedSymbol: "trash")
-              }
-              .help("Xóa cả tuần này và các tuần đã đóng (~/Library/Application Support/vkey/stats/).")
-              Spacer()
-            }
-          } header: {
-            Text("Đồng bộ hành vi vào Personal Dictionary")
-          }
-        }
-
-        // MARK: Backup / Restore — always visible
-        Section {
-          Toggle(isOn: $autoBackupOnUpgrade) {
-            Label("Tự động hỏi sao lưu khi cập nhật app", themedSymbol: "shippingbox.and.arrow.backward")
-          }
-          .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-
-          HStack {
-            Spacer()
-            Button(action: exportNow) {
-              Label("Xuất dữ liệu cá nhân", themedSymbol: "square.and.arrow.up")
-            }
-            Button(action: importNow) {
-              Label("Nhập từ tệp sao lưu", themedSymbol: "square.and.arrow.down")
-            }
-            Spacer()
-          }
-          if !backupStatus.isEmpty {
-            Text(backupStatus)
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .frame(maxWidth: .infinity, alignment: .center)
-              .padding(.top, 2)
-          }
-
-          Text("File JSON gồm Cài đặt, Macro, Từ điển cá nhân (allow/keep/deny), Smart Switch, Per-app override, và thống kê. Tất cả lưu local, không gửi đi đâu.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        } header: {
-          Text("Sao lưu & Khôi phục dữ liệu cá nhân")
         }
       }
       .formStyle(.grouped)
@@ -155,6 +168,9 @@ struct StatisticsView: View {
     }
     .frame(width: 440, height: 560)
     .onAppear(perform: refresh)
+    .sheet(isPresented: $showingSuggestionSheet) {
+      PersonalDictSuggestionSheet()
+    }
   }
 
   // MARK: - Actions
@@ -165,20 +181,18 @@ struct StatisticsView: View {
   }
 
   private func runFeedback() {
-    let summary = UsageStatistics.shared.performWeeklyFeedback()
-    if summary.promotedToAllow.isEmpty && summary.promotedToKeep.isEmpty {
-      lastFeedbackChanges = "Chưa có từ nào đủ ngưỡng (cần ≥5 lần xuất hiện thống nhất)."
-    } else {
-      var parts: [String] = []
-      if !summary.promotedToAllow.isEmpty {
-        parts.append("Allow: +\(summary.promotedToAllow.count) (\(summary.promotedToAllow.prefix(3).joined(separator: ", ")))")
+    _ = UsageStatistics.shared.performWeeklyFeedback()
+    // 1.6.0: compute đề xuất chạy async qua DispatchQueue.main trong
+    // appendToPendingSuggestions. Đợi 1 tick rồi report số đề xuất.
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+      let count = pendingSuggestions.count
+      if count == 0 {
+        lastFeedbackChanges = "Chưa có đề xuất nào — cần ≥5 lần gõ thống nhất cho mỗi từ."
+      } else {
+        lastFeedbackChanges = "Đã compute \(count) đề xuất. Bấm \"Xem đề xuất\" để review và chốt thêm."
       }
-      if !summary.promotedToKeep.isEmpty {
-        parts.append("Keep: +\(summary.promotedToKeep.count) (\(summary.promotedToKeep.prefix(3).joined(separator: ", ")))")
-      }
-      lastFeedbackChanges = "Đã đồng bộ → " + parts.joined(separator: " · ")
+      refresh()
     }
-    refresh()
   }
 
   private func clearStats() {
