@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.5.9 — "Privacy & Tidy"</title>
+      <sparkle:version>15090</sparkle:version>
+      <sparkle:shortVersionString>1.5.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 20:05:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.5.9/vkey-1.5.9.dmg"
+        sparkle:edSignature="N+VKhxSaAF3mQn05DJasWvWy+hYoDEibno80VAofxdaNpa/9HYyPJVUCJnPIHz6NAuYWCWQ8i0T+pNs7VUKqAQ=="
+        length="5376522"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.5.9 — "Privacy & Tidy":</h2>
+        <p>3 hiệu chỉnh nhỏ: menu bar layout, không lưu password vào stats, xoá từng cụm trong thống kê.</p>
+        <ul>
+          <li><strong>Menu bar dropdown gọn hơn</strong>: rút "Chuyển đổi bộ gõ 🇻🇳 | 🇺🇸" → "Chuyển đổi 🇻🇳 | 🇺🇸" để menu width hẹp lại, padding hai bên đối xứng hơn.</li>
+          <li><strong>Bảo vệ riêng tư khi gõ mật khẩu</strong>: <code>UsageStatistics.recordCommit</code> thêm guard <code>IsSecureEventInputEnabled()</code>. Khi macOS đang ở secure-input mode (ô password, sudo prompt, 1Password reveal, …), thống kê tự động bỏ qua — defense-in-depth phòng race window khi EventHook vừa nhả buffer.</li>
+          <li><strong>Xoá từng cụm trong Top từ / Top app</strong>: trash icon mỗi row trong tab Thống kê. Click để xoá cụm cụ thể khỏi current week's counters (bao gồm streak tracking để tránh personal-dict auto-promotion sai). Historical weeks không đụng. Tổng count cũng giữ nguyên.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.5.8 — "Right-Sized"</title>
       <sparkle:version>15080</sparkle:version>
       <sparkle:shortVersionString>1.5.8</sparkle:shortVersionString>

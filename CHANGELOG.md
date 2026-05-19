@@ -2,6 +2,30 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.5.9] - 2026-05-19 — "Privacy & Tidy"
+
+3 hiệu chỉnh nhỏ: menu bar layout, không lưu password vào stats, xoá từng cụm trong thống kê.
+
+### Menu bar gọn hơn
+
+- Rút title menu: `"Chuyển đổi bộ gõ 🇻🇳 | 🇺🇸"` → `"Chuyển đổi 🇻🇳 | 🇺🇸"`.
+- Menu width hẹp lại đáng kể; padding trái-phải đối xứng hơn (xa rời cạnh phải bằng xa rời cạnh trái).
+
+### Bảo vệ riêng tư khi gõ mật khẩu
+
+- `UsageStatistics.recordCommit()` thêm guard `IsSecureEventInputEnabled()`. Khi macOS ở secure-input mode (ô password, `sudo`, 1Password reveal, ...), stats tự bỏ qua.
+- EventHook đã bypass processing trong secure input từ trước (line 215-217), nhưng có thể có race window khi vừa thoát secure-input mà InputProcessor buffer còn commit lưng chừng. Guard mới là defense-in-depth — đảm bảo password KHÔNG bao giờ rò vào top-words list.
+- Áp dụng cả cho `recordSmartSwitchFire` nếu cần (chưa cần — Smart Switch fire không record nội dung).
+
+### Xoá từng cụm trong Top từ / Top app
+
+- `StatisticsView`: thêm trash icon mỗi row trong "Top từ tiếng Việt", "Top từ tiếng Anh / raw", "Top app dùng nhiều".
+- Click trash → `UsageStatistics.removeFromCurrentWeek(word:category:)` xoá entry khỏi `vnWordCounts` / `enWordCounts` / `appCounts` của current week.
+- Streak tracking (`vnKeepStreak`, `enRestoreStreak`) cũng reset để tránh personal-dict auto-promotion từ đó (đề phòng user explicit từ chối từ).
+- Historical (closed) weeks không đụng — đó là snapshot lịch sử.
+- Tổng counters (`wordsTotal`, `wordsKeptVietnamese`, ...) giữ nguyên.
+- API mới: `enum StatCategory { case vietnamese, english, app }`.
+
 ## [1.5.8] - 2026-05-19 — "Right-Sized"
 
 Hotfix sau 1.5.7 sửa kích thước icon Theme Emoji + tinh chỉnh menu bar.

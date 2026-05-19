@@ -19,6 +19,7 @@
 //     4 tuần gần nhất.
 //
 
+import Carbon  // IsSecureEventInputEnabled (HIToolbox)
 import Defaults
 import Foundation
 import os.log
@@ -128,6 +129,13 @@ final class UsageStatistics {
     typoCorrectionApplied: Bool = false
   ) {
     guard Defaults[.statisticsEnabled] else { return }
+    // 1.5.9: defense-in-depth — không ghi nhận khi macOS đang trong
+    // chế độ secure input (ô mật khẩu, sudo prompt, 1Password reveal,
+    // ...). EventHook đã bypass processing trong secure input, nhưng
+    // có thể có race window khi vừa thoát secure input mà buffer còn
+    // commit lưng chừng. Guard này đảm bảo password không bao giờ rò
+    // vào top words list.
+    guard !UsageStatistics.isSecureInputActive() else { return }
     queue.async { [weak self] in
       self?.applyCommit(
         decision: decision,
@@ -137,6 +145,17 @@ final class UsageStatistics {
         typoCorrectionApplied: typoCorrectionApplied
       )
     }
+  }
+
+  /// Wrapper quanh `CGSIsSecureEventInputSet` (đã được declare ở
+  /// `EventHook.swift`). Tách thành static để mock được trong test.
+  /// File-scoped declaration sang `CGSIsSecureEventInputSet` không
+  /// access được cross-file, nên dùng public API `IsSecureEventInputEnabled`
+  /// từ HIToolbox (Carbon framework).
+  private static func isSecureInputActive() -> Bool {
+    // `IsSecureEventInputEnabled` là public API trong HIToolbox/Carbon,
+    // không cần private @_silgen_name như CGSIsSecureEventInputSet.
+    return IsSecureEventInputEnabled()
   }
 
   /// Called from `EventHook` when Smart Switch auto-disables / restores VN
@@ -248,6 +267,40 @@ final class UsageStatistics {
       // Write back including the promotion log so the user can see history.
       persistCurrentWeek(includingPromotionLog: promoted)
       return summary
+    }
+  }
+
+  /// Stat category để xoá cụm từ cụ thể (1.5.9+).
+  enum StatCategory {
+    case vietnamese  // Top tiếng Việt
+    case english     // Top tiếng Anh / raw
+    case app         // Top app
+  }
+
+  /// Xoá 1 cụm từ / app khỏi current week's counters. Sau khi xoá:
+  /// - Top words/apps list refresh, từ đó biến mất.
+  /// - Streak (vnKeepStreak / enRestoreStreak) cũng reset cho từ đó —
+  ///   tránh personal-dictionary auto-promotion sai sau khi user explicit
+  ///   từ chối từ đó.
+  /// - Historical (closed) weeks không đụng tới — đó là snapshot lịch sử,
+  ///   không sửa được.
+  /// - Total counters (wordsTotal, wordsKeptVietnamese, ...) không trừ,
+  ///   vì đã được dùng để tính nhiều thứ khác — chỉ remove khỏi top list.
+  func removeFromCurrentWeek(word: String, category: StatCategory) {
+    queue.async { [weak self] in
+      guard let self else { return }
+      self.rotateIfNeeded()
+      switch category {
+      case .vietnamese:
+        self.counters.vnWordCounts.removeValue(forKey: word)
+        self.counters.vnKeepStreak.removeValue(forKey: word)
+      case .english:
+        self.counters.enWordCounts.removeValue(forKey: word)
+        self.counters.enRestoreStreak.removeValue(forKey: word)
+      case .app:
+        self.counters.appCounts.removeValue(forKey: word)
+      }
+      self.scheduleFlush()
     }
   }
 

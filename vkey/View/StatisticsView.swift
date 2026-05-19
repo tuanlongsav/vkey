@@ -52,15 +52,12 @@ struct StatisticsView: View {
             Text("Tuần này — \(s.weekId)")
           }
 
-          // MARK: Top words this week
+          // MARK: Top words this week — 1.5.9: thêm trash button mỗi row
+          // để user xoá cụm từ cụ thể nếu không muốn auto-promote.
           if !s.topVietnameseWords.isEmpty {
             Section {
               ForEach(s.topVietnameseWords.prefix(10), id: \.word) { wc in
-                HStack {
-                  Text(wc.word)
-                  Spacer()
-                  Text("×\(wc.count)").foregroundStyle(.secondary)
-                }
+                statDeletableRow(word: wc.word, count: wc.count, category: .vietnamese)
               }
             } header: {
               Text("Top từ tiếng Việt (tuần này)")
@@ -70,11 +67,7 @@ struct StatisticsView: View {
           if !s.topEnglishWords.isEmpty {
             Section {
               ForEach(s.topEnglishWords.prefix(10), id: \.word) { wc in
-                HStack {
-                  Text(wc.word)
-                  Spacer()
-                  Text("×\(wc.count)").foregroundStyle(.secondary)
-                }
+                statDeletableRow(word: wc.word, count: wc.count, category: .english)
               }
             } header: {
               Text("Top từ tiếng Anh / raw (tuần này)")
@@ -84,11 +77,10 @@ struct StatisticsView: View {
           if !s.topApps.isEmpty {
             Section {
               ForEach(s.topApps.prefix(5), id: \.word) { wc in
-                HStack {
-                  Text(wc.word).font(.system(.body, design: .monospaced))
-                  Spacer()
-                  Text("×\(wc.count)").foregroundStyle(.secondary)
-                }
+                statDeletableRow(
+                  word: wc.word, count: wc.count,
+                  category: .app, monospaced: true
+                )
               }
             } header: {
               Text("Top app dùng nhiều")
@@ -267,6 +259,39 @@ struct StatisticsView: View {
       Text(label)
       Spacer()
       Text(value).foregroundStyle(.secondary).monospacedDigit()
+    }
+  }
+
+  /// Row trong top words/apps có nút trash xoá entry cụ thể (1.5.9+).
+  @ViewBuilder
+  private func statDeletableRow(
+    word: String,
+    count: Int,
+    category: UsageStatistics.StatCategory,
+    monospaced: Bool = false
+  ) -> some View {
+    HStack {
+      if monospaced {
+        Text(word).font(.system(.body, design: .monospaced))
+      } else {
+        Text(word)
+      }
+      Spacer()
+      Text("×\(count)")
+        .foregroundStyle(.secondary)
+        .monospacedDigit()
+      Button {
+        UsageStatistics.shared.removeFromCurrentWeek(word: word, category: category)
+        // Refresh sau 1 tick để counters update qua queue.async.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+          refresh()
+        }
+      } label: {
+        ThemedSymbol(name: "trash")
+          .foregroundStyle(.red)
+      }
+      .buttonStyle(.borderless)
+      .help("Xoá cụm này khỏi thống kê tuần này")
     }
   }
 }

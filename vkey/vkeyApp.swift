@@ -72,7 +72,7 @@ struct MainMenuView: View {
     Button {
       appDelegate.appState.enabled.toggle()
     } label: {
-      Label("Chuyển đổi bộ gõ 🇻🇳 | 🇺🇸", themedSymbol: "arrow.left.arrow.right.square")
+      Label("Chuyển đổi 🇻🇳 | 🇺🇸", themedSymbol: "arrow.left.arrow.right.square")
     }
 
     Divider()
