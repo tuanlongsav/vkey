@@ -7431,8 +7431,12 @@ final class LexiconManager {
       return
     }
 
-    let url = URL(string: "https://raw.githubusercontent.com/tuanlongsav/vkey/main/lexicon-update.json")!
-    URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+    let url = URL(string: "https://api.github.com/repos/tuanlongsav/vkey/contents/lexicon-update.json")!
+    var request = URLRequest(url: url)
+    request.cachePolicy = .reloadIgnoringLocalCacheData
+    request.setValue("application/vnd.github.v3.raw", forHTTPHeaderField: "Accept")
+    
+    URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
       guard let self = self,
             error == nil,
             let httpResponse = response as? HTTPURLResponse,
@@ -7441,7 +7445,7 @@ final class LexiconManager {
         completion?(false)
         return
       }
-
+      
       do {
         let package = try JSONDecoder().decode(LexiconUpdatePackage.self, from: data)
         let currentVersion = self.snapshotVersions().vn
@@ -7473,8 +7477,12 @@ final class LexiconManager {
     
     Defaults[.lastDictionaryCheckDate] = Date()
     
-    let url = URL(string: "https://raw.githubusercontent.com/tuanlongsav/vkey/main/lexicon-update.json")!
-    URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+    let url = URL(string: "https://api.github.com/repos/tuanlongsav/vkey/contents/lexicon-update.json")!
+    var request = URLRequest(url: url)
+    request.cachePolicy = .reloadIgnoringLocalCacheData
+    request.setValue("application/vnd.github.v3.raw", forHTTPHeaderField: "Accept")
+    
+    URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
       guard let self = self,
             error == nil,
             let httpResponse = response as? HTTPURLResponse,
