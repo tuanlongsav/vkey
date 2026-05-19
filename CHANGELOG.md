@@ -2,6 +2,57 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.5.5] - 2026-05-19 — "Learn From Me"
+
+vkey giờ học hành vi user và đề xuất tự động dựa trên Thống kê.
+
+### 🧰 Macro
+
+- **Bộ default v2** (1.5.5+): 14 macro office VN + 8 emoji + 12 ký hiệu khoa học = **34 macro** (file `vkey/App/DefaultMacros.swift`).
+  - Office (14): `vn`, `hn`, `sg`, `tphcm`, `bcao`, `cvan`, `qdinh`, `tbao`, `sdt`, `dchi`, `ttin`, `cty`, `gdoc`, `nvien`.
+  - Emoji (8): `okok` → 👌, `vuiv` → 😀, `yeuu` → ❤️, `likee` → 👍, `dlike` → 👎, `hihi` → 😂, `party` → 🎉, `prayy` → 🙏.
+  - Ký hiệu (12): `gte` → ≥, `lte` → ≤, `neq` → ≠, `deg` → °, `pm` → ±, `inff` → ∞, `pii` → π, `xx2` → x², `xx3` → x³, `arr` → →, `ckok` → ✓, `crs` → ✗.
+- **Migration an toàn** cho user 1.5.3/1.5.4 đã seed 19 macro cũ — gated bởi `Defaults[.defaultMacrosVersion]` (mới):
+  - Dọn 5 entries cũ (`tv`, `dn`, `kg`, `kn`, `xc`) **chỉ khi user chưa sửa**.
+  - Đổi `gd → gdoc`, `nv → nvien` **chỉ khi tuple gốc nguyên bản**.
+  - Add 20 entries mới mà user chưa có (`from` dedupe).
+- **Gợi ý Macro từ Thống kê** (mới): dòng "lightbulb" trong tab Macro hiển thị số từ tiếng Việt user gõ **≥10 lần all-time** mà chưa có macro. Bấm "Xem & thêm" → sheet bảng với:
+  - Auto-suggest `from` heuristic (lấy ký tự đầu mỗi từ + strip diacritic, vd "Báo cáo công việc" → `bccv`).
+  - User edit + bấm "Thêm" → entry vào `Defaults[.macros]`.
+  - "Thêm tất cả" để add hàng loạt.
+
+### 🔁 Smart Switch
+
+- **Toggle bật/tắt trong tab** (cuối cùng!) — đặt cạnh header. Trước đây chỉ có ở menu bar.
+- **Gợi ý app từ Thống kê** (mới): dòng "lightbulb" highlight app user dùng **≥10 lần all-time** mà chưa nằm trong `smartSwitchApps`. Sheet bảng hiển thị:
+  - Display name (best-effort qua `NSWorkspace.urlForApplication`).
+  - Bundle ID.
+  - Số lần xuất hiện.
+  - Button "Thêm" per row + "Thêm tất cả".
+
+### 📝 Tab Chính tả
+
+- **Bỏ Section "Từ điển GitHub"** cũ (nút manual "Cập nhật ngay" + status text). Auto-fetch GitHub mỗi 24h vẫn chạy ngầm trong `LexiconManager.checkAndPromptForDictionaryUpdate()`.
+- **Thay bằng Section "Học hành vi từ Thống kê"**:
+  - Toggle "Tự động cập nhật từ điển cá nhân" (mặc định bật, gate `performWeeklyFeedback`).
+  - Helper text giải thích cơ chế.
+  - Button "Mở từ điển cá nhân để chỉnh sửa" → mở `PersonalDictionaryEditorView`.
+- Manual button "Chạy đồng bộ Personal Dictionary ngay" trong tab Thống kê **vẫn chạy được** bất kể toggle.
+
+### 🎨 Icon bóng bẩy hơn
+
+- `ThemedSymbol` enhanced 3D fallback:
+  - **4-stop LinearGradient** (top bright → mid dim → bottom bump) thay 2-stop — mô phỏng ball lighting.
+  - **Double shadow**: outer accent halo (radius 4) + inner black drop (radius 1) — icon nổi 3D hơn.
+  - `.symbolRenderingMode(.hierarchical)` thay `.multicolor` — gradient áp nhất quán lên multi-layer symbols.
+
+### 🛠 API & Migration
+
+- `UsageStatistics`: thêm `aggregatedTopVietnameseWords(threshold:)` và `aggregatedTopApps(threshold:)` cộng dồn `topVietnameseWords`/`topApps` qua tất cả tuần (current + historical).
+- `Setting.swift`: thêm 2 keys mới — `defaultMacrosVersion` (Int, default 0) và `autoPersonalDictFeedback` (Bool, default true).
+- `UserDataMigration`: export/import 2 fields mới. Backup 1.5.4 import vào 1.5.5 không crash.
+- `AppDelegate.seedDefaultMacrosIfNeeded()`: helper mới handle full migration logic.
+
 ## [1.5.4] - 2026-05-19 — "Glossy Default"
 
 Hotfix sau 1.5.3 hiệu chỉnh 2 quyết định UX:

@@ -6,6 +6,30 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.5.5 — "Learn From Me"</title>
+      <sparkle:version>15050</sparkle:version>
+      <sparkle:shortVersionString>1.5.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 16:55:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.5.5/vkey-1.5.5.dmg"
+        sparkle:edSignature="nFT6jjbblJt0fpR5LW2uWLCsJW/HpGNYTRO7/l08vPp3l0EdjMwoUoJg/rIjnC5xdzSjHIyOlQUTqyuzimoSCw=="
+        length="5332193"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.5.5 — "Learn From Me":</h2>
+        <p>vkey giờ học hành vi user và đề xuất tự động: gợi ý macro + gợi ý app cho Smart Switch dựa trên thống kê thực tế.</p>
+        <ul>
+          <li><strong>Macro — bộ mặc định mới</strong>: 14 office VN + 8 emoji + 12 ký hiệu (≥, ≤, ≠, ±, π, x², x³, →, ✓, …). Migration an toàn cho user 1.5.3/1.5.4: dọn 5 macro cũ (tv, dn, kg, kn, xc), đổi `gd→gdoc`, `nv→nvien`, thêm 20 mới. Macro user đã sửa không bị đụng.</li>
+          <li><strong>Gợi ý Macro từ Thống kê</strong>: dòng mới ở tab Macro hiển thị số từ tiếng Việt bạn gõ ≥10 lần. Bấm "Xem & thêm" mở sheet bảng — auto-suggest viết tắt (vd "Báo cáo công việc" → `bccv`), user edit + thêm 1 click.</li>
+          <li><strong>Smart Switch — Toggle bật/tắt</strong> ở đầu tab (cuối cùng cũng có!) + dòng gợi ý app dùng ≥10 lần chưa nằm trong list. Sheet bảng hiển thị display name + bundle ID.</li>
+          <li><strong>Tab Chính tả — Học hành vi từ Thống kê</strong>: thay Section "Từ điển GitHub" cũ. Toggle bật/tắt auto-feedback weekly (mặc định bật) + nút "Mở từ điển cá nhân để chỉnh sửa" nếu auto promote sai.</li>
+          <li><strong>Icon bóng bẩy hơn</strong>: ThemedSymbol nâng cấp 4-stop gradient + double shadow (accent halo + black drop) — cảm giác nổi 3D rõ hơn 1.5.4.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.5.4 — "Glossy Default"</title>
       <sparkle:version>15040</sparkle:version>
       <sparkle:shortVersionString>1.5.4</sparkle:shortVersionString>

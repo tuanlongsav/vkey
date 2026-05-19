@@ -77,11 +77,15 @@ struct UserDataExport: Codable {
 
   // Macros
   let macros: [MacroSeed]?
-  let macroEnabled: Bool?       // 1.5.3+
-  let macrosSeeded: Bool?       // 1.5.3+
+  let macroEnabled: Bool?           // 1.5.3+
+  let macrosSeeded: Bool?           // 1.5.3+
+  let defaultMacrosVersion: Int?    // 1.5.5+
 
   // Theme (1.5.3+)
-  let appTheme: String?         // AppTheme raw value
+  let appTheme: String?             // AppTheme raw value
+
+  // 1.5.5+: auto-feedback toggle for performWeeklyFeedback.
+  let autoPersonalDictFeedback: Bool?
 
   // Optional statistics snapshot
   let statistics: [UsageSummary]?
@@ -130,8 +134,11 @@ enum UserDataMigration {
       macros: Defaults[.macros].map { MacroSeed(from: $0.from, to: $0.to) },
       macroEnabled: Defaults[.macroEnabled],
       macrosSeeded: Defaults[.macrosSeeded],
+      defaultMacrosVersion: Defaults[.defaultMacrosVersion],
 
       appTheme: Defaults[.appTheme].rawValue,
+
+      autoPersonalDictFeedback: Defaults[.autoPersonalDictFeedback],
 
       statistics: includeStatistics ? UsageStatistics.shared.allSummariesForExport() : nil
     )
@@ -274,6 +281,8 @@ enum UserDataMigration {
     }
     applyScalar(.macroEnabled, export.macroEnabled, label: "Bật macro")
     applyScalar(.macrosSeeded, export.macrosSeeded, label: "Macro đã seed")
+    applyScalar(.defaultMacrosVersion, export.defaultMacrosVersion,
+                label: "Default macros version")
 
     // Theme (1.5.3+)
     if let raw = export.appTheme,
@@ -282,6 +291,10 @@ enum UserDataMigration {
       Defaults[.appTheme] = parsed
       changes.append("Giao diện ← \(raw)")
     }
+
+    // 1.5.5+: auto-feedback toggle
+    applyScalar(.autoPersonalDictFeedback, export.autoPersonalDictFeedback,
+                label: "Tự động cập nhật từ điển cá nhân")
 
     os_log("UserDataMigration: applied import with %d changes",
            log: log, type: .info, changes.count)

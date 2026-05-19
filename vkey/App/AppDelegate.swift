@@ -27,14 +27,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     // Hide dock icon since we use MenuBarExtra
     NSApp.setActivationPolicy(.accessory)
 
-    // 1.5.3: seed 19 macro văn phòng VN cho user mới. Idempotent — chỉ
-    // chạy 1 lần (gated bởi `macrosSeeded`). User đã có macro tự thêm sẽ
-    // không bị overwrite. User đã từng xoá toàn bộ macro mặc định sẽ
-    // không bị re-seed.
-    if !Defaults[.macrosSeeded] && Defaults[.macros].isEmpty {
-      Defaults[.macros] = DefaultMacros.officeVN
-      Defaults[.macrosSeeded] = true
-    }
+    // 1.5.5: seed/migrate bộ macro mặc định. Idempotent — chỉ chạy migration
+    // 1 lần khi user lên version mới. Chi tiết trong `DefaultMacros.swift`.
+    seedDefaultMacrosIfNeeded()
 
     // When the Settings (or onboarding) window closes, slide the app back to
     // .accessory so it disappears from Cmd-Tab and the Dock. We only need to
@@ -119,6 +114,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
   /// the user opens the app several times. We track the last-run week id in
   /// `Defaults[.lastFeedbackWeekId]`.
   private func runWeeklyFeedbackIfDue() {
+    // 1.5.5+: gate trên toggle "Học hành vi từ Thống kê" trong tab Chính tả.
+    guard Defaults[.autoPersonalDictFeedback] else { return }
+
     let cal = Calendar(identifier: .iso8601)
     let now = Date()
     let weekId = String(format: "%04d-W%02d",
@@ -279,6 +277,52 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     default:
       break
     }
+  }
+
+  /// Seed / migrate bộ macro mặc định. Idempotent — chạy mỗi launch nhưng
+  /// chỉ thực thi khi `Defaults[.defaultMacrosVersion] < 2`. Migration v1→v2:
+  /// - User mới chưa từng seed: seed `DefaultMacros.allDefaults` (34 entries).
+  /// - User 1.5.3/1.5.4 đã seed 19 entries cũ: dọn entries bỏ + rename + add
+  ///   entries mới còn thiếu. Tôn trọng entry user đã sửa (chỉ migrate khi
+  ///   tuple (from, to) vẫn giữ nguyên bản default cũ).
+  private func seedDefaultMacrosIfNeeded() {
+    let currentSeedVersion = Defaults[.defaultMacrosVersion]
+
+    // Already at v2 → done.
+    if currentSeedVersion >= 2 { return }
+
+    // First-launch ever (1.5.0+): nothing seeded yet.
+    if !Defaults[.macrosSeeded] && Defaults[.macros].isEmpty {
+      Defaults[.macros] = DefaultMacros.allDefaults
+      Defaults[.macrosSeeded] = true
+      Defaults[.defaultMacrosVersion] = 2
+      return
+    }
+
+    // Migrate v1 (1.5.3/1.5.4 seed) → v2 (1.5.5 seed).
+    var macros = Defaults[.macros]
+
+    // 1) Remove obsolete seeds — chỉ nếu user chưa sửa (cả `from` và `to`
+    //    vẫn khớp với default cũ).
+    for entry in DefaultMacros.obsoleteSeedsV1 {
+      macros.removeAll { $0.from == entry.from && $0.to == entry.to }
+    }
+
+    // 2) Rename seeds — chỉ nếu tuple (oldFrom, oldTo) vẫn nguyên bản.
+    for rule in DefaultMacros.renamedSeedsV1ToV2 {
+      if let idx = macros.firstIndex(where: { $0.from == rule.oldFrom && $0.to == rule.oldTo }) {
+        macros[idx] = Macro(from: rule.newFrom, to: rule.newTo)
+      }
+    }
+
+    // 3) Add new entries user chưa có (dedupe theo `from`).
+    let existing = Set(macros.map { $0.from })
+    for newMacro in DefaultMacros.allDefaults where !existing.contains(newMacro.from) {
+      macros.append(newMacro)
+    }
+
+    Defaults[.macros] = macros
+    Defaults[.defaultMacrosVersion] = 2
   }
 
   private func restartTrustCheckLoop() {

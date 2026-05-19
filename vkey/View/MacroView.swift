@@ -16,6 +16,11 @@ struct MacroView: View {
   @Default(.macroEnabled) private var macroEnabled
   @State private var selection = Set<Macro.ID>()
   @State private var importStatus: String = ""
+  @State private var showingSuggestionSheet = false
+
+  /// Số gợi ý từ thống kê còn lại (chưa có macro `to == word` rồi).
+  /// Tính lại mỗi khi `macros` thay đổi qua `onChange`.
+  @State private var suggestionCount: Int = 0
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
@@ -90,9 +95,42 @@ struct MacroView: View {
           .foregroundStyle(.secondary)
           .padding(.top, 2)
       }
+
+      // 1.5.5: Gợi ý macro từ Thống kê.
+      if macroEnabled {
+        Divider()
+        HStack(spacing: 8) {
+          Image(systemName: "lightbulb.fill")
+            .foregroundStyle(.yellow)
+          if suggestionCount == 0 {
+            Text("Chưa có gợi ý — gõ nhiều hơn để vkey học thói quen của bạn (cần ≥10 lần/từ).")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          } else {
+            Text("Có \(suggestionCount) từ bạn gõ ≥10 lần có thể đặt thành viết tắt.")
+              .font(.caption)
+          }
+          Spacer()
+          if suggestionCount > 0 {
+            Button("Xem & thêm") { showingSuggestionSheet = true }
+          }
+        }
+      }
     }
     .padding(12)
-    .frame(width: 420, height: 360)
+    .frame(width: 480, height: 420)
+    .sheet(isPresented: $showingSuggestionSheet) {
+      MacroSuggestionSheet()
+        .onDisappear { recomputeSuggestionCount() }
+    }
+    .onAppear { recomputeSuggestionCount() }
+    .onChange(of: macros) { _ in recomputeSuggestionCount() }
+  }
+
+  private func recomputeSuggestionCount() {
+    let aggregated = UsageStatistics.shared.aggregatedTopVietnameseWords(threshold: 10)
+    let existingTo = Set(macros.map { $0.to.lowercased() })
+    suggestionCount = aggregated.filter { !existingTo.contains($0.word.lowercased()) }.count
   }
 
   private func binding(for macro: Macro, keyPath: WritableKeyPath<Macro, String>) -> Binding<String> {

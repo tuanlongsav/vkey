@@ -187,6 +187,39 @@ final class UsageStatistics {
     [currentWeekSummary()] + historicalSummaries()
   }
 
+  /// Aggregate `topVietnameseWords` qua tất cả tuần (current + historical),
+  /// trả về list (word, totalCount) sắp xếp giảm dần, lọc count >= threshold.
+  /// Dùng cho "Gợi ý từ Thống kê" trong MacroView (1.5.5+).
+  func aggregatedTopVietnameseWords(threshold: Int = 10) -> [WordCount] {
+    var totals: [String: Int] = [:]
+    let allWeeks = [currentWeekSummary()] + historicalSummaries()
+    for week in allWeeks {
+      for wc in week.topVietnameseWords {
+        totals[wc.word, default: 0] += wc.count
+      }
+    }
+    return totals
+      .filter { $0.value >= threshold }
+      .map { WordCount(word: $0.key, count: $0.value) }
+      .sorted { $0.count > $1.count }
+  }
+
+  /// Aggregate `topApps` (bundle ID) qua tất cả tuần, dùng cho "Gợi ý từ
+  /// Thống kê" trong SmartSwitchView (1.5.5+). `word` chứa bundle ID.
+  func aggregatedTopApps(threshold: Int = 10) -> [WordCount] {
+    var totals: [String: Int] = [:]
+    let allWeeks = [currentWeekSummary()] + historicalSummaries()
+    for week in allWeeks {
+      for wc in week.topApps {
+        totals[wc.word, default: 0] += wc.count
+      }
+    }
+    return totals
+      .filter { $0.value >= threshold }
+      .map { WordCount(word: $0.key, count: $0.value) }
+      .sorted { $0.count > $1.count }
+  }
+
   /// Promote frequently-confirmed words into the user's personal dictionary.
   /// Returns the summary of the closed week so the UI can show what changed.
   ///

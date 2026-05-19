@@ -289,9 +289,8 @@ struct SpellCheckView: View {
     @Default(.autoApplyHighConfidenceSuggestion) private var autoApplyHighConfidenceSuggestion
     @Default(.personalDictionaryEnabled) private var personalDictionaryEnabled
     @Default(.useEnVnReference) private var useEnVnReference
+    @Default(.autoPersonalDictFeedback) private var autoPersonalDictFeedback
 
-    @State private var isUpdatingFromGitHub = false
-    @State private var gitHubUpdateStatus = ""
     @State private var showingPersonalDictEditor = false
 
     var body: some View {
@@ -426,42 +425,33 @@ struct SpellCheckView: View {
                         Text("Từ điển cá nhân")
                     }
 
-                    // Section 6: GitHub dictionary update (manual button only)
+                    // Section 6: Auto-feedback từ Thống kê (1.5.5+).
+                    // Thay Section "Từ điển GitHub" cũ — auto-fetch GitHub mỗi
+                    // 24h vẫn chạy ngầm (không cần button manual).
                     Section {
-                        Text("Từ điển sẽ tự cập nhật từ GitHub mỗi 24h khi app khởi động. Bấm bên dưới để kiểm tra & tải ngay.")
+                        Toggle(isOn: $autoPersonalDictFeedback) {
+                            Label("Tự động cập nhật từ điển cá nhân",
+                                  themedSymbol: "person.crop.circle.badge.checkmark")
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                        Text("Mỗi tuần, vkey tự xem các từ bạn gõ nhiều và thêm vào danh sách Allow / Keep để bộ gõ học hành vi của bạn. Có thể chỉnh sửa bằng tay nếu auto promote sai.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
                         HStack {
                             Spacer()
-                            Button(action: {
-                                isUpdatingFromGitHub = true
-                                gitHubUpdateStatus = "Đang tải dữ liệu từ GitHub..."
-                                LexiconManager.shared.downloadAndUpdateLexicon { success in
-                                    DispatchQueue.main.async {
-                                        isUpdatingFromGitHub = false
-                                        gitHubUpdateStatus = success
-                                            ? "Đã tải & cập nhật từ điển thành công!"
-                                            : "Từ điển đã là phiên bản mới nhất hoặc có lỗi."
-                                    }
-                                }
-                            }) {
-                                Label("Cập nhật từ điển ngay", themedSymbol: "arrow.triangle.2.circlepath")
+                            Button {
+                                showingPersonalDictEditor = true
+                            } label: {
+                                Label("Mở từ điển cá nhân để chỉnh sửa",
+                                      themedSymbol: "pencil.and.outline")
                             }
-                            .disabled(isUpdatingFromGitHub)
                             Spacer()
                         }
                         .padding(.top, 4)
-
-                        if !gitHubUpdateStatus.isEmpty {
-                            Text(gitHubUpdateStatus)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.top, 2)
-                        }
                     } header: {
-                        Text("Từ điển GitHub")
+                        Text("Học hành vi từ Thống kê")
                     }
                 }
             }

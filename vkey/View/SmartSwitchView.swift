@@ -4,9 +4,11 @@ import Defaults
 struct SmartSwitchView: View {
     @Default(.smartSwitchApps) private var smartSwitchApps
     @Default(.smartSwitchEnabled) private var smartSwitchEnabled
-    
+
     @State private var newBundleId: String = ""
     @State private var selectedApp: String? = nil
+    @State private var showingAppSuggestionSheet = false
+    @State private var appSuggestionCount: Int = 0
     
     struct PresetApp: Identifiable {
         let name: String
@@ -28,12 +30,12 @@ struct SmartSwitchView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header Section
-            HStack {
+            // Header Section + Toggle (1.5.5+)
+            HStack(alignment: .center, spacing: 12) {
                 ThemedSymbol(name: "arrow.left.arrow.right.circle.fill")
                     .font(.system(size: 32))
                     .foregroundStyle(Color.accentColor)
-                
+
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Smart Switch")
                         .font(.headline)
@@ -41,13 +43,35 @@ struct SmartSwitchView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                Spacer()
+
+                Toggle("", isOn: $smartSwitchEnabled)
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .labelsHidden()
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(NSColor.windowBackgroundColor))
-            
+
             Divider()
-            
+
+            // 1.5.5: Gợi ý app từ Thống kê (luôn hiện khi smartSwitchEnabled).
+            if smartSwitchEnabled && appSuggestionCount > 0 {
+                HStack(spacing: 8) {
+                    Image(systemName: "lightbulb.fill")
+                        .foregroundStyle(.yellow)
+                    Text("Có \(appSuggestionCount) app bạn dùng ≥10 lần chưa nằm trong Smart Switch.")
+                        .font(.caption)
+                    Spacer()
+                    Button("Xem & thêm") { showingAppSuggestionSheet = true }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.yellow.opacity(0.06))
+                Divider()
+            }
+
             if !smartSwitchEnabled {
                 VStack(spacing: 12) {
                     Spacer()
@@ -182,8 +206,20 @@ struct SmartSwitchView: View {
             }
         }
         .frame(width: 440, height: 540)
+        .sheet(isPresented: $showingAppSuggestionSheet) {
+            SmartSwitchSuggestionSheet()
+                .onDisappear { recomputeAppSuggestionCount() }
+        }
+        .onAppear { recomputeAppSuggestionCount() }
+        .onChange(of: smartSwitchApps) { _ in recomputeAppSuggestionCount() }
     }
-    
+
+    private func recomputeAppSuggestionCount() {
+        let aggregated = UsageStatistics.shared.aggregatedTopApps(threshold: 10)
+        let existing = Set(smartSwitchApps)
+        appSuggestionCount = aggregated.filter { !existing.contains($0.word) }.count
+    }
+
     private func addNewApp() {
         let cleanId = newBundleId.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanId.isEmpty else { return }

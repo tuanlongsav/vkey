@@ -38,17 +38,29 @@ struct ThemedSymbol: View {
           .resizable()
           .aspectRatio(contentMode: .fit)
       } else {
-        // Runtime fallback effects.
+        // Runtime fallback — 1.5.5 enhanced glossy:
+        //  - 4-stop gradient mô phỏng ball lighting (top bright → mid
+        //    dim → bottom bump để giả lập đáy phản chiếu).
+        //  - Double shadow: outer accent halo + inner sharper drop
+        //    để icon "nổi" hơn so với background.
+        //  - `.hierarchical` rendering giúp SF Symbol multi-layer
+        //    nhận gradient nhất quán.
         Image(systemName: name)
-          .symbolRenderingMode(.multicolor)
+          .symbolRenderingMode(.hierarchical)
           .symbolVariant(.fill)
           .foregroundStyle(
             LinearGradient(
-              colors: [.accentColor, .accentColor.opacity(0.65)],
+              stops: [
+                .init(color: .accentColor,                      location: 0.0),
+                .init(color: .accentColor.opacity(0.85),        location: 0.30),
+                .init(color: .accentColor.opacity(0.55),        location: 0.70),
+                .init(color: .accentColor.opacity(0.80),        location: 1.0),
+              ],
               startPoint: .top, endPoint: .bottom
             )
           )
-          .shadow(color: .black.opacity(0.25), radius: 1.5, x: 0, y: 1)
+          .shadow(color: .accentColor.opacity(0.35), radius: 4, x: 0, y: 2)
+          .shadow(color: .black.opacity(0.20),       radius: 1, x: 0, y: 0.5)
       }
     }
   }

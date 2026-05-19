@@ -86,6 +86,12 @@ extension Defaults.Keys {
   /// Cờ một lần: app đã seed bộ macro mặc định cho user mới chưa? Khi true,
   /// app không bao giờ re-seed kể cả khi user xoá hết macro.
   static let macrosSeeded = Key<Bool>("macros-seeded", default: false)
+  /// Version của bộ default macros đã seed. Tăng mỗi khi đổi danh sách:
+  /// - 0 = chưa migrate (user 1.5.0–1.5.2)
+  /// - 1 = 19-macro seed (1.5.3 / 1.5.4)
+  /// - 2 = 14 office + 8 emoji + 12 symbols (1.5.5+)
+  /// Migration trong `AppDelegate.seedDefaultMacrosIfNeeded()` idempotent.
+  static let defaultMacrosVersion = Key<Int>("default-macros-version", default: 0)
   /// Tổ hợp modifier-only (vd Shift+Control) dùng để chuyển đổi vi/en.
   /// 0 = không dùng. Bit layout giống NSEvent.ModifierFlags (.shift=0x20000, .control=0x40000…).
   /// Mặc định: ⌃⇧ (Control+Shift).
@@ -168,6 +174,12 @@ extension Defaults.Keys {
 
   /// Tự động hỏi sao lưu dữ liệu khi phát hiện app cập nhật.
   static let autoBackupOnUpgrade = Key<Bool>("auto-backup-on-upgrade", default: true)
+
+  /// Bật/tắt cơ chế `performWeeklyFeedback` — tự động promote các từ tiếng
+  /// Việt / Anh user gõ ≥5 lần/tuần vào personal dictionary (Allow/Keep).
+  /// Mặc định bật. User có thể tắt nếu muốn personal dict chỉ chỉnh tay.
+  /// Manual button trong tab Thống kê vẫn chạy được bất kể flag này (1.5.5+).
+  static let autoPersonalDictFeedback = Key<Bool>("auto-personal-dict-feedback", default: true)
 
   /// Giao diện ứng dụng — `.threeD` là default mới ở 1.5.4 (gradient +
   /// shadow + multicolor trên SF Symbol). UI picker tạm thời ẩn — sẽ
