@@ -7777,10 +7777,12 @@ struct WordBuffer {
     let keys: [Character]
     let transformed: String
     let stopProcessing: Bool
+    let stoppedByEnglishWord: Bool
   }
 
   var keys: [Character] = []
   var stopProcessing = false
+  var stoppedByEnglishWord = false
   var lastTransformed = ""
   var transformed = ""
 
@@ -7853,6 +7855,7 @@ struct WordBuffer {
     keys = []
     lastValidSnapshot = nil
     stopProcessing = false
+    stoppedByEnglishWord = false
     lastTransformed = ""
     transformed = ""
   }
@@ -7929,7 +7932,8 @@ struct WordBuffer {
       wordState: wordState,
       keys: keys,
       transformed: transformed,
-      stopProcessing: stopProcessing
+      stopProcessing: stopProcessing,
+      stoppedByEnglishWord: stoppedByEnglishWord
     )
 
     keys.append(char)
@@ -7937,12 +7941,16 @@ struct WordBuffer {
 
     // If stopProcessing was set, but it was ONLY because of English word restoration on the previous step
     // (i.e. the previous state did not have a real spelling matrix failure or impossible cluster),
-    // we allow re-evaluation so typing 'thee' (after 'the') can transform to 'thê' correctly.
+    // we allow re-evaluation by REPLAYING all keys from scratch through the engine.
+    // This fixes bugs like 'tees' → 'tế' where 'tee' (English) blocked further processing.
     // However, if the new keys form a doubled tone mark (like 'ss', 'ff'), we skip re-evaluation to preserve double-letter English suffixes.
     var wasOnlyEnglishRestored = false
     let keysStr = String(keys).lowercased()
     let doubledTones = ["ss", "ff", "rr", "xx", "jj"]
-    if stopProcessing && !snapshot.wordState.needsRecovery && !isImpossibleCluster(snapshot.keys, engine: engine) {
+    // Use the explicit stoppedByEnglishWord flag set during English word restoration.
+    // This is reliable because wordState.needsRecovery gets corrupted by the raw push
+    // during English restoration, making it unsuitable for detection.
+    if stopProcessing && stoppedByEnglishWord {
       if !doubledTones.contains(where: { keysStr.contains($0) }) {
         wasOnlyEnglishRestored = true
       }
@@ -7954,10 +7962,55 @@ struct WordBuffer {
       return
     }
 
+    // When re-evaluating after English restoration, replay ALL keys from scratch
+    // because the wordState was corrupted by the raw English restoration path.
+    if wasOnlyEnglishRestored {
+      stopProcessing = false
+      stoppedByEnglishWord = false
+      wordState = .empty
+      var replayValid = true
+      for k in keys {
+        let result = engine.push(char: k, state: wordState)
+        wordState = result.state
+        if wordState.needsRecovery {
+          replayValid = false
+          break
+        }
+      }
+      if replayValid && !wordState.needsRecovery {
+        transformed = wordState.transformed
+        lastValidSnapshot = nil
+        // Check shouldStopProcessing for the replayed keys
+        if engine.shouldStopProcessing(keyStr: String(keys)) {
+          stopProcessing = true
+          if transformed.count == lastTransformed.count {
+            transformed.append(char)
+            wordState = wordState.push(char)
+          }
+        }
+        // Check if the full replayed word is an English word
+        if LexiconManager.shared.isEnglishWord(keysStr) {
+          stopProcessing = true
+          transformed = String(keys)
+          if !snapshot.stopProcessing {
+            lastValidSnapshot = snapshot
+          }
+        }
+      } else {
+        // Replay failed — treat as raw text
+        stopProcessing = true
+        transformed = String(keys)
+        wordState = TiengVietState.empty
+        for k in keys { wordState = wordState.push(k) }
+      }
+      return
+    }
+
     // Doubled Tone Mark Preservation: if raw keys contains consecutive doubled tone marks, preserve it raw if it forms an English word
     if doubledTones.contains(where: { keysStr.contains($0) }),
        LexiconManager.shared.isEnglishWord(keysStr) {
       stopProcessing = true
+      stoppedByEnglishWord = true
       transformed = String(keys)
       wordState = wordState.push(char)
       
@@ -7970,6 +8023,7 @@ struct WordBuffer {
     // Instantaneous English word restoration: if the raw keys form a known English word, preserve it raw
     if LexiconManager.shared.isEnglishWord(keysStr) {
       stopProcessing = true
+      stoppedByEnglishWord = true
       transformed = String(keys)
       wordState = wordState.push(char)
       

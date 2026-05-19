@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.4.6</title>
+      <sparkle:version>14600</sparkle:version>
+      <sparkle:shortVersionString>1.4.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 19 May 2026 10:42:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.4.6/vkey-1.4.6.dmg"
+        sparkle:edSignature="9ho5m8Jgtne+3xBt82Y2z3q9pDtq0TP4cGLuoGKlCI6NPhtjreE/jwNPSqLTjm0X/InXW/RbuERmV5FPLMgtCg=="
+        length="4787264"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong phiên bản 1.4.6:</h2>
+        <ul>
+          <li><strong>Sửa lỗi bộ gõ khi tiền tố trùng từ tiếng Anh:</strong> Khắc phục lỗi <code>tees</code> → <code>tế</code>, <code>heest</code> → <code>hết</code>, <code>theem</code> → <code>thêm</code> bằng cơ chế replay toàn bộ keys khi phát hiện English restoration bị sai.</li>
+          <li><strong>Sửa lỗi dấu móc (ươ) trên cặp nguyên âm uo:</strong> Khắc phục <code>dduwowcj</code> → <code>được</code> - dấu móc giờ LUÔN áp dụng cho cả hai nguyên âm.</li>
+          <li><strong>Sửa lỗi phím w xoá dấu móc trên pattern uo:</strong> Phím w thứ 2 giữ nguyên dấu móc thay vì toggle tắt.</li>
+          <li><strong>Kiểm thử mở rộng:</strong> 147 tests đều pass với 0 lỗi.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.4.5</title>
       <sparkle:version>14500</sparkle:version>
       <sparkle:shortVersionString>1.4.5</sparkle:shortVersionString>

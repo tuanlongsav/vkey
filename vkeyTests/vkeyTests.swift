@@ -502,6 +502,32 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "them"), "them")
   }
 
+  /// Test v1.4.6 bug fixes: English word restoration replay, uo horn handling, and common words
+  func testV146BugFixes() throws {
+    // English word restoration replay fixes
+    XCTAssertEqual(transform_text_telex(for: "tees"), "tế")       // "tee" is English, but tees → tế
+    XCTAssertEqual(transform_text_telex(for: "heest"), "hết")     // "he" is English, but heest → hết
+    XCTAssertEqual(transform_text_telex(for: "theem"), "thêm")    // "the" is English, but theem → thêm
+
+    // Horn mark (muMoc) on uo pattern - always apply to both vowels
+    XCTAssertEqual(transform_text_telex(for: "dduwowcj"), "được") // uo horn should persist through second w
+    XCTAssertEqual(transform_text_telex(for: "dduowcj"), "được")  // Standard form without extra w
+
+    // Basic Telex transformations (regression)
+    XCTAssertEqual(transform_text_telex(for: "soats"), "soát")
+    XCTAssertEqual(transform_text_telex(for: "gox"), "gõ")
+    XCTAssertEqual(transform_text_telex(for: "tooi"), "tôi")
+    XCTAssertEqual(transform_text_telex(for: "Goiwj"), "Gợi")
+    XCTAssertEqual(transform_text_telex(for: "vieetj"), "việt")
+    XCTAssertEqual(transform_text_telex(for: "chinhs"), "chính")
+    XCTAssertEqual(transform_text_telex(for: "nhuwng"), "nhưng")
+    XCTAssertEqual(transform_text_telex(for: "ddang"), "đang")
+    XCTAssertEqual(transform_text_telex(for: "looix"), "lỗi")
+    XCTAssertEqual(transform_text_telex(for: "looij"), "lội")
+    XCTAssertEqual(transform_text_telex(for: "cuax"), "cũa")
+    XCTAssertEqual(transform_text_telex(for: "cuar"), "của")
+  }
+
   // MARK: - Telex: Toggle Behavior (Double Typing)
 
   /// Test tone toggle (typing same tone twice removes it)
@@ -1011,7 +1037,7 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "tuyetj"), "tuyệt")
     XCTAssertEqual(transform_text_telex(for: "veeitj"), "việt")
     XCTAssertEqual(transform_text_telex(for: "phuowgn"), "phương")
-    XCTAssertEqual(transform_text_telex(for: "phuwowgn"), "phuong")
+    XCTAssertEqual(transform_text_telex(for: "phuwowgn"), "phương")  // Second w preserves horn on uo pattern
   }
 
   func testNewTypoCorrections() throws {

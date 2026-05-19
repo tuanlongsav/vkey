@@ -142,6 +142,12 @@ class Telex: TypingMethod {
       // Phím w: dấu móc (ơ, ư) hoặc dấu trăng (ă) tùy nguyên âm
       case "w", "W":
         if thanhPhan.nguyenAmChua1KyTu(mangKyTu: ["u", "U"]) {
+          // If muMoc is already set and vowel is "uo" pattern, the second w
+          // is for the 'o' vowel → keep muMoc (no-op) instead of toggling off.
+          // This allows dduwow → được to work correctly.
+          if state.dauMu == .muMoc && thanhPhan.chuaNguyenAmUO {
+            return (state, true) // Keep horn, mark as applied
+          }
           // uw → ư (móc)
           return (state.withMu(.muMoc), true)
         } else if thanhPhan.nguyenAmChua1KyTu(mangKyTu: ["a", "A"]) {

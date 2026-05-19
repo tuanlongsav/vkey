@@ -92,12 +92,10 @@ enum TiengVietTransformer {
 
     let datDauMocUO = (dauMu == .muMoc) && tieng.chuaNguyenAmUO
 
-    // Trường hợp đặc biệt: "uo" + dấu móc → "ươ"
+    // Trường hợp đặc biệt: "uo" + dấu móc → "ươ" (LUÔN đặt dấu cho CẢ HAI nguyên âm)
     if datDauMocUO && thuDatDauMu(1) {
-      // Nếu có 3 nguyên âm hoặc có phụ âm cuối, đặt dấu cho cả nguyên âm đầu
-      if soNguyenAm == 3 || !tieng.phuAmCuoi.isEmpty,
-        let dauU = chuyenKyTu(kytu: tieng.nguyenAm[0], quyTac: quyTac)
-      {
+      // Luôn đặt dấu móc cho nguyên âm đầu (u → ư) khi đã đặt cho nguyên âm sau (o → ơ)
+      if let dauU = chuyenKyTu(kytu: tieng.nguyenAm[0], quyTac: quyTac) {
         tieng.nguyenAm[0] = dauU
       }
     } else if (soNguyenAm == 3 || (soNguyenAm == 2 && !tieng.phuAmCuoi.isEmpty))
