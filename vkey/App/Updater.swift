@@ -21,8 +21,10 @@ enum Updater {
     if manual {
       // User explicitly clicked "Check for Updates..." in settings or menu
       let appcastURL = URL(string: "https://raw.githubusercontent.com/tuanlongsav/vkey/main/appcast.xml")!
+      var request = URLRequest(url: appcastURL)
+      request.cachePolicy = .reloadIgnoringLocalCacheData
       
-      URLSession.shared.dataTask(with: appcastURL) { data, response, error in
+      URLSession.shared.dataTask(with: request) { data, response, error in
         DispatchQueue.main.async {
           guard error == nil,
                 let httpResponse = response as? HTTPURLResponse,
