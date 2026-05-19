@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.6.3 — "Stats Restored"</title>
+      <sparkle:version>16300</sparkle:version>
+      <sparkle:shortVersionString>1.6.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 06:50:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.6.3/vkey-1.6.3.dmg"
+        sparkle:edSignature="YI6ZPmDMIS4l0Fdz1OuPPoq+Ab9voBfc9uxceVNbY6Km6nrwyl6hstl6IKVa89b8ztGtTXJ1eNNVNdi/bph1Bg=="
+        length="5653236"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.6.3 — "Stats Restored":</h2>
+        <p>Hotfix khẩn cấp lỗi tab Thống kê hiển thị toàn số 0 sau khi cài bản mới — root cause thực sự khác hẳn các giả thuyết trước đó.</p>
+        <ul>
+          <li><strong>Root cause MỚI phát hiện</strong>: JSONEncoder dùng <code>.iso8601</code> date strategy (ghi <code>"weekEnd": "2026-05-24T..."</code>) nhưng JSONDecoder để mặc định (kỳ vọng Double timestamp). Khi load <code>current.json</code>, decode <code>weekEnd</code> luôn FAIL với <code>typeMismatch: expected Double, found string</code>. <code>try?</code> nuốt lỗi → counters về default empty → UI hiển thị 0.</li>
+          <li><strong>Fix</strong>: tạo <code>JSONDecoder.statsConfigured</code> singleton với <code>dateDecodingStrategy = .iso8601</code> khớp encoder. Áp dụng cho tất cả call site đọc stats files (<code>loadCurrentWeekIfNeeded</code>, <code>historicalSummaries</code>, <code>diagnosticReport</code>).</li>
+          <li><strong>Tác động</strong>: user nâng từ 1.6.2 trở xuống lên 1.6.3 sẽ thấy lại data thống kê trên UI (data trên disk vẫn còn — decode trước đó fail nên không hiển thị). Người dùng từng "mất stats" sau khi update giờ thấy lại đầy đủ.</li>
+          <li>Bug này có từ v1.5.0 khi UsageStatistics ra mắt — không ai phát hiện vì test env có thể không trigger được path này. Các fix v1.6.1 (rotation flow) và v1.6.2 (endpoint) là cần thiết nhưng không đụng đến root cause thực sự này.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.6.2 — "Capacity Audit"</title>
       <sparkle:version>16200</sparkle:version>
       <sparkle:shortVersionString>1.6.2</sparkle:shortVersionString>

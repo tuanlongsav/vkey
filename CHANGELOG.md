@@ -2,6 +2,40 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.6.3] - 2026-05-20 — "Stats Restored"
+
+Hotfix khẩn cấp cho lỗi **tab Thống kê hiển thị toàn 0 sau khi cài bản mới** — root cause THỰC SỰ phát hiện sau khi fix các nhánh khác không hiệu quả.
+
+### Root cause: JSONEncoder/Decoder strategy mismatch
+
+- **Bug đã có từ v1.5.0** khi UsageStatistics được giới thiệu. Tất cả các phiên bản 1.5.x và 1.6.0-1.6.2 đều dính.
+- **Encoder** ở [UsageStatistics.swift:811](vkey/Stats/UsageStatistics.swift) dùng `dateEncodingStrategy = .iso8601` → ghi field `weekEnd` thành chuỗi `"2026-05-24T16:59:59Z"`.
+- **Decoder** ở các call site (`loadCurrentWeekIfNeeded`, `historicalSummaries`, `diagnosticReport`) dùng `JSONDecoder()` MẶC ĐỊNH → `dateDecodingStrategy = .deferredToDate` → kỳ vọng Double timestamp.
+- **Kết quả**: mỗi lần app khởi động đọc `current.json`, decode `weekEnd` throw `typeMismatch: expected Double, found string`. `try?` nuốt lỗi → `loadCurrentWeekIfNeeded` return early → `counters` giữ default empty `WeekBucket()` (wordsTotal=0).
+- UI tab Thống kê đọc `counters` → hiển thị 0. **Data đầy đủ vẫn còn trên disk**, chỉ là không decode được.
+
+### Vì sao các fix trước không giải quyết?
+
+- **v1.6.1** sửa logic rotation + persistCurrentWeek không ghi `<currentWeekId>.json` → đúng nhưng không động đến root cause decode.
+- **v1.6.2** chuyển endpoint dictionary + manual update button → đúng nhưng không liên quan stats.
+- Nguyên nhân chỉ lộ khi test thực tế file decode bằng Swift script standalone → `typeMismatch` exception hiện rõ.
+
+### Fix
+
+- Tạo `JSONDecoder.statsConfigured` singleton với `dateDecodingStrategy = .iso8601` khớp encoder.
+- Thay tất cả 4 call site `JSONDecoder().decode` trong [UsageStatistics.swift](vkey/Stats/UsageStatistics.swift) bằng `JSONDecoder.statsConfigured.decode`.
+
+### Tác động
+
+- User nâng từ 1.6.2 trở xuống lên 1.6.3 sẽ thấy lại data thống kê trên UI ngay lập tức (data trên disk được giữ nguyên qua tất cả các phiên bản).
+- Diagnostic API trong tab Thống kê giờ in được thông tin chi tiết về cả `current.json` lẫn historical files.
+
+### Bài học
+
+- **Encoder + decoder phải luôn dùng cùng strategy**. Nên dùng helper struct/extension chung để không lệch.
+- **`try?` nuốt lỗi** trong file IO là dangerous pattern khi không có fallback explicit. Đáng log warning để phát hiện sớm trong production.
+- Test decode thực tế (run-time data) khác xa schema validity check trong unit test.
+
 ## [1.6.2] - 2026-05-19 — "Capacity Audit"
 
 Bản vá hạ tầng cập nhật từ điển + audit capacity, kết quả từ rà soát chiều sâu sau khi tích hợp dataset undertheseanlp.

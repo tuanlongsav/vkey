@@ -204,7 +204,7 @@ final class UsageStatistics {
                            && url.lastPathComponent != "current.json"
                            && url.lastPathComponent != currentWeekFile {
         if let data = try? Data(contentsOf: url),
-           let summary = try? JSONDecoder().decode(UsageSummary.self, from: data) {
+           let summary = try? JSONDecoder.statsConfigured.decode(UsageSummary.self, from: data) {
           out.append(summary)
         }
       }
@@ -234,10 +234,10 @@ final class UsageStatistics {
         var summary = "(decode failed)"
         if let data = try? Data(contentsOf: url) {
           if url.lastPathComponent == "current.json" {
-            if let bucket = try? JSONDecoder().decode(WeekBucket.self, from: data) {
+            if let bucket = try? JSONDecoder.statsConfigured.decode(WeekBucket.self, from: data) {
               summary = "weekId=\(bucket.weekId), wordsTotal=\(bucket.wordsTotal), vnWords=\(bucket.vnWordCounts.count)"
             }
-          } else if let s = try? JSONDecoder().decode(UsageSummary.self, from: data) {
+          } else if let s = try? JSONDecoder.statsConfigured.decode(UsageSummary.self, from: data) {
             summary = "weekId=\(s.weekId), wordsTotal=\(s.wordsTotal), vnWords=\(s.topVietnameseWords.count)"
           }
         }
@@ -529,7 +529,7 @@ final class UsageStatistics {
   private func loadCurrentWeekIfNeeded() {
     let url = storageDir.appendingPathComponent("current.json")
     guard let data = try? Data(contentsOf: url) else { return }
-    guard let loaded = try? JSONDecoder().decode(WeekBucket.self, from: data) else {
+    guard let loaded = try? JSONDecoder.statsConfigured.decode(WeekBucket.self, from: data) else {
       os_log("UsageStatistics: current.json decode failed; preserving in-memory state",
              log: log, type: .error)
       return
@@ -814,5 +814,21 @@ private extension JSONEncoder {
     e.outputFormatting = [.prettyPrinted, .sortedKeys]
     e.dateEncodingStrategy = .iso8601
     return e
+  }()
+}
+
+private extension JSONDecoder {
+  /// 1.6.3: decoder pre-configured để khớp `JSONEncoder.indented`:
+  /// `.iso8601` date strategy. **CRITICAL FIX**: trước đây các call site
+  /// dùng `JSONDecoder()` mặc định (date = Double timestamp). Vì encoder
+  /// ghi ISO 8601 string, decode `weekEnd` luôn fail → `try?` nuốt lỗi →
+  /// counters về default empty → tab Thống kê hiển thị toàn 0 sau khi
+  /// cài bản mới. Đây là root cause thực sự của bug "mất hiển thị stats"
+  /// (mạnh hơn cả các fix v1.6.1 trước đây — vốn không giải quyết được
+  /// vì lỗi decode silent).
+  static let statsConfigured: JSONDecoder = {
+    let d = JSONDecoder()
+    d.dateDecodingStrategy = .iso8601
+    return d
   }()
 }
