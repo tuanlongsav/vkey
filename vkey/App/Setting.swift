@@ -47,6 +47,17 @@ struct Macro: Codable, Hashable, Identifiable, Defaults.Serializable {
   var id: UUID = UUID()
 }
 
+enum RestorePolicy: String, CaseIterable, Defaults.Serializable {
+  case vietnameseFirst
+  case balanced
+  case englishFirst
+}
+
+enum DictionaryUpdateChannel: String, CaseIterable, Defaults.Serializable {
+  case embeddedOnly
+  case hybrid
+}
+
 extension Defaults.Keys {
   static let currentVersion = Key<String>("current-version", default: "0.1")
   static let typingMethod = Key<TypingMethods>("typing-method", default: .Telex)
@@ -81,6 +92,39 @@ extension Defaults.Keys {
 
   /// Hiển thị HUD khi chuyển đổi bộ gõ
   static let hudEnabled = Key<Bool>("hud-enabled", default: true)
+
+  /// Bật kiểm tra từ điển/chính tả trước khi auto-restore và gợi ý.
+  static let spellCheckEnabled = Key<Bool>("spell-check-enabled", default: true)
+
+  /// Cho phép tự khôi phục về tiếng Anh khi đầu ra không phải tiếng Việt hợp lệ.
+  static let englishAutoRestoreEnabled = Key<Bool>("english-auto-restore-enabled", default: true)
+
+  /// Chính sách xử lý từ mơ hồ giữa tiếng Việt và tiếng Anh.
+  static let restorePolicy = Key<RestorePolicy>("restore-policy", default: .vietnameseFirst)
+
+  /// Cấu hình nguồn dữ liệu từ điển.
+  static let dictionaryUpdateChannel = Key<DictionaryUpdateChannel>(
+    "dictionary-update-channel",
+    default: .hybrid
+  )
+
+  /// Bật tính năng gợi ý sửa chính tả.
+  static let suggestionEnabled = Key<Bool>("suggestion-enabled", default: true)
+
+  /// Tự áp dụng gợi ý có độ tin cậy cao.
+  static let autoApplyHighConfidenceSuggestion = Key<Bool>(
+    "auto-apply-high-confidence-suggestion",
+    default: true
+  )
+
+  /// Từ do người dùng thêm vào, luôn coi là hợp lệ.
+  static let userAllowWords = Key<[String]>("user-allow-words", default: [])
+
+  /// Từ ưu tiên giữ nguyên dạng tiếng Việt, không auto-restore sang tiếng Anh.
+  static let userKeepWords = Key<[String]>("user-keep-words", default: [])
+
+  /// Từ người dùng muốn loại khỏi tập hợp hợp lệ.
+  static let userDenyWords = Key<[String]>("user-deny-words", default: [])
 
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value

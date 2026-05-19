@@ -28,6 +28,14 @@ struct AppSendingConfig {
   let name: String
 }
 
+/// Telemetry for a replacement attempt.
+struct EventSendTelemetry {
+  let attemptedTransform: Bool
+  let createdEvents: Bool
+  let usedAsyncQueue: Bool
+  let touchedCharacters: Int
+}
+
 class EventSimulator {
   /// Dedicated serial queue for event simulation to avoid blocking the event tap callback.
   /// Strategies that use usleep (stepByStep, hybrid) dispatch to this queue so the
@@ -89,12 +97,13 @@ class EventSimulator {
     return (backspaceCount, diffChars)
   }
 
+  @discardableResult
   static func sendBackspace(
     _ count: Int,
     source: CGEventSource? = nil,
     delayMicroseconds: UInt32 = 0
-  ) {
-    guard count > 0 else { return }
+  ) -> Bool {
+    guard count > 0 else { return true }
 
     let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
 
@@ -103,7 +112,7 @@ class EventSimulator {
       let downEvent = CGEvent(keyboardEventSource: source, virtualKey: 0x33, keyDown: true),
       let upEvent = CGEvent(keyboardEventSource: source, virtualKey: 0x33, keyDown: false)
     else {
-      return
+      return false
     }
 
     downEvent.flags = .maskNonCoalesced
@@ -117,10 +126,12 @@ class EventSimulator {
         usleep(delayMicroseconds)
       }
     }
+    return true
   }
 
-  static func sendString(_ str: String, source: CGEventSource? = nil) {
-    guard !str.isEmpty else { return }
+  @discardableResult
+  static func sendString(_ str: String, source: CGEventSource? = nil) -> Bool {
+    guard !str.isEmpty else { return true }
 
     let uniChars = str.utf16.map { UniChar($0) }
     let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
@@ -130,7 +141,7 @@ class EventSimulator {
       let downEvent = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
       let upEvent = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
     else {
-      return
+      return false
     }
 
     downEvent.flags = .maskNonCoalesced
@@ -141,21 +152,23 @@ class EventSimulator {
 
     downEvent.post(tap: .cgSessionEventTap)
     upEvent.post(tap: .cgSessionEventTap)
+    return true
   }
 
+  @discardableResult
   static func sendStringStepByStep(
     _ str: String,
     source: CGEventSource? = nil,
     delayMicroseconds: UInt32 = 500
-  ) {
-    guard !str.isEmpty else { return }
+  ) -> Bool {
+    guard !str.isEmpty else { return true }
 
     let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
     guard let source = eventSource else {
-      sendString(str)
-      return
+      return sendString(str)
     }
 
+    var createdAnyEvent = false
     let chars = Array(str)
     for (index, char) in chars.enumerated() {
       guard let scalar = char.unicodeScalars.first else { continue }
@@ -165,6 +178,7 @@ class EventSimulator {
         let downEvent = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
         let upEvent = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
       {
+        createdAnyEvent = true
         downEvent.flags = .maskNonCoalesced
         upEvent.flags = .maskNonCoalesced
 
@@ -179,37 +193,80 @@ class EventSimulator {
         usleep(delayMicroseconds)
       }
     }
+    return createdAnyEvent
   }
 
   static func sendReplacement(
     backspaceCount: Int,
     diffChars: [Character],
     strategy: SendingStrategy
-  ) {
+  ) -> EventSendTelemetry {
+    let touchedCharacters = backspaceCount + diffChars.count
+    guard touchedCharacters > 0 else {
+      return EventSendTelemetry(
+        attemptedTransform: false,
+        createdEvents: true,
+        usedAsyncQueue: false,
+        touchedCharacters: 0
+      )
+    }
+
     switch strategy {
     case .batch:
       // Batch has no delays, safe to run synchronously on the event tap thread
       let source = CGEventSource(stateID: .privateState)
-      sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
-      sendString(String(diffChars), source: source)
+      let backspaceOK = sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
+      let stringOK = sendString(String(diffChars), source: source)
+      return EventSendTelemetry(
+        attemptedTransform: true,
+        createdEvents: backspaceOK && stringOK,
+        usedAsyncQueue: false,
+        touchedCharacters: touchedCharacters
+      )
 
     case .stepByStep:
+      guard let source = CGEventSource(stateID: .privateState) else {
+        return EventSendTelemetry(
+          attemptedTransform: true,
+          createdEvents: false,
+          usedAsyncQueue: true,
+          touchedCharacters: touchedCharacters
+        )
+      }
       // Dispatch to background queue to avoid blocking the event tap
       simulationQueue.async {
-        let source = CGEventSource(stateID: .privateState)
         sendBackspace(backspaceCount, source: source, delayMicroseconds: 2000)
         usleep(3000)
         sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
         usleep(3000)
       }
+      return EventSendTelemetry(
+        attemptedTransform: true,
+        createdEvents: true,
+        usedAsyncQueue: true,
+        touchedCharacters: touchedCharacters
+      )
 
     case .hybrid(let backspaceDelay):
+      guard let source = CGEventSource(stateID: .privateState) else {
+        return EventSendTelemetry(
+          attemptedTransform: true,
+          createdEvents: false,
+          usedAsyncQueue: true,
+          touchedCharacters: touchedCharacters
+        )
+      }
       // Dispatch to background queue to avoid blocking the event tap
       simulationQueue.async {
-        let source = CGEventSource(stateID: .privateState)
         sendBackspace(backspaceCount, source: source, delayMicroseconds: backspaceDelay)
         sendString(String(diffChars), source: source)
       }
+      return EventSendTelemetry(
+        attemptedTransform: true,
+        createdEvents: true,
+        usedAsyncQueue: true,
+        touchedCharacters: touchedCharacters
+      )
     }
   }
 
@@ -247,20 +304,55 @@ class EventSimulator {
     selectLeftCount: Int,
     diffChars: [Character],
     strategy: SendingStrategy
-  ) {
+  ) -> EventSendTelemetry {
+    let touchedCharacters = selectLeftCount + diffChars.count
+    guard touchedCharacters > 0 else {
+      return EventSendTelemetry(
+        attemptedTransform: false,
+        createdEvents: true,
+        usedAsyncQueue: false,
+        touchedCharacters: 0
+      )
+    }
+
     switch strategy {
     case .batch:
       let source = CGEventSource(stateID: .privateState)
       sendShiftLeft(selectLeftCount, source: source)
       if !diffChars.isEmpty {
-        sendString(String(diffChars), source: source)
+        let sent = sendString(String(diffChars), source: source)
+        return EventSendTelemetry(
+          attemptedTransform: true,
+          createdEvents: sent,
+          usedAsyncQueue: false,
+          touchedCharacters: touchedCharacters
+        )
       } else if selectLeftCount > 0 {
-        sendBackspace(1, source: source)
+        let sent = sendBackspace(1, source: source)
+        return EventSendTelemetry(
+          attemptedTransform: true,
+          createdEvents: sent,
+          usedAsyncQueue: false,
+          touchedCharacters: touchedCharacters
+        )
       }
+      return EventSendTelemetry(
+        attemptedTransform: true,
+        createdEvents: true,
+        usedAsyncQueue: false,
+        touchedCharacters: touchedCharacters
+      )
 
     case .stepByStep:
+      guard let source = CGEventSource(stateID: .privateState) else {
+        return EventSendTelemetry(
+          attemptedTransform: true,
+          createdEvents: false,
+          usedAsyncQueue: true,
+          touchedCharacters: touchedCharacters
+        )
+      }
       simulationQueue.async {
-        let source = CGEventSource(stateID: .privateState)
         sendShiftLeft(selectLeftCount, source: source)
         usleep(3000)
         if !diffChars.isEmpty {
@@ -270,10 +362,23 @@ class EventSimulator {
         }
         usleep(3000)
       }
+      return EventSendTelemetry(
+        attemptedTransform: true,
+        createdEvents: true,
+        usedAsyncQueue: true,
+        touchedCharacters: touchedCharacters
+      )
 
     case .hybrid(let backspaceDelay):
+      guard let source = CGEventSource(stateID: .privateState) else {
+        return EventSendTelemetry(
+          attemptedTransform: true,
+          createdEvents: false,
+          usedAsyncQueue: true,
+          touchedCharacters: touchedCharacters
+        )
+      }
       simulationQueue.async {
-        let source = CGEventSource(stateID: .privateState)
         sendShiftLeft(selectLeftCount, source: source)
         usleep(backspaceDelay)
         if !diffChars.isEmpty {
@@ -282,6 +387,12 @@ class EventSimulator {
           sendBackspace(1, source: source)
         }
       }
+      return EventSendTelemetry(
+        attemptedTransform: true,
+        createdEvents: true,
+        usedAsyncQueue: true,
+        touchedCharacters: touchedCharacters
+      )
     }
   }
 }

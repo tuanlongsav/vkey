@@ -1536,4 +1536,150 @@ final class TiengVietValidatorTests: XCTestCase {
       )
     )
   }
+
+  // MARK: - Lexicon / Spell Decision / Suggestion
+
+  func testLexiconManagerEmbeddedDefaults() throws {
+    let oldChannel = Defaults[.dictionaryUpdateChannel]
+    defer { Defaults[.dictionaryUpdateChannel] = oldChannel }
+    let manager = LexiconManager(updatePackageURL: URL(fileURLWithPath: "/tmp/vkey-lexicon-no-file.json"))
+    Defaults[.dictionaryUpdateChannel] = .embeddedOnly
+    manager.reload(channel: .embeddedOnly)
+
+    XCTAssertTrue(manager.isVietnameseWord("việt"))
+    XCTAssertTrue(manager.isEnglishWord("text"))
+    XCTAssertTrue(manager.shouldApplyLegacyRestore(transformed: "ò", rawInput: "of"))
+  }
+
+  func testLexiconManagerHybridPrefersHigherVersionPackage() throws {
+    let path = URL(fileURLWithPath: "/tmp/vkey-lexicon-update-test.json")
+    let manager = LexiconManager(updatePackageURL: path)
+    let package = """
+    {
+      "version": 5,
+      "vietnamese": ["thành","công"],
+      "english": ["deploy"],
+      "keep": ["sara"]
+    }
+    """
+    try manager.setUpdatePackageData(Data(package.utf8))
+    manager.reload(channel: .hybrid)
+
+    let versions = manager.snapshotVersions()
+    let sources = manager.snapshotSources()
+    XCTAssertEqual(versions.vn, 5)
+    XCTAssertEqual(sources.vn, .updatePackage)
+    XCTAssertTrue(manager.isVietnameseWord("thành"))
+    XCTAssertTrue(manager.isEnglishWord("deploy"))
+  }
+
+  func testLexiconManagerUserAllowAndDenyOverride() throws {
+    Defaults[.userAllowWords] = ["abcxyz"]
+    Defaults[.userDenyWords] = ["việt"]
+    defer {
+      Defaults[.userAllowWords] = []
+      Defaults[.userDenyWords] = []
+    }
+
+    let manager = LexiconManager(updatePackageURL: URL(fileURLWithPath: "/tmp/vkey-lexicon-user-override.json"))
+    manager.reload(channel: .embeddedOnly)
+
+    XCTAssertTrue(manager.isVietnameseWord("abcxyz"))
+    XCTAssertFalse(manager.isVietnameseWord("việt"))
+  }
+
+  func testSpellDecisionRestoreEnglishWhenInvalidVietnamese() throws {
+    let oldSpell = Defaults[.spellCheckEnabled]
+    let oldRestore = Defaults[.englishAutoRestoreEnabled]
+    let oldPolicy = Defaults[.restorePolicy]
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+      Defaults[.englishAutoRestoreEnabled] = oldRestore
+      Defaults[.restorePolicy] = oldPolicy
+    }
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.englishAutoRestoreEnabled] = true
+    Defaults[.restorePolicy] = .vietnameseFirst
+
+    let engine = SpellDecisionEngine.shared
+    let decision = engine.evaluate(rawInput: "text", transformed: "tẽt", needsRecovery: true)
+    XCTAssertEqual(decision, .restoreRawEnglish("text"))
+  }
+
+  func testSpellDecisionVietnameseFirstKeepsValidVietnamese() throws {
+    let oldSpell = Defaults[.spellCheckEnabled]
+    let oldRestore = Defaults[.englishAutoRestoreEnabled]
+    let oldPolicy = Defaults[.restorePolicy]
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+      Defaults[.englishAutoRestoreEnabled] = oldRestore
+      Defaults[.restorePolicy] = oldPolicy
+    }
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.englishAutoRestoreEnabled] = true
+    Defaults[.restorePolicy] = .vietnameseFirst
+
+    let engine = SpellDecisionEngine.shared
+    let decision = engine.evaluate(rawInput: "gi", transformed: "gì", needsRecovery: false)
+    XCTAssertEqual(decision, .keepVietnamese)
+  }
+
+  func testSpellDecisionLegacyRestoreBackwardCompatibility() throws {
+    let oldSpell = Defaults[.spellCheckEnabled]
+    let oldRestore = Defaults[.englishAutoRestoreEnabled]
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+      Defaults[.englishAutoRestoreEnabled] = oldRestore
+    }
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.englishAutoRestoreEnabled] = true
+
+    let engine = SpellDecisionEngine.shared
+    let decision = engine.evaluate(rawInput: "of", transformed: "ò", needsRecovery: false)
+    XCTAssertEqual(decision, .restoreRawEnglish("of"))
+  }
+
+  func testSuggestionServiceRankingForVietnameseTypo() throws {
+    let service = SuggestionService.shared
+    let suggestions = service.suggest(word: "thih", locale: "vi_VN", limit: 5)
+    XCTAssertFalse(suggestions.isEmpty)
+    XCTAssertTrue(suggestions.first?.score ?? 0 > 0)
+  }
+
+  func testSpellDecisionSuggestsWhenInvalidAndNotEnglish() throws {
+    let oldSpell = Defaults[.spellCheckEnabled]
+    let oldRestore = Defaults[.englishAutoRestoreEnabled]
+    let oldSuggestion = Defaults[.suggestionEnabled]
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+      Defaults[.englishAutoRestoreEnabled] = oldRestore
+      Defaults[.suggestionEnabled] = oldSuggestion
+    }
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.englishAutoRestoreEnabled] = true
+    Defaults[.suggestionEnabled] = true
+
+    let engine = SpellDecisionEngine.shared
+    let decision = engine.evaluate(rawInput: "thih", transformed: "thih", needsRecovery: true)
+    if case .suggest(let candidates) = decision {
+      XCTAssertFalse(candidates.isEmpty)
+    } else {
+      XCTFail("Expected suggestion decision for invalid non-English token")
+    }
+  }
+
+  func testTransformationTrackerDetectsRepeatedFailureSignals() throws {
+    var tracker = TransformationTracker()
+    tracker.resetForApp("com.example.app")
+
+    let failure = EventSendTelemetry(
+      attemptedTransform: true,
+      createdEvents: false,
+      usedAsyncQueue: false,
+      touchedCharacters: 4
+    )
+
+    XCTAssertFalse(tracker.detectFailure(telemetry: failure, appLikelySensitive: true))
+    XCTAssertTrue(tracker.detectFailure(telemetry: failure, appLikelySensitive: true))
+  }
 }

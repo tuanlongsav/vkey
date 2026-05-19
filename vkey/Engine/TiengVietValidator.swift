@@ -220,23 +220,6 @@ enum TiengVietValidator {
       return true
     }
 
-    // Trường hợp 3: Kiểm tra kết hợp nguyên âm + phụ âm cuối
-    if !thanhPhan.phuAmCuoi.isEmpty {
-      let phuAmCuoi = String(thanhPhan.phuAmCuoi).lowercased()
-
-      // Kiểm tra phụ âm cuối có hợp lệ không
-      if !ValidPhuAmCuoi.contains(phuAmCuoi) {
-        return true
-      }
-
-      // Kiểm tra kết hợp nguyên âm + phụ âm cuối
-      // Cần xét cả nguyên âm đã biến đổi với dấu mũ
-      // Ví dụ: "ua" không có phụ âm cuối, nhưng "uâ" có thể kết hợp với "n", "t"
-      if !isValidVowelEnding(nguyenAm: nguyenAm, phuAmCuoi: phuAmCuoi, dauMu: dauMu) {
-        return true
-      }
-    }
-
     return false
   }
 

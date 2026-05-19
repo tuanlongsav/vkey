@@ -10,6 +10,391 @@ import CoreGraphics
 import Defaults
 import Foundation
 
+// MARK: - Spellcheck & Lexicon Core
+
+enum LexiconSource: String {
+  case embedded
+  case updatePackage
+  case user
+}
+
+protocol Lexicon {
+  var version: Int { get }
+  var source: LexiconSource { get }
+  func contains(_ word: String) -> Bool
+}
+
+struct InMemoryLexicon: Lexicon {
+  let version: Int
+  let source: LexiconSource
+  let words: Set<String>
+
+  func contains(_ word: String) -> Bool {
+    words.contains(word.normalizedDictionaryToken)
+  }
+}
+
+struct SuggestionCandidate: Equatable {
+  let word: String
+  let score: Double
+}
+
+enum SpellDecision: Equatable {
+  case keepVietnamese
+  case restoreRawEnglish(String)
+  case keepRaw
+  case suggest([SuggestionCandidate])
+}
+
+private struct EmbeddedLexiconData {
+  static let version = 1
+
+  static let vietnameseWords: Set<String> = Set([
+    "xin", "chào", "tất", "cả", "các", "bạn", "điểm", "phiên", "đầu", "tiền", "đỏ",
+    "trước", "chứng", "khoán", "gì", "nghì", "trình", "định", "việt", "phương", "hoàng",
+    "hoạc", "hoái", "thì", "gia", "giá", "giáng", "giữ", "giếng", "buốt", "hoà", "hòa",
+    "khỏe", "khoẻ", "thuỷ", "thủy", "tiếng", "biết", "kiếm", "điện", "muốn", "buồng",
+    "lướt", "mượn", "hương", "hoạch", "toàn", "khoang", "loan", "xoắn", "loắt", "luật",
+    "xuân", "huệch", "tuềnh", "huynh", "quýt", "khuyên", "duyệt", "yến", "yêm", "tôi",
+    "không", "đẹp", "được", "nam", "việt nam", "địa", "chỉ",
+  ].map { $0.normalizedDictionaryToken })
+
+  static let englishWords: Set<String> = Set([
+    "of", "if", "see", "tee", "text", "expect", "choose", "business", "address", "email",
+    "long", "example", "com", "view", "list", "about", "keep", "deep", "sleep", "risk",
+    "desk", "disk", "boost", "cursor", "param", "career", "beer", "peer", "sax", "toto",
+    "nurses", "horses",
+  ])
+
+  static let keepVietnameseWords: Set<String> = Set([
+    "lisa", "maria", "para", "sara"
+  ])
+
+  static let legacyRestorePairs: [String: String] = [
+    "ò": "of",
+    "ì": "if",
+    "sê": "see",
+    "tê": "tee",
+  ]
+}
+
+private struct LexiconUpdatePackage: Codable {
+  let version: Int
+  let vietnamese: [String]
+  let english: [String]
+  let keep: [String]
+}
+
+final class LexiconManager {
+  static let shared = LexiconManager()
+
+  private let queue = DispatchQueue(label: "dev.longht.vkey.lexicon", attributes: .concurrent)
+  private var vnLexicon: InMemoryLexicon
+  private var enLexicon: InMemoryLexicon
+  private var keepLexicon: InMemoryLexicon
+
+  private let updatePackageURL: URL
+
+  init(updatePackageURL: URL? = nil) {
+    let embeddedVN = InMemoryLexicon(
+      version: EmbeddedLexiconData.version,
+      source: .embedded,
+      words: EmbeddedLexiconData.vietnameseWords
+    )
+    let embeddedEN = InMemoryLexicon(
+      version: EmbeddedLexiconData.version,
+      source: .embedded,
+      words: EmbeddedLexiconData.englishWords
+    )
+    let embeddedKeep = InMemoryLexicon(
+      version: EmbeddedLexiconData.version,
+      source: .embedded,
+      words: EmbeddedLexiconData.keepVietnameseWords
+    )
+
+    self.vnLexicon = embeddedVN
+    self.enLexicon = embeddedEN
+    self.keepLexicon = embeddedKeep
+
+    if let updatePackageURL {
+      self.updatePackageURL = updatePackageURL
+    } else {
+      let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+      let dir = appSupport?.appendingPathComponent("vkey/lexicon", isDirectory: true)
+      try? FileManager.default.createDirectory(
+        at: dir ?? URL(fileURLWithPath: "/tmp"),
+        withIntermediateDirectories: true,
+        attributes: nil
+      )
+      self.updatePackageURL = (dir ?? URL(fileURLWithPath: "/tmp")).appendingPathComponent("lexicon-update.json")
+    }
+
+    reload(channel: Defaults[.dictionaryUpdateChannel])
+  }
+
+  func reload(channel: DictionaryUpdateChannel) {
+    let embeddedVN = InMemoryLexicon(
+      version: EmbeddedLexiconData.version,
+      source: .embedded,
+      words: EmbeddedLexiconData.vietnameseWords
+    )
+    let embeddedEN = InMemoryLexicon(
+      version: EmbeddedLexiconData.version,
+      source: .embedded,
+      words: EmbeddedLexiconData.englishWords
+    )
+    let embeddedKeep = InMemoryLexicon(
+      version: EmbeddedLexiconData.version,
+      source: .embedded,
+      words: EmbeddedLexiconData.keepVietnameseWords
+    )
+
+    var selectedVN = embeddedVN
+    var selectedEN = embeddedEN
+    var selectedKeep = embeddedKeep
+
+    if channel == .hybrid,
+      let package = loadUpdatePackage(),
+      package.version > EmbeddedLexiconData.version
+    {
+      selectedVN = InMemoryLexicon(
+        version: package.version,
+        source: .updatePackage,
+        words: Set(package.vietnamese.map { $0.normalizedDictionaryToken })
+      )
+      selectedEN = InMemoryLexicon(
+        version: package.version,
+        source: .updatePackage,
+        words: Set(package.english.map { $0.normalizedDictionaryToken })
+      )
+      selectedKeep = InMemoryLexicon(
+        version: package.version,
+        source: .updatePackage,
+        words: Set(package.keep.map { $0.normalizedDictionaryToken })
+      )
+    }
+
+    queue.sync(flags: .barrier) {
+      self.vnLexicon = selectedVN
+      self.enLexicon = selectedEN
+      self.keepLexicon = selectedKeep
+    }
+  }
+
+  func setUpdatePackageData(_ data: Data) throws {
+    let dir = updatePackageURL.deletingLastPathComponent()
+    try FileManager.default.createDirectory(
+      at: dir,
+      withIntermediateDirectories: true,
+      attributes: nil
+    )
+    try data.write(to: updatePackageURL, options: .atomic)
+    reload(channel: Defaults[.dictionaryUpdateChannel])
+  }
+
+  private func loadUpdatePackage() -> LexiconUpdatePackage? {
+    guard FileManager.default.fileExists(atPath: updatePackageURL.path) else { return nil }
+    do {
+      let data = try Data(contentsOf: updatePackageURL)
+      return try JSONDecoder().decode(LexiconUpdatePackage.self, from: data)
+    } catch {
+      return nil
+    }
+  }
+
+  func isVietnameseWord(_ word: String) -> Bool {
+    let token = word.normalizedDictionaryToken
+    if token.isEmpty { return false }
+
+    let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
+    if denied.contains(token) {
+      return false
+    }
+
+    let allowed = Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken })
+    if allowed.contains(token) {
+      return true
+    }
+
+    return queue.sync { vnLexicon.contains(token) }
+  }
+
+  func isEnglishWord(_ word: String) -> Bool {
+    let token = word.normalizedDictionaryToken
+    guard !token.isEmpty else { return false }
+    return queue.sync { enLexicon.contains(token) }
+  }
+
+  func shouldKeepVietnamese(_ word: String) -> Bool {
+    let token = word.normalizedDictionaryToken
+    if token.isEmpty { return false }
+
+    let userKeep = Set(Defaults[.userKeepWords].map { $0.normalizedDictionaryToken })
+    if userKeep.contains(token) {
+      return true
+    }
+    return queue.sync { keepLexicon.contains(token) }
+  }
+
+  func shouldApplyLegacyRestore(transformed: String, rawInput: String) -> Bool {
+    guard let expectedRaw = EmbeddedLexiconData.legacyRestorePairs[transformed.lowercased()] else {
+      return false
+    }
+    return expectedRaw == rawInput.normalizedDictionaryToken
+  }
+
+  func vietnameseWordsSnapshot() -> [String] {
+    queue.sync { Array(vnLexicon.words) }
+  }
+
+  func snapshotVersions() -> (vn: Int, en: Int, keep: Int) {
+    queue.sync { (vnLexicon.version, enLexicon.version, keepLexicon.version) }
+  }
+
+  func snapshotSources() -> (vn: LexiconSource, en: LexiconSource, keep: LexiconSource) {
+    queue.sync { (vnLexicon.source, enLexicon.source, keepLexicon.source) }
+  }
+}
+
+final class SuggestionService {
+  static let shared = SuggestionService()
+
+  private let lexiconManager: LexiconManager
+
+  init(lexiconManager: LexiconManager = .shared) {
+    self.lexiconManager = lexiconManager
+  }
+
+  func suggest(word: String, locale: String = "vi_VN", limit: Int = 5) -> [SuggestionCandidate] {
+    let query = word.normalizedDictionaryToken
+    guard !query.isEmpty, locale.lowercased().hasPrefix("vi"), limit > 0 else { return [] }
+
+    let queryFolded = query.vietnameseFolded
+    guard !queryFolded.isEmpty else { return [] }
+
+    let candidates = lexiconManager.vietnameseWordsSnapshot()
+      .map { candidate -> SuggestionCandidate in
+        let foldedCandidate = candidate.vietnameseFolded
+        let distance = Self.levenshtein(queryFolded, foldedCandidate)
+        let prefixBonus: Double = queryFolded.first == foldedCandidate.first ? 0.12 : 0
+        let suffixBonus: Double = queryFolded.last == foldedCandidate.last ? 0.08 : 0
+        let lengthPenalty = abs(queryFolded.count - foldedCandidate.count) > 2 ? 0.08 : 0
+        let baseScore = 1.0 / Double(distance + 1)
+        let score = max(0, min(1, baseScore + prefixBonus + suffixBonus - lengthPenalty))
+        return SuggestionCandidate(word: candidate, score: score)
+      }
+      .filter { $0.score >= 0.24 }
+      .sorted {
+        if abs($0.score - $1.score) > 0.0001 {
+          return $0.score > $1.score
+        }
+        return $0.word < $1.word
+      }
+
+    return Array(candidates.prefix(limit))
+  }
+
+  private static func levenshtein(_ lhs: String, _ rhs: String) -> Int {
+    let a = Array(lhs)
+    let b = Array(rhs)
+    if a.isEmpty { return b.count }
+    if b.isEmpty { return a.count }
+
+    var previous = Array(0...b.count)
+    var current = Array(repeating: 0, count: b.count + 1)
+
+    for i in 1...a.count {
+      current[0] = i
+      for j in 1...b.count {
+        let substitution = previous[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1)
+        let insertion = current[j - 1] + 1
+        let deletion = previous[j] + 1
+        current[j] = min(substitution, insertion, deletion)
+      }
+      swap(&previous, &current)
+    }
+    return previous[b.count]
+  }
+}
+
+final class SpellDecisionEngine {
+  static let shared = SpellDecisionEngine()
+
+  private let lexiconManager: LexiconManager
+  private let suggestionService: SuggestionService
+
+  init(
+    lexiconManager: LexiconManager = .shared,
+    suggestionService: SuggestionService = .shared
+  ) {
+    self.lexiconManager = lexiconManager
+    self.suggestionService = suggestionService
+  }
+
+  func evaluate(rawInput: String, transformed: String, needsRecovery: Bool) -> SpellDecision {
+    guard Defaults[.spellCheckEnabled] else { return .keepVietnamese }
+    guard !rawInput.isEmpty, !transformed.isEmpty else { return .keepVietnamese }
+
+    let rawToken = rawInput.normalizedDictionaryToken
+    let transformedToken = transformed.normalizedDictionaryToken
+    guard !rawToken.isEmpty, !transformedToken.isEmpty else { return .keepRaw }
+
+    if lexiconManager.shouldApplyLegacyRestore(transformed: transformed, rawInput: rawInput),
+      Defaults[.englishAutoRestoreEnabled]
+    {
+      return .restoreRawEnglish(rawInput)
+    }
+
+    if lexiconManager.shouldKeepVietnamese(transformed) {
+      return .keepVietnamese
+    }
+
+    let isVietnameseWord = lexiconManager.isVietnameseWord(transformed)
+    if !needsRecovery && isVietnameseWord {
+      return .keepVietnamese
+    }
+
+    let rawIsEnglish = lexiconManager.isEnglishWord(rawInput)
+    if Defaults[.englishAutoRestoreEnabled] {
+      if needsRecovery && rawIsEnglish {
+        return .restoreRawEnglish(rawInput)
+      }
+
+      if Defaults[.restorePolicy] == .englishFirst, rawIsEnglish, !isVietnameseWord {
+        return .restoreRawEnglish(rawInput)
+      }
+    }
+
+    if needsRecovery {
+      guard Defaults[.suggestionEnabled] else { return .keepRaw }
+      let suggestions = suggestionService.suggest(word: transformed, locale: "vi_VN", limit: 5)
+      return suggestions.isEmpty ? .keepRaw : .suggest(suggestions)
+    }
+
+    if !isVietnameseWord && Defaults[.suggestionEnabled] {
+      let suggestions = suggestionService.suggest(word: transformed, locale: "vi_VN", limit: 5)
+      if !suggestions.isEmpty {
+        return .suggest(suggestions)
+      }
+    }
+
+    return .keepVietnamese
+  }
+}
+
+private extension String {
+  var normalizedDictionaryToken: String {
+    trimmingCharacters(in: .whitespacesAndNewlines)
+      .lowercased()
+  }
+
+  var vietnameseFolded: String {
+    let prepared = replacingOccurrences(of: "đ", with: "d")
+      .replacingOccurrences(of: "Đ", with: "d")
+    return prepared.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "vi_VN"))
+  }
+}
+
 // MARK: - WordBuffer
 
 /// WordBuffer manages the Vietnamese word state during typing.
@@ -251,18 +636,44 @@ struct TransformationTracker {
 
   /// Current sending strategy for the active app
   var currentStrategy: SendingStrategy = .batch
+  private var consecutiveFailures = 0
+  private var consecutiveHighRiskTransforms = 0
 
   // MARK: - Strategy Management
 
   mutating func resetForApp(_ bundleId: String) {
     currentStrategy = EventSimulator.getStrategy(for: bundleId)
+    consecutiveFailures = 0
+    consecutiveHighRiskTransforms = 0
   }
 
-  /// Placeholder for future output-aware failure detection.
-  /// The previous heuristic only counted repeated input characters, which could
-  /// switch strategies after valid typing and slow down the app unnecessarily.
-  mutating func detectFailure(input: Character) -> Bool {
-    return false
+  /// Detect transformation failures based on event creation status and
+  /// repeated high-risk transforms on apps that are known to be sensitive.
+  mutating func detectFailure(
+    telemetry: EventSendTelemetry,
+    appLikelySensitive: Bool
+  ) -> Bool {
+    guard telemetry.attemptedTransform else {
+      consecutiveHighRiskTransforms = max(0, consecutiveHighRiskTransforms - 1)
+      return false
+    }
+
+    if telemetry.createdEvents {
+      consecutiveFailures = max(0, consecutiveFailures - 1)
+    } else {
+      consecutiveFailures += 1
+    }
+
+    let isHighRisk = appLikelySensitive
+      && !telemetry.usedAsyncQueue
+      && telemetry.touchedCharacters >= 3
+    if isHighRisk {
+      consecutiveHighRiskTransforms += 1
+    } else {
+      consecutiveHighRiskTransforms = max(0, consecutiveHighRiskTransforms - 1)
+    }
+
+    return consecutiveFailures >= 2 || consecutiveHighRiskTransforms >= 3
   }
 
   /// Auto-switches to step-by-step mode if failures are detected.
@@ -319,17 +730,13 @@ class InputProcessor {
   static let NewWordTaskKeys: [TaskKey] = [.Enter, .Space, .Tab]
   static let JumpTaskKeys: [TaskKey] = [.Home, .End, .ArrowUp, .ArrowDown, .ArrowLeft, .ArrowRight]
 
-  static let AutoRestoreOnSpace: [String: String] = [
-    "ò": "of",
-    "ì": "if",
-    "sê": "see",
-    "tê": "tee"
-  ]
-
   public var engine: TypingMethod
   public var typingMethod: TypingMethods
   public var keyLayout = KeyboardUS()
   public var activeApp = ""
+  public private(set) var lastSuggestions: [SuggestionCandidate] = []
+
+  private let spellDecisionEngine = SpellDecisionEngine.shared
 
   /// Word buffer manages the current word state
   var wordBuffer = WordBuffer()
@@ -377,6 +784,7 @@ class InputProcessor {
   init(method: TypingMethods) {
     typingMethod = method
     engine = typingMethod == .Telex ? Telex() : VNI()
+    LexiconManager.shared.reload(channel: Defaults[.dictionaryUpdateChannel])
   }
 
   public func changeTypingMethod(newMethod: TypingMethods) {
@@ -440,23 +848,14 @@ class InputProcessor {
 
   private func handleTaskKey(_ taskKey: TaskKey, event: CGEvent) -> Unmanaged<CGEvent>? {
     if InputProcessor.NewWordTaskKeys.contains(taskKey) {
-      if taskKey == .Space {
-        let current = wordBuffer.transformed
-        if let restored = InputProcessor.AutoRestoreOnSpace[current] {
-          let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(from: current, to: restored + " ")
-          EventSimulator.sendReplacement(
-            backspaceCount: numBackspaces,
-            diffChars: diffChars,
-            strategy: strategyTracker.currentStrategy
-          )
-          newWord(storePrevious: true)
-          return nil
-        }
-      }
-
       // Only expand macros on Space — Tab/Enter often have form-submission semantics
       // we don't want to swallow.
       if taskKey == .Space, expandMacroIfMatch(endingChar: " ") {
+        newWord(storePrevious: true)
+        return nil
+      }
+
+      if taskKey == .Space, applySpellDecisionOnCommit(endingChar: " ", swallowEndingChar: true) {
         newWord(storePrevious: true)
         return nil
       }
@@ -466,11 +865,12 @@ class InputProcessor {
       let currentTransformed = wordBuffer.transformed
       if !wordBuffer.wordState.isBlank && currentTransformed != orig {
         let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(from: currentTransformed, to: orig)
-        EventSimulator.sendReplacement(
+        let telemetry = EventSimulator.sendReplacement(
           backspaceCount: numBackspaces,
           diffChars: diffChars,
           strategy: strategyTracker.currentStrategy
         )
+        observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
         newWord()
         return nil // swallow ESC event
       }
@@ -478,11 +878,12 @@ class InputProcessor {
     } else if taskKey == .Delete {
       let (numBackspaces, diffChars) = pop()
       if numBackspaces > 0 || !diffChars.isEmpty {
-        EventSimulator.sendReplacement(
+        let telemetry = EventSimulator.sendReplacement(
           backspaceCount: numBackspaces,
           diffChars: diffChars,
           strategy: strategyTracker.currentStrategy
         )
+        observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
         return nil
       }
     } else if InputProcessor.JumpTaskKeys.contains(taskKey) {
@@ -498,6 +899,7 @@ class InputProcessor {
         newWord(storePrevious: true)
         return nil
       }
+      _ = applySpellDecisionOnCommit(endingChar: newChar, swallowEndingChar: false)
       newWord(storePrevious: true)
       return Unmanaged.passUnretained(event)
     }
@@ -513,32 +915,100 @@ class InputProcessor {
       return Unmanaged.passUnretained(event)
     }
 
-    // Check for transformation failures and auto-switch if needed
-    if strategyTracker.detectFailure(input: newChar) {
-      strategyTracker.autoSwitchIfNeeded(activeApp: activeApp)
-    }
-
     if isFixAutocompleteApp() {
       // For autocomplete-capable apps (browsers, etc.), use select-and-replace
       // instead of backspace-and-type. Shift+Left naturally extends any existing
       // inline autocomplete selection, so the typed replacement covers both the
       // autocomplete text and the characters being modified.
-      EventSimulator.sendSelectAndReplace(
+      let telemetry = EventSimulator.sendSelectAndReplace(
         selectLeftCount: numBackspaces,
         diffChars: diffChars,
         strategy: strategyTracker.currentStrategy
       )
+      observeTelemetry(telemetry, appLikelySensitive: true)
     } else {
-      EventSimulator.sendReplacement(
+      let telemetry = EventSimulator.sendReplacement(
         backspaceCount: numBackspaces,
         diffChars: diffChars,
         strategy: strategyTracker.currentStrategy
       )
+      observeTelemetry(telemetry, appLikelySensitive: false)
     }
     return nil
   }
 
   // MARK: - Helpers
+
+  private func observeTelemetry(_ telemetry: EventSendTelemetry, appLikelySensitive: Bool) {
+    if strategyTracker.detectFailure(
+      telemetry: telemetry,
+      appLikelySensitive: appLikelySensitive
+    ) {
+      strategyTracker.autoSwitchIfNeeded(activeApp: activeApp)
+    }
+  }
+
+  /// Applies spell/restore/suggestion rules when a word commit key is pressed.
+  /// - Parameters:
+  ///   - endingChar: Commit key character (space or punctuation).
+  ///   - swallowEndingChar: True when commit key should be emitted by vkey.
+  /// - Returns: True when a replacement was sent.
+  @discardableResult
+  private func applySpellDecisionOnCommit(
+    endingChar: Character,
+    swallowEndingChar: Bool
+  ) -> Bool {
+    let rawInput = String(wordBuffer.keys)
+    let current = wordBuffer.transformed
+    guard !rawInput.isEmpty, !current.isEmpty else {
+      lastSuggestions = []
+      return false
+    }
+
+    let decision = spellDecisionEngine.evaluate(
+      rawInput: rawInput,
+      transformed: current,
+      needsRecovery: wordBuffer.wordState.needsRecovery || wordBuffer.stopProcessing
+    )
+
+    switch decision {
+    case .keepVietnamese, .keepRaw:
+      lastSuggestions = []
+      return false
+
+    case .restoreRawEnglish(let restoredWord):
+      lastSuggestions = []
+      let target = swallowEndingChar ? restoredWord + String(endingChar) : restoredWord
+      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(from: current, to: target)
+      let telemetry = EventSimulator.sendReplacement(
+        backspaceCount: numBackspaces,
+        diffChars: diffChars,
+        strategy: strategyTracker.currentStrategy
+      )
+      observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
+      return true
+
+    case .suggest(let suggestions):
+      lastSuggestions = suggestions
+      guard
+        Defaults[.autoApplyHighConfidenceSuggestion],
+        let top = suggestions.first,
+        top.score >= 0.88
+      else {
+        return false
+      }
+
+      let target = swallowEndingChar ? top.word + String(endingChar) : top.word
+      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(from: current, to: target)
+      let telemetry = EventSimulator.sendReplacement(
+        backspaceCount: numBackspaces,
+        diffChars: diffChars,
+        strategy: strategyTracker.currentStrategy
+      )
+      observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
+      return true
+    }
+  }
 
   func isFixAutocompleteApp() -> Bool {
     if Focused.isComboBoxOrSearchField() {
@@ -582,11 +1052,12 @@ class InputProcessor {
       return false
     }
 
-    EventSimulator.sendReplacement(
+    let telemetry = EventSimulator.sendReplacement(
       backspaceCount: replacement.backspaceCount,
       diffChars: replacement.diffChars,
       strategy: strategyTracker.currentStrategy
     )
+    observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
     return true
   }
 }

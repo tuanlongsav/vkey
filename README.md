@@ -6,7 +6,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 
 > **vkey là một bản fork mở rộng từ [Caffee](https://github.com/khanhicetea/Caffee)** của tác giả Khanh Nguyen ([@khanhicetea](https://github.com/khanhicetea)). Toàn bộ engine xử lý âm tiết tiếng Việt (Telex / VNI / Parser / Transformer / Validator) cùng kiến trúc Platform-Layer ban đầu đều do tác giả gốc xây dựng. 
 > 
-> Đồng thời, kể từ phiên bản v1.3.9, v1.4.0 và v1.4.1, vkey đã **học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ dự án [XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen ([@xmannv](https://github.com/xmannv)) (bao gồm HUD mờ kính, AX Probing Smart Switch và bộ lọc phụ âm Impossible Clusters) kết hợp cùng **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** (thuật toán ma trận kiểm tra chính tả 6 bước, Vowel Inclusion Pairs, Space Restore, Escape Reversion và bảo toàn phím đúp) nhằm mang lại trải nghiệm người dùng tuyệt vời nhất. vkey kế thừa nguyên si và bổ sung thêm các tính năng riêng.
+> Đồng thời, kể từ phiên bản v1.3.9, v1.4.0, v1.4.1 và v1.4.2, vkey đã **học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ dự án [XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen ([@xmannv](https://github.com/xmannv)) (bao gồm HUD mờ kính, AX Probing Smart Switch và bộ lọc phụ âm Impossible Clusters) kết hợp cùng **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** (thuật toán ma trận kiểm tra chính tả 6 bước, Vowel Inclusion Pairs, Space Restore, Escape Reversion và bảo toàn phím đúp) nhằm mang lại trải nghiệm người dùng tuyệt vời nhất. vkey kế thừa nguyên si và bổ sung thêm các tính năng riêng.
 
 ---
 
