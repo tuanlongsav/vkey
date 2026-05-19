@@ -186,21 +186,84 @@ struct MacroView: View {
     do {
       let data = try Data(contentsOf: url)
       let seeds = try JSONDecoder().decode([MacroExport].self, from: data)
-
-      // De-duplicate by `from` field. Existing macros take precedence so the
-      // user's current bindings are never silently overwritten.
-      let existing = Set(macros.map { $0.from.trimmingCharacters(in: .whitespaces) })
-      var added = 0
-      for seed in seeds {
-        let from = seed.from.trimmingCharacters(in: .whitespaces)
-        if from.isEmpty || existing.contains(from) { continue }
-        macros.append(Macro(from: seed.from, to: seed.to))
-        added += 1
+      let imported = seeds.filter {
+        !$0.from.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !$0.to.trimmingCharacters(in: .whitespaces).isEmpty
       }
-      importStatus = "Đã nhập \(added) macro mới (bỏ qua \(seeds.count - added) trùng)"
+      guard !imported.isEmpty else {
+        importStatus = "File không chứa macro hợp lệ."
+        return
+      }
+
+      // Đếm trùng (theo from HOẶC to) để hiển thị trong dialog.
+      let existingFroms = Set(macros.map { $0.from })
+      let existingTos = Set(macros.map { $0.to })
+      let duplicates = imported.filter {
+        existingFroms.contains($0.from) || existingTos.contains($0.to)
+      }.count
+
+      let alert = NSAlert()
+      alert.messageText = "Nhập \(imported.count) macro từ \(url.lastPathComponent)?"
+      alert.informativeText = duplicates > 0
+        ? "Có \(duplicates) macro trùng `viết tắt` hoặc `viết dài` với macro hiện tại. Chọn cách xử lý:"
+        : "Không có macro nào trùng — Gộp và Ghi đè cho cùng kết quả."
+      alert.alertStyle = .informational
+      alert.addButton(withTitle: "Gộp (giữ macro hiện tại)")
+      alert.addButton(withTitle: "Ghi đè (thay macro trùng)")
+      alert.addButton(withTitle: "Huỷ")
+
+      let response = alert.runModal()
+      switch response {
+      case .alertFirstButtonReturn:  // Gộp
+        mergeImported(imported, replace: false)
+      case .alertSecondButtonReturn: // Ghi đè
+        mergeImported(imported, replace: true)
+      default:
+        importStatus = "Đã huỷ nhập macro."
+        return
+      }
     } catch {
       importStatus = "Lỗi khi nhập: \(error.localizedDescription)"
     }
+  }
+
+  /// Áp dụng `imported` vào `macros` theo policy.
+  /// - `replace=false` (Gộp): skip imported macro nếu trùng `from` HOẶC `to`.
+  /// - `replace=true` (Ghi đè): với mỗi imported macro, xóa các macro hiện
+  ///   có trùng `from` HOẶC `to`, rồi thêm imported.
+  private func mergeImported(_ imported: [MacroExport], replace: Bool) {
+    var current = macros
+    var added = 0
+    var replaced = 0
+    var skipped = 0
+
+    for seed in imported {
+      let dupIdxs = current.indices.filter {
+        current[$0].from == seed.from || current[$0].to == seed.to
+      }
+
+      if replace {
+        // Xóa từ cuối lên đầu để giữ index ổn định.
+        for idx in dupIdxs.reversed() {
+          current.remove(at: idx)
+        }
+        current.append(Macro(from: seed.from, to: seed.to))
+        if dupIdxs.isEmpty { added += 1 } else { replaced += 1 }
+      } else {
+        // Gộp: skip nếu trùng.
+        if !dupIdxs.isEmpty {
+          skipped += 1
+          continue
+        }
+        current.append(Macro(from: seed.from, to: seed.to))
+        added += 1
+      }
+    }
+
+    macros = current
+    importStatus = replace
+      ? "Đã ghi đè: thêm \(added), thay thế \(replaced) macro trùng."
+      : "Đã gộp: thêm \(added) macro mới, bỏ qua \(skipped) trùng."
   }
 }
 

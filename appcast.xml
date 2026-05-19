@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.5.7 — "Fine Tuning"</title>
+      <sparkle:version>15070</sparkle:version>
+      <sparkle:shortVersionString>1.5.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 18:10:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.5.7/vkey-1.5.7.dmg"
+        sparkle:edSignature="nswSD8n1KwbGalq/mNCMzQrCok/IzYZZAmceyDB/0YLdUITR6GAQiLFXx7sNHUYcp8Pk3VTg+D1VRGBmbhoADw=="
+        length="5358009"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.5.7 — "Fine Tuning":</h2>
+        <p>Hotfix sau 1.5.6 sửa 3 vấn đề UX:</p>
+        <ul>
+          <li><strong>Sửa lỗi Theme Emoji mất text trong menu bar</strong>: 1.5.6 lỡ render emoji qua SwiftUI <code>Text</code> view — bị MenuBarExtra translate nhầm thành NSMenuItem.title, làm text label biến mất, menu chỉ hiện icon emoji. 1.5.7 chuyển emoji thành <code>NSImage</code> (vẽ NSAttributedString lên bitmap, cache qua NSCache) để map clean vào NSMenuItem.image slot. Title gốc giữ nguyên.</li>
+          <li><strong>Migration macro dedupe theo cả `viết dài` (to)</strong>: trước chỉ dedupe theo `from`. Nếu user có macro tự thêm <code>vietnam → Việt Nam</code>, migration vẫn thêm default <code>vn → Việt Nam</code> → trùng `to`. 1.5.7 fix: cũng dedupe theo `to`, không thêm default nếu user đã có `to` tương đương.</li>
+          <li><strong>Hỏi Gộp / Ghi đè khi nhập macro từ file</strong>: tab Macro → nút "Nhập" trước đây merge âm thầm bằng skip duplicate `from`. Giờ hiện NSAlert 3-button: "Gộp (giữ macro hiện tại)" / "Ghi đè (thay macro trùng)" / "Huỷ". Logic chuẩn hoá theo cả `from` và `to`.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.5.6 — "Pick a Look"</title>
       <sparkle:version>15060</sparkle:version>
       <sparkle:shortVersionString>1.5.6</sparkle:shortVersionString>

@@ -60,14 +60,60 @@ struct ThemedSymbol: View {
           .shadow(color: .black.opacity(0.20),       radius: 1, x: 0, y: 0.5)
       }
     case .emoji:
-      if let glyph = Self.emojiFor(name) {
-        Text(glyph)
+      if let glyph = Self.emojiFor(name),
+         let img = Self.emojiImage(for: glyph) {
+        Image(nsImage: img)
+          .resizable()
+          .scaledToFit()
       } else {
-        // Fallback nếu thiếu mapping — vẫn render SF Symbol gốc để
-        // không bị "?".
+        // Fallback nếu thiếu mapping HOẶC render NSImage fail.
         Image(systemName: name)
       }
     }
+  }
+
+  // MARK: - Emoji → NSImage rendering (1.5.7+)
+
+  /// Cache emoji glyph → NSImage để tránh redraw mỗi lần. Key bao gồm
+  /// `pointSize` để các kích thước khác nhau không đụng nhau.
+  private static let emojiImageCache = NSCache<NSString, NSImage>()
+
+  /// Render Unicode emoji glyph thành NSImage để dùng làm icon.
+  ///
+  /// **Vì sao cần thế?** SwiftUI `Text` view khi đặt vào Label's icon
+  /// slot bị NSMenuExtra translate nhầm thành NSMenuItem.title — kết
+  /// quả: title biến mất, chỉ thấy emoji. NSImage thì map clean vào
+  /// NSMenuItem.image slot, title gốc giữ nguyên.
+  ///
+  /// `pointSize=32` đủ lớn để scale up cho onboarding view (48pt+)
+  /// vẫn nét; scale down về 14-16pt cho menu / settings cũng tốt
+  /// (Apple Color Emoji là bitmap font đa kích thước).
+  private static func emojiImage(for emoji: String, pointSize: CGFloat = 32) -> NSImage? {
+    let cacheKey = "\(emoji)_\(Int(pointSize))" as NSString
+    if let cached = emojiImageCache.object(forKey: cacheKey) {
+      return cached
+    }
+
+    let attrs: [NSAttributedString.Key: Any] = [
+      .font: NSFont.systemFont(ofSize: pointSize)
+    ]
+    let attrStr = NSAttributedString(string: emoji, attributes: attrs)
+    let textSize = attrStr.size()
+    // Pad nhỏ để emoji có outline / shadow không bị crop.
+    let imgSize = NSSize(
+      width: ceil(textSize.width) + 2,
+      height: ceil(textSize.height) + 2
+    )
+
+    let img = NSImage(size: imgSize, flipped: false) { _ in
+      attrStr.draw(at: NSPoint(x: 1, y: 1))
+      return true
+    }
+    // KHÔNG template — emoji phải giữ màu thật, không bị tint mono.
+    img.isTemplate = false
+
+    emojiImageCache.setObject(img, forKey: cacheKey)
+    return img
   }
 
   /// Map SF Symbol name → Unicode emoji glyph. Bao phủ ~60 symbol vkey

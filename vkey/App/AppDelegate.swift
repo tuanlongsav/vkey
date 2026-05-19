@@ -315,9 +315,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
       }
     }
 
-    // 3) Add new entries user chưa có (dedupe theo `from`).
-    let existing = Set(macros.map { $0.from })
-    for newMacro in DefaultMacros.allDefaults where !existing.contains(newMacro.from) {
+    // 3) Add new entries user chưa có. 1.5.7: dedupe theo cả `from`
+    //    lẫn `to` — nếu user đã tự đặt macro với `to` giống default
+    //    (vd `vietnam → Việt Nam` thay vì `vn → Việt Nam`), không thêm
+    //    bản default nữa để tránh duplicate `to`.
+    let existingFroms = Set(macros.map { $0.from })
+    let existingTos = Set(macros.map { $0.to })
+    for newMacro in DefaultMacros.allDefaults {
+      if existingFroms.contains(newMacro.from) { continue }
+      if existingTos.contains(newMacro.to)     { continue }
       macros.append(newMacro)
     }
 

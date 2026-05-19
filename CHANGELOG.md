@@ -2,6 +2,30 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.5.7] - 2026-05-19 — "Fine Tuning"
+
+Hotfix sau 1.5.6 sửa 3 vấn đề UX user phản hồi.
+
+### Sửa lỗi Theme Emoji mất text
+
+- **Triệu chứng**: ở theme "Emoji vui tươi", menu bar dropdown chỉ hiện icon emoji (⚙️, 🔁, 📝, ✅, …) KHÔNG hiện text labels ("Cài đặt", "Smart Switch", …). Settings windows thì OK.
+- **Nguyên nhân**: 1.5.6 render emoji qua SwiftUI `Text(glyph)` trong Label's icon slot. MenuBarExtra (`.menu` style) khi convert Label → NSMenuItem hiểu nhầm Text icon thành NSMenuItem.title → ghi đè title gốc → text label biến mất, chỉ thấy emoji.
+- **Fix**: render emoji glyph thành `NSImage` qua `NSImage(size:flipped:drawingHandler:)` + `NSAttributedString.draw(at:)`. NSImage được cache qua `NSCache` để tránh redraw mỗi tick. `Image(nsImage:)` map clean vào NSMenuItem.image, title gốc giữ nguyên. Áp dụng cho mọi context (menu, settings, onboarding) với `.resizable().scaledToFit()` để inherit Label icon slot.
+
+### Migration macro dedupe theo cả `viết dài`
+
+- `AppDelegate.seedDefaultMacrosIfNeeded()` step 3 trước đây chỉ dedupe theo `from`. Nếu user có `vietnam → Việt Nam` (custom), default `vn → Việt Nam` vẫn được thêm → duplicate `to`.
+- 1.5.7: thêm `existingTos` check. Skip default macro nếu user đã có cùng `to`, kể cả `from` khác.
+
+### Hỏi Gộp / Ghi đè khi nhập macro từ file
+
+- `MacroView.importMacros()` trước đây merge âm thầm bằng skip-duplicate-`from`.
+- 1.5.7: hiện NSAlert 3-button:
+  - **"Gộp (giữ macro hiện tại)"**: skip imported macro nếu trùng `from` HOẶC `to` với macro hiện có.
+  - **"Ghi đè (thay macro trùng)"**: với mỗi imported macro, xóa các macro hiện có trùng `from` HOẶC `to`, rồi thêm imported. Macro user có mà file không có → giữ nguyên.
+  - **"Huỷ"**: không nhập gì.
+- Helper text status hiển thị số macro thêm + thay thế + bỏ qua sau khi import.
+
 ## [1.5.6] - 2026-05-19 — "Pick a Look"
 
 Hotfix sau 1.5.5: thêm theme thứ 3 (Emoji) + sửa nút duplicate trong tab Chính tả.
