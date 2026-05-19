@@ -6,6 +6,30 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.4.2</title>
+      <sparkle:version>14200</sparkle:version>
+      <sparkle:shortVersionString>1.4.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 08:15:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.4.2/vkey-1.4.2.dmg"
+        sparkle:edSignature="rDqrERVy6UOCeGbpZ/J4Yymr7AEwrqL/Sioa9uJ5bpuRl82BQlAiTzjehhRus1ZDc+xFmbY33BsonDt8+vSQBw=="
+        length="4361352"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong phiên bản 1.4.2:</h2>
+        <ul>
+          <li><strong>Nâng cấp lõi song ngữ Việt/Anh (Việt-first):</strong> Bổ sung LexiconManager với cơ chế từ điển hybrid (nhúng + cập nhật cục bộ), và SpellDecisionEngine để thống nhất quyết định giữ tiếng Việt, khôi phục tiếng Anh (Space Restore) hoặc gợi ý sửa lỗi.</li>
+          <li><strong>Bổ sung gợi ý sửa chính tả (v1 core):</strong> Tích hợp SuggestionService.suggest xếp hạng ứng viên theo khoảng cách chỉnh sửa và tín hiệu âm vị học, hỗ trợ tự động áp dụng (auto-apply) khi độ tin cậy cao.</li>
+          <li><strong>Hardening Input/Event pipeline:</strong> Hoàn thiện TransformationTracker.detectFailure bằng telemetry gửi sự kiện thực tế, kết hợp EventSendTelemetry từ EventSimulator nhằm tối ưu hóa chiến lược đổi bộ gõ thông minh cho từng ứng dụng.</li>
+          <li><strong>Cấu hình người dùng linh hoạt:</strong> Mở rộng thêm các tùy chọn spellCheckEnabled, englishAutoRestoreEnabled, restorePolicy, dictionaryUpdateChannel, suggestionEnabled, và các danh sách từ điển cá nhân (userAllowWords, userKeepWords, userDenyWords).</li>
+          <li><strong>Cải thiện chất lượng bộ xác thực (Validator):</strong> Tối ưu hóa TiengVietValidator bằng cách loại bỏ kiểm tra phụ âm cuối trùng lặp, triệt tiêu lỗi nhận diện sai (false recovery) ở các trạng thái gõ trung gian.</li>
+          <li><strong>Hạ tầng phát hành Sparkle:</strong> Cập nhật quy trình kiểm tra phát hành tại RELEASE.md chống lỗi và tích hợp script ký tự động để đảm bảo an toàn tuyệt đối.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.4.1</title>
       <sparkle:version>14100</sparkle:version>
       <sparkle:shortVersionString>1.4.1</sparkle:shortVersionString>
