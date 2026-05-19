@@ -2,7 +2,7 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 1.5.3 — "Office Friendly"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 1.5.4 — "Glossy Default"** ([CHANGELOG](CHANGELOG.md))
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
@@ -109,9 +109,10 @@ Click icon cờ trên menu bar để mở các tác vụ nhanh.
 | Bật/tắt nhanh Smart Switch | Menu → **"Smart Switch"** (✓ khi đang bật) |
 | Bật/tắt nhanh Sửa lỗi chính tả | Menu → **"Sửa lỗi chính tả"** (✓ khi đang bật) |
 | Bật/tắt nhanh Macro (mới 1.5.3) | Menu → **"Macro"** (✓ khi đang bật) — tạm dừng expansion mà vẫn giữ danh sách |
-| Đổi giao diện ứng dụng (mới 1.5.3) | Menu → **"Giao diện ứng dụng"** → submenu → **"Mặc định"** hoặc **"3D"** (gradient + shadow trên icon) |
 | Mở cửa sổ Cài đặt | Menu → **"Cài đặt"** |
-| Ủng hộ tác giả · Thông tin · Cập nhật | Menu → row icon-only ở cuối (☕ / ℹ️ / 🔄) — hover để biết tên |
+| Ủng hộ tác giả | Menu → **"Ủng hộ tác giả"** (quét mã VietQR) |
+| Trang dự án trên GitHub | Menu → **"Thông tin dự án"** |
+| Kiểm tra cập nhật thủ công | Menu → **"Kiểm tra cập nhật"** |
 | Thoát vkey | Menu → **"Thoát"** |
 
 **Trạng thái icon menu bar:**

@@ -169,9 +169,11 @@ extension Defaults.Keys {
   /// Tự động hỏi sao lưu dữ liệu khi phát hiện app cập nhật.
   static let autoBackupOnUpgrade = Key<Bool>("auto-backup-on-upgrade", default: true)
 
-  /// Giao diện ứng dụng — chọn từ menu bar (submenu "Giao diện ứng dụng").
-  /// `.default`: SF Symbol gốc. `.threeD`: gradient + shadow + multicolor.
-  static let appTheme = Key<AppTheme>("app-theme", default: .default)
+  /// Giao diện ứng dụng — `.threeD` là default mới ở 1.5.4 (gradient +
+  /// shadow + multicolor trên SF Symbol). UI picker tạm thời ẩn — sẽ
+  /// mở lại khi có bộ artwork bitmap PDF cho `Icons3D/` (designer làm
+  /// theo template `Tools/icon-set-templates/`).
+  static let appTheme = Key<AppTheme>("app-theme", default: .threeD)
 
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value

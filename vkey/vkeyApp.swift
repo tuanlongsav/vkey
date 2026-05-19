@@ -62,7 +62,6 @@ struct MainMenuView: View {
   @Default(.smartSwitchEnabled) private var smartSwitchEnabled
   @Default(.spellCheckEnabled) private var spellCheckEnabled
   @Default(.macroEnabled) private var macroEnabled
-  @Default(.appTheme) private var appTheme
 
   var body: some View {
     // MenuBarExtra (`.menu` style) renders SwiftUI Buttons as NSMenuItem.
@@ -135,35 +134,32 @@ struct MainMenuView: View {
       )
     }
 
-    Menu {
-      Button { appTheme = .default } label: {
-        Label(
-          appTheme == .default ? "Mặc định  ✓" : "Mặc định",
-          themedSymbol: "circle"
-        )
-      }
-      Button { appTheme = .threeD } label: {
-        Label(
-          appTheme == .threeD ? "3D  ✓" : "3D",
-          themedSymbol: "cube"
-        )
-      }
-    } label: {
-      Label("Giao diện ứng dụng", themedSymbol: "paintbrush")
-    }
+    // 1.5.4: theme picker tạm thời ẩn — chỉ dùng theme .threeD làm default
+    // mới. Khi có bộ artwork bitmap PDF cho `Icons3D/`, mở lại submenu
+    // "Giao diện ứng dụng" để cho phép switch giữa các bộ icon. Code
+    // ThemedSymbol + AppTheme enum + key `appTheme` vẫn giữ nguyên.
 
     Divider()
 
-    // Footer utility row: 3 icon nén thành 1 hàng cho gọn.
-    MenuBarFooterRow(
-      onDonate: { appDelegate.openDonate() },
-      onInfo:   {
-        if let url = URL(string: "https://github.com/tuanlongsav/vkey") {
-          NSWorkspace.shared.open(url)
-        }
-      },
-      onUpdate: { Updater.checkForUpdates(manual: true) }
-    )
+    Button {
+      appDelegate.openDonate()
+    } label: {
+      Label("Ủng hộ tác giả", themedSymbol: "cup.and.saucer")
+    }
+
+    Button {
+      if let url = URL(string: "https://github.com/tuanlongsav/vkey") {
+        NSWorkspace.shared.open(url)
+      }
+    } label: {
+      Label("Thông tin dự án", themedSymbol: "info.circle")
+    }
+
+    Button {
+      Updater.checkForUpdates(manual: true)
+    } label: {
+      Label("Kiểm tra cập nhật", themedSymbol: "arrow.triangle.2.circlepath")
+    }
 
     Divider()
 

@@ -2,6 +2,27 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.5.4] - 2026-05-19 — "Glossy Default"
+
+Hotfix sau 1.5.3 hiệu chỉnh 2 quyết định UX:
+
+### Khôi phục Menu Bar footer
+
+- Phần 5 ở 1.5.3 thay 3 nút "Ủng hộ / Thông tin / Cập nhật" thành 1 hàng icon-only — sau khi xem thực tế thấy thiếu chữ làm khó đọc, đặc biệt cho user mới.
+- 1.5.4 đổi lại: 3 nút **chữ kèm icon** như 1.5.2 (full text label + SF Symbol). Không xoá file `MenuBarFooterRow.swift` (giữ cho tham khảo / dùng lại).
+
+### Theme 3D = default mới
+
+- Phần 6 ở 1.5.3 thêm submenu "Giao diện ứng dụng" cho user chọn Mặc định / 3D.
+- 1.5.4 quyết định: **theme `.threeD` là default mới** (gradient + shadow + multicolor + `.fill` trên SF Symbol). Submenu picker ẩn đi tạm thời (code vẫn giữ trong `vkeyApp.swift` để mở lại sau khi có bộ icon bitmap).
+- `Defaults[.appTheme]` default đổi từ `.default` → `.threeD`.
+
+### Icon templates cho designer
+
+- Thư mục mới `Tools/icon-set-templates/` chứa **57 SF Symbol vkey đang dùng**, mỗi cái export ra 3 PNG size (32, 64, 96 pt @ 2x retina). Tổng 171 file PNG.
+- Script `Tools/export_sf_symbols.swift` re-generate template khi UI thêm icon mới.
+- Thêm `Tools/icon-set-templates/README.md` hướng dẫn designer workflow drop artwork vào `Assets.xcassets/Icons3D/`.
+
 ## [1.5.3] - 2026-05-19 — "Office Friendly"
 
 Milestone gom nhiều thay đổi UX hướng tới người dùng phổ thông và dân văn phòng VN.

@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.5.4 — "Glossy Default"</title>
+      <sparkle:version>15040</sparkle:version>
+      <sparkle:shortVersionString>1.5.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 15:55:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.5.4/vkey-1.5.4.dmg"
+        sparkle:edSignature="GGdj2NqykmQOshN3Y8nfTZntQVljKruEQNSMuOqv6Vr1+xINlm6F/Jzob6Tnaxq52Xr9lvhM0qabUNxyOpyoCw=="
+        length="5166382"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.5.4 — "Glossy Default":</h2>
+        <p>Hotfix sau 1.5.3 hiệu chỉnh UX:</p>
+        <ul>
+          <li><strong>Khôi phục menu bar footer chữ + icon</strong>: 3 nút "Ủng hộ / Thông tin / Cập nhật" trở lại layout đầy đủ chữ kèm biểu tượng (như 1.5.2) cho dễ đọc, bỏ icon-only row.</li>
+          <li><strong>Theme 3D là default mới</strong>: gradient + shadow + multicolor áp lên SF Symbol mọi lúc. Submenu "Giao diện ứng dụng" tạm thời ẩn — sẽ mở lại khi bộ icon bitmap PDF có sẵn.</li>
+          <li><strong>57 icon template export</strong> ở <code>Tools/icon-set-templates/</code> (3 size mỗi icon) để designer có template thiết kế bộ bitmap thay thế.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.5.3 — "Office Friendly"</title>
       <sparkle:version>15030</sparkle:version>
       <sparkle:shortVersionString>1.5.3</sparkle:shortVersionString>
