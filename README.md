@@ -16,7 +16,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 ## Chức năng
 
 - ✅ Gõ tiếng Việt với 2 kiểu phổ biến: **Telex** và **VNI**.
-- ✅ Tuỳ chọn kiểu đặt dấu: **Kiểu mới** (thủy, khỏe) hoặc **Kiểu cũ** (thuỷ, khoẻ).
+- ✅ Tuỳ chọn kiểu đặt dấu: **Kiểu mới** (thuỷ, khoẻ, hoà, uý) hoặc **Kiểu cũ** (thủy, khỏe, hòa, úy).
 - ✅ **Tự động sửa lỗi gõ nhầm (Auto Typo Correction)**: Tự động sửa khi gõ nhầm dấu thanh sớm hoặc sai vị trí (ví dụ: `thfi` -> `thì`, `thfis` -> `thí`, `th2i` -> `thì`, `th1i` -> `thí`), sửa gạch chữ đ cuối từ (ví dụ: `dinhjd` -> `định` / `dinh59` -> `định`), sửa lỗi hoán đổi nguyên âm (ví dụ: `veeitj` -> `việt`) và hoán đổi phụ âm cuối (ví dụ: `phuowgn` -> `phương`). Có thể bật/tắt dễ dàng trong Cài đặt.
 - ✅ Bộ gõ chỉ duy nhất Unicode (UTF-8), không hỗ trợ TCVN3/VNI Windows (giữ đơn giản).
 - ✅ Nhớ chế độ Vi/En theo từng ứng dụng (per-app input mode memory).
@@ -29,14 +29,14 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Macro** (viết tắt → cụm dài): gõ `vn ` → ra `Việt Nam `.
 - ✅ Phím tắt linh hoạt: hỗ trợ cả tổ hợp key+modifier (vd `⌃⇧Z`) và **modifier-only** (vd nhấn-thả `⌃⇧` để toggle).
 - ✅ Fix lỗi thanh địa chỉ trình duyệt + Excel autocomplete.
-- ✅ Tương thích Electron / web app (Claude desktop, Notion, Slack, Discord…): mặc định dùng hybrid sending strategy, tự fallback step-by-step nếu phát hiện thất bại.
+- ✅ Tương thích Electron / web app (Notion, Slack, Discord…): mặc định dùng **hybrid sending strategy** (backspace delay 800µs) đợi vòng composition. Một số app có per-app override sẵn để chạy ổn định nhất: Claude desktop + terminals (Terminal, iTerm2, Kitty, Ghostty, Warp, Hyper, Tabby, Alacritty) dùng `stepByStep`; Microsoft Office (Word, Excel, PowerPoint, Outlook, OneNote) dùng `hybrid` với backspace delay 1000µs.
 - ✅ Tự bypass khi macOS bật secure input (gõ password an toàn).
 - ✅ Khởi động cùng macOS (tuỳ chọn).
 - ✅ Hoạt động xuyên QWERTZ / AZERTY / Dvorak (dùng physical key code → mapping QWERTY position cho Telex/VNI).
 - ✅ **Cập nhật trực tiếp (Sparkle Integration)**: Tải và cài đặt trực tiếp bản cập nhật mới nhanh gọn, an toàn.
 - ✅ **Thống kê sử dụng & tự học hành vi (mới ở v1.5.0)**: Theo dõi cục bộ (không gửi đi đâu) các từ bạn gõ nhiều nhất trong tuần. Mỗi tuần, các từ tiếng Anh được khôi phục ≥5 lần tự động được thêm vào danh sách `Allow` để lần sau bộ gõ nhận diện nhanh hơn; các từ tiếng Việt được giữ nguyên ≥5 lần được thêm vào danh sách `Keep` để không bao giờ bị auto-restore nhầm sang tiếng Anh. Có thể tắt hoàn toàn hoặc xóa dữ liệu trong tab "Thống kê & Sao lưu".
 - ✅ **Sao lưu & khôi phục dữ liệu cá nhân (mới ở v1.5.0)**: Xuất / nhập JSON gồm toàn bộ Cài đặt, Macro, từ điển cá nhân, Smart Switch, per-app override, thống kê. Khi cập nhật phiên bản, app tự động hỏi sao lưu trước khi tiếp tục.
-- ✅ **Từ điển tham chiếu Anh-Việt (mới ở v1.5.0)**: 110+ cặp từ song ngữ giúp bộ gõ phân biệt tiếng Anh / tiếng Việt chính xác hơn. Nguồn: Wiktionary (CC BY-SA 4.0) — xem [LICENSE-DATA.md](LICENSE-DATA.md).
+- ✅ **Từ điển tham chiếu Anh-Việt (mới ở v1.5.0)**: 110 cặp từ song ngữ giúp bộ gõ phân biệt tiếng Anh / tiếng Việt chính xác hơn. Nguồn: Wiktionary (CC BY-SA 4.0) — xem [LICENSE-DATA.md](LICENSE-DATA.md).
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
 
 ## Hình ảnh giao diện
@@ -85,7 +85,7 @@ ditto /tmp/vkey-release/Build/Products/Release/vkey.app /Applications/vkey.app
 | Tác vụ | Cách dùng |
 |--------|----------|
 | Chuyển VN ↔ EN | Nhấn + nhả **⌃⇧** (Control + Shift) đồng thời |
-| Đổi phím tắt | Menu vkey → Cài đặt → Phím tắt → bấm vào nút và nhập tổ hợp mới |
+| Đổi phím tắt | Menu vkey → Cài đặt → tab Chung → dòng "Phím tắt" → bấm vào nút và nhập tổ hợp mới |
 | Bật/tắt thông báo HUD | Menu → Cài đặt → tab Chung → "Hiển thị thông báo khi chuyển VI/EN" |
 | Bật/tắt từ menu | Click cờ trên menu bar → "Chuyển đổi bộ gõ 🇻🇳 \| 🇺🇸" |
 | Đổi kiểu gõ | Menu → "Kiểu Telex" / "Kiểu VNI" |
