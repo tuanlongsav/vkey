@@ -20,10 +20,10 @@ enum Updater {
   static func checkForUpdates(manual: Bool = false) {
     if manual {
       // User explicitly clicked "Check for Updates..." in settings or menu
-      let timestamp = Int(Date().timeIntervalSince1970)
-      let appcastURL = URL(string: "https://raw.githubusercontent.com/tuanlongsav/vkey/main/appcast.xml?t=\(timestamp)")!
+      let appcastURL = URL(string: "https://api.github.com/repos/tuanlongsav/vkey/contents/appcast.xml")!
       var request = URLRequest(url: appcastURL)
       request.cachePolicy = .reloadIgnoringLocalCacheData
+      request.setValue("application/vnd.github.v3.raw", forHTTPHeaderField: "Accept")
       
       URLSession.shared.dataTask(with: request) { data, response, error in
         DispatchQueue.main.async {
