@@ -298,6 +298,31 @@ struct SpellCheckView: View {
         VStack(spacing: 0) {
             Form {
                 Section {
+                    Toggle(isOn: Binding(
+                        get: {
+                            spellCheckEnabled && spellCheckInSentenceEnabled && englishAutoRestoreEnabled && suggestionEnabled && autoApplyHighConfidenceSuggestion && personalDictionaryEnabled && (dictionaryUpdateChannel == .hybrid ? dictionaryGitHubUpdateEnabled : true)
+                        },
+                        set: { newValue in
+                            spellCheckEnabled = newValue
+                            spellCheckInSentenceEnabled = newValue
+                            englishAutoRestoreEnabled = newValue
+                            suggestionEnabled = newValue
+                            autoApplyHighConfidenceSuggestion = newValue
+                            personalDictionaryEnabled = newValue
+                            if dictionaryUpdateChannel == .hybrid {
+                                dictionaryGitHubUpdateEnabled = newValue
+                            }
+                        }
+                    )) {
+                        Label("Kích hoạt nhanh tất cả tính năng mới", systemImage: "sparkles")
+                            .fontWeight(.semibold)
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                } header: {
+                    Text("Phím tắt thông minh")
+                }
+
+                Section {
                     Toggle(isOn: $spellCheckEnabled) {
                         Label("Kiểm tra chính tả", systemImage: "checkmark.circle")
                     }

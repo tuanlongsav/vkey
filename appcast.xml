@@ -6,6 +6,26 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.4.3</title>
+      <sparkle:version>14300</sparkle:version>
+      <sparkle:shortVersionString>1.4.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 08:35:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.4.3/vkey-1.4.3.dmg"
+        sparkle:edSignature="iRHgRfyDNfJUJkhvMMltsdMsL8V3TmoLxZNGvjg96yY0Hm/NLEO3++yc5Z2+sD0L6WSScR1EFDkyS48xlJCgAw=="
+        length="4613274"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong phiên bản 1.4.3:</h2>
+        <ul>
+          <li><strong>Sửa lỗi auto-correct sai chính tả tiếng Việt:</strong> Khắc phục triệt để lỗi sửa nhầm các từ đúng cấu trúc (như tắt, kiểm, điển, thị, cá...) bằng cách chỉ áp dụng gợi ý/tự sửa đối với các âm tiết bị gõ sai cấu trúc thực tế.</li>
+          <li><strong>Kích hoạt thông minh tất cả tính năng mới:</strong> Bổ sung nút chuyển đổi master ở đầu trang cài đặt để bật/tắt toàn bộ các tính năng kiểm tra chính tả nâng cao, từ điển cá nhân và tự động tải từ GitHub chỉ với một click.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.4.2</title>
       <sparkle:version>14200</sparkle:version>
       <sparkle:shortVersionString>1.4.2</sparkle:shortVersionString>

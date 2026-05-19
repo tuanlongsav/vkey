@@ -2,6 +2,13 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9, v1.4.0, v1.4.1 và v1.4.2, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ dự án mã nguồn mở **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv) để mang lại trải nghiệm tối ưu nhất cho người dùng.
 
+## [1.4.3] - 2026-05-19
+
+- **Sửa lỗi chính tả & Auto-correct hoàn hảo**:
+  - Khắc phục triệt để lỗi tự động sửa nhầm các từ đúng chuẩn cấu trúc tiếng Việt (như `tắt`, `kiểm`, `điển`, `thị`, `cá`...) bằng cách chỉ áp dụng cơ chế tự sửa/gợi ý của `SpellDecisionEngine` đối với các âm tiết không hợp lệ thực sự cần phục hồi (`needsRecovery == true`).
+- **Nâng cao Trải nghiệm Cấu hình**:
+  - Bổ sung nút chuyển đổi master **"Kích hoạt nhanh tất cả tính năng mới"** tại đầu trang cài đặt Chính tả để tắt/mở nhanh toàn bộ tổ hợp tính năng nâng cao (spell check, kiểm tra trong câu, khôi phục tiếng Anh, gợi ý thông minh, từ điển cá nhân và cập nhật tự động từ GitHub) chỉ bằng một click chuột.
+
 ## [1.4.2] - 2026-05-19
 
 - **Nâng cấp lõi song ngữ Việt/Anh (Việt-first)**:
