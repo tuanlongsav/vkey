@@ -1687,6 +1687,24 @@ final class TiengVietValidatorTests: XCTestCase {
     XCTAssertEqual(decision, .keepVietnamese)
   }
 
+  func testSpellDecisionPreservesDoubledToneMarks() throws {
+    let oldSpell = Defaults[.spellCheckEnabled]
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+    }
+    Defaults[.spellCheckEnabled] = true
+
+    let engine = SpellDecisionEngine.shared
+    
+    // "barr" has doubled "rr", should be kept raw even if needsRecovery is true
+    let decision1 = engine.evaluate(rawInput: "barr", transformed: "barr", needsRecovery: true)
+    XCTAssertEqual(decision1, .keepRaw)
+    
+    // "class" has doubled "ss", should be kept raw even if needsRecovery is true
+    let decision2 = engine.evaluate(rawInput: "class", transformed: "class", needsRecovery: true)
+    XCTAssertEqual(decision2, .keepRaw)
+  }
+
   func testTransformationTrackerDetectsRepeatedFailureSignals() throws {
     var tracker = TransformationTracker()
     tracker.resetForApp("com.example.app")

@@ -7564,6 +7564,12 @@ final class SpellDecisionEngine {
     let transformedToken = transformed.normalizedDictionaryToken
     guard !rawToken.isEmpty, !transformedToken.isEmpty else { return .keepRaw }
 
+    // Doubled Tone Mark Preservation: if raw input contains consecutive doubled tone marks, keep it raw
+    let doubledTones = ["ss", "ff", "rr", "xx", "jj"]
+    if doubledTones.contains(where: { rawToken.contains($0) }) {
+      return .keepRaw
+    }
+
     if lexiconManager.shouldApplyLegacyRestore(transformed: transformed, rawInput: rawInput),
       Defaults[.englishAutoRestoreEnabled]
     {

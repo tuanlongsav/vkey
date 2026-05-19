@@ -47,6 +47,7 @@ struct MainMenuView: View {
   @ObservedObject var appDelegate: AppDelegate
   @Environment(\.openSettings) private var openSettings
   @Default(.smartSwitchEnabled) private var smartSwitchEnabled
+  @Default(.spellCheckEnabled) private var spellCheckEnabled
 
   var body: some View {
     // MenuBarExtra (`.menu` style) renders SwiftUI Buttons as NSMenuItem.
@@ -98,6 +99,15 @@ struct MainMenuView: View {
       Label(
         smartSwitchEnabled ? "Smart Switch  ✓" : "Smart Switch",
         systemImage: "arrow.left.arrow.right.circle"
+      )
+    }
+
+    Button {
+      spellCheckEnabled.toggle()
+    } label: {
+      Label(
+        spellCheckEnabled ? "Sửa lỗi chính tả  ✓" : "Sửa lỗi chính tả",
+        systemImage: "checkmark.circle"
       )
     }
 

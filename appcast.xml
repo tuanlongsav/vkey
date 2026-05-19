@@ -6,6 +6,26 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.4.4</title>
+      <sparkle:version>14400</sparkle:version>
+      <sparkle:shortVersionString>1.4.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 08:55:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.4.4/vkey-1.4.4.dmg"
+        sparkle:edSignature="xStqKc8phjkao5aLAW6eJnu1NbeOZupIsei2fr0AhKMpwbdWohzXqMzuExUQoH+gzOOqg69lWyo6am1qZzJiDg=="
+        length="4656374"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong phiên bản 1.4.4:</h2>
+        <ul>
+          <li><strong>Đưa nút Sửa lỗi chính tả ra Menu Bar:</strong> Thêm checkable menu item để bật/tắt nhanh tính năng kiểm tra lỗi chính tả trực tiếp từ Menu Bar bên dưới phần Smart Switch.</li>
+          <li><strong>Hoàn thiện bảo toàn từ gõ đúp âm Telex:</strong> Khắc phục lỗi gõ các từ tiếng Anh kết thúc bằng phím đúp Telex (như barr, class, off) để bảo vệ chính xác các từ này mà không bị tự động sửa nhầm.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.4.3</title>
       <sparkle:version>14300</sparkle:version>
       <sparkle:shortVersionString>1.4.3</sparkle:shortVersionString>
