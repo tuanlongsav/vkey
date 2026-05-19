@@ -41,15 +41,30 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 
 ## Hình ảnh giao diện
 
+### Thao tác nhanh & HUD
+
 <p align="center">
+  <img src="images/menubar-menu.png" width="240" alt="Dropdown menu bar">
   <img src="images/hud-toggle.png" width="380" alt="HUD Chuyển đổi bộ gõ">
   <img src="images/reinstall-alert.png" width="220" alt="Thông báo cài lại">
 </p>
 
+### Các tab Cài đặt
+
 <p align="center">
-  <img src="images/general-settings.png" width="280" alt="Cài đặt Chung">
-  <img src="images/smart-switch-settings.png" width="280" alt="Cài đặt Smart Switch">
-  <img src="images/macro-settings.png" width="320" alt="Cài đặt Macro">
+  <img src="images/general-settings.png" width="280" alt="Tab Chung">
+  <img src="images/smart-switch-settings.png" width="280" alt="Tab Smart Switch">
+  <img src="images/macro-settings.png" width="280" alt="Tab Macro">
+</p>
+
+<p align="center">
+  <img src="images/spellcheck-settings.png" width="280" alt="Tab Chính tả (phần trên)">
+  <img src="images/spellcheck-settings-bottom.png" width="280" alt="Tab Chính tả (phần dưới)">
+  <img src="images/statistics-settings.png" width="280" alt="Tab Thống kê & Sao lưu">
+</p>
+
+<p align="center">
+  <img src="images/personal-dict-editor.png" width="320" alt="Editor Từ điển cá nhân (Allow / Keep / Deny)">
 </p>
 
 ## Cài đặt
