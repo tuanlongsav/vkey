@@ -65,6 +65,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     
     // Check for updates silently on launch
     Updater.checkForUpdates(manual: false)
+    
+    // Check for dictionary updates silently on launch
+    LexiconManager.shared.downloadAndUpdateLexicon()
   }
   
   func checkTrustStatus() {

@@ -96,6 +96,9 @@ extension Defaults.Keys {
   /// Bật kiểm tra từ điển/chính tả trước khi auto-restore và gợi ý.
   static let spellCheckEnabled = Key<Bool>("spell-check-enabled", default: true)
 
+  /// Kiểm tra chính tả đặt trong câu (khi gõ space/punctuation)
+  static let spellCheckInSentenceEnabled = Key<Bool>("spell-check-in-sentence-enabled", default: true)
+
   /// Cho phép tự khôi phục về tiếng Anh khi đầu ra không phải tiếng Việt hợp lệ.
   static let englishAutoRestoreEnabled = Key<Bool>("english-auto-restore-enabled", default: true)
 
@@ -108,6 +111,9 @@ extension Defaults.Keys {
     default: .hybrid
   )
 
+  /// Bật tính năng tự động cập nhật từ điển từ GitHub.
+  static let dictionaryGitHubUpdateEnabled = Key<Bool>("dictionary-github-update-enabled", default: true)
+
   /// Bật tính năng gợi ý sửa chính tả.
   static let suggestionEnabled = Key<Bool>("suggestion-enabled", default: true)
 
@@ -116,6 +122,9 @@ extension Defaults.Keys {
     "auto-apply-high-confidence-suggestion",
     default: true
   )
+
+  /// Bật/tắt sử dụng từ điển cá nhân (từ cho phép, ưu tiên giữ, loại bỏ)
+  static let personalDictionaryEnabled = Key<Bool>("personal-dictionary-enabled", default: true)
 
   /// Từ do người dùng thêm vào, luôn coi là hợp lệ.
   static let userAllowWords = Key<[String]>("user-allow-words", default: [])

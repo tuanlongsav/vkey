@@ -202,18 +202,53 @@ final class LexiconManager {
     }
   }
 
+  func downloadAndUpdateLexicon(completion: ((Bool) -> Void)? = nil) {
+    guard Defaults[.dictionaryGitHubUpdateEnabled] else {
+      completion?(false)
+      return
+    }
+
+    let url = URL(string: "https://raw.githubusercontent.com/tuanlongsav/vkey/main/lexicon-update.json")!
+    URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+      guard let self = self,
+            error == nil,
+            let httpResponse = response as? HTTPURLResponse,
+            httpResponse.statusCode == 200,
+            let data = data else {
+        completion?(false)
+        return
+      }
+
+      do {
+        let package = try JSONDecoder().decode(LexiconUpdatePackage.self, from: data)
+        let currentVersion = self.snapshotVersions().vn
+        
+        if package.version > currentVersion {
+          try self.setUpdatePackageData(data)
+          completion?(true)
+        } else {
+          completion?(false)
+        }
+      } catch {
+        completion?(false)
+      }
+    }.resume()
+  }
+
   func isVietnameseWord(_ word: String) -> Bool {
     let token = word.normalizedDictionaryToken
     if token.isEmpty { return false }
 
-    let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
-    if denied.contains(token) {
-      return false
-    }
+    if Defaults[.personalDictionaryEnabled] {
+      let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
+      if denied.contains(token) {
+        return false
+      }
 
-    let allowed = Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken })
-    if allowed.contains(token) {
-      return true
+      let allowed = Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken })
+      if allowed.contains(token) {
+        return true
+      }
     }
 
     return queue.sync { vnLexicon.contains(token) }
@@ -229,9 +264,11 @@ final class LexiconManager {
     let token = word.normalizedDictionaryToken
     if token.isEmpty { return false }
 
-    let userKeep = Set(Defaults[.userKeepWords].map { $0.normalizedDictionaryToken })
-    if userKeep.contains(token) {
-      return true
+    if Defaults[.personalDictionaryEnabled] {
+      let userKeep = Set(Defaults[.userKeepWords].map { $0.normalizedDictionaryToken })
+      if userKeep.contains(token) {
+        return true
+      }
     }
     return queue.sync { keepLexicon.contains(token) }
   }
@@ -369,13 +406,6 @@ final class SpellDecisionEngine {
       guard Defaults[.suggestionEnabled] else { return .keepRaw }
       let suggestions = suggestionService.suggest(word: transformed, locale: "vi_VN", limit: 5)
       return suggestions.isEmpty ? .keepRaw : .suggest(suggestions)
-    }
-
-    if !isVietnameseWord && Defaults[.suggestionEnabled] {
-      let suggestions = suggestionService.suggest(word: transformed, locale: "vi_VN", limit: 5)
-      if !suggestions.isEmpty {
-        return .suggest(suggestions)
-      }
     }
 
     return .keepVietnamese
@@ -961,6 +991,11 @@ class InputProcessor {
     let rawInput = String(wordBuffer.keys)
     let current = wordBuffer.transformed
     guard !rawInput.isEmpty, !current.isEmpty else {
+      lastSuggestions = []
+      return false
+    }
+
+    guard Defaults[.spellCheckInSentenceEnabled] else {
       lastSuggestions = []
       return false
     }

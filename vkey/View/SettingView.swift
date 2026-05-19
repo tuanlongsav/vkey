@@ -279,3 +279,164 @@ struct GeneralView_Previews: PreviewProvider {
             .previewDisplayName("GeneralView preview")
     }
 }
+
+struct SpellCheckView: View {
+    @Default(.spellCheckEnabled) private var spellCheckEnabled
+    @Default(.spellCheckInSentenceEnabled) private var spellCheckInSentenceEnabled
+    @Default(.englishAutoRestoreEnabled) private var englishAutoRestoreEnabled
+    @Default(.restorePolicy) private var restorePolicy
+    @Default(.dictionaryUpdateChannel) private var dictionaryUpdateChannel
+    @Default(.dictionaryGitHubUpdateEnabled) private var dictionaryGitHubUpdateEnabled
+    @Default(.suggestionEnabled) private var suggestionEnabled
+    @Default(.autoApplyHighConfidenceSuggestion) private var autoApplyHighConfidenceSuggestion
+    @Default(.personalDictionaryEnabled) private var personalDictionaryEnabled
+
+    @State private var isUpdatingFromGitHub = false
+    @State private var gitHubUpdateStatus = ""
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Form {
+                Section {
+                    Toggle(isOn: $spellCheckEnabled) {
+                        Label("Kiểm tra chính tả", systemImage: "checkmark.circle")
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    
+                    if spellCheckEnabled {
+                        Toggle(isOn: $spellCheckInSentenceEnabled) {
+                            Label("Kiểm tra trong câu", systemImage: "text.justify.left")
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                        Picker(selection: $dictionaryUpdateChannel) {
+                            Text("Chỉ từ điển nhúng").tag(DictionaryUpdateChannel.embeddedOnly)
+                            Text("Từ điển nhúng + Cập nhật cục bộ").tag(DictionaryUpdateChannel.hybrid)
+                        } label: {
+                            Label("Nguồn từ điển", systemImage: "book")
+                        }
+                        .pickerStyle(.inline)
+                    }
+                } header: {
+                    Text("Cấu hình Kiểm tra & Từ điển")
+                }
+                
+                if spellCheckEnabled {
+                    if dictionaryUpdateChannel == .hybrid {
+                        Section {
+                            Toggle(isOn: $dictionaryGitHubUpdateEnabled) {
+                                Label("Tự động tải từ GitHub", systemImage: "arrow.down.circle")
+                            }
+                            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                            HStack {
+                                Spacer()
+                                Button(action: {
+                                    isUpdatingFromGitHub = true
+                                    gitHubUpdateStatus = "Đang tải dữ liệu từ GitHub..."
+                                    LexiconManager.shared.downloadAndUpdateLexicon { success in
+                                        DispatchQueue.main.async {
+                                            isUpdatingFromGitHub = false
+                                            if success {
+                                                gitHubUpdateStatus = "Đã tải & cập nhật từ điển thành công!"
+                                            } else {
+                                                gitHubUpdateStatus = "Từ điển đã là phiên bản mới nhất hoặc có lỗi."
+                                            }
+                                        }
+                                    }
+                                }) {
+                                    Label("Cập nhật từ điển ngay", systemImage: "arrow.triangle.2.circlepath")
+                                }
+                                .disabled(isUpdatingFromGitHub)
+                                Spacer()
+                            }
+                            
+                            if !gitHubUpdateStatus.isEmpty {
+                                Text(gitHubUpdateStatus)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .padding(.top, 2)
+                            }
+                        } header: {
+                            Text("Cập nhật từ điển từ GitHub")
+                        }
+                    }
+
+                    Section {
+                        Toggle(isOn: $personalDictionaryEnabled) {
+                            Label("Sử dụng từ điển cá nhân", systemImage: "person.circle")
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                        
+                        Text("Áp dụng danh sách từ tự thêm (allow/keep/deny) do bạn cấu hình trong phần mềm.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, -4)
+                    } header: {
+                        Text("Từ điển cá nhân")
+                    }
+
+                    Section {
+                        Toggle(isOn: $englishAutoRestoreEnabled) {
+                            Label("Tự động khôi phục tiếng Anh", systemImage: "arrow.uturn.backward")
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                        
+                        if englishAutoRestoreEnabled {
+                            Picker(selection: $restorePolicy) {
+                                Text("Ưu tiên tiếng Việt").tag(RestorePolicy.vietnameseFirst)
+                                Text("Cân bằng").tag(RestorePolicy.balanced)
+                                Text("Ưu tiên tiếng Anh").tag(RestorePolicy.englishFirst)
+                            } label: {
+                                Label("Chính sách khôi phục", systemImage: "slider.horizontal.3")
+                            }
+                            .pickerStyle(.segmented)
+                            
+                            Text("Lựa chọn cách xử lý đối với các từ mơ hồ giữa tiếng Việt và tiếng Anh (ví dụ: 'of', 'if', 'see', 'tee').")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, -4)
+                        }
+                    } header: {
+                        Text("Tự động khôi phục tiếng Anh (Space Restore)")
+                    }
+                    
+                    Section {
+                        Toggle(isOn: $suggestionEnabled) {
+                            Label("Gợi ý sửa lỗi chính tả", systemImage: "lightbulb")
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                        
+                        if suggestionEnabled {
+                            Toggle(isOn: $autoApplyHighConfidenceSuggestion) {
+                                Label("Tự động sửa khi tin cậy cao", systemImage: "wand.and.stars")
+                            }
+                            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                            
+                            Text("Tự động áp dụng từ gợi ý nếu độ tin cậy đạt mức rất cao (>= 88%).")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, -4)
+                        }
+                    } header: {
+                        Text("Gợi ý & Sửa lỗi chính tả")
+                    }
+                }
+            }
+            .formStyle(.grouped)
+            .scrollDisabled(false)
+        }
+        .frame(width: 440, height: 560)
+    }
+}
+
+struct SpellCheckView_Previews: PreviewProvider {
+    static var previews: some View {
+        SpellCheckView()
+            .previewLayout(PreviewLayout.sizeThatFits)
+            .padding()
+            .previewDisplayName("SpellCheckView preview")
+    }
+}
+

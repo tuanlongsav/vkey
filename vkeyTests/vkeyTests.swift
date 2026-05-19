@@ -1668,6 +1668,25 @@ final class TiengVietValidatorTests: XCTestCase {
     }
   }
 
+  func testSpellDecisionDoesNotSuggestForValidSyllableNotInDictionary() throws {
+    let oldSpell = Defaults[.spellCheckEnabled]
+    let oldRestore = Defaults[.englishAutoRestoreEnabled]
+    let oldSuggestion = Defaults[.suggestionEnabled]
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+      Defaults[.englishAutoRestoreEnabled] = oldRestore
+      Defaults[.suggestionEnabled] = oldSuggestion
+    }
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.englishAutoRestoreEnabled] = true
+    Defaults[.suggestionEnabled] = true
+
+    let engine = SpellDecisionEngine.shared
+    // "tắt" is a valid Vietnamese syllable (needsRecovery is false) but is not in the embedded dictionary.
+    let decision = engine.evaluate(rawInput: "tatws", transformed: "tắt", needsRecovery: false)
+    XCTAssertEqual(decision, .keepVietnamese)
+  }
+
   func testTransformationTrackerDetectsRepeatedFailureSignals() throws {
     var tracker = TransformationTracker()
     tracker.resetForApp("com.example.app")

@@ -23,6 +23,9 @@ struct vkeyApp: App {
 
         MacroView()
           .tabItem { Label("Macro", systemImage: "text.cursor") }
+
+        SpellCheckView()
+          .tabItem { Label("Chính tả", systemImage: "text.badge.checkmark") }
       }
     }
   }
