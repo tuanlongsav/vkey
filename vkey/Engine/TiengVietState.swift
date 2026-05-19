@@ -74,6 +74,11 @@ struct TiengVietState {
       finalDauMu = .muUp
     }
     
+    // Auto-correct missing 'ă' for "ak" final consonant (ethnic minority names support like đắk, lắk)
+    if dauMu == .khongMu, nguyenAmLower == "a", String(thanhPhanTieng.phuAmCuoi).lowercased() == "k" {
+      finalDauMu = .muNgua
+    }
+    
     let finalDauThanh = (dauThanh == .bang) ? (thanhPhanTieng.uuTienDauThanh ?? dauThanh) : dauThanh
 
     return TiengVietTransformer.transform(

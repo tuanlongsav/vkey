@@ -210,7 +210,7 @@ enum TiengViet {
   /// Tất cả phụ âm đầu (phụ âm ghép trước để match đúng thứ tự ưu tiên)
   static var PhuAmDau: [String] = PhuAmGhep + PhuAmDon
 
-  /// Phụ âm cuối hợp lệ: c, ch, m, n, ng, nh, p, t
+  /// Phụ âm cuối hợp lệ: c, ch, m, n, ng, nh, p, t, k
   static let PhuAmCuoi: [String] = [
     "nh", "nH", "Nh", "NH",
     "ng", "nG", "Ng", "NG",
@@ -220,6 +220,7 @@ enum TiengViet {
     "c", "C",
     "p", "P",
     "t", "T",
+    "k", "K",
   ].sorted { $0.count > $1.count }
 
   // MARK: - Bảng nguyên âm

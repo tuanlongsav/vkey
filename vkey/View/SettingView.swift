@@ -293,6 +293,7 @@ struct SpellCheckView: View {
 
     @State private var isUpdatingFromGitHub = false
     @State private var gitHubUpdateStatus = ""
+    @State private var showingPersonalDictEditor = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -341,6 +342,9 @@ struct SpellCheckView: View {
                             Label("Nguồn từ điển", systemImage: "book")
                         }
                         .pickerStyle(.inline)
+                        .onChange(of: dictionaryUpdateChannel) { newValue in
+                            LexiconManager.shared.reload(channel: newValue)
+                        }
                     }
                 } header: {
                     Text("Cấu hình Kiểm tra & Từ điển")
@@ -398,6 +402,19 @@ struct SpellCheckView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .padding(.top, -4)
+
+                        if personalDictionaryEnabled {
+                            HStack {
+                                Spacer()
+                                Button(action: {
+                                    showingPersonalDictEditor = true
+                                }) {
+                                    Label("Quản lý từ điển cá nhân", systemImage: "pencil.and.outline")
+                                }
+                                Spacer()
+                            }
+                            .padding(.top, 4)
+                        }
                     } header: {
                         Text("Từ điển cá nhân")
                     }
@@ -453,6 +470,9 @@ struct SpellCheckView: View {
             .scrollDisabled(false)
         }
         .frame(width: 440, height: 560)
+        .sheet(isPresented: $showingPersonalDictEditor) {
+            PersonalDictionaryEditorView()
+        }
     }
 }
 
@@ -462,6 +482,135 @@ struct SpellCheckView_Previews: PreviewProvider {
             .previewLayout(PreviewLayout.sizeThatFits)
             .padding()
             .previewDisplayName("SpellCheckView preview")
+    }
+}
+
+struct PersonalDictionaryEditorView: View {
+    @Environment(\.dismiss) var dismiss
+    @State private var selectedTab = 0
+    @State private var newWord = ""
+    
+    @Default(.userAllowWords) private var userAllowWords
+    @Default(.userKeepWords) private var userKeepWords
+    @Default(.userDenyWords) private var userDenyWords
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("Quản lý từ điển cá nhân")
+                .font(.headline)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+                
+            Picker("Loại từ điển", selection: $selectedTab) {
+                Text("Cho phép (Allow)").tag(0)
+                Text("Ưu tiên giữ (Keep)").tag(1)
+                Text("Loại bỏ (Deny)").tag(2)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+            
+            // Add Word Form
+            HStack {
+                TextField("Nhập từ mới…", text: $newWord)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit {
+                        addWord()
+                    }
+                Button("Thêm") {
+                    addWord()
+                }
+                .disabled(newWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+            
+            // List of words
+            List {
+                let words = currentWordsList()
+                if words.isEmpty {
+                    Text("Chưa có từ nào trong danh sách.")
+                        .foregroundColor(.secondary)
+                        .italic()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowBackground(Color.clear)
+                } else {
+                    ForEach(words, id: \.self) { word in
+                        HStack {
+                            Text(word)
+                            Spacer()
+                            Button(action: {
+                                removeWord(word)
+                            }) {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            .listStyle(.inset)
+            .frame(height: 240)
+            
+            Divider()
+            
+            HStack {
+                Spacer()
+                Button("Đóng") {
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding(16)
+        }
+        .frame(width: 400, height: 420)
+    }
+    
+    private func currentWordsList() -> [String] {
+        switch selectedTab {
+        case 0: return userAllowWords
+        case 1: return userKeepWords
+        case 2: return userDenyWords
+        default: return []
+        }
+    }
+    
+    private func addWord() {
+        let cleaned = newWord.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !cleaned.isEmpty else { return }
+        
+        switch selectedTab {
+        case 0:
+            if !userAllowWords.contains(cleaned) {
+                userAllowWords.append(cleaned)
+            }
+        case 1:
+            if !userKeepWords.contains(cleaned) {
+                userKeepWords.append(cleaned)
+            }
+        case 2:
+            if !userDenyWords.contains(cleaned) {
+                userDenyWords.append(cleaned)
+            }
+        default:
+            break
+        }
+        
+        newWord = ""
+    }
+    
+    private func removeWord(_ word: String) {
+        switch selectedTab {
+        case 0:
+            userAllowWords.removeAll(where: { $0 == word })
+        case 1:
+            userKeepWords.removeAll(where: { $0 == word })
+        case 2:
+            userDenyWords.removeAll(where: { $0 == word })
+        default:
+            break
+        }
     }
 }
 

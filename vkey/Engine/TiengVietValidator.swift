@@ -141,7 +141,11 @@ enum TiengVietValidator {
     // Rule 2: Valid Initial
     if !thanhPhan.phuAmDau.isEmpty {
       let initial = String(thanhPhan.phuAmDau).lowercased()
-      if !ValidInitials.contains(initial) {
+      var validInitials = ValidInitials
+      if Defaults[.allowedZWJF] {
+        validInitials.formUnion(["z", "w", "j", "f"])
+      }
+      if !validInitials.contains(initial) {
         return true
       }
     }

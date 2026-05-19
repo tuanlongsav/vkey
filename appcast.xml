@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.4.5</title>
+      <sparkle:version>14500</sparkle:version>
+      <sparkle:shortVersionString>1.4.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 09:50:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.4.5/vkey-1.4.5.dmg"
+        sparkle:edSignature="xStqKc8phjkao5aLAW6eJnu1NbeOZupIsei2fr0AhKMpwbdWohzXqMzuExUQoH+gzOOqg69lWyo6am1qZzJiDg=="
+        length="4658000"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong phiên bản 1.4.5:</h2>
+        <ul>
+          <li><strong>Tự động Cập nhật Từ điển từ GitHub:</strong> Hỗ trợ cơ chế tự động kiểm tra định kỳ hàng ngày hoặc khi cài đặt mới để đồng bộ gói từ điển Việt/Anh nâng cấp từ GitHub.</li>
+          <li><strong>Nâng cấp Giao diện Quản lý Từ điển Cá nhân:</strong> Bổ sung bảng chỉnh sửa danh sách Từ điển Cá nhân (Từ cho phép, Từ giữ nguyên, Từ chặn) vô cùng trực quan dạng danh sách tương tác trực tiếp trong tab cài đặt Chính tả.</li>
+          <li><strong>Tối ưu hóa Lõi Bộ gõ song ngữ:</strong> Hỗ trợ toàn diện phụ âm cuối "k" cho các địa danh và tên riêng dân tộc thiểu số (ví dụ: đắk, lắk) cả trên Telex và VNI.</li>
+          <li><strong>Bảo toàn hoàn hảo phím đúp Telex:</strong> Giải quyết lỗi trùng dấu Telex khi gõ các từ tiếng Anh kết thúc bằng chữ cái đúp như class, pass.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.4.4</title>
       <sparkle:version>14400</sparkle:version>
       <sparkle:shortVersionString>1.4.4</sparkle:shortVersionString>

@@ -135,6 +135,10 @@ extension Defaults.Keys {
   /// Từ người dùng muốn loại khỏi tập hợp hợp lệ.
   static let userDenyWords = Key<[String]>("user-deny-words", default: [])
 
+  /// Thời điểm cuối cùng kiểm tra cập nhật từ điển từ GitHub.
+  static let lastDictionaryCheckDate = Key<Date?>("last-dictionary-check-date", default: nil)
+
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value
 }
+

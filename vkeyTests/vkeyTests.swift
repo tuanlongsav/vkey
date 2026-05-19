@@ -13,15 +13,27 @@ import Defaults
 final class vkeyTests: XCTestCase {
 
   override func setUp() {
-
+    super.setUp()
+    Defaults.reset(.spellCheckEnabled)
+    Defaults.reset(.spellCheckInSentenceEnabled)
+    Defaults.reset(.englishAutoRestoreEnabled)
+    Defaults.reset(.restorePolicy)
+    Defaults.reset(.dictionaryUpdateChannel)
+    Defaults.reset(.dictionaryGitHubUpdateEnabled)
+    Defaults.reset(.suggestionEnabled)
+    Defaults.reset(.autoApplyHighConfidenceSuggestion)
+    Defaults.reset(.personalDictionaryEnabled)
+    Defaults.reset(.userAllowWords)
+    Defaults.reset(.userKeepWords)
+    Defaults.reset(.userDenyWords)
   }
 
   override func setUpWithError() throws {
-    // Put setup code here. This method is called before the invocation of each test method in the class.
+    try super.setUpWithError()
   }
 
   override func tearDownWithError() throws {
-    // Put teardown code here. This method is called after the invocation of each test method in the class.
+    try super.tearDownWithError()
   }
 
   public func transform_text_telex(for text: String) -> String {
@@ -543,14 +555,23 @@ final class vkeyTests: XCTestCase {
   func testAllowedZWJF() throws {
     // Save current state
     let oldPhuAmDau = TiengViet.PhuAmDau
+    let oldSpell = Defaults[.spellCheckEnabled]
+    let oldAllowedZWJF = Defaults[.allowedZWJF]
+    Defaults[.spellCheckEnabled] = false
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+      Defaults[.allowedZWJF] = oldAllowedZWJF
+    }
     
     // Simulate allowedZWJF = false
+    Defaults[.allowedZWJF] = false
     TiengViet.PhuAmDau = TiengViet.PhuAmGhep + TiengViet.PhuAmDon
     TiengViet.updatePhuAmDauTrie()
     XCTAssertEqual(transform_text_telex(for: "zas"), "zas")
     XCTAssertEqual(transform_text_telex(for: "fair"), "fair")
     
     // Simulate allowedZWJF = true
+    Defaults[.allowedZWJF] = true
     TiengViet.PhuAmDau = TiengViet.PhuAmGhep + TiengViet.PhuAmDon + TiengViet.PhuAmDonNuocNgoai
     TiengViet.updatePhuAmDauTrie()
     XCTAssertEqual(transform_text_telex(for: "zas"), "zá")
@@ -845,6 +866,12 @@ final class vkeyTests: XCTestCase {
   // MARK: - GoNhanh Engine Innovations Tests
 
   func testGoNhanhEngineInnovations() throws {
+    let oldPolicy = Defaults[.restorePolicy]
+    Defaults[.restorePolicy] = .balanced
+    defer {
+      Defaults[.restorePolicy] = oldPolicy
+    }
+
     // 1. Inclusion Vowel Pairs Matrix (VALID_VOWEL_PAIRS)
     // English words should not get transformed or recovered improperly
     XCTAssertEqual(transform_text_telex(for: "claus"), "claus")
@@ -854,7 +881,7 @@ final class vkeyTests: XCTestCase {
     
     // Ethnic minority names support
     XCTAssertEqual(transform_text_telex(for: "krong"), "krong") // kr initials
-    XCTAssertEqual(transform_text_telex(for: "d9ak1"), "đắk") // k final consonant
+    XCTAssertEqual(transform_text_vni(for: "d9ak1"), "đắk") // k final consonant
     
     // 2. Doubled Tone Mark Preservation
     XCTAssertEqual(transform_text_telex(for: "off"), "off")
@@ -1387,6 +1414,22 @@ final class KeyboardUSTests: XCTestCase {
 /// The integration tests above exercise validator indirectly through transform_text_*.
 /// These tests pin down individual rules so regressions are easy to diagnose.
 final class TiengVietValidatorTests: XCTestCase {
+
+  override func setUp() {
+    super.setUp()
+    Defaults.reset(.spellCheckEnabled)
+    Defaults.reset(.spellCheckInSentenceEnabled)
+    Defaults.reset(.englishAutoRestoreEnabled)
+    Defaults.reset(.restorePolicy)
+    Defaults.reset(.dictionaryUpdateChannel)
+    Defaults.reset(.dictionaryGitHubUpdateEnabled)
+    Defaults.reset(.suggestionEnabled)
+    Defaults.reset(.autoApplyHighConfidenceSuggestion)
+    Defaults.reset(.personalDictionaryEnabled)
+    Defaults.reset(.userAllowWords)
+    Defaults.reset(.userKeepWords)
+    Defaults.reset(.userDenyWords)
+  }
 
   /// Helper: parse raw characters into ThanhPhanTieng without diacritics applied.
   private func parse(_ text: String) -> ThanhPhanTieng {
