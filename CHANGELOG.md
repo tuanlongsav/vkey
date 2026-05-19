@@ -2,6 +2,19 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.5.1] - 2026-05-19 — "Sonoma Baseline"
+
+Bản vá nhanh sau 1.5.0: sửa lỗi không mở được cửa sổ "Cài đặt" trên macOS Ventura và chuẩn hoá yêu cầu hệ điều hành.
+
+### 🐛 Sửa lỗi
+
+- **Menu "Cài đặt" không mở được trên macOS 13 (Ventura)**: `AppDelegate.openSettings()` dùng selector `showSettingsWindow:` vốn chỉ có từ macOS 14 (Sonoma). Trong khi đó `MACOSX_DEPLOYMENT_TARGET` lại đặt 13.0 → click vào "Cài đặt" trong MenuBarExtra không có phản ứng trên Ventura.
+
+### 🛠️ Thay đổi nền tảng
+
+- **Nâng deployment target tối thiểu lên macOS 14 Sonoma** ở mọi target (`vkey`, `vkeyTests`, `vkeyUITests`). Lý do: 1.5.0 đã dùng nhiều API SwiftUI/SwiftData hiện đại; Sonoma cũng đã phổ cập đủ rộng. Người dùng còn Ventura cần cập nhật macOS để dùng các bản mới.
+- Cập nhật README, AGENTS.md, RELEASE.md để phản ánh yêu cầu hệ điều hành mới.
+
 ## [1.5.0] - 2026-05-19 — "Bilingual Reborn"
 
 Phiên bản đại tu lớn nhất kể từ 1.3.x: tái cấu trúc kiến trúc, hoàn thiện engine bộ gõ và mở đường cho tính năng song ngữ Anh-Việt.
