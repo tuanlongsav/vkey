@@ -13,8 +13,9 @@
 Starting in **v1.5.0** vkey ships a bilingual reference dictionary
 (`lexicon/lexicon-update.json`, schema v5) that includes:
 
-- **Vietnamese syllable list (~7184 entries)** — from the open dataset
-  [@hieuthi / common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable).
+- **Vietnamese syllable list (~9412 entries, v1.6.1+)** — hợp nhất từ hai nguồn:
+  - [@hieuthi / common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable) (~7184 syllables phổ biến)
+  - [@undertheseanlp / dictionary](https://github.com/undertheseanlp/dictionary) (~2228 syllables bổ sung, tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN), tác giả Vũ Anh, license **GPL-3.0** — tương thích share-alike với CC BY-SA 4.0 aggregate của vkey lexicon.
 - **English word list (~2000 entries)** — selected by frequency using
   [wordfreq](https://github.com/rspeer/wordfreq) (MIT for the code, CC BY-SA
   4.0 for the Wiktionary-derived portion of its data).
@@ -55,6 +56,7 @@ If you fork vkey and want to ship the lexicon:
    - vkey ([@tuanlongsav](https://github.com/tuanlongsav/vkey))
    - English Wiktionary via Wiktextract / Kaikki.org
    - common-vietnamese-syllables by [@hieuthi](https://github.com/vietnameselanguage/syllable)
+   - dictionary by [@undertheseanlp](https://github.com/undertheseanlp/dictionary) — Vũ Anh (GPL-3.0)
 4. Any changes you make to the dictionary data must also be distributed
    under CC BY-SA 4.0 (share-alike clause).
 5. Your source code changes must still be GPL-3.0 (copyleft clause).

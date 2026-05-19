@@ -1,6 +1,66 @@
 # vkey Changelog
 
-> **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
+> **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
+
+## [1.6.1] - 2026-05-19 — "Polish & Persistence"
+
+Bản vá tập trung sửa các regression của 1.6.0, bổ sung quality-of-life cho cửa sổ Cài đặt và mở rộng dictionary lên ~9,412 syllables.
+
+### Sửa lỗi mất hiển thị Thống kê sau khi cập nhật (Issue 3)
+
+- **Triệu chứng**: user upgrade 1.5.x → 1.6.0 thấy tab Thống kê toàn số 0 dù trước đó đã có data.
+- **Nguyên nhân**: `loadCurrentWeekIfNeeded` ở `UsageStatistics` skip load nếu `loaded.weekId != currentWeekId()`. Khi upgrade qua biên tuần ISO (vd quit 1.5.10 ở W20, mở 1.6.0 ở W21), counters cũ trên disk bị bỏ rơi. Lần flush kế tiếp ghi đè `current.json` với empty bucket → data MẤT VĨNH VIỄN.
+- **Fix**: luôn load file, để `rotateIfNeeded()` xử lý đúng — nếu weekId stale, ghi historical file `<oldWeekId>.json` rồi mới reset.
+- **Phụ**: `persistCurrentWeek` không còn ghi `<currentWeekId>.json` cho tuần ĐANG chạy (file này lẫn vào `historicalSummaries` gây nhiễu).
+- `historicalSummaries()` thêm defensive filter exclude `<currentWeekId>.json`.
+- Thêm `diagnosticReport()` API + nút "Xuất chẩn đoán Stats" trong tab Thống kê — user gửi lại khi báo lỗi.
+- Thêm Section "Các tuần đã đóng" hiển thị data historical (trước 1.6.1 không render).
+
+### Sửa bug Tab key đoán từ (Issue 1a)
+
+- **Triệu chứng**: gõ "dữ" + Space → HUD show "liệu" → bấm Tab → output có "dữ" thừa.
+- **Fix**: rewrite `handleTaskKey(.Tab)` ở [InputProcessor.swift](vkey/App/InputProcessor.swift):
+  - Defensive — ALWAYS swallow Tab khi `wordPredictionEnabled && activePrediction != nil` (kể cả khi buffer state không đủ điều kiện apply). Tránh OS autocomplete / form-tab can thiệp.
+  - Trước khi insert prediction, force-reset buffer bằng `newWord(storePrevious: false)` để guarantee không có residue.
+
+### Đoán từ ưu tiên từ điển + chuyển toggle sang tab Chung (Issue 1b)
+
+- **Vấn đề cũ**: ranking pure-frequency dễ suggest rác (vd "tcb" → "abc" vì user gõ tay nhiều lần).
+- **Fix**: `PredictionEngine.topPrediction` blended scoring:
+  - **+1000** nếu candidate là từ tiếng Việt (`LexiconManager.isVietnameseWord`)
+  - **+500** nếu candidate nằm trong `Defaults[.userKeepWords]`
+  - **+ raw frequency** (trigram count × 2 hoặc bigram count hoặc embedded weight)
+  - Filter: loại candidate trùng prev1 (vd "dữ" → "dữ"); phải có dict bonus HOẶC freq ≥ 5
+- Toggle "Đoán từ tiếp theo" chuyển từ tab Chính tả → **tab Chung** (gần các toggle global khác). Settings key `wordPredictionEnabled` không đổi → user upgrade không mất state.
+
+### Cửa sổ Cài đặt resize + default size đồng nhất (Issue 2)
+
+- Trước: mỗi tab tự set `.frame(width: 440-480, height: 420-560)` → window kích thước nhảy khi switch tab; không resize được.
+- Sau: 5 tab dùng cùng `.frame(minWidth: 540, minHeight: 640, maxWidth: .infinity, maxHeight: .infinity)`.
+- AppDelegate hook `windowDidBecomeKey` → insert `.resizable` styleMask + `setFrameAutosaveName("VkeySettingsWindow")`. User drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở.
+
+### Đề xuất Macro từ cụm từ tiếng Việt (Issue 4)
+
+- `UsageStatistics.WeekBucket` schema thêm `vnPhraseCounts2`, `vnPhraseCounts3` (optional decode → backward-compat với JSON 1.5.x).
+- `recordCommit` track sliding window 3 commit gần nhất khi `.keepVietnamese`. Reset khi xen English/raw/Smart Switch (đổi context).
+- API mới: `aggregatedTopVietnamesePhrases(threshold:)`.
+- `MacroSuggestionSheet` load gộp single-word + phrase candidates (phrase ưu tiên hiển thị trước — tiết kiệm keystroke hơn). Auto-suggest viết tắt: "công ty → ct", "kính gửi anh → kga".
+- **Track từ 1.6.1+** (không backfill từ data cũ).
+
+### Mở rộng dictionary +2,228 từ (Issue 5)
+
+- Tích hợp dataset [undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary) của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN.
+- `lexicon-update.json` schema v5: 7,184 → **9,412 syllables** (+2,228 từ chuyên ngành, địa danh, tên thực vật/động vật).
+- Bump `version: 4 → 5` → app fetch tự động qua cơ chế cập nhật im lặng (`LexiconManager.checkAndPromptForDictionaryUpdate`, throttle 24h).
+- Build script mới: [Tools/build_underthesea_package.py](Tools/build_underthesea_package.py).
+- Research report: [Tools/research/undertheseanlp-dictionary.md](Tools/research/undertheseanlp-dictionary.md).
+- Attribution: cập nhật `_meta.sources` trong package + [LICENSE-DATA.md](LICENSE-DATA.md).
+
+### Đã defer ra v1.7.0+
+
+- Phrase corpus integration cho prediction engine (~70k phrase pairs từ undertheseanlp).
+- Quality audit cho 9,412 syllables (loại từ archaic / hiếm).
+- Performance test cold-start fetch + merge latency.
 
 ## [1.6.0] - 2026-05-19 — "Smart Suggestions & Prediction"
 

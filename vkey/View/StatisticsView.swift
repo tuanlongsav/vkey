@@ -22,6 +22,7 @@ struct StatisticsView: View {
   @State private var historical: [UsageSummary] = []
   @State private var lastFeedbackChanges: String = ""
   @State private var backupStatus: String = ""
+  @State private var diagnosticStatus: String = ""
   @State private var showingSuggestionSheet = false
 
   var body: some View {
@@ -161,12 +162,58 @@ struct StatisticsView: View {
               Text("Top app dùng nhiều")
             }
           }
+
+          // MARK: 8. Historical weeks (1.6.1+ — đảm bảo data tuần cũ
+          // không "biến mất" trên UI sau khi rotation đóng tuần).
+          if !historical.isEmpty {
+            Section {
+              ForEach(historical.prefix(4), id: \.weekId) { week in
+                VStack(alignment: .leading, spacing: 4) {
+                  Text(week.weekId)
+                    .font(.headline)
+                  HStack {
+                    Text("Tổng: \(week.wordsTotal)")
+                    Spacer()
+                    Text("VN: \(week.wordsKeptVietnamese)")
+                    Spacer()
+                    Text("EN: \(week.wordsRestoredEnglish)")
+                  }
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 2)
+              }
+            } header: {
+              Text("Các tuần đã đóng")
+            }
+          }
+        }
+
+        // MARK: 9. Diagnostic (1.6.1+)
+        Section {
+          HStack {
+            Spacer()
+            Button(action: exportDiagnostic) {
+              Label("Xuất chẩn đoán Stats", themedSymbol: "stethoscope")
+            }
+            .help("Lưu file text mô tả tình trạng stats hiện tại — gửi khi báo lỗi.")
+            Spacer()
+          }
+          if !diagnosticStatus.isEmpty {
+            Text(diagnosticStatus)
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .frame(maxWidth: .infinity, alignment: .center)
+          }
+        } header: {
+          Text("Chẩn đoán")
         }
       }
       .formStyle(.grouped)
       .scrollDisabled(false)
     }
-    .frame(width: 440, height: 560)
+    .frame(minWidth: 540, minHeight: 640)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
     .onAppear(perform: refresh)
     .sheet(isPresented: $showingSuggestionSheet) {
       PersonalDictSuggestionSheet()
@@ -192,6 +239,19 @@ struct StatisticsView: View {
         lastFeedbackChanges = "Đã compute \(count) đề xuất. Bấm \"Xem đề xuất\" để review và chốt thêm."
       }
       refresh()
+    }
+  }
+
+  private func exportDiagnostic() {
+    let report = UsageStatistics.shared.diagnosticReport()
+    let url = FileManager.default
+      .homeDirectoryForCurrentUser
+      .appendingPathComponent("Desktop/vkey-stats-diagnostic.txt")
+    do {
+      try report.write(to: url, atomically: true, encoding: .utf8)
+      diagnosticStatus = "Đã lưu: \(url.lastPathComponent)"
+    } catch {
+      diagnosticStatus = "Lỗi xuất: \(error.localizedDescription)"
     }
   }
 

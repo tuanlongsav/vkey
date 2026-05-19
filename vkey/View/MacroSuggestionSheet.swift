@@ -32,7 +32,7 @@ struct MacroSuggestionSheet: View {
       VStack(alignment: .leading, spacing: 4) {
         Text("Gợi ý macro từ Thống kê")
           .font(.headline)
-        Text("Các từ bạn gõ ≥10 lần (tất cả tuần). Sửa cột \"Viết tắt\" nếu muốn rồi bấm \"Thêm\".")
+        Text("Các từ và cụm từ bạn gõ ≥10 lần. Sửa cột \"Viết tắt\" nếu muốn rồi bấm \"Thêm\".")
           .font(.caption)
           .foregroundStyle(.secondary)
       }
@@ -101,7 +101,12 @@ struct MacroSuggestionSheet: View {
   // MARK: - Actions
 
   private func load() {
-    let aggregated = UsageStatistics.shared.aggregatedTopVietnameseWords(threshold: 10)
+    // 1.6.1: kết hợp single-word + phrases (2-3 từ liền).
+    let words = UsageStatistics.shared.aggregatedTopVietnameseWords(threshold: 10)
+    let phrases = UsageStatistics.shared.aggregatedTopVietnamesePhrases(threshold: 10)
+    // Phrases ưu tiên hiển thị trước (giá trị macro cao hơn — cụm dài
+    // tiết kiệm nhiều keystroke hơn từ đơn).
+    let aggregated = phrases + words
     let existingTo = Set(macros.map { $0.to.lowercased() })
     var existingFrom = Set(macros.map { $0.from.lowercased() })
 

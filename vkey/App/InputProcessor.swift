@@ -564,28 +564,37 @@ class InputProcessor {
   // MARK: - Private Event Handlers
 
   private func handleTaskKey(_ taskKey: TaskKey, event: CGEvent) -> Unmanaged<CGEvent>? {
-    // 1.6.0: Tab + có prediction active + feature bật → accept prediction.
-    // Chỉ ăn Tab khi tất cả điều kiện match; nếu không, pass-through để
-    // app khác (vd form input) nhận Tab bình thường.
+    // 1.6.1: Tab handling khi prediction enabled.
+    // - Nếu HUD đang show prediction → ALWAYS swallow Tab (defensive)
+    //   để OS autocomplete / form-tab không can thiệp. Insert prediction
+    //   chỉ khi buffer đã sạch; ngược lại chỉ dismiss HUD.
+    // - Nếu không có activePrediction → fall-through cho Tab pass-through
+    //   (legitimate form navigation / tab indent).
     if taskKey == .Tab,
-       let prediction = activePrediction,
        Defaults[.wordPredictionEnabled],
-       wordBuffer.wordState.isBlank  // chỉ accept khi user vừa commit xong word
+       activePrediction != nil
     {
-      let toInsert = "\(prediction) "
-      let telemetry = EventSimulator.sendReplacement(
-        backspaceCount: 0,
-        diffChars: Array(toInsert),
-        strategy: strategyTracker.currentStrategy
-      )
-      observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
+      if let prediction = activePrediction, wordBuffer.wordState.isBlank {
+        // Force-reset buffer (defensive — guarantee no residue from
+        // previous commit's transformed state). storePrevious: false để
+        // không tạo nhánh backspace recovery.
+        newWord(storePrevious: false)
+        let toInsert = "\(prediction) "
+        let telemetry = EventSimulator.sendReplacement(
+          backspaceCount: 0,
+          diffChars: Array(toInsert),
+          strategy: strategyTracker.currentStrategy
+        )
+        observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
+        // Update prediction chain — prediction giờ trở thành prev1.
+        prev2Committed = prev1Committed
+        prev1Committed = prediction.lowercased()
+      }
+      // Cả 2 nhánh (insert / dismiss) đều clear state + hide HUD + swallow Tab.
+      activePrediction = nil
       DispatchQueue.main.async {
         PredictionHUDWindow.shared.hide()
       }
-      // Update prediction chain — prediction giờ trở thành prev1.
-      prev2Committed = prev1Committed
-      prev1Committed = prediction.lowercased()
-      activePrediction = nil
       return nil  // swallow Tab
     }
 

@@ -118,7 +118,8 @@ struct MacroView: View {
       }
     }
     .padding(12)
-    .frame(width: 480, height: 420)
+    .frame(minWidth: 540, minHeight: 640)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
     .sheet(isPresented: $showingSuggestionSheet) {
       MacroSuggestionSheet()
         .onDisappear { recomputeSuggestionCount() }

@@ -104,6 +104,10 @@ final class UsageStatistics {
   /// flushed. Keeps disk writes throttled to one per ~10 seconds.
   private var pendingFlushItem: DispatchWorkItem?
 
+  /// 1.6.1: sliding window các từ tiếng Việt vừa commit (≤3) để tracking
+  /// phrase bigram/trigram. Reset khi gõ tiếng Anh/raw/Smart Switch.
+  private var recentVnQueue: [String] = []
+
   /// Limit on the number of weekly files we keep on disk. Older files get
   /// deleted automatically during flush.
   private let maxWeeksRetained = 4
@@ -169,6 +173,8 @@ final class UsageStatistics {
       if let app = toApp {
         self.counters.appCounts[app, default: 0] += 1
       }
+      // 1.6.1: ngắt chain phrase khi Smart Switch (đổi context).
+      self.recentVnQueue.removeAll()
       self.scheduleFlush()
     }
   }
@@ -184,13 +190,19 @@ final class UsageStatistics {
   }
 
   /// All closed-week snapshots on disk, newest first.
+  /// 1.6.1: defensive filter loại `<currentWeekId>.json` nếu lỡ tồn tại
+  /// trên disk (legacy 1.5.x/1.6.0 ghi nhầm) — tuần đang chạy phải đọc
+  /// từ `counters` qua `currentWeekSummary()`.
   func historicalSummaries() -> [UsageSummary] {
     queue.sync {
+      let currentWeekFile = "\(WeekBucket.currentWeekId()).json"
       let urls = (try? FileManager.default.contentsOfDirectory(
         at: storageDir, includingPropertiesForKeys: nil
       )) ?? []
       var out: [UsageSummary] = []
-      for url in urls where url.pathExtension == "json" && url.lastPathComponent != "current.json" {
+      for url in urls where url.pathExtension == "json"
+                           && url.lastPathComponent != "current.json"
+                           && url.lastPathComponent != currentWeekFile {
         if let data = try? Data(contentsOf: url),
            let summary = try? JSONDecoder().decode(UsageSummary.self, from: data) {
           out.append(summary)
@@ -198,6 +210,40 @@ final class UsageStatistics {
       }
       out.sort { $0.weekId > $1.weekId }
       return out
+    }
+  }
+
+  /// 1.6.1: chẩn đoán — liệt kê file + đếm word counts để user gửi lại
+  /// khi báo lỗi stats. Trả về plain text (multi-line).
+  func diagnosticReport() -> String {
+    queue.sync {
+      var lines: [String] = []
+      lines.append("vkey stats diagnostic — \(ISO8601DateFormatter().string(from: Date()))")
+      lines.append("storageDir: \(storageDir.path)")
+      lines.append("counters.weekId: \(counters.weekId)")
+      lines.append("counters.wordsTotal: \(counters.wordsTotal)")
+      lines.append("counters.vnWordCounts.count: \(counters.vnWordCounts.count)")
+      lines.append("counters.enWordCounts.count: \(counters.enWordCounts.count)")
+      lines.append("currentWeekId(): \(WeekBucket.currentWeekId())")
+      lines.append("--- files on disk ---")
+      let urls = (try? FileManager.default.contentsOfDirectory(
+        at: storageDir, includingPropertiesForKeys: [.fileSizeKey]
+      )) ?? []
+      for url in urls.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        var summary = "(decode failed)"
+        if let data = try? Data(contentsOf: url) {
+          if url.lastPathComponent == "current.json" {
+            if let bucket = try? JSONDecoder().decode(WeekBucket.self, from: data) {
+              summary = "weekId=\(bucket.weekId), wordsTotal=\(bucket.wordsTotal), vnWords=\(bucket.vnWordCounts.count)"
+            }
+          } else if let s = try? JSONDecoder().decode(UsageSummary.self, from: data) {
+            summary = "weekId=\(s.weekId), wordsTotal=\(s.wordsTotal), vnWords=\(s.topVietnameseWords.count)"
+          }
+        }
+        lines.append("  \(url.lastPathComponent) (\(size) bytes) — \(summary)")
+      }
+      return lines.joined(separator: "\n")
     }
   }
 
@@ -221,6 +267,30 @@ final class UsageStatistics {
       .filter { $0.value >= threshold }
       .map { WordCount(word: $0.key, count: $0.value) }
       .sorted { $0.count > $1.count }
+  }
+
+  /// 1.6.1: Aggregate top phrases (2 hoặc 3 từ tiếng Việt liền) qua
+  /// current week. Historical weeks không track phrase (chỉ từ 1.6.1+).
+  /// Dùng cho Macro suggestion UI.
+  func aggregatedTopVietnamesePhrases(
+    minWords: Int = 2, maxWords: Int = 3, threshold: Int = 10
+  ) -> [WordCount] {
+    queue.sync {
+      var out: [String: Int] = [:]
+      if minWords <= 2 && maxWords >= 2 {
+        for (phrase, count) in counters.vnPhraseCounts2 where count >= threshold {
+          out[phrase] = count
+        }
+      }
+      if minWords <= 3 && maxWords >= 3 {
+        for (phrase, count) in counters.vnPhraseCounts3 where count >= threshold {
+          out[phrase] = count
+        }
+      }
+      return out
+        .map { WordCount(word: $0.key, count: $0.value) }
+        .sorted { $0.count > $1.count }
+    }
   }
 
   /// Aggregate `topApps` (bundle ID) qua tất cả tuần, dùng cho "Gợi ý từ
@@ -352,6 +422,13 @@ final class UsageStatistics {
     var vnKeepStreak: [String: Int] = [:]   // word → times kept
     var enRestoreStreak: [String: Int] = [:] // raw → times restored
 
+    /// 1.6.1: phrase counters (chuỗi 2-3 từ tiếng Việt liền kề user gõ).
+    /// Dùng cho macro suggestion — đề xuất viết tắt cho cụm hay gõ.
+    /// Chỉ tăng khi commit liền nhau là `.keepVietnamese`; ngắt khi xen
+    /// English / raw / Smart Switch.
+    var vnPhraseCounts2: [String: Int] = [:]   // "công ty" → count
+    var vnPhraseCounts3: [String: Int] = [:]   // "kính gửi anh" → count
+
     init(weekId: String = WeekBucket.currentWeekId(),
          weekEnd: Date = WeekBucket.endOfCurrentWeek()) {
       self.weekId = weekId
@@ -365,6 +442,7 @@ final class UsageStatistics {
       case typoCorrectionsApplied
       case vnWordCounts, enWordCounts, appCounts
       case vnKeepStreak, enRestoreStreak
+      case vnPhraseCounts2, vnPhraseCounts3   // 1.6.1+
     }
 
     /// 1.6.0: backward-compat Codable. Mọi field optional với fallback
@@ -389,6 +467,9 @@ final class UsageStatistics {
       self.appCounts = try c.decodeIfPresent([String: Int].self, forKey: .appCounts) ?? [:]
       self.vnKeepStreak = try c.decodeIfPresent([String: Int].self, forKey: .vnKeepStreak) ?? [:]
       self.enRestoreStreak = try c.decodeIfPresent([String: Int].self, forKey: .enRestoreStreak) ?? [:]
+      // 1.6.1: phrase counters — luôn optional (file v1.5.x/1.6.0 không có).
+      self.vnPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts2) ?? [:]
+      self.vnPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts3) ?? [:]
     }
 
     func summary(promotedAllow: [String], promotedKeep: [String]) -> UsageSummary {
@@ -447,12 +528,20 @@ final class UsageStatistics {
 
   private func loadCurrentWeekIfNeeded() {
     let url = storageDir.appendingPathComponent("current.json")
-    guard let data = try? Data(contentsOf: url),
-          let loaded = try? JSONDecoder().decode(WeekBucket.self, from: data),
-          loaded.weekId == WeekBucket.currentWeekId() else {
+    guard let data = try? Data(contentsOf: url) else { return }
+    guard let loaded = try? JSONDecoder().decode(WeekBucket.self, from: data) else {
+      os_log("UsageStatistics: current.json decode failed; preserving in-memory state",
+             log: log, type: .error)
       return
     }
-    queue.sync { counters = loaded }
+    // 1.6.1: Always load, then let rotateIfNeeded handle stale weeks.
+    // Trước: nếu loaded.weekId != currentWeekId thì skip — data tuần
+    // trước bị bỏ rơi và lần flush kế tiếp ghi đè empty bucket lên
+    // current.json → mất hết stats khi upgrade qua biên tuần ISO.
+    queue.sync {
+      counters = loaded
+      rotateIfNeeded()
+    }
   }
 
   private func rotateIfNeeded() {
@@ -510,6 +599,10 @@ final class UsageStatistics {
       if !vnToken.isEmpty {
         counters.vnWordCounts[vnToken, default: 0] += 1
         counters.vnKeepStreak[vnToken, default: 0] += 1
+        // 1.6.1: phrase tracking — append to sliding window + tăng counter.
+        recordVnPhraseTransition(append: vnToken)
+      } else {
+        recentVnQueue.removeAll()
       }
     case .restoreRawEnglish:
       counters.wordsRestoredEnglish += 1
@@ -517,6 +610,7 @@ final class UsageStatistics {
         counters.enWordCounts[rawToken, default: 0] += 1
         counters.enRestoreStreak[rawToken, default: 0] += 1
       }
+      recentVnQueue.removeAll()
     case .keepRaw:
       counters.wordsKeptRaw += 1
       if !rawToken.isEmpty {
@@ -524,8 +618,10 @@ final class UsageStatistics {
         // often. They become candidates for personal dictionary later.
         counters.enWordCounts[rawToken, default: 0] += 1
       }
+      recentVnQueue.removeAll()
     case .suggest:
       counters.wordsSuggested += 1
+      // Suggest không reset queue (chưa commit cuối cùng).
     }
 
     if typoCorrectionApplied {
@@ -538,8 +634,27 @@ final class UsageStatistics {
     // Cap the per-bucket sizes so a runaway map can't blow disk.
     trimDict(&counters.vnWordCounts, max: 500)
     trimDict(&counters.enWordCounts, max: 500)
+    trimDict(&counters.vnPhraseCounts2, max: 300)
+    trimDict(&counters.vnPhraseCounts3, max: 300)
 
     scheduleFlush()
+  }
+
+  /// 1.6.1: sliding window cập nhật phrase counters. Gọi từ `applyCommit`
+  /// mỗi khi commit `.keepVietnamese` thành công.
+  private func recordVnPhraseTransition(append token: String) {
+    recentVnQueue.append(token)
+    if recentVnQueue.count > 3 {
+      recentVnQueue.removeFirst(recentVnQueue.count - 3)
+    }
+    if recentVnQueue.count >= 2 {
+      let phrase2 = recentVnQueue.suffix(2).joined(separator: " ")
+      counters.vnPhraseCounts2[phrase2, default: 0] += 1
+    }
+    if recentVnQueue.count >= 3 {
+      let phrase3 = recentVnQueue.suffix(3).joined(separator: " ")
+      counters.vnPhraseCounts3[phrase3, default: 0] += 1
+    }
   }
 
   private func trimDict(_ dict: inout [String: Int], max: Int) {
@@ -681,15 +796,12 @@ final class UsageStatistics {
   }
 
   private func persistCurrentWeek(includingPromotionLog promoted: PromotionResult) {
-    let summary = counters.summary(
-      promotedAllow: promoted.allow,
-      promotedKeep: promoted.keep
-    )
-    let url = storageDir.appendingPathComponent("\(counters.weekId).json")
-    if let data = try? JSONEncoder.indented.encode(summary) {
-      try? data.write(to: url, options: .atomic)
-    }
-    // Keep the running bucket too so the UI shows up-to-date numbers.
+    // 1.6.1: KHÔNG ghi `<currentWeekId>.json` cho tuần ĐANG chạy.
+    // File per-week chỉ được tạo khi rotateIfNeeded() đóng một tuần
+    // hoàn chỉnh. Trước đây ghi cả lúc đang chạy → file rỗng / nửa vời
+    // lẫn vào `historicalSummaries()` và che lấp data thật.
+    // promoted log hiện không dùng (1.6.0 đã chuyển sang pending suggestions).
+    _ = promoted
     flushNow()
   }
 }

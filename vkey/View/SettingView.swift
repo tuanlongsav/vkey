@@ -174,6 +174,7 @@ struct GeneralView: View {
     @Default(.newStyleTonePlacement) private var newStyleTonePlacement
     @Default(.autoTypoCorrection) private var autoTypoCorrection
     @Default(.hudEnabled) private var hudEnabled
+    @Default(.wordPredictionEnabled) private var wordPredictionEnabled
 
     let appVersion = Bundle.main.appVersionLong
 
@@ -251,6 +252,19 @@ struct GeneralView: View {
                 } label: {
                     Label("Phím tắt", themedSymbol: "command")
                 }
+
+                // 1.6.1: Đoán từ tiếp theo — chuyển từ tab Chính tả sang đây.
+                Toggle(isOn: $wordPredictionEnabled) {
+                    Label("Đoán từ tiếp theo", themedSymbol: "wand.and.stars")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                if wordPredictionEnabled {
+                    Text("Sau khi gõ xong 1 từ + dấu cách, vkey hiển thị HUD nhỏ cạnh cursor với từ đoán tiếp theo (vd \"tiếp\" → \"theo\"). Nhấn ⇥ Tab để chấp nhận; phím khác → bỏ qua. Ưu tiên gợi ý từ trong từ điển gốc + từ điển cá nhân.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, -8)
+                }
             }
             .formStyle(.grouped)
             .scrollDisabled(false)
@@ -266,7 +280,8 @@ struct GeneralView: View {
             .padding(.bottom, 14)
             .frame(maxWidth: .infinity)
         }
-        .frame(width: 440, height: 560)
+        .frame(minWidth: 540, minHeight: 640)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -291,7 +306,6 @@ struct SpellCheckView: View {
     @Default(.useEnVnReference) private var useEnVnReference
     @Default(.autoPersonalDictFeedback) private var autoPersonalDictFeedback
     @Default(.pendingDictSuggestions) private var pendingSuggestions
-    @Default(.wordPredictionEnabled) private var wordPredictionEnabled
 
     @State private var showingPersonalDictEditor = false
     @State private var showingSuggestionSheet = false
@@ -460,25 +474,15 @@ struct SpellCheckView: View {
                         Text("Học hành vi từ Thống kê")
                     }
 
-                    // Section 7: Đoán từ tiếp theo — 1.6.0 thử nghiệm.
-                    Section {
-                        Toggle(isOn: $wordPredictionEnabled) {
-                            Label("Đoán từ tiếp theo", themedSymbol: "wand.and.stars")
-                        }
-                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-
-                        Text("Sau khi gõ xong 1 từ + dấu cách, vkey hiển thị HUD nhỏ gần cursor với từ đoán tiếp theo (vd \"tiếp\" → \"theo\"). Nhấn ⇥ Tab để chấp nhận; phím khác → bỏ qua. Tính năng thử nghiệm — học từ thói quen gõ của bạn.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } header: {
-                        Text("Đoán từ tiếp theo (thử nghiệm)")
-                    }
+                    // 1.6.1: Section "Đoán từ tiếp theo" đã chuyển sang
+                    // tab Chung — feature global, không trực thuộc spell check.
                 }
             }
             .formStyle(.grouped)
             .scrollDisabled(false)
         }
-        .frame(width: 440, height: 560)
+        .frame(minWidth: 540, minHeight: 640)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingPersonalDictEditor) {
             PersonalDictionaryEditorView()
         }

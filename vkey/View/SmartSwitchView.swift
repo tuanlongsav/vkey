@@ -205,7 +205,8 @@ struct SmartSwitchView: View {
                 .background(Color(NSColor.controlBackgroundColor))
             }
         }
-        .frame(width: 440, height: 540)
+        .frame(minWidth: 540, minHeight: 640)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingAppSuggestionSheet) {
             SmartSwitchSuggestionSheet()
                 .onDisappear { recomputeAppSuggestionCount() }

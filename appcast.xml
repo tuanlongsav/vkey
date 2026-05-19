@@ -6,6 +6,32 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.6.1 — "Polish &amp; Persistence"</title>
+      <sparkle:version>16100</sparkle:version>
+      <sparkle:shortVersionString>1.6.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 22:35:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.6.1/vkey-1.6.1.dmg"
+        sparkle:edSignature="wO2lB6lqhkJO7H9ZW/3LoUW7wyBZFuAb2Uwfcudy4n425Qce+mwe9pQWrameCnAJAfPtiSjs/84ZKvpLoAXtAQ=="
+        length="5625167"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.6.1 — "Polish &amp; Persistence":</h2>
+        <p>Bản vá tập trung sửa các regression của 1.6.0 + bổ sung dictionary lớn hơn:</p>
+        <ul>
+          <li><strong>Sửa lỗi mất hiển thị Thống kê sau khi cập nhật</strong>: nguyên nhân — khi nâng cấp qua biên tuần ISO, file <code>current.json</code> bị bỏ qua do weekId không khớp → lần flush kế tiếp ghi đè empty bucket. 1.6.1: luôn load file rồi để <code>rotateIfNeeded</code> xử lý đúng tuần đã đóng. Thêm Section "Các tuần đã đóng" + nút "Xuất chẩn đoán Stats" trong tab Thống kê.</li>
+          <li><strong>Sửa bug Tab key đoán từ</strong>: gõ "dữ" + Space + Tab giờ chèn đúng "liệu" thay vì sinh ký tự thừa. Tab handler defensive — ALWAYS swallow Tab khi HUD prediction đang show để OS autocomplete / form-tab không can thiệp. Force-reset buffer trước khi insert.</li>
+          <li><strong>Đoán từ ưu tiên từ điển</strong>: ranking giờ kết hợp từ điển gốc (+1000) + từ điển cá nhân keep (+500) + tần suất. Lọc candidate trùng từ vừa gõ. Tránh suggest từ rác như "tcb" mà chỉ vì user gõ tay 5 lần.</li>
+          <li><strong>Chuyển toggle Đoán từ sang tab Chung</strong>: feature global hơn, không thuộc Chính tả.</li>
+          <li><strong>Cửa sổ Cài đặt giờ có thể resize</strong>: kích thước mặc định 540×640 nhất quán giữa 5 tab. Drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở (autosave).</li>
+          <li><strong>Đề xuất Macro từ cụm từ</strong>: vkey giờ track cụm 2-3 từ tiếng Việt gõ liền (vd "công ty của tôi"). Tab Macro → "Xem &amp; thêm" hiển thị cụm phổ biến cùng với từ đơn, tự sinh viết tắt (vd "kga" cho "kính gửi anh"). Track từ 1.6.1+, không backfill data cũ.</li>
+          <li><strong>Mở rộng từ điển +2,228 từ</strong>: tích hợp dữ liệu từ <a href="https://github.com/undertheseanlp/dictionary">undertheseanlp/dictionary</a> (Vũ Anh, GPL-3.0) tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Tổng dictionary VN giờ 9,412 syllables (từ 7,184). Tự động tải về qua cơ chế cập nhật im lặng đã có. Xem <a href="https://github.com/tuanlongsav/vkey/blob/main/LICENSE-DATA.md">LICENSE-DATA.md</a>.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.6.0 — "Smart Suggestions &amp; Prediction"</title>
       <sparkle:version>16000</sparkle:version>
       <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>

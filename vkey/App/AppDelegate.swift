@@ -58,6 +58,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       name: .vkeyOnboardingDidComplete,
       object: nil
     )
+    // 1.6.1: nhận biết Settings NSWindow khi vừa được tạo bởi SwiftUI
+    // Settings scene → áp resizable + min size + autosave frame. SwiftUI
+    // không expose customization cho Settings scene nên phải hook qua AppKit.
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(windowDidBecomeKey(_:)),
+      name: NSWindow.didBecomeKeyNotification,
+      object: nil
+    )
 
     checkTrustStatus()
 
@@ -214,6 +223,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
 
     if !hasVisibleWindow {
       NSApp.setActivationPolicy(.accessory)
+    }
+  }
+
+  /// 1.6.1: Settings window từ SwiftUI Settings scene mặc định fixed-size.
+  /// Khi vừa key, áp resizable + min size + autosave frame để user resize
+  /// được + remember kích thước giữa các lần mở.
+  @objc func windowDidBecomeKey(_ note: Notification) {
+    guard let win = note.object as? NSWindow else { return }
+    // Settings window có title "vkey Settings" (English locale) hoặc local
+    // hoá. Match qua identifier "com_apple_SwiftUI_Settings_window" cho
+    // robust cross-locale.
+    let isSettingsWindow =
+      win.identifier?.rawValue == "com_apple_SwiftUI_Settings_window"
+      || win.title.localizedCaseInsensitiveContains("settings")
+      || win.title.localizedCaseInsensitiveContains("cài đặt")
+    guard isSettingsWindow else { return }
+    // Idempotent — chỉ apply 1 lần.
+    if !win.styleMask.contains(.resizable) {
+      win.styleMask.insert(.resizable)
+      win.minSize = NSSize(width: 540, height: 640)
+      if win.frameAutosaveName.isEmpty {
+        win.setFrameAutosaveName("VkeySettingsWindow")
+      }
     }
   }
 

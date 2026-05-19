@@ -25,42 +25,72 @@ final class PredictionEngine {
   private let userBigramThreshold = 2
   private let userTrigramThreshold = 2
 
-  /// Trả về top prediction cho cụm "prev2 prev1". Layered fallback:
-  /// 1. Trigram user (prev2, prev1 → ?), count ≥ threshold
-  /// 2. Bigram user (prev1 → ?), count ≥ threshold
-  /// 3. Bigram embedded corpus (prev1 → ?)
-  /// 4. nil — không đoán
+  /// 1.6.1: Trả về top prediction cho cụm "prev2 prev1". Thay vì pure
+  /// frequency, ranking blended với dictionary priority để tránh suggest
+  /// rác (vd "tcb", cụm trùng prev1).
+  ///
+  /// Scoring per candidate:
+  /// - +1000 nếu là từ tiếng Việt (built-in lexicon hoặc user allow list)
+  /// - +500 nếu nằm trong personal `userKeepWords`
+  /// - + raw frequency (user bigram/trigram count) hoặc weight (embedded)
+  ///
+  /// Filter cứng: loại candidate trùng prev1 (vd "dữ" → "dữ") — đây là
+  /// noise từ learnTransition đôi khi học chính từ vừa gõ.
+  /// Filter mềm: candidate phải đạt ít nhất 1000 (có dict bonus) HOẶC 5
+  /// (frequency cao). Tránh suggest từ thấp ngưỡng + không có cơ sở từ điển.
   func topPrediction(prev2: String?, prev1: String) -> String? {
     let p1 = prev1.lowercased()
     guard !p1.isEmpty else { return nil }
 
+    let candidates = collectCandidates(prev2: prev2, prev1: p1)
+    let keepSet = Set(Defaults[.userKeepWords].map { $0.lowercased() })
+
+    var best: (word: String, score: Int)? = nil
+    for (word, freq) in candidates {
+      // Hard filter: không suggest từ trùng với prev1.
+      if word == p1 { continue }
+      let dictBonus = LexiconManager.shared.isVietnameseWord(word) ? 1000 : 0
+      let personalBonus = keepSet.contains(word) ? 500 : 0
+      let score = dictBonus + personalBonus + freq
+      // Soft floor: phải có dict bonus hoặc freq ≥ 5.
+      guard score >= 1000 || freq >= 5 else { continue }
+      if best == nil || score > best!.score {
+        best = (word, score)
+      }
+    }
+    return best?.word
+  }
+
+  /// Tập hợp toàn bộ candidates từ 3 layers cùng frequency tương đối.
+  /// Internal để test (1.6.1+).
+  func collectCandidates(prev2: String?, prev1: String) -> [(word: String, freq: Int)] {
+    var out: [String: Int] = [:]
+
     // Layer 1: trigram user
     if let prev2 = prev2 {
-      let key = "\(prev2.lowercased())|\(p1)"
-      if let nexts = Defaults[.userTrigrams][key],
-         let top = nexts.max(by: { $0.value < $1.value }),
-         top.value >= userTrigramThreshold
-      {
-        return top.key
+      let key = "\(prev2.lowercased())|\(prev1)"
+      if let nexts = Defaults[.userTrigrams][key] {
+        for (w, c) in nexts where c >= userTrigramThreshold {
+          out[w, default: 0] += c * 2  // trigram weight 2× (more specific)
+        }
       }
     }
 
     // Layer 2: bigram user
-    if let nexts = Defaults[.userBigrams][p1],
-       let top = nexts.max(by: { $0.value < $1.value }),
-       top.value >= userBigramThreshold
-    {
-      return top.key
+    if let nexts = Defaults[.userBigrams][prev1] {
+      for (w, c) in nexts where c >= userBigramThreshold {
+        out[w, default: 0] += c
+      }
     }
 
     // Layer 3: embedded VN corpus
-    if let nexts = EmbeddedBigrams.commonPairs[p1],
-       let top = nexts.max(by: { $0.weight < $1.weight })
-    {
-      return top.next
+    if let nexts = EmbeddedBigrams.commonPairs[prev1] {
+      for (next, weight) in nexts {
+        out[next, default: 0] += weight
+      }
     }
 
-    return nil
+    return out.map { (word: $0.key, freq: $0.value) }
   }
 
   /// Học từ commit: update bigram[prev1][curr] + trigram[prev2|prev1][curr].
