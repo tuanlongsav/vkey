@@ -2,6 +2,24 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.5.8] - 2026-05-19 — "Right-Sized"
+
+Hotfix sau 1.5.7 sửa kích thước icon Theme Emoji + tinh chỉnh menu bar.
+
+### Sửa Emoji icon quá to ở Smart Switch / Macro tabs
+
+- **Triệu chứng**: ở theme Emoji, icon 🔁 trong header Smart Switch và icon 📝 / ✏️ / 🗑️ / 📤 / 📥 trong tab Macro phình ra quá to, đẩy text dạt sang, mất nội dung hiển thị. Tab Chung và Chính tả thì OK.
+- **Nguyên nhân**: 1.5.7 render emoji NSImage ở `pointSize=32` với modifier `.resizable().scaledToFit()`. Trong các HStack header / List rows không có frame constraint, `.scaledToFit()` cho phép Image stretch đầy chiều cao available → icon bị phình.
+- **Fix**: 
+  - Giảm `pointSize` default từ 32 → 18 (match xấp xỉ SF Symbol body baseline).
+  - **Bỏ `.resizable().scaledToFit()`** → Image render ở natural size 18pt cố định trong mọi context. Không stretch theo parent. Predictable layout.
+  - Trade-off: Smart Switch tab header (dùng `.font(.system(size: 32))` cho SF Symbol) sẽ thấy emoji 18pt thay vì 32pt — chấp nhận để giữ layout ổn định cho mọi context khác.
+
+### Tinh chỉnh menu bar dropdown
+
+- Bỏ double-space trong title menu items: `"Smart Switch  ✓"` → `"Smart Switch ✓"`, `"Chuyển đổi bộ gõ  🇻🇳 | 🇺🇸"` → `"Chuyển đổi bộ gõ 🇻🇳 | 🇺🇸"`, etc.
+- Text giờ sát icon hơn, menu width gọn hơn ~10pt.
+
 ## [1.5.7] - 2026-05-19 — "Fine Tuning"
 
 Hotfix sau 1.5.6 sửa 3 vấn đề UX user phản hồi.

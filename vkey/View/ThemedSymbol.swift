@@ -62,9 +62,13 @@ struct ThemedSymbol: View {
     case .emoji:
       if let glyph = Self.emojiFor(name),
          let img = Self.emojiImage(for: glyph) {
+        // KHÔNG dùng `.resizable()` để Image render ở natural size
+        // (18pt) cố định trong mọi context. Tránh layout stretch khi
+        // parent unconstrained (vd HStack header trong SmartSwitchView
+        // làm icon phình to). Caller muốn size khác có thể wrap explicit
+        // `.frame()` — nhưng default 18pt match approximate SF Symbol
+        // body baseline.
         Image(nsImage: img)
-          .resizable()
-          .scaledToFit()
       } else {
         // Fallback nếu thiếu mapping HOẶC render NSImage fail.
         Image(systemName: name)
@@ -85,10 +89,13 @@ struct ThemedSymbol: View {
   /// quả: title biến mất, chỉ thấy emoji. NSImage thì map clean vào
   /// NSMenuItem.image slot, title gốc giữ nguyên.
   ///
-  /// `pointSize=32` đủ lớn để scale up cho onboarding view (48pt+)
-  /// vẫn nét; scale down về 14-16pt cho menu / settings cũng tốt
-  /// (Apple Color Emoji là bitmap font đa kích thước).
-  private static func emojiImage(for emoji: String, pointSize: CGFloat = 32) -> NSImage? {
+  /// `pointSize=18` cân bằng giữa các context: hơi lớn hơn body
+  /// baseline (~13pt) cho dễ nhìn nhưng không quá to phá layout khi
+  /// parent unconstrained (vd Smart Switch tab header với HStack
+  /// không có frame). Nếu sau này cần emoji to hơn cho onboarding,
+  /// caller có thể truyền pointSize lớn hơn — nhưng phải kèm
+  /// `.frame(width:height:)` để giới hạn rendering.
+  private static func emojiImage(for emoji: String, pointSize: CGFloat = 18) -> NSImage? {
     let cacheKey = "\(emoji)_\(Int(pointSize))" as NSString
     if let cached = emojiImageCache.object(forKey: cacheKey) {
       return cached

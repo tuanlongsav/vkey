@@ -72,7 +72,7 @@ struct MainMenuView: View {
     Button {
       appDelegate.appState.enabled.toggle()
     } label: {
-      Label("Chuyển đổi bộ gõ  🇻🇳 | 🇺🇸", themedSymbol: "arrow.left.arrow.right.square")
+      Label("Chuyển đổi bộ gõ 🇻🇳 | 🇺🇸", themedSymbol: "arrow.left.arrow.right.square")
     }
 
     Divider()
@@ -81,7 +81,7 @@ struct MainMenuView: View {
       appDelegate.appState.typingMethod = .Telex
     } label: {
       Label(
-        appDelegate.appState.typingMethod == .Telex ? "Kiểu Telex  ✓" : "Kiểu Telex",
+        appDelegate.appState.typingMethod == .Telex ? "Kiểu Telex ✓" : "Kiểu Telex",
         themedSymbol: "keyboard"
       )
     }
@@ -90,7 +90,7 @@ struct MainMenuView: View {
       appDelegate.appState.typingMethod = .VNI
     } label: {
       Label(
-        appDelegate.appState.typingMethod == .VNI ? "Kiểu VNI  ✓" : "Kiểu VNI",
+        appDelegate.appState.typingMethod == .VNI ? "Kiểu VNI ✓" : "Kiểu VNI",
         themedSymbol: "keyboard.badge.ellipsis"
       )
     }
@@ -112,7 +112,7 @@ struct MainMenuView: View {
       smartSwitchEnabled.toggle()
     } label: {
       Label(
-        smartSwitchEnabled ? "Smart Switch  ✓" : "Smart Switch",
+        smartSwitchEnabled ? "Smart Switch ✓" : "Smart Switch",
         themedSymbol: "arrow.left.arrow.right.circle"
       )
     }
@@ -121,7 +121,7 @@ struct MainMenuView: View {
       spellCheckEnabled.toggle()
     } label: {
       Label(
-        spellCheckEnabled ? "Sửa lỗi chính tả  ✓" : "Sửa lỗi chính tả",
+        spellCheckEnabled ? "Sửa lỗi chính tả ✓" : "Sửa lỗi chính tả",
         themedSymbol: "checkmark.circle"
       )
     }
@@ -130,7 +130,7 @@ struct MainMenuView: View {
       macroEnabled.toggle()
     } label: {
       Label(
-        macroEnabled ? "Macro  ✓" : "Macro",
+        macroEnabled ? "Macro ✓" : "Macro",
         themedSymbol: "text.cursor"
       )
     }
@@ -139,19 +139,19 @@ struct MainMenuView: View {
     Menu {
       Button { appTheme = .default } label: {
         Label(
-          appTheme == .default ? "Mặc định  ✓" : "Mặc định",
+          appTheme == .default ? "Mặc định ✓" : "Mặc định",
           themedSymbol: "circle"
         )
       }
       Button { appTheme = .threeD } label: {
         Label(
-          appTheme == .threeD ? "3D bóng bẩy  ✓" : "3D bóng bẩy",
+          appTheme == .threeD ? "3D bóng bẩy ✓" : "3D bóng bẩy",
           themedSymbol: "cube"
         )
       }
       Button { appTheme = .emoji } label: {
         Label(
-          appTheme == .emoji ? "Emoji vui tươi  ✓" : "Emoji vui tươi",
+          appTheme == .emoji ? "Emoji vui tươi ✓" : "Emoji vui tươi",
           themedSymbol: "sparkles"
         )
       }

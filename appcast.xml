@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.5.8 — "Right-Sized"</title>
+      <sparkle:version>15080</sparkle:version>
+      <sparkle:shortVersionString>1.5.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 18:25:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.5.8/vkey-1.5.8.dmg"
+        sparkle:edSignature="vfjcJ9XGzVgyTSUwKNYWU2+enfOj1qEP9f/CDfAZ/SFBlho9siWzQ9I09dNaxapP+MaqOxU100JWFYda5m8bAQ=="
+        length="5357609"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.5.8 — "Right-Sized":</h2>
+        <p>Hotfix sau 1.5.7 sửa kích thước icon Theme Emoji + tinh chỉnh menu bar.</p>
+        <ul>
+          <li><strong>Sửa Emoji icon quá to ở tab Smart Switch / Macro</strong>: 1.5.7 render emoji NSImage ở pointSize=32 với <code>.resizable().scaledToFit()</code>, làm icon phình ra trong HStack header và List rows không có constraint. 1.5.8: giảm pointSize=18 + bỏ <code>.resizable()</code> → Image render ở natural size 18pt cố định, không stretch theo container. Match xấp xỉ SF Symbol body baseline.</li>
+          <li><strong>Tinh chỉnh menu bar dropdown</strong>: bỏ double-space trước dấu ✓ và glyph 🇻🇳 trong title menu items. Text giờ sát icon hơn, menu width gọn hơn.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.5.7 — "Fine Tuning"</title>
       <sparkle:version>15070</sparkle:version>
       <sparkle:shortVersionString>1.5.7</sparkle:shortVersionString>
