@@ -200,15 +200,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
   }
 
-  // Opens settings window
-  @objc func openSettings() {
-    NSApp.setActivationPolicy(.regular)
-    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-        NSApp.activate(ignoringOtherApps: true)
-    }
-  }
-
   // Called for every NSWindow close. When the last visible regular window is
   // closing, drop activation policy back to .accessory so the app re-hides.
   @objc func windowWillClose(_ note: Notification) {

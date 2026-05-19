@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.5.2 — "Settings Restored"</title>
+      <sparkle:version>15020</sparkle:version>
+      <sparkle:shortVersionString>1.5.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 19 May 2026 13:45:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.5.2/vkey-1.5.2.dmg"
+        sparkle:edSignature="EPV0B2sEcJ4oVJuhdg0wG8bTZ6iVMt9fBWHEL6cfXhvwkFmdSME1UNu1QEMnC855WKCHiSKKTNUOCtv5Q7/TDw=="
+        length="5139783"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.5.2 — "Settings Restored":</h2>
+        <p>Bản vá khẩn cấp sửa lỗi không mở được cửa sổ "Cài đặt" — regression từ 1.5.0.</p>
+        <ul>
+          <li><strong>Sửa lỗi menu "Cài đặt" không có phản ứng</strong>: 1.5.0 refactor đã thay <code>@Environment(\.openSettings)</code> (cách chính thức của SwiftUI macOS 14) bằng <code>NSApp.sendAction(Selector("showSettingsWindow:"))</code>. Selector này chạy bất đồng bộ với chuyển <code>.accessory → .regular</code>, responder chain thường chưa có handler nên action bị nuốt im lặng. Khôi phục pattern 1.4.6 dùng <code>OpenSettingsAction</code> + <code>NSApp.activate</code>.</li>
+          <li>Bỏ <code>AppDelegate.openSettings()</code> không còn cần thiết.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.5.1 — "Sonoma Baseline"</title>
       <sparkle:version>15010</sparkle:version>
       <sparkle:shortVersionString>1.5.1</sparkle:shortVersionString>

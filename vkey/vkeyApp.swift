@@ -51,6 +51,14 @@ struct MenuContentView: View {
 
 struct MainMenuView: View {
   @ObservedObject var appDelegate: AppDelegate
+  // SwiftUI's OpenSettingsAction (macOS 14+) is the *reliable* way to open
+  // the Settings scene from a MenuBarExtra. Using
+  // `NSApp.sendAction(Selector("showSettingsWindow:"), to: nil, from: nil)`
+  // looks equivalent but races the .accessory→.regular activation policy
+  // change — the responder chain often has no handler yet and the action
+  // silently fails. That regression (introduced in 1.5.0) is what made the
+  // "Cài đặt" menu item appear unresponsive.
+  @Environment(\.openSettings) private var openSettings
   @Default(.smartSwitchEnabled) private var smartSwitchEnabled
   @Default(.spellCheckEnabled) private var spellCheckEnabled
 
@@ -92,7 +100,8 @@ struct MainMenuView: View {
       // Promote to .regular so the Settings window can become key — required for
       // KeyboardShortcuts.Recorder to receive keystrokes from the global event stream.
       NSApp.setActivationPolicy(.regular)
-      appDelegate.openSettings()
+      try? openSettings()
+      NSApp.activate(ignoringOtherApps: true)
     } label: {
       Label("Cài đặt", systemImage: "gearshape")
     }

@@ -2,6 +2,21 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.5.2] - 2026-05-19 — "Settings Restored"
+
+Bản vá khẩn cấp tiếp theo: 1.5.1 mới chỉ nâng deployment target, vẫn chưa fix được root cause của lỗi không mở được "Cài đặt". Bản 1.5.2 khôi phục pattern hoạt động của 1.4.6.
+
+### 🐛 Sửa lỗi (regression từ 1.5.0)
+
+- **Menu "Cài đặt" hoàn toàn không có phản ứng** — refactor ở 1.5.0 đã thay thế nhầm cách mở Settings:
+  - 1.4.6 dùng `@Environment(\.openSettings)` + `try? openSettings()` (SwiftUI `OpenSettingsAction`, hoạt động đúng).
+  - 1.5.0 đổi thành `NSApp.sendAction(Selector("showSettingsWindow:"), to: nil, from: nil)` chạy ngay khi NSMenu vừa dismiss và `setActivationPolicy(.regular)` chưa kịp đẩy app lên foreground — responder chain thường chưa kịp đăng ký handler của Settings scene nên action bị nuốt im lặng.
+  - 1.5.2 khôi phục pattern 1.4.6 + giữ `NSApp.activate(ignoringOtherApps: true)` sau khi gọi action để chắc chắn window lên trước.
+
+### 🧹 Dọn dẹp
+
+- Bỏ method `AppDelegate.openSettings()` không còn dùng đến.
+
 ## [1.5.1] - 2026-05-19 — "Sonoma Baseline"
 
 Bản vá nhanh sau 1.5.0: sửa lỗi không mở được cửa sổ "Cài đặt" trên macOS Ventura và chuẩn hoá yêu cầu hệ điều hành.
