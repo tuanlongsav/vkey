@@ -251,13 +251,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     }
   }
 
-  /// 1.6.1: Settings window từ SwiftUI Settings scene mặc định fixed-size.
-  /// Khi vừa key, áp resizable + min size + autosave frame để user resize
-  /// được + remember kích thước giữa các lần mở.
-  /// 1.7.5: minWidth 180 → 160 (chỉ đủ chữ theo bề ngang). Bump autosave
-  /// name v174 → v175 + cleanup các key cũ trong NSUserDefaults để user
-  /// upgrade từ 1.7.x đều mở cửa sổ ở default 160×720 lần đầu, vẫn
-  /// resize được tự do qua góc/cạnh sau đó.
+  /// 1.7.6: Settings window resize do SwiftUI xử lý qua modifier
+  /// `.windowResizability(.contentMinSize)` trên Settings scene
+  /// ([vkeyApp.swift](vkey/vkeyApp.swift)). AppDelegate chỉ chịu trách
+  /// nhiệm gắn frame autosave + dọn các key cũ trong NSUserDefaults.
   @objc func windowDidBecomeKey(_ note: Notification) {
     guard let win = note.object as? NSWindow else { return }
     // Settings window có title "vkey Settings" (English locale) hoặc local
@@ -268,29 +265,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       || win.title.localizedCaseInsensitiveContains("settings")
       || win.title.localizedCaseInsensitiveContains("cài đặt")
     guard isSettingsWindow else { return }
-    // Idempotent — chỉ apply 1 lần.
-    if !win.styleMask.contains(.resizable) {
-      win.styleMask.insert(.resizable)
-      win.minSize = NSSize(width: 160, height: 720)
-      if win.frameAutosaveName.isEmpty {
-        // Dọn key autosave cũ để tránh tích luỹ orphan trong NSUserDefaults.
-        let legacyAutosaveKeys = [
-          "NSWindow Frame VkeySettingsWindow",
-          "NSWindow Frame VkeySettingsWindow.v174",
-        ]
-        for key in legacyAutosaveKeys {
-          UserDefaults.standard.removeObject(forKey: key)
-        }
-        let autosaveName = "VkeySettingsWindow.v175"
-        let defaultsKey = "NSWindow Frame \(autosaveName)"
-        let hasSavedFrame = UserDefaults.standard.object(forKey: defaultsKey) != nil
-        win.setFrameAutosaveName(autosaveName)
-        if !hasSavedFrame {
-          // Force default opening size = 160×720 cho user mới và user upgrade
-          // (chưa có frame saved dưới key v175).
-          win.setContentSize(NSSize(width: 160, height: 720))
-        }
+    // Idempotent — chỉ gắn autosave name 1 lần.
+    if win.frameAutosaveName.isEmpty {
+      // Dọn key autosave cũ để tránh tích luỹ orphan trong NSUserDefaults.
+      let legacyAutosaveKeys = [
+        "NSWindow Frame VkeySettingsWindow",
+        "NSWindow Frame VkeySettingsWindow.v174",
+        "NSWindow Frame VkeySettingsWindow.v175",
+      ]
+      for key in legacyAutosaveKeys {
+        UserDefaults.standard.removeObject(forKey: key)
       }
+      win.setFrameAutosaveName("VkeySettingsWindow.v176")
     }
   }
 

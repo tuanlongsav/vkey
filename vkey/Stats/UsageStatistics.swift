@@ -62,6 +62,105 @@ public struct WordCount: Codable, Equatable {
   let count: Int
 }
 
+/// 1.7.6: full snapshot của 1 tuần để export/import lossless. Mirror nội bộ
+/// `WeekBucket` (private) nhưng public-encodable. Backward-compat: mọi field
+/// optional, decode file backup v1 (chỉ có UsageSummary) bằng cách fallback
+/// raw counts = 0 / empty maps.
+public struct WeekBucketExport: Codable {
+  public let weekId: String
+  public let weekEnd: Date
+
+  public let wordsTotal: Int
+  public let wordsKeptVietnamese: Int
+  public let wordsRestoredEnglish: Int
+  public let wordsKeptRaw: Int
+  public let wordsSuggested: Int
+  public let smartSwitchFires: Int
+  public let typoCorrectionsApplied: Int
+
+  // Full frequency tables — không phải top 10% summary.
+  public let vnWordCounts: [String: Int]
+  public let enWordCounts: [String: Int]
+  public let appCounts: [String: Int]
+
+  public let vnKeepStreak: [String: Int]
+  public let enRestoreStreak: [String: Int]
+
+  public let vnPhraseCounts2: [String: Int]   // 1.6.1+
+  public let vnPhraseCounts3: [String: Int]
+
+  public let appLanguageVnCounts: [String: Int]  // 1.7.0+
+  public let appLanguageEnCounts: [String: Int]
+  public let appLanguageDays: [String: [Int]]
+
+  // Backward-compat decode: mọi field optional, fallback empty.
+  enum CodingKeys: String, CodingKey {
+    case weekId, weekEnd
+    case wordsTotal, wordsKeptVietnamese, wordsRestoredEnglish
+    case wordsKeptRaw, wordsSuggested, smartSwitchFires
+    case typoCorrectionsApplied
+    case vnWordCounts, enWordCounts, appCounts
+    case vnKeepStreak, enRestoreStreak
+    case vnPhraseCounts2, vnPhraseCounts3
+    case appLanguageVnCounts, appLanguageEnCounts, appLanguageDays
+  }
+
+  public init(
+    weekId: String, weekEnd: Date,
+    wordsTotal: Int, wordsKeptVietnamese: Int, wordsRestoredEnglish: Int,
+    wordsKeptRaw: Int, wordsSuggested: Int, smartSwitchFires: Int,
+    typoCorrectionsApplied: Int,
+    vnWordCounts: [String: Int], enWordCounts: [String: Int], appCounts: [String: Int],
+    vnKeepStreak: [String: Int], enRestoreStreak: [String: Int],
+    vnPhraseCounts2: [String: Int], vnPhraseCounts3: [String: Int],
+    appLanguageVnCounts: [String: Int], appLanguageEnCounts: [String: Int],
+    appLanguageDays: [String: [Int]]
+  ) {
+    self.weekId = weekId
+    self.weekEnd = weekEnd
+    self.wordsTotal = wordsTotal
+    self.wordsKeptVietnamese = wordsKeptVietnamese
+    self.wordsRestoredEnglish = wordsRestoredEnglish
+    self.wordsKeptRaw = wordsKeptRaw
+    self.wordsSuggested = wordsSuggested
+    self.smartSwitchFires = smartSwitchFires
+    self.typoCorrectionsApplied = typoCorrectionsApplied
+    self.vnWordCounts = vnWordCounts
+    self.enWordCounts = enWordCounts
+    self.appCounts = appCounts
+    self.vnKeepStreak = vnKeepStreak
+    self.enRestoreStreak = enRestoreStreak
+    self.vnPhraseCounts2 = vnPhraseCounts2
+    self.vnPhraseCounts3 = vnPhraseCounts3
+    self.appLanguageVnCounts = appLanguageVnCounts
+    self.appLanguageEnCounts = appLanguageEnCounts
+    self.appLanguageDays = appLanguageDays
+  }
+
+  public init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    self.weekId = try c.decodeIfPresent(String.self, forKey: .weekId) ?? ""
+    self.weekEnd = try c.decodeIfPresent(Date.self, forKey: .weekEnd) ?? Date()
+    self.wordsTotal = try c.decodeIfPresent(Int.self, forKey: .wordsTotal) ?? 0
+    self.wordsKeptVietnamese = try c.decodeIfPresent(Int.self, forKey: .wordsKeptVietnamese) ?? 0
+    self.wordsRestoredEnglish = try c.decodeIfPresent(Int.self, forKey: .wordsRestoredEnglish) ?? 0
+    self.wordsKeptRaw = try c.decodeIfPresent(Int.self, forKey: .wordsKeptRaw) ?? 0
+    self.wordsSuggested = try c.decodeIfPresent(Int.self, forKey: .wordsSuggested) ?? 0
+    self.smartSwitchFires = try c.decodeIfPresent(Int.self, forKey: .smartSwitchFires) ?? 0
+    self.typoCorrectionsApplied = try c.decodeIfPresent(Int.self, forKey: .typoCorrectionsApplied) ?? 0
+    self.vnWordCounts = try c.decodeIfPresent([String: Int].self, forKey: .vnWordCounts) ?? [:]
+    self.enWordCounts = try c.decodeIfPresent([String: Int].self, forKey: .enWordCounts) ?? [:]
+    self.appCounts = try c.decodeIfPresent([String: Int].self, forKey: .appCounts) ?? [:]
+    self.vnKeepStreak = try c.decodeIfPresent([String: Int].self, forKey: .vnKeepStreak) ?? [:]
+    self.enRestoreStreak = try c.decodeIfPresent([String: Int].self, forKey: .enRestoreStreak) ?? [:]
+    self.vnPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts2) ?? [:]
+    self.vnPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts3) ?? [:]
+    self.appLanguageVnCounts = try c.decodeIfPresent([String: Int].self, forKey: .appLanguageVnCounts) ?? [:]
+    self.appLanguageEnCounts = try c.decodeIfPresent([String: Int].self, forKey: .appLanguageEnCounts) ?? [:]
+    self.appLanguageDays = try c.decodeIfPresent([String: [Int]].self, forKey: .appLanguageDays) ?? [:]
+  }
+}
+
 // MARK: - UsageStatistics
 
 /// Tracker singleton. Stateful but thread-safe via a serial queue.
@@ -250,8 +349,86 @@ final class UsageStatistics {
   }
 
   /// Combined snapshot (current + historical) for export/backup.
+  /// 1.7.6+ deprecated — chỉ giữ cho backward-compat. Production export
+  /// dùng `allWeekBucketsForExport()` để lưu full data (vnWordCounts, ...).
   func allSummariesForExport() -> [UsageSummary] {
     [currentWeekSummary()] + historicalSummaries()
+  }
+
+  /// 1.7.6: full-fidelity export. Trả về current week + historical weeks
+  /// dưới dạng `WeekBucketExport` chứa toàn bộ raw frequency tables, streaks,
+  /// phrase counters, per-app language tracking. Dùng cho backup/restore.
+  func allWeekBucketsForExport() -> [WeekBucketExport] {
+    queue.sync {
+      rotateIfNeeded()
+      var out: [WeekBucketExport] = [counters.toExport()]
+      let currentWeekFile = "\(WeekBucket.currentWeekId()).json"
+      let urls = (try? FileManager.default.contentsOfDirectory(
+        at: storageDir, includingPropertiesForKeys: nil
+      )) ?? []
+      for url in urls where url.pathExtension == "json"
+                           && url.lastPathComponent != "current.json"
+                           && url.lastPathComponent != currentWeekFile {
+        // Cố gắng decode file lịch sử thành WeekBucket trước. Nếu cũ chỉ
+        // có UsageSummary thì decode fallback và "promote" sang export
+        // với raw maps rỗng (lossy nhưng không crash).
+        guard let data = try? Data(contentsOf: url) else { continue }
+        if let bucket = try? JSONDecoder.statsConfigured.decode(WeekBucket.self, from: data) {
+          out.append(bucket.toExport())
+        } else if let summary = try? JSONDecoder.statsConfigured.decode(UsageSummary.self, from: data) {
+          out.append(WeekBucketExport(
+            weekId: summary.weekId, weekEnd: summary.weekEnd,
+            wordsTotal: summary.wordsTotal,
+            wordsKeptVietnamese: summary.wordsKeptVietnamese,
+            wordsRestoredEnglish: summary.wordsRestoredEnglish,
+            wordsKeptRaw: summary.wordsKeptRaw,
+            wordsSuggested: summary.wordsSuggested,
+            smartSwitchFires: summary.smartSwitchFires,
+            typoCorrectionsApplied: summary.typoCorrectionsApplied,
+            vnWordCounts: Dictionary(uniqueKeysWithValues: summary.topVietnameseWords.map { ($0.word, $0.count) }),
+            enWordCounts: Dictionary(uniqueKeysWithValues: summary.topEnglishWords.map { ($0.word, $0.count) }),
+            appCounts: Dictionary(uniqueKeysWithValues: summary.topApps.map { ($0.word, $0.count) }),
+            vnKeepStreak: [:], enRestoreStreak: [:],
+            vnPhraseCounts2: [:], vnPhraseCounts3: [:],
+            appLanguageVnCounts: [:], appLanguageEnCounts: [:], appLanguageDays: [:]
+          ))
+        }
+      }
+      return out
+    }
+  }
+
+  /// 1.7.6: restore stats từ backup. Match current weekId → load thành
+  /// in-memory `counters`. Các tuần khác → ghi file `<weekId>.json` vào
+  /// storageDir (atomic). Caller (UserDataMigration) gọi sau khi apply
+  /// Defaults. Trả về số tuần restored thành công.
+  @discardableResult
+  func restoreFromBackup(_ buckets: [WeekBucketExport]) -> Int {
+    queue.sync {
+      var restored = 0
+      let currentId = WeekBucket.currentWeekId()
+      for export in buckets {
+        let bucket = WeekBucket(from: export)
+        if bucket.weekId == currentId {
+          counters = bucket
+          flushNow()
+          restored += 1
+        } else {
+          // Tuần đã đóng — ghi vào file riêng.
+          let url = storageDir.appendingPathComponent("\(bucket.weekId).json")
+          if let data = try? JSONEncoder.indented.encode(bucket) {
+            do {
+              try data.write(to: url, options: .atomic)
+              restored += 1
+            } catch {
+              os_log("UsageStatistics.restoreFromBackup: write %{public}@ failed: %{public}@",
+                     log: log, type: .error, bucket.weekId, error.localizedDescription)
+            }
+          }
+        }
+      }
+      return restored
+    }
   }
 
   /// Aggregate `topVietnameseWords` qua tất cả tuần (current + historical),
@@ -476,6 +653,53 @@ final class UsageStatistics {
          weekEnd: Date = WeekBucket.endOfCurrentWeek()) {
       self.weekId = weekId
       self.weekEnd = weekEnd
+    }
+
+    /// 1.7.6: build từ WeekBucketExport (file backup) → in-memory bucket.
+    init(from export: WeekBucketExport) {
+      self.weekId = export.weekId.isEmpty ? WeekBucket.currentWeekId() : export.weekId
+      self.weekEnd = export.weekEnd
+      self.wordsTotal = export.wordsTotal
+      self.wordsKeptVietnamese = export.wordsKeptVietnamese
+      self.wordsRestoredEnglish = export.wordsRestoredEnglish
+      self.wordsKeptRaw = export.wordsKeptRaw
+      self.wordsSuggested = export.wordsSuggested
+      self.smartSwitchFires = export.smartSwitchFires
+      self.typoCorrectionsApplied = export.typoCorrectionsApplied
+      self.vnWordCounts = export.vnWordCounts
+      self.enWordCounts = export.enWordCounts
+      self.appCounts = export.appCounts
+      self.vnKeepStreak = export.vnKeepStreak
+      self.enRestoreStreak = export.enRestoreStreak
+      self.vnPhraseCounts2 = export.vnPhraseCounts2
+      self.vnPhraseCounts3 = export.vnPhraseCounts3
+      self.appLanguageVnCounts = export.appLanguageVnCounts
+      self.appLanguageEnCounts = export.appLanguageEnCounts
+      self.appLanguageDays = export.appLanguageDays
+    }
+
+    /// 1.7.6: snapshot ra WeekBucketExport (file backup).
+    func toExport() -> WeekBucketExport {
+      WeekBucketExport(
+        weekId: weekId, weekEnd: weekEnd,
+        wordsTotal: wordsTotal,
+        wordsKeptVietnamese: wordsKeptVietnamese,
+        wordsRestoredEnglish: wordsRestoredEnglish,
+        wordsKeptRaw: wordsKeptRaw,
+        wordsSuggested: wordsSuggested,
+        smartSwitchFires: smartSwitchFires,
+        typoCorrectionsApplied: typoCorrectionsApplied,
+        vnWordCounts: vnWordCounts,
+        enWordCounts: enWordCounts,
+        appCounts: appCounts,
+        vnKeepStreak: vnKeepStreak,
+        enRestoreStreak: enRestoreStreak,
+        vnPhraseCounts2: vnPhraseCounts2,
+        vnPhraseCounts3: vnPhraseCounts3,
+        appLanguageVnCounts: appLanguageVnCounts,
+        appLanguageEnCounts: appLanguageEnCounts,
+        appLanguageDays: appLanguageDays
+      )
     }
 
     enum CodingKeys: String, CodingKey {

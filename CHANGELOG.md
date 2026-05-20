@@ -37,6 +37,56 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.6] - 2026-05-20 — "Backup Complete & Resize Done"
+
+2 fix lớn sau v1.7.5: cửa sổ Settings auto-fit + resize tự do; Export/Import lossless toàn bộ user state (9 fields mới + stats raw).
+
+### 🚨 Settings window: auto-fit + user-resizable (đúng cách qua SwiftUI)
+
+Root cause v1.7.4/1.7.5 không có hiệu lực: SwiftUI Settings scene mặc định dùng `.windowResizability(.automatic)` → trong macOS 13+ enforces **non-resizable** + sized-to-content. AppKit workaround (`win.styleMask.insert(.resizable)` + `setContentSize`) không override được SwiftUI scene policy.
+
+**Fix đúng cách** ([vkeyApp.swift](vkey/vkeyApp.swift)):
+
+```swift
+Settings { TabView { ... } }
+  .windowResizability(.contentMinSize)
+```
+
+- Window opens at content's ideal size (auto-fit theo tab bar + form content).
+- User kéo góc/cạnh để resize xuống tới `minWidth/minHeight` của view content.
+- AppDelegate `windowDidBecomeKey` đơn giản hoá: chỉ gắn `setFrameAutosaveName("VkeySettingsWindow.v176")` + cleanup orphan keys cũ (v174/v175/base name).
+- 5 view files: đổi `.frame(minWidth: 160, minHeight: 720)` → `.frame(minWidth: 320, minHeight: 480)` — giới hạn dưới thực tế cho form content.
+
+### 🚨 Export/Import: lossless full backup
+
+**Bug A — Export thiếu 9 fields**: trước đây `UserDataExport` thiếu `wordPredictionEnabled`, `appSmartSwitchConfigs` (per-app 3-state Smart Switch — critical từ 1.7.0!), `translationHUDEnabled`, `translationHUDDurationMs`, `programmingMode`, `userBigrams`, `userTrigrams`, `statisticsEnabled`, `autoBackupOnUpgrade`. Backup file không có 9 fields này → import xong user mất config.
+
+**Fix**: bổ sung 9 fields vào struct (optional cho backward-compat), populate trong `currentExport()`, apply trong `importExport()`.
+
+**Bug B — Stats summary lossy**: `allSummariesForExport()` trả `[UsageSummary]` chỉ chứa aggregate counters + top 10% words. Mất raw frequency tables (`vnWordCounts`, `enWordCounts`), streaks (`vnKeepStreak`, `enRestoreStreak`), phrase counters (`vnPhraseCounts2/3`), per-app language tracking (`appLanguageVnCounts/EnCounts/Days`).
+
+**Fix**: thêm `public struct WeekBucketExport: Codable` full mirror của `WeekBucket`. `UserDataExport.statistics` đổi từ `[UsageSummary]?` → `[WeekBucketExport]?`. Bump `currentSchemaVersion` 1 → 2. Decode backward-compat: thử v2 trước, fallback v1 (bridge → WeekBucketExport với raw maps rỗng).
+
+**Bug C — Stats không restore**: `importExport()` trước đây không đọc `export.statistics` → tab Thống kê hiện 0 sau import.
+
+**Fix**: thêm `UsageStatistics.shared.restoreFromBackup(_:)` — match current weekId → load thành `counters`; tuần khác → ghi file `<weekId>.json`. Gọi cuối `importExport()`.
+
+**Bug D — Merge UX confusing**: dialog button "Gộp"/"Ghi đè" không rõ. User thấy data cũ vẫn còn → hiểu nhầm bug.
+
+**Fix**: đổi text dialog:
+- `"Gộp thêm (giữ data hiện tại)"` — union, thêm vào.
+- `"Ghi đè toàn bộ (xoá data hiện tại)"` — replace.
+- Mô tả rõ "Cả 2 chế độ đều khôi phục thống kê".
+
+### Files
+
+- [vkey/vkeyApp.swift](vkey/vkeyApp.swift) — thêm `.windowResizability(.contentMinSize)`.
+- [vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift:261) — đơn giản hoá windowDidBecomeKey.
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift), [StatisticsView.swift](vkey/View/StatisticsView.swift), [SmartSwitchView.swift](vkey/View/SmartSwitchView.swift), [MacroView.swift](vkey/View/MacroView.swift) — minWidth/Height 320/480.
+- [vkey/App/UserDataMigration.swift](vkey/App/UserDataMigration.swift) — 9 fields + restore stats + Codable backward-compat.
+- [vkey/Stats/UsageStatistics.swift](vkey/Stats/UsageStatistics.swift) — `WeekBucketExport` + `allWeekBucketsForExport` + `restoreFromBackup`.
+- [vkey/View/StatisticsView.swift](vkey/View/StatisticsView.swift) — dialog text rõ semantics.
+
 ## [1.7.5] - 2026-05-20 — "Tone Cancel Fix"
 
 2 fix dứt điểm hậu 1.7.4: tone-cancel "ả + r + m" + thu hẹp Settings.

@@ -34,6 +34,11 @@ struct vkeyApp: App {
           .tabItem { Label("Thống kê & Sao lưu", themedSymbol: "chart.bar.doc.horizontal") }
       }
     }
+    // 1.7.6: cho phép user resize Settings window qua góc/cạnh. Default
+    // .automatic enforces non-resizable + sized-to-content trong macOS 13+
+    // → user không thay đổi được width. `.contentMinSize` cho phép drag
+    // shrink xuống min của view content (.frame(minWidth:...)).
+    .windowResizability(.contentMinSize)
   }
 }
 

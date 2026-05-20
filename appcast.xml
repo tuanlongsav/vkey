@@ -6,6 +6,34 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.6 — "Backup Complete &amp; Resize Done"</title>
+      <sparkle:version>17600</sparkle:version>
+      <sparkle:shortVersionString>1.7.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 17:35:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.6/vkey-1.7.6.dmg"
+        sparkle:edSignature="DWYPwhAbaadDd+Oar3h8MuLAd+ZjpycY6aDaIfdowjvxOFt2OVIV9GkFdnWGx6p6DZ49A83ycDBfXqZrhdlUDw=="
+        length="6020225"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.6 — "Backup Complete &amp; Resize Done":</h2>
+        <p>2 fix lớn dứt điểm sau v1.7.5.</p>
+        <ul>
+          <li><strong>🚨 Cửa sổ Settings: auto-fit + resize tự do</strong>: dùng API SwiftUI <code>.windowResizability(.contentMinSize)</code> (macOS 13+) — window opens at content's ideal size, user kéo góc/cạnh để resize tự do. Fix root cause v1.7.4/1.7.5 (AppKit workaround bị SwiftUI scene policy override).</li>
+          <li><strong>🚨 Export/Import lossless full backup</strong>:
+            <ul>
+              <li>Bổ sung 9 fields trước đây bị bỏ sót: <code>wordPredictionEnabled</code>, <code>appSmartSwitchConfigs</code> (per-app 3-state Smart Switch — critical!), <code>translationHUDEnabled</code>, <code>translationHUDDurationMs</code>, <code>programmingMode</code>, <code>userBigrams</code>, <code>userTrigrams</code>, <code>statisticsEnabled</code>, <code>autoBackupOnUpgrade</code>.</li>
+              <li>Stats backup full data (raw frequency tables, streaks, phrases, per-app language) thay vì chỉ top 10% summary. Thêm <code>WeekBucketExport</code> + <code>restoreFromBackup()</code>. Schema bump 1 → 2 (file backup cũ vẫn decode được).</li>
+              <li>Import khôi phục thống kê (trước đây ignore). Tab Thống kê sau import sẽ có data đầy đủ.</li>
+              <li>Dialog text rõ semantics: "Gộp thêm" vs "Ghi đè toàn bộ", giải thích cả 2 chế độ đều khôi phục stats.</li>
+            </ul>
+          </li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.5 — "Tone Cancel Fix"</title>
       <sparkle:version>17500</sparkle:version>
       <sparkle:shortVersionString>1.7.5</sparkle:shortVersionString>

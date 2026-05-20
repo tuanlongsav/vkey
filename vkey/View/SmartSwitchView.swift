@@ -169,7 +169,7 @@ struct SmartSwitchView: View {
                 .background(Color(NSColor.controlBackgroundColor))
             }
         }
-        .frame(minWidth: 160, minHeight: 720)
+        .frame(minWidth: 320, minHeight: 480)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingAutoLearnSheet) {
             SmartSwitchAutoLearnSheet()

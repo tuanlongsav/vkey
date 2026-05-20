@@ -87,10 +87,183 @@ struct UserDataExport: Codable {
   // 1.5.5+: auto-feedback toggle for performWeeklyFeedback.
   let autoPersonalDictFeedback: Bool?
 
-  // Optional statistics snapshot
-  let statistics: [UsageSummary]?
+  // 1.7.6+: full settings backup — bổ sung 9 fields trước đây bị bỏ sót.
+  let wordPredictionEnabled: Bool?
+  let appSmartSwitchConfigs: [String: AppSmartSwitchConfig]?  // 1.7.0+ per-app 3-state
+  let translationHUDEnabled: Bool?
+  let translationHUDDurationMs: Double?
+  let programmingMode: Bool?
+  let userBigrams: [String: [String: Int]]?
+  let userTrigrams: [String: [String: Int]]?
+  let statisticsEnabled: Bool?
+  let autoBackupOnUpgrade: Bool?
 
-  static let currentSchemaVersion = 1
+  // Statistics — 1.7.6+: full WeekBucketExport (raw frequency tables, streaks,
+  // phrases, per-app language). File backup v1 chỉ có UsageSummary (top 10%
+  // summary). Decode backward-compat ở init(from:) bên dưới.
+  let statistics: [WeekBucketExport]?
+
+  static let currentSchemaVersion = 2  // 1.7.6+: bumped vì statistics đổi shape
+
+  // MARK: - Backward-compat decode
+  // File backup v1 (schemaVersion=1) có statistics: [UsageSummary]. Decode
+  // failover: thử [WeekBucketExport] trước, fallback [UsageSummary] → bridge
+  // sang WeekBucketExport (lossy: raw maps rỗng, chỉ giữ top words).
+  enum CodingKeys: String, CodingKey {
+    case schemaVersion, exportedAt, appVersion, appBuild
+    case typingMethod, newStyleTonePlacement, autoTypoCorrection, allowedZWJF
+    case hudEnabled, modifierOnlyToggleHotkey
+    case smartSwitchEnabled, smartSwitchApps, perAppOverride
+    case spellCheckEnabled, spellCheckInSentenceEnabled, englishAutoRestoreEnabled
+    case restorePolicy, suggestionEnabled, autoApplyHighConfidenceSuggestion
+    case useEnVnReference
+    case personalDictionaryEnabled, userAllowWords, userKeepWords, userDenyWords
+    case macros, macroEnabled, macrosSeeded, defaultMacrosVersion
+    case appTheme, autoPersonalDictFeedback
+    case wordPredictionEnabled, appSmartSwitchConfigs
+    case translationHUDEnabled, translationHUDDurationMs, programmingMode
+    case userBigrams, userTrigrams, statisticsEnabled, autoBackupOnUpgrade
+    case statistics
+  }
+
+  init(
+    schemaVersion: Int, exportedAt: Date, appVersion: String, appBuild: String,
+    typingMethod: String?, newStyleTonePlacement: Bool?, autoTypoCorrection: Bool?,
+    allowedZWJF: Bool?, hudEnabled: Bool?, modifierOnlyToggleHotkey: Int?,
+    smartSwitchEnabled: Bool?, smartSwitchApps: [String]?, perAppOverride: [String: String]?,
+    spellCheckEnabled: Bool?, spellCheckInSentenceEnabled: Bool?,
+    englishAutoRestoreEnabled: Bool?, restorePolicy: String?,
+    suggestionEnabled: Bool?, autoApplyHighConfidenceSuggestion: Bool?,
+    useEnVnReference: Bool?,
+    personalDictionaryEnabled: Bool?,
+    userAllowWords: [String]?, userKeepWords: [String]?, userDenyWords: [String]?,
+    macros: [MacroSeed]?,
+    macroEnabled: Bool?, macrosSeeded: Bool?, defaultMacrosVersion: Int?,
+    appTheme: String?,
+    autoPersonalDictFeedback: Bool?,
+    wordPredictionEnabled: Bool? = nil,
+    appSmartSwitchConfigs: [String: AppSmartSwitchConfig]? = nil,
+    translationHUDEnabled: Bool? = nil,
+    translationHUDDurationMs: Double? = nil,
+    programmingMode: Bool? = nil,
+    userBigrams: [String: [String: Int]]? = nil,
+    userTrigrams: [String: [String: Int]]? = nil,
+    statisticsEnabled: Bool? = nil,
+    autoBackupOnUpgrade: Bool? = nil,
+    statistics: [WeekBucketExport]?
+  ) {
+    self.schemaVersion = schemaVersion
+    self.exportedAt = exportedAt
+    self.appVersion = appVersion
+    self.appBuild = appBuild
+    self.typingMethod = typingMethod
+    self.newStyleTonePlacement = newStyleTonePlacement
+    self.autoTypoCorrection = autoTypoCorrection
+    self.allowedZWJF = allowedZWJF
+    self.hudEnabled = hudEnabled
+    self.modifierOnlyToggleHotkey = modifierOnlyToggleHotkey
+    self.smartSwitchEnabled = smartSwitchEnabled
+    self.smartSwitchApps = smartSwitchApps
+    self.perAppOverride = perAppOverride
+    self.spellCheckEnabled = spellCheckEnabled
+    self.spellCheckInSentenceEnabled = spellCheckInSentenceEnabled
+    self.englishAutoRestoreEnabled = englishAutoRestoreEnabled
+    self.restorePolicy = restorePolicy
+    self.suggestionEnabled = suggestionEnabled
+    self.autoApplyHighConfidenceSuggestion = autoApplyHighConfidenceSuggestion
+    self.useEnVnReference = useEnVnReference
+    self.personalDictionaryEnabled = personalDictionaryEnabled
+    self.userAllowWords = userAllowWords
+    self.userKeepWords = userKeepWords
+    self.userDenyWords = userDenyWords
+    self.macros = macros
+    self.macroEnabled = macroEnabled
+    self.macrosSeeded = macrosSeeded
+    self.defaultMacrosVersion = defaultMacrosVersion
+    self.appTheme = appTheme
+    self.autoPersonalDictFeedback = autoPersonalDictFeedback
+    self.wordPredictionEnabled = wordPredictionEnabled
+    self.appSmartSwitchConfigs = appSmartSwitchConfigs
+    self.translationHUDEnabled = translationHUDEnabled
+    self.translationHUDDurationMs = translationHUDDurationMs
+    self.programmingMode = programmingMode
+    self.userBigrams = userBigrams
+    self.userTrigrams = userTrigrams
+    self.statisticsEnabled = statisticsEnabled
+    self.autoBackupOnUpgrade = autoBackupOnUpgrade
+    self.statistics = statistics
+  }
+
+  init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    self.schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+    self.exportedAt = try c.decodeIfPresent(Date.self, forKey: .exportedAt) ?? Date()
+    self.appVersion = try c.decodeIfPresent(String.self, forKey: .appVersion) ?? ""
+    self.appBuild = try c.decodeIfPresent(String.self, forKey: .appBuild) ?? ""
+    self.typingMethod = try c.decodeIfPresent(String.self, forKey: .typingMethod)
+    self.newStyleTonePlacement = try c.decodeIfPresent(Bool.self, forKey: .newStyleTonePlacement)
+    self.autoTypoCorrection = try c.decodeIfPresent(Bool.self, forKey: .autoTypoCorrection)
+    self.allowedZWJF = try c.decodeIfPresent(Bool.self, forKey: .allowedZWJF)
+    self.hudEnabled = try c.decodeIfPresent(Bool.self, forKey: .hudEnabled)
+    self.modifierOnlyToggleHotkey = try c.decodeIfPresent(Int.self, forKey: .modifierOnlyToggleHotkey)
+    self.smartSwitchEnabled = try c.decodeIfPresent(Bool.self, forKey: .smartSwitchEnabled)
+    self.smartSwitchApps = try c.decodeIfPresent([String].self, forKey: .smartSwitchApps)
+    self.perAppOverride = try c.decodeIfPresent([String: String].self, forKey: .perAppOverride)
+    self.spellCheckEnabled = try c.decodeIfPresent(Bool.self, forKey: .spellCheckEnabled)
+    self.spellCheckInSentenceEnabled = try c.decodeIfPresent(Bool.self, forKey: .spellCheckInSentenceEnabled)
+    self.englishAutoRestoreEnabled = try c.decodeIfPresent(Bool.self, forKey: .englishAutoRestoreEnabled)
+    self.restorePolicy = try c.decodeIfPresent(String.self, forKey: .restorePolicy)
+    self.suggestionEnabled = try c.decodeIfPresent(Bool.self, forKey: .suggestionEnabled)
+    self.autoApplyHighConfidenceSuggestion = try c.decodeIfPresent(Bool.self, forKey: .autoApplyHighConfidenceSuggestion)
+    self.useEnVnReference = try c.decodeIfPresent(Bool.self, forKey: .useEnVnReference)
+    self.personalDictionaryEnabled = try c.decodeIfPresent(Bool.self, forKey: .personalDictionaryEnabled)
+    self.userAllowWords = try c.decodeIfPresent([String].self, forKey: .userAllowWords)
+    self.userKeepWords = try c.decodeIfPresent([String].self, forKey: .userKeepWords)
+    self.userDenyWords = try c.decodeIfPresent([String].self, forKey: .userDenyWords)
+    self.macros = try c.decodeIfPresent([MacroSeed].self, forKey: .macros)
+    self.macroEnabled = try c.decodeIfPresent(Bool.self, forKey: .macroEnabled)
+    self.macrosSeeded = try c.decodeIfPresent(Bool.self, forKey: .macrosSeeded)
+    self.defaultMacrosVersion = try c.decodeIfPresent(Int.self, forKey: .defaultMacrosVersion)
+    self.appTheme = try c.decodeIfPresent(String.self, forKey: .appTheme)
+    self.autoPersonalDictFeedback = try c.decodeIfPresent(Bool.self, forKey: .autoPersonalDictFeedback)
+    // 1.7.6+ fields — optional cho file v1.x cũ.
+    self.wordPredictionEnabled = try c.decodeIfPresent(Bool.self, forKey: .wordPredictionEnabled)
+    self.appSmartSwitchConfigs = try c.decodeIfPresent([String: AppSmartSwitchConfig].self,
+                                                      forKey: .appSmartSwitchConfigs)
+    self.translationHUDEnabled = try c.decodeIfPresent(Bool.self, forKey: .translationHUDEnabled)
+    self.translationHUDDurationMs = try c.decodeIfPresent(Double.self, forKey: .translationHUDDurationMs)
+    self.programmingMode = try c.decodeIfPresent(Bool.self, forKey: .programmingMode)
+    self.userBigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userBigrams)
+    self.userTrigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userTrigrams)
+    self.statisticsEnabled = try c.decodeIfPresent(Bool.self, forKey: .statisticsEnabled)
+    self.autoBackupOnUpgrade = try c.decodeIfPresent(Bool.self, forKey: .autoBackupOnUpgrade)
+    // Statistics — try v2 ([WeekBucketExport]) trước, fallback v1 ([UsageSummary]).
+    if let buckets = try? c.decodeIfPresent([WeekBucketExport].self, forKey: .statistics) {
+      self.statistics = buckets
+    } else if let summaries = try? c.decodeIfPresent([UsageSummary].self, forKey: .statistics) {
+      // Bridge v1 → v2: raw maps rỗng, chỉ giữ top words counts.
+      self.statistics = summaries.map { s in
+        WeekBucketExport(
+          weekId: s.weekId, weekEnd: s.weekEnd,
+          wordsTotal: s.wordsTotal,
+          wordsKeptVietnamese: s.wordsKeptVietnamese,
+          wordsRestoredEnglish: s.wordsRestoredEnglish,
+          wordsKeptRaw: s.wordsKeptRaw,
+          wordsSuggested: s.wordsSuggested,
+          smartSwitchFires: s.smartSwitchFires,
+          typoCorrectionsApplied: s.typoCorrectionsApplied,
+          vnWordCounts: Dictionary(uniqueKeysWithValues: s.topVietnameseWords.map { ($0.word, $0.count) }),
+          enWordCounts: Dictionary(uniqueKeysWithValues: s.topEnglishWords.map { ($0.word, $0.count) }),
+          appCounts: Dictionary(uniqueKeysWithValues: s.topApps.map { ($0.word, $0.count) }),
+          vnKeepStreak: [:], enRestoreStreak: [:],
+          vnPhraseCounts2: [:], vnPhraseCounts3: [:],
+          appLanguageVnCounts: [:], appLanguageEnCounts: [:], appLanguageDays: [:]
+        )
+      }
+    } else {
+      self.statistics = nil
+    }
+  }
 }
 
 // MARK: - Migration namespace
@@ -140,7 +313,18 @@ enum UserDataMigration {
 
       autoPersonalDictFeedback: Defaults[.autoPersonalDictFeedback],
 
-      statistics: includeStatistics ? UsageStatistics.shared.allSummariesForExport() : nil
+      // 1.7.6+: full settings backup
+      wordPredictionEnabled: Defaults[.wordPredictionEnabled],
+      appSmartSwitchConfigs: Defaults[.appSmartSwitchConfigs],
+      translationHUDEnabled: Defaults[.translationHUDEnabled],
+      translationHUDDurationMs: Defaults[.translationHUDDurationMs],
+      programmingMode: Defaults[.programmingMode],
+      userBigrams: Defaults[.userBigrams],
+      userTrigrams: Defaults[.userTrigrams],
+      statisticsEnabled: Defaults[.statisticsEnabled],
+      autoBackupOnUpgrade: Defaults[.autoBackupOnUpgrade],
+
+      statistics: includeStatistics ? UsageStatistics.shared.allWeekBucketsForExport() : nil
     )
   }
 
@@ -295,6 +479,103 @@ enum UserDataMigration {
     // 1.5.5+: auto-feedback toggle
     applyScalar(.autoPersonalDictFeedback, export.autoPersonalDictFeedback,
                 label: "Tự động cập nhật từ điển cá nhân")
+
+    // 1.7.6+: previously-missing scalar settings
+    applyScalar(.wordPredictionEnabled, export.wordPredictionEnabled,
+                label: "Đoán từ tiếp theo")
+    applyScalar(.translationHUDEnabled, export.translationHUDEnabled,
+                label: "HUD dịch")
+    applyScalar(.translationHUDDurationMs, export.translationHUDDurationMs,
+                label: "Thời lượng HUD dịch (ms)")
+    applyScalar(.programmingMode, export.programmingMode,
+                label: "Chế độ lập trình")
+    applyScalar(.statisticsEnabled, export.statisticsEnabled,
+                label: "Bật thống kê")
+    applyScalar(.autoBackupOnUpgrade, export.autoBackupOnUpgrade,
+                label: "Tự sao lưu khi cập nhật")
+
+    // 1.7.6+: per-app Smart Switch configs (critical — 1.7.0+ 3-state).
+    if let configs = export.appSmartSwitchConfigs {
+      if replaceLists {
+        if Defaults[.appSmartSwitchConfigs] != configs {
+          Defaults[.appSmartSwitchConfigs] = configs
+          changes.append("Smart Switch per-app: \(configs.count) (overwrite)")
+        }
+      } else {
+        var current = Defaults[.appSmartSwitchConfigs]
+        var added = 0
+        for (key, value) in configs where current[key] == nil {
+          current[key] = value
+          added += 1
+        }
+        if added > 0 {
+          Defaults[.appSmartSwitchConfigs] = current
+          changes.append("Smart Switch per-app: +\(added)")
+        }
+      }
+    }
+
+    // 1.7.6+: bigram/trigram (prediction learning data) — merge: cộng counts.
+    if let bigrams = export.userBigrams {
+      if replaceLists {
+        if Defaults[.userBigrams] != bigrams {
+          Defaults[.userBigrams] = bigrams
+          changes.append("Bigram dự đoán: \(bigrams.count) (overwrite)")
+        }
+      } else {
+        var current = Defaults[.userBigrams]
+        var added = 0
+        for (prev, nextMap) in bigrams {
+          var existingNext = current[prev] ?? [:]
+          for (next, count) in nextMap {
+            if existingNext[next] == nil {
+              existingNext[next] = count
+              added += 1
+            }
+          }
+          current[prev] = existingNext
+        }
+        if added > 0 {
+          Defaults[.userBigrams] = current
+          changes.append("Bigram dự đoán: +\(added)")
+        }
+      }
+    }
+    if let trigrams = export.userTrigrams {
+      if replaceLists {
+        if Defaults[.userTrigrams] != trigrams {
+          Defaults[.userTrigrams] = trigrams
+          changes.append("Trigram dự đoán: \(trigrams.count) (overwrite)")
+        }
+      } else {
+        var current = Defaults[.userTrigrams]
+        var added = 0
+        for (prev, nextMap) in trigrams {
+          var existingNext = current[prev] ?? [:]
+          for (next, count) in nextMap {
+            if existingNext[next] == nil {
+              existingNext[next] = count
+              added += 1
+            }
+          }
+          current[prev] = existingNext
+        }
+        if added > 0 {
+          Defaults[.userTrigrams] = current
+          changes.append("Trigram dự đoán: +\(added)")
+        }
+      }
+    }
+
+    // 1.7.6+: stats restoration. Trước đây bỏ qua hoàn toàn → tab Thống kê
+    // hiện 0 sau import. Match weekId hiện tại → load thành in-memory
+    // counters; tuần cũ → ghi file `<weekId>.json`.
+    if let stats = export.statistics, !stats.isEmpty {
+      let restored = UsageStatistics.shared.restoreFromBackup(stats)
+      if restored > 0 {
+        changes.append("Thống kê: khôi phục \(restored) tuần")
+      }
+    }
 
     os_log("UserDataMigration: applied import with %d changes",
            log: log, type: .info, changes.count)

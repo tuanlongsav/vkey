@@ -265,7 +265,7 @@ struct StatisticsView: View {
       .formStyle(.grouped)
       .scrollDisabled(false)
     }
-    .frame(minWidth: 160, minHeight: 720)
+    .frame(minWidth: 320, minHeight: 480)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .onAppear(perform: refresh)
     .sheet(isPresented: $showingSuggestionSheet) {
@@ -407,11 +407,15 @@ struct StatisticsView: View {
       confirm.messageText = "Nhập từ \(url.lastPathComponent)?"
       confirm.informativeText = """
       Tệp tạo lúc \(export.exportedAt) — vkey v\(export.appVersion).
-      Cài đặt sẽ được ghi đè; các danh sách (macro, allow/keep/deny, smart switch apps) sẽ được gộp vào danh sách hiện tại (không xóa).
+
+      • Gộp thêm: giữ dữ liệu hiện tại + bổ sung dữ liệu mới (union).
+      • Ghi đè toàn bộ: xoá dữ liệu hiện tại, thay bằng dữ liệu nhập.
+
+      Cả 2 chế độ đều khôi phục thống kê từ file backup.
       """
       confirm.alertStyle = .informational
-      confirm.addButton(withTitle: "Gộp (giữ dữ liệu hiện tại)")
-      confirm.addButton(withTitle: "Ghi đè toàn bộ")
+      confirm.addButton(withTitle: "Gộp thêm (giữ data hiện tại)")
+      confirm.addButton(withTitle: "Ghi đè toàn bộ (xoá data hiện tại)")
       confirm.addButton(withTitle: "Huỷ")
       let resp = confirm.runModal()
       guard resp != .alertThirdButtonReturn else {
