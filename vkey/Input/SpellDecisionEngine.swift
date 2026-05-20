@@ -85,12 +85,12 @@ final class SpellDecisionEngine {
     }
 
     if Defaults[.englishAutoRestoreEnabled] {
-      // 1.7.1: defensive — nếu transformed chứa dấu thanh / ký tự đặc
-      // trưng Việt (ý, ô, ở, à, ã, đ, ư...), KHÔNG bao giờ restore raw.
-      // Bảo vệ trường hợp lexicon thiếu single-char syllable hoặc từ vay
-      // chưa được nhận diện. User intent rõ ràng đã gõ Telex/VNI để tạo
-      // dấu → keep VN luôn an toàn.
-      if Self.hasVietnameseDiacritic(transformedToken) {
+      // 1.7.1 (revised): chỉ keep VN khi transformed có dấu Việt AND
+      // không phải từ VN AND không phải từ EN — coi như từ mới/đặc biệt
+      // mà cả hai lexicon đều thiếu. Nếu raw là từ EN hợp lệ (vd "text"
+      // → "tẽt") thì user gõ tiếng Anh, phải restore raw.
+      if Self.hasVietnameseDiacritic(transformedToken),
+         !isVietnameseWord, !rawIsEnglish {
         return .keepVietnamese
       }
 

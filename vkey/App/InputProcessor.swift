@@ -744,19 +744,23 @@ class InputProcessor {
       return false
     }
 
+    let needsRecovery = wordBuffer.wordState.needsRecovery || wordBuffer.stopProcessing
     let decision = spellDecisionEngine.evaluate(
       rawInput: rawInput,
       transformed: current,
-      needsRecovery: wordBuffer.wordState.needsRecovery || wordBuffer.stopProcessing
+      needsRecovery: needsRecovery
     )
 
     // 1.5.0: feed every committed word into UsageStatistics. No-op when the
     // user has turned stats off in Settings.
+    // 1.7.4: forward needsRecovery → stats skip per-token counters cho commit
+    // qua đường recovery (typo/parser-error) để top từ + đề xuất không nhiễu.
     UsageStatistics.shared.recordCommit(
       decision: decision,
       rawInput: rawInput,
       transformed: current,
-      appBundleId: activeApp.isEmpty ? nil : activeApp
+      appBundleId: activeApp.isEmpty ? nil : activeApp,
+      needsRecovery: needsRecovery
     )
 
     // 1.6.0: Word prediction learning + lookup. Học passively từ commit;

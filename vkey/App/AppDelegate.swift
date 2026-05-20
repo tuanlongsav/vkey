@@ -254,6 +254,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
   /// 1.6.1: Settings window từ SwiftUI Settings scene mặc định fixed-size.
   /// Khi vừa key, áp resizable + min size + autosave frame để user resize
   /// được + remember kích thước giữa các lần mở.
+  /// 1.7.4: bump autosave name để reset frame cũ từ v1.7.2 (270px) →
+  /// default mới 180×720 cho user nâng cấp. Tên cũ "VkeySettingsWindow"
+  /// bị orphan trong NSUserDefaults nhưng không ảnh hưởng.
   @objc func windowDidBecomeKey(_ note: Notification) {
     guard let win = note.object as? NSWindow else { return }
     // Settings window có title "vkey Settings" (English locale) hoặc local
@@ -269,7 +272,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       win.styleMask.insert(.resizable)
       win.minSize = NSSize(width: 180, height: 720)
       if win.frameAutosaveName.isEmpty {
-        win.setFrameAutosaveName("VkeySettingsWindow")
+        let autosaveName = "VkeySettingsWindow.v174"
+        let defaultsKey = "NSWindow Frame \(autosaveName)"
+        let hasSavedFrame = UserDefaults.standard.object(forKey: defaultsKey) != nil
+        win.setFrameAutosaveName(autosaveName)
+        if !hasSavedFrame {
+          // Force default opening size = 180×720 cho cả user mới và
+          // user upgrade (không có frame saved dưới key v174).
+          win.setContentSize(NSSize(width: 180, height: 720))
+        }
       }
     }
   }

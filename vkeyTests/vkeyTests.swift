@@ -19,8 +19,6 @@ final class vkeyTests: XCTestCase {
     Defaults.reset(.spellCheckInSentenceEnabled)
     Defaults.reset(.englishAutoRestoreEnabled)
     Defaults.reset(.restorePolicy)
-    Defaults.reset(.dictionaryUpdateChannel)
-    Defaults.reset(.dictionaryGitHubUpdateEnabled)
     Defaults.reset(.suggestionEnabled)
     Defaults.reset(.autoApplyHighConfidenceSuggestion)
     Defaults.reset(.personalDictionaryEnabled)
@@ -1453,8 +1451,6 @@ final class TiengVietValidatorTests: XCTestCase {
     Defaults.reset(.spellCheckInSentenceEnabled)
     Defaults.reset(.englishAutoRestoreEnabled)
     Defaults.reset(.restorePolicy)
-    Defaults.reset(.dictionaryUpdateChannel)
-    Defaults.reset(.dictionaryGitHubUpdateEnabled)
     Defaults.reset(.suggestionEnabled)
     Defaults.reset(.autoApplyHighConfidenceSuggestion)
     Defaults.reset(.personalDictionaryEnabled)
@@ -1642,11 +1638,8 @@ final class TiengVietValidatorTests: XCTestCase {
   // MARK: - Lexicon / Spell Decision / Suggestion
 
   func testLexiconManagerEmbeddedDefaults() throws {
-    let oldChannel = Defaults[.dictionaryUpdateChannel]
-    defer { Defaults[.dictionaryUpdateChannel] = oldChannel }
     let manager = LexiconManager(updatePackageURL: URL(fileURLWithPath: "/tmp/vkey-lexicon-no-file.json"))
-    Defaults[.dictionaryUpdateChannel] = .embeddedOnly
-    manager.reload(channel: .embeddedOnly)
+    manager.reload()
 
     XCTAssertTrue(manager.isVietnameseWord("việt"))
     XCTAssertTrue(manager.isEnglishWord("text"))
@@ -1665,7 +1658,7 @@ final class TiengVietValidatorTests: XCTestCase {
     }
     """
     try manager.setUpdatePackageData(Data(package.utf8))
-    manager.reload(channel: .hybrid)
+    manager.reload()
 
     let versions = manager.snapshotVersions()
     let sources = manager.snapshotSources()
@@ -1684,7 +1677,7 @@ final class TiengVietValidatorTests: XCTestCase {
     }
 
     let manager = LexiconManager(updatePackageURL: URL(fileURLWithPath: "/tmp/vkey-lexicon-user-override.json"))
-    manager.reload(channel: .embeddedOnly)
+    manager.reload()
 
     XCTAssertTrue(manager.isVietnameseWord("abcxyz"))
     XCTAssertFalse(manager.isVietnameseWord("việt"))
@@ -2458,12 +2451,15 @@ final class UserDataMigrationTests: XCTestCase {
       smartSwitchEnabled: nil, smartSwitchApps: nil, perAppOverride: nil,
       spellCheckEnabled: nil, spellCheckInSentenceEnabled: nil,
       englishAutoRestoreEnabled: nil, restorePolicy: nil,
-      dictionaryUpdateChannel: nil, dictionaryGitHubUpdateEnabled: nil,
       suggestionEnabled: nil, autoApplyHighConfidenceSuggestion: nil,
       useEnVnReference: nil,
       personalDictionaryEnabled: nil,
       userAllowWords: ["fresh"], userKeepWords: nil, userDenyWords: nil,
-      macros: nil, statistics: nil
+      macros: nil,
+      macroEnabled: nil, macrosSeeded: nil, defaultMacrosVersion: nil,
+      appTheme: nil,
+      autoPersonalDictFeedback: nil,
+      statistics: nil
     )
     let changes = UserDataMigration.importExport(export, replaceLists: false)
     XCTAssertTrue(changes.contains { $0.contains("Allow words: +1") })
@@ -2482,12 +2478,15 @@ final class UserDataMigrationTests: XCTestCase {
       smartSwitchEnabled: nil, smartSwitchApps: nil, perAppOverride: nil,
       spellCheckEnabled: nil, spellCheckInSentenceEnabled: nil,
       englishAutoRestoreEnabled: nil, restorePolicy: nil,
-      dictionaryUpdateChannel: nil, dictionaryGitHubUpdateEnabled: nil,
       suggestionEnabled: nil, autoApplyHighConfidenceSuggestion: nil,
       useEnVnReference: nil,
       personalDictionaryEnabled: nil,
       userAllowWords: ["fresh"], userKeepWords: nil, userDenyWords: nil,
-      macros: nil, statistics: nil
+      macros: nil,
+      macroEnabled: nil, macrosSeeded: nil, defaultMacrosVersion: nil,
+      appTheme: nil,
+      autoPersonalDictFeedback: nil,
+      statistics: nil
     )
     UserDataMigration.importExport(export, replaceLists: true)
     XCTAssertEqual(Defaults[.userAllowWords], ["fresh"])

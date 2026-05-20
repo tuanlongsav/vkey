@@ -37,6 +37,49 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.4] - 2026-05-20 — "Clean Stats"
+
+3 fix + 1 redesign nhỏ tiếp cải tiến tab Thống kê và cửa sổ Settings.
+
+### Fix biên dịch test target (vkeyTests)
+
+Sau khi v1.7.0 gỡ `dictionaryUpdateChannel` / `dictionaryGitHubUpdateEnabled` (chuyển sang hybrid auto-update không có toggle), test target còn tham chiếu cũ → fail biên dịch ngay khi mở project. Sửa 6 chỗ trong [vkeyTests.swift](vkeyTests/vkeyTests.swift):
+
+- Xoá `Defaults.reset(...)` cho 2 key đã gỡ (2 setUp method).
+- Đổi `manager.reload(channel: ...)` → `manager.reload()` (3 test method) — `LexiconManager.reload(channel:)` đã được hợp nhất.
+- Cập nhật `UserDataExport(...)` constructor: bỏ 2 field cũ, thêm 5 field mới (`macroEnabled`, `macrosSeeded`, `defaultMacrosVersion`, `appTheme`, `autoPersonalDictFeedback`) — match signature 1.5.5+.
+
+### Fix SpellDecisionEngine: dấu Việt + raw EN
+
+v1.7.1 thêm defense "nếu transformed có dấu Việt → luôn keep VN" nhưng quá rộng: case `text` (telex → `tẽt`) bị giữ là `tẽt` thay vì restore về `text`. Logic mới:
+
+- Khi transformed có dấu Việt:
+  - Là VN word hợp lệ → keep VN
+  - Raw là EN word hợp lệ → restore raw
+  - Không phải cả hai (từ mới/đặc biệt) → keep VN (defense ban đầu vẫn còn)
+
+[vkey/Input/SpellDecisionEngine.swift](vkey/Input/SpellDecisionEngine.swift) — guard tại line 87-95.
+
+### Settings window: reset frame autosave
+
+User upgrade từ v1.7.2 (270px) còn frame saved cũ → không hưởng default mới 180×720 của v1.7.3. Bump autosave name từ `"VkeySettingsWindow"` → `"VkeySettingsWindow.v174"` để mọi user (mới + nâng cấp) đều mở cửa sổ ở 180×720 lần đầu. Vẫn `.resizable` → user kéo góc/cạnh tuỳ chỉnh, frame mới được nhớ qua các lần mở.
+
+[vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift:257) — windowDidBecomeKey.
+
+### Tab Thống kê: top từ 10% + lọc lỗi gõ + Xem chi tiết
+
+Top từ tiếng Việt / tiếng Anh trong tab Thống kê được redesign:
+
+- **Loại commit qua đường recovery**: thêm `needsRecovery` param vào `UsageStatistics.recordCommit` — commit bị parser flag là lỗi gõ (telex/VNI không transform được) KHÔNG bơm vào `vnWordCounts/enWordCounts/vnKeepStreak/enRestoreStreak`. Aggregate stats (wordsTotal/category) vẫn cộng.
+- **Top = 10% theo count**: `WeekBucket.summary` đổi cap cứng 20 từ → top 10% (không cap). Min 1 entry khi có data.
+- **Display filter**: bỏ từ <3 ký tự, từ trong deny list, từ không có trong bất kỳ lexicon nào (VN/EN/Keep + user allow/keep). Stats raw vẫn lưu đủ, chỉ filter ở display layer (suggestion compute vẫn dùng streak để propose từ mới).
+- **UI**: section top mặc định hiện 10; nếu filtered > 10 → nút "Xem chi tiết (N)" mở sheet liệt kê đầy đủ, cho xoá từng từ.
+
+Files:
+- [vkey/Stats/UsageStatistics.swift](vkey/Stats/UsageStatistics.swift) — `recordCommit`, `applyCommit`, `WeekBucket.summary` (thêm `topPercent`).
+- [vkey/App/InputProcessor.swift](vkey/App/InputProcessor.swift:755) — forward `needsRecovery` xuống stats.
+- [vkey/View/StatisticsView.swift](vkey/View/StatisticsView.swift) — `isCleanTopWord` filter, `TopWordsDetailSheet`, button "Xem chi tiết".
+
 ## [1.7.3] - 2026-05-20 — "Minimalist"
 
 3 cải tiến UI nhỏ tiếp tục stream "compact UI" của v1.7.x.

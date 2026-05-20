@@ -13,6 +13,25 @@ import Defaults
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// 1.7.4: identifier cho sheet "Xem chi tiết" của top từ — VN hoặc EN.
+enum TopWordsDetailCategory: Identifiable {
+  case vietnamese
+  case english
+  var id: Self { self }
+  var title: String {
+    switch self {
+    case .vietnamese: return "Top từ tiếng Việt"
+    case .english:    return "Top từ tiếng Anh / ký tự đặc biệt"
+    }
+  }
+  var statCategory: UsageStatistics.StatCategory {
+    switch self {
+    case .vietnamese: return .vietnamese
+    case .english:    return .english
+    }
+  }
+}
+
 struct StatisticsView: View {
   @Default(.statisticsEnabled) private var statisticsEnabled
   @Default(.autoBackupOnUpgrade) private var autoBackupOnUpgrade
@@ -24,6 +43,7 @@ struct StatisticsView: View {
   @State private var backupStatus: String = ""
   @State private var diagnosticStatus: String = ""
   @State private var showingSuggestionSheet = false
+  @State private var detailCategory: TopWordsDetailCategory?
 
   var body: some View {
     VStack(spacing: 0) {
@@ -132,23 +152,54 @@ struct StatisticsView: View {
           }
 
           // MARK: 5-7. Top words & apps (per-row delete)
-          if !s.topVietnameseWords.isEmpty {
+          // 1.7.4: top từ = top 10% theo count (compute trong WeekBucket.summary),
+          // áp thêm filter display (length ≥3, ngoài deny, có trong lexicon).
+          // UI hiện prefix(10); nếu filtered > 10 → nút "Xem chi tiết".
+          let filteredTopVN = s.topVietnameseWords.filter {
+            isCleanTopWord($0.word, category: .vietnamese)
+          }
+          if !filteredTopVN.isEmpty {
             Section {
-              ForEach(s.topVietnameseWords.prefix(10), id: \.word) { wc in
+              ForEach(filteredTopVN.prefix(10), id: \.word) { wc in
                 statDeletableRow(word: wc.word, count: wc.count, category: .vietnamese)
+              }
+              if filteredTopVN.count > 10 {
+                HStack {
+                  Spacer()
+                  Button {
+                    detailCategory = .vietnamese
+                  } label: {
+                    Label("Xem chi tiết (\(filteredTopVN.count))", themedSymbol: "list.bullet")
+                  }
+                  Spacer()
+                }
               }
             } header: {
               Text("Top từ tiếng Việt (tuần này)")
             }
           }
 
-          if !s.topEnglishWords.isEmpty {
+          let filteredTopEN = s.topEnglishWords.filter {
+            isCleanTopWord($0.word, category: .english)
+          }
+          if !filteredTopEN.isEmpty {
             Section {
-              ForEach(s.topEnglishWords.prefix(10), id: \.word) { wc in
+              ForEach(filteredTopEN.prefix(10), id: \.word) { wc in
                 statDeletableRow(word: wc.word, count: wc.count, category: .english)
               }
+              if filteredTopEN.count > 10 {
+                HStack {
+                  Spacer()
+                  Button {
+                    detailCategory = .english
+                  } label: {
+                    Label("Xem chi tiết (\(filteredTopEN.count))", themedSymbol: "list.bullet")
+                  }
+                  Spacer()
+                }
+              }
             } header: {
-              Text("Top từ tiếng Anh / raw (tuần này)")
+              Text("Top từ tiếng Anh / ký tự đặc biệt (tuần này)")
             }
           }
 
@@ -220,6 +271,56 @@ struct StatisticsView: View {
     .sheet(isPresented: $showingSuggestionSheet) {
       PersonalDictSuggestionSheet()
     }
+    .sheet(item: $detailCategory) { category in
+      TopWordsDetailSheet(
+        category: category,
+        words: detailWords(for: category),
+        onDelete: { word in
+          UsageStatistics.shared.removeFromCurrentWeek(
+            word: word, category: category.statCategory
+          )
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            refresh()
+          }
+        },
+        onDismiss: { detailCategory = nil }
+      )
+    }
+  }
+
+  // MARK: - Top words filter (1.7.4)
+
+  /// Lọc 1 từ top khỏi display nếu là noise: quá ngắn (<3), bị deny, hoặc
+  /// không có trong bất kỳ lexicon nào (VN/EN/Keep + user allow/keep).
+  /// Recovery-path commits đã được loại tại record time (UsageStatistics).
+  private func isCleanTopWord(
+    _ word: String,
+    category: UsageStatistics.StatCategory
+  ) -> Bool {
+    let normalized = word.normalizedDictionaryToken
+    guard normalized.count >= 3 else { return false }
+    let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
+    if denied.contains(normalized) { return false }
+    switch category {
+    case .vietnamese:
+      return LexiconManager.shared.isVietnameseWord(normalized)
+        || LexiconManager.shared.shouldKeepVietnamese(normalized)
+    case .english:
+      return LexiconManager.shared.isEnglishWord(normalized)
+        || Defaults[.userAllowWords].contains(normalized)
+    case .app:
+      return true
+    }
+  }
+
+  private func detailWords(for category: TopWordsDetailCategory) -> [WordCount] {
+    guard let s = currentSummary else { return [] }
+    let source: [WordCount]
+    switch category {
+    case .vietnamese: source = s.topVietnameseWords
+    case .english:    source = s.topEnglishWords
+    }
+    return source.filter { isCleanTopWord($0.word, category: category.statCategory) }
   }
 
   // MARK: - Actions
@@ -368,6 +469,70 @@ struct StatisticsView: View {
       }
       .buttonStyle(.borderless)
       .help("Xoá cụm này khỏi thống kê tuần này")
+    }
+  }
+}
+
+/// 1.7.4: sheet hiển thị toàn bộ top từ đã lọc (>10). Có nút xóa từng từ
+/// + nút Đóng.
+struct TopWordsDetailSheet: View {
+  let category: TopWordsDetailCategory
+  let words: [WordCount]
+  let onDelete: (String) -> Void
+  let onDismiss: () -> Void
+
+  @State private var localWords: [WordCount] = []
+
+  var body: some View {
+    VStack(spacing: 0) {
+      HStack {
+        Text(category.title)
+          .font(.headline)
+        Spacer()
+        Text("\(localWords.count) từ")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 12)
+
+      Divider()
+
+      List {
+        ForEach(localWords, id: \.word) { wc in
+          HStack {
+            Text(wc.word)
+            Spacer()
+            Text("×\(wc.count)")
+              .foregroundStyle(.secondary)
+              .monospacedDigit()
+            Button {
+              onDelete(wc.word)
+              localWords.removeAll { $0.word == wc.word }
+            } label: {
+              ThemedSymbol(name: "trash")
+                .foregroundStyle(.red)
+            }
+            .buttonStyle(.borderless)
+            .help("Xoá khỏi thống kê tuần này")
+          }
+        }
+      }
+      .listStyle(.inset)
+
+      Divider()
+
+      HStack {
+        Spacer()
+        Button("Đóng", action: onDismiss)
+          .keyboardShortcut(.cancelAction)
+      }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 10)
+    }
+    .frame(width: 420, height: 520)
+    .onAppear {
+      localWords = words
     }
   }
 }

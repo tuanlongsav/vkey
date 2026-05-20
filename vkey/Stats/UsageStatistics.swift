@@ -130,7 +130,8 @@ final class UsageStatistics {
     rawInput: String,
     transformed: String,
     appBundleId: String?,
-    typoCorrectionApplied: Bool = false
+    typoCorrectionApplied: Bool = false,
+    needsRecovery: Bool = false
   ) {
     guard Defaults[.statisticsEnabled] else { return }
     // 1.5.9: defense-in-depth — không ghi nhận khi macOS đang trong
@@ -146,7 +147,8 @@ final class UsageStatistics {
         rawInput: rawInput,
         transformed: transformed,
         appBundleId: appBundleId,
-        typoCorrectionApplied: typoCorrectionApplied
+        typoCorrectionApplied: typoCorrectionApplied,
+        needsRecovery: needsRecovery
       )
     }
   }
@@ -527,6 +529,18 @@ final class UsageStatistics {
         .prefix(n)
         .map { WordCount(word: $0.key, count: $0.value) }
       }
+      // 1.7.4: top từ tiếng Việt / tiếng Anh = top 10% theo count, không
+      // cap cứng nữa (cũ là n=20). Trimmed bởi `trimDict` ở line ~695
+      // nên upper bound vẫn 500 unique tokens. Min 1 entry nếu có data
+      // (Int(ceil(N*0.1)) đảm bảo ≥1 khi N≥1).
+      func topPercent(_ counts: [String: Int], percent: Double) -> [WordCount] {
+        let sorted = counts.sorted { lhs, rhs in
+          lhs.value > rhs.value
+            || (lhs.value == rhs.value && lhs.key < rhs.key)
+        }
+        let cap = Int(ceil(Double(sorted.count) * percent))
+        return sorted.prefix(cap).map { WordCount(word: $0.key, count: $0.value) }
+      }
       return UsageSummary(
         weekId: weekId,
         weekEnd: weekEnd,
@@ -537,8 +551,8 @@ final class UsageStatistics {
         wordsSuggested: wordsSuggested,
         smartSwitchFires: smartSwitchFires,
         typoCorrectionsApplied: typoCorrectionsApplied,
-        topVietnameseWords: top(vnWordCounts, n: 20),
-        topEnglishWords: top(enWordCounts, n: 20),
+        topVietnameseWords: topPercent(vnWordCounts, percent: 0.1),
+        topEnglishWords: topPercent(enWordCounts, percent: 0.1),
         topApps: top(appCounts, n: 10),
         promotedToAllow: promotedAllow,
         promotedToKeep: promotedKeep
@@ -631,7 +645,8 @@ final class UsageStatistics {
     rawInput: String,
     transformed: String,
     appBundleId: String?,
-    typoCorrectionApplied: Bool
+    typoCorrectionApplied: Bool,
+    needsRecovery: Bool
   ) {
     rotateIfNeeded()
     counters.wordsTotal += 1
@@ -639,10 +654,17 @@ final class UsageStatistics {
     let rawToken = rawInput.normalizedDictionaryToken
     let vnToken = transformed.normalizedDictionaryToken
 
+    // 1.7.4: nếu commit qua đường recovery (raw không transform được
+    // thành VN hợp lệ, hoặc parser ngắt do stopProcessing), KHÔNG bơm
+    // vào per-token counters để khỏi nhiễu top từ + đề xuất personal
+    // dictionary. Vẫn cộng vào aggregate counts (wordsTotal/category)
+    // để stats tổng vẫn phản ánh hoạt động gõ.
+    let trackPerToken = !needsRecovery
+
     switch decision {
     case .keepVietnamese:
       counters.wordsKeptVietnamese += 1
-      if !vnToken.isEmpty {
+      if trackPerToken, !vnToken.isEmpty {
         counters.vnWordCounts[vnToken, default: 0] += 1
         counters.vnKeepStreak[vnToken, default: 0] += 1
         // 1.6.1: phrase tracking — append to sliding window + tăng counter.
@@ -652,14 +674,14 @@ final class UsageStatistics {
       }
     case .restoreRawEnglish:
       counters.wordsRestoredEnglish += 1
-      if !rawToken.isEmpty {
+      if trackPerToken, !rawToken.isEmpty {
         counters.enWordCounts[rawToken, default: 0] += 1
         counters.enRestoreStreak[rawToken, default: 0] += 1
       }
       recentVnQueue.removeAll()
     case .keepRaw:
       counters.wordsKeptRaw += 1
-      if !rawToken.isEmpty {
+      if trackPerToken, !rawToken.isEmpty {
         // Track raw too — could be a name or technical term the user uses
         // often. They become candidates for personal dictionary later.
         counters.enWordCounts[rawToken, default: 0] += 1
