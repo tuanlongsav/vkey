@@ -31,7 +31,9 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Tự động sửa lỗi gõ nhầm (Auto Typo Correction)**: Tự động sửa khi gõ nhầm dấu thanh sớm hoặc sai vị trí (ví dụ: `thfi` -> `thì`, `thfis` -> `thí`, `th2i` -> `thì`, `th1i` -> `thí`), sửa gạch chữ đ cuối từ (ví dụ: `dinhjd` -> `định` / `dinh59` -> `định`), sửa lỗi hoán đổi nguyên âm (ví dụ: `veeitj` -> `việt`) và hoán đổi phụ âm cuối (ví dụ: `phuowgn` -> `phương`). Có thể bật/tắt dễ dàng trong Cài đặt.
 - ✅ Bộ gõ chỉ duy nhất Unicode (UTF-8), không hỗ trợ TCVN3/VNI Windows (giữ đơn giản).
 - ✅ Nhớ chế độ Vi/En theo từng ứng dụng (per-app input mode memory).
-- ✅ **Smart Switch & AX Probing**: Tự động tắt khi vào các bảng nhập liệu dạng Overlay/Launcher (Spotlight, Raycast, Alfred, LaunchBar) nhờ cơ chế AX Overlay Probing siêu nhẹ (<0.1ms) — giúp bạn gõ tìm kiếm tiếng Anh thuận tiện. Tự động khôi phục hoàn hảo trạng thái bộ gõ của ứng dụng nền trước đó khi đóng overlay lại. Có thể kích hoạt hoặc tắt nhanh từ thanh Menu Bar. Đồng thời, **tự động quét và phát hiện các ô nhập liệu đặc biệt** dạng dropdown và ô tìm kiếm (`AXComboBox`/`AXSearchField`) của toàn hệ thống để kích hoạt chế độ Overwrite chọn-thay-thế, chống dính chữ triệt để.
+- ✅ **Smart Switch 3-state per-app (v1.7.0+, major refactor)**: mỗi app có thể có 1 trong 3 state — 🇻🇳 **Tiếng Việt** / 🇺🇸 **Tiếng Anh** / ⛔ **Không dùng vkey**. Mỗi state hiển thị icon nguồn: 👤 (user đặt thủ công) hoặc 🤖 (vkey tự học từ Thống kê). User setting LUÔN override auto-learn. Thay list 1-chiều cũ "luôn tắt VN" của v1.5.x-v1.6.x.
+- ✅ **Smart Switch auto-learn (v1.7.0+)**: vkey theo dõi ngôn ngữ user gõ trong từng app qua Stats. App dùng ≥5 ngày dataset trong tuần, ≥5 commit/ngày, ratio ≥75% một ngôn ngữ → tự động set state. Chạy 1 lần/tuần khi launch.
+- ✅ **AX Probing Smart Switch**: Tự động tắt khi vào các bảng nhập liệu dạng Overlay/Launcher (Spotlight, Raycast, Alfred, LaunchBar) nhờ cơ chế AX Overlay Probing siêu nhẹ (<0.1ms). Tự động khôi phục trạng thái bộ gõ của ứng dụng nền trước đó. Đồng thời **tự động quét ô nhập liệu** (`AXComboBox`/`AXSearchField`) để kích hoạt chế độ Overwrite chống dính chữ.
 - ✅ **Kiểm tra Chính tả 6 bước & Vowel Inclusion Pairs (từ GoNhanh.org)**: Triệt để ngăn chặn gõ dấu sai cấu trúc âm tiết tiếng Việt. Bộ whitelisting các cặp nguyên âm có thể đi cùng nhau loại bỏ triệt để hiện tượng tự động sửa nhầm trên các từ tiếng Anh (như `claus`, `metric`, `house`, `beyond`). Hỗ trợ gõ phụ âm đầu ghép `kr` (như trong *Krông Ana*) và phụ âm cuối `k` (như trong *Đắk Lắk*).
 - ✅ **Bảo toàn Phím đúp (Doubled Tone Mark Preservation)**: Giữ nguyên phím đúp liên tiếp (`ss`, `ff`, `rr`, `xx`, `jj`) thay vì tự động xoá/toggle, bảo vệ hoàn toàn các từ tiếng Anh thông dụng như `staff`, `off`, `class`, `pass`, `staff`.
 - ✅ **Tự động Khôi phục từ Tiếng Anh (Space Restore)**: Tự động phát hiện và khôi phục các ký tự tiếng Anh bị gõ nhầm khi nhấn phím Space (như `ò` -> `of`, `ì` -> `if`, `sê` -> `see`, `tê` -> `tee`).
@@ -51,8 +53,8 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Sao lưu & khôi phục dữ liệu cá nhân (v1.5.0+)**: Xuất / nhập JSON gồm toàn bộ Cài đặt, Macro, từ điển cá nhân, Smart Switch, per-app override, thống kê. Khi cập nhật phiên bản, app tự động hỏi sao lưu trước khi tiếp tục.
 - ✅ **Từ điển GitHub tự động cập nhật (v1.5.0+, cải tiến v1.6.2+)**: vkey tự fetch `lexicon-update.json` từ `raw.githubusercontent.com/tuanlongsav/vkey` (v1.6.2+ chuyển từ Contents API, không còn giới hạn 1 MB + bỏ rate-limit) mỗi 24h khi launch. **Nút "Cập nhật từ điển ngay" (v1.6.2+)** trong tab Chính tả để force kiểm tra ngay không đợi throttle. Hiện tại v7: 8,894 syllables tiếng Việt.
 - ✅ **Đề xuất Macro từ Thống kê (v1.5.5+, mở rộng v1.6.1+)**: vkey nhận diện các từ và cụm từ tiếng Việt bạn gõ ≥10 lần → đề xuất tạo macro với viết tắt tự sinh (vd "công ty → ct", "kính gửi anh → kga").
-- ✅ **Đề xuất Smart Switch app (v1.5.5+)**: phát hiện các app bạn dùng ≥10 lần nhưng chưa nằm trong danh sách Smart Switch → đề xuất thêm.
-- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+)**: drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở (autosave). Default 540×640 đồng nhất giữa 5 tab.
+- ✅ **Sheet "Tự học từ Thống kê" (v1.7.0+)**: bấm trong tab Smart Switch để preview các app vkey gợi ý đổi state, áp dụng hàng loạt. User-set entries (🔒) tự động bị skip.
+- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, kích thước mới v1.7.0+)**: drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở (autosave). **v1.7.0**: default 480×720 (giảm bề ngang, tăng chiều dọc) để hiển thị hết content cho hầu hết tab không cần scroll.
 - ✅ **3 giao diện ứng dụng (v1.5.5+)**: chọn ở menu bar → "Giao diện ứng dụng": **Mặc định** (SF Symbol đơn giản), **3D bóng bẩy** (gradient + double shadow), **Emoji vui tươi** (Unicode emoji icons).
 - ✅ **Diagnostic export Stats (v1.6.1+)**: nút "Xuất chẩn đoán Stats" trong tab Thống kê → ghi file text mô tả tình trạng files + counters → gửi maintainer khi báo lỗi.
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
@@ -124,7 +126,7 @@ Click icon cờ trên menu bar để mở các tác vụ nhanh.
 | Chuyển VN ↔ EN bằng phím tắt | Nhấn + nhả **⌃⇧** (Control + Shift) đồng thời (mặc định) |
 | Chuyển VN ↔ EN từ menu | Menu → **"Chuyển đổi ngôn ngữ 🇻🇳 \| 🇺🇸"** |
 | Đổi kiểu gõ | Menu → **"Kiểu Telex"** / **"Kiểu VNI"** (✓ ở dòng đang chọn) |
-| Bật/tắt nhanh Smart Switch | Menu → **"Smart Switch"** (✓ khi đang bật) |
+| Bật/tắt nhanh Smart Switch | Menu → **"Smart Switch"** (✓ khi đang bật) — v1.7.0+: master toggle cho cơ chế 3-state per-app (xem tab Smart Switch để cấu hình từng app) |
 | Bật/tắt nhanh Sửa lỗi chính tả | Menu → **"Sửa lỗi chính tả"** (✓ khi đang bật) |
 | Bật/tắt nhanh Macro (1.5.3+) | Menu → **"Macro"** (✓ khi đang bật) — tạm dừng expansion mà vẫn giữ danh sách |
 | Mở cửa sổ Cài đặt | Menu → **"Cài đặt"** |
@@ -156,12 +158,25 @@ Click icon cờ trên menu bar để mở các tác vụ nhanh.
 
 ### Cài đặt → tab **Smart Switch**
 
+Tab này được **redesign hoàn toàn ở v1.7.0** — thay list 1-chiều "luôn dùng tiếng Anh" bằng 3-state per app với source tracking + auto-learn.
+
 | Tác vụ | Cách dùng |
 |--------|----------|
 | Bật/tắt Smart Switch | Toggle ở đầu tab (hoặc nút nhanh ngoài menu bar) |
-| Thêm ứng dụng "luôn dùng tiếng Anh" | Nhập Bundle ID rồi bấm **"Thêm"** (có sẵn các mẫu phổ biến: Xcode, VSCode, Terminal…) |
-| Lấy Bundle ID của app đang chạy | Mở Terminal, gõ `osascript -e 'id of app "Tên Ứng Dụng"'` |
-| Xoá app khỏi danh sách | Chọn dòng → bấm **🗑** |
+| Hiểu state mỗi app (v1.7.0+) | Mỗi app trong list có badge state: 🇻🇳 **VN** (gõ Tiếng Việt) / 🇺🇸 **EN** (gõ Tiếng Anh) / **Tắt** (không dùng vkey). Icon nguồn: 👤 = bạn đặt thủ công, 🤖 = vkey tự học |
+| Đổi state thủ công | Click "**...**" trên row app → popover chọn 1 trong 3 state. Lưu là source=👤 (lock khỏi auto-learn) |
+| Reset về auto-learn | Click "..." → "Để vkey tự học (auto-learn)" → xoá entry; lần check tuần sau sẽ re-evaluate |
+| Thêm app mới | Nhập Bundle ID → bấm **"Thêm"** (mặc định state = 🇺🇸 EN + source=👤) |
+| Xoá app | Chọn row → bấm **"Xoá"** |
+| Tự học từ Thống kê | Button **"Tự học từ Thống kê"** → sheet preview các app vkey gợi ý đổi state. Áp dụng hàng loạt; entries có 🔒 (user-set) tự skip |
+| Lấy Bundle ID | Mở Terminal: `osascript -e 'id of app "Tên Ứng Dụng"'` |
+
+**Auto-learn rules** (v1.7.0+, chạy 1 lần/tuần khi launch):
+- App phải có ≥5 ngày dataset trong tuần này (user gõ trong app)
+- ≥5 commit/ngày trung bình (~35 commits/tuần)
+- Ratio ngôn ngữ ≥75% → set state tương ứng (Tiếng Việt hoặc Tiếng Anh)
+- Entries có source=👤 (user) KHÔNG bị thay đổi
+- User upgrade từ 1.6.x: smartSwitchApps cũ tự convert thành configs 3-state (englishMode + source=👤)
 
 ### Cài đặt → tab **Macro**
 
@@ -178,25 +193,41 @@ Click icon cờ trên menu bar để mở các tác vụ nhanh.
 
 ### Cài đặt → tab **Chính tả**
 
-Tab này được **tinh gọn lại ở 1.5.3** — bỏ Picker "Nguồn từ điển" + Toggle "Tự động tải từ GitHub" (đều luôn-on). **v1.6.1+** chuyển toggle "Đoán từ tiếp theo" sang tab Chung. **v1.6.2+** thêm Section "Từ điển từ GitHub" với nút cập nhật thủ công.
+Tab này được **tinh gọn liên tục qua các version**:
+- **v1.5.3**: bỏ Picker "Nguồn từ điển" + Toggle "Tự động tải từ GitHub" (đều luôn-on).
+- **v1.6.1**: chuyển toggle "Đoán từ tiếp theo" sang tab Chung.
+- **v1.6.2**: thêm Section "Từ điển từ GitHub" với nút cập nhật thủ công.
+- **v1.7.0**: gộp 3 Section → 1 Section đổi tên **"Cấu hình kiểm tra chính tả"**. Còn 5 Section thay vì 7.
+
+5 Section hiện tại:
+
+1. **Phím tắt thông minh** — Master quick-enable toggle gộp.
+2. **Cấu hình kiểm tra chính tả** (đổi tên v1.7.0) — gồm:
+   - Toggle "Kiểm tra chính tả" (gộp luôn "Kiểm tra trong câu" từ v1.7.0)
+   - Toggle "Sử dụng từ điển cá nhân" + button "Quản lý từ điển cá nhân"
+   - Toggle "Tự động compute đề xuất hàng tuần" + button "Xem đề xuất pending"
+3. **Gợi ý & Sửa lỗi chính tả** — `suggestionEnabled` + `autoApplyHighConfidenceSuggestion`.
+4. **Tự động khôi phục tiếng Anh (Space Restore)** — `englishAutoRestoreEnabled` + restorePolicy + `useEnVnReference`.
+5. **Từ điển từ GitHub** — version info + nút "Cập nhật từ điển ngay".
 
 | Mục | Tác dụng |
 |-----|---------|
 | Kích hoạt nhanh tất cả tính năng mới | Toggle gộp — bật/tắt cùng lúc mọi tính năng chính tả + từ điển bên dưới |
-| Kiểm tra chính tả | Bật cơ chế 6-bước check + Vowel Inclusion Pairs (chặn gõ dấu sai cấu trúc âm tiết) |
-| Kiểm tra trong câu | Mở rộng kiểm tra cho từ ở giữa câu (không chỉ từ vừa gõ) |
+| Kiểm tra chính tả (v1.7.0 gộp "trong câu") | Bật cơ chế 6-bước check + Vowel Inclusion Pairs (chặn gõ dấu sai cấu trúc âm tiết) cho cả từ vừa gõ và từ trong câu |
+| Sử dụng từ điển cá nhân | Bật danh sách Allow / Keep / Deny do bạn tự định nghĩa |
+| Quản lý từ điển cá nhân | Mở editor → thêm / xoá từ trong 3 danh sách Allow / Keep / Deny |
+| Tự động compute đề xuất hàng tuần (v1.6.0+) | Auto-compute đề xuất từ Thống kê tuần này. KHÔNG còn auto-promote ngầm — chỉ tạo danh sách để bạn review |
+| Xem đề xuất pending (v1.6.0+) | Mở sheet review từng từ ≥5 lần gõ thống nhất → chọn ✓ thêm vào Allow/Keep hoặc bỏ qua |
 | Gợi ý sửa lỗi chính tả | Hiện gợi ý khi gõ sai (Levenshtein + heuristic) |
 | Tự động sửa khi tin cậy cao | Áp dụng gợi ý luôn nếu độ tin cậy ≥ 88% |
 | Tự động khôi phục tiếng Anh | Bật Space Restore (`ò → of`, `ì → if`, `sê → see`, `tê → tee`…) |
 | Chính sách khôi phục | **Ưu tiên tiếng Việt** / **Cân bằng** / **Ưu tiên tiếng Anh** cho từ mơ hồ |
 | Dùng từ điển tham chiếu Anh-Việt | Bật bộ từ điển song ngữ Anh ↔ Việt nhúng trong package (mới ở 1.5.0). Hiện đang trống — sẽ được populate ở phiên bản tới khi build pipeline cập nhật |
-| Sử dụng từ điển cá nhân | Bật danh sách Allow / Keep / Deny do bạn tự định nghĩa |
-| Quản lý từ điển cá nhân | Mở editor → thêm / xoá từ trong 3 danh sách Allow / Keep / Deny |
-| Học hành vi từ Thống kê (v1.5.5+, semantic mới v1.6.0+) | Bật auto-compute đề xuất hàng tuần. **v1.6.0+**: KHÔNG còn auto-promote ngầm — chỉ tạo danh sách đề xuất để bạn review |
-| Xem đề xuất pending (v1.6.0+) | Mở sheet review từng từ ≥5 lần gõ thống nhất → chọn ✓ thêm vào Allow/Keep hoặc bỏ qua |
 | **Từ điển từ GitHub** (v1.6.2+) | Hiển thị phiên bản hiện tại + số từ tiếng Việt. Nút "Cập nhật từ điển ngay" để force-download bypass throttle 24h |
 
 ### Cài đặt → tab **Thống kê & Sao lưu**
+
+Header tuần này (v1.7.0+) hiển thị tiếng Việt: **"Tuần 21 năm 2026 (từ 18/05 đến 24/05/2026)"** thay cho format ISO "2026-W21" — tính từ thứ Hai đến Chủ Nhật. Áp dụng cho cả Section "Tuần này" và "Các tuần đã đóng".
 
 | Mục | Tác dụng |
 |-----|---------|
