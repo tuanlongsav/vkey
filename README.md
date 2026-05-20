@@ -1,4 +1,7 @@
-# vkey
+<h1>
+  <img src="images/vkey-icon.png" alt="vkey logo" width="56" style="vertical-align: middle;">
+  &nbsp;vkey
+</h1>
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
