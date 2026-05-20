@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.9 — "Stats, EN Dict, Smart HUD"</title>
+      <sparkle:version>17900</sparkle:version>
+      <sparkle:shortVersionString>1.7.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 22:35:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.9/vkey-1.7.9.dmg"
+        sparkle:edSignature="2ysp+wnGULLTGqqkuj/rmCTVHk5uwe+bde62UumxfWRgTgpXiBHRRDaP5qrrESyCxJiD2blLcFty3d52XhVLDA=="
+        length="6028277"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.9 — "Stats, EN Dict, Smart HUD":</h2>
+        <p>4 fix sau v1.7.8.</p>
+        <ul>
+          <li><strong>Tab Thống kê &amp; Sao lưu restructure</strong>: section "Quyền riêng tư" chuyển từ top xuống ngay TRƯỚC mảng số liệu. Filter top từ nới length 3→2 → top tiếng Việt từ 1 entry mở ra nhiều từ phổ biến. Rename EN header "Top từ ngoài tiếng Việt". Thêm 2 sections cụm 2-3 từ (VN + EN).</li>
+          <li><strong>EN dictionary GitHub v9 (126→9826 từ)</strong>: pipeline cũ chỉ output 126 EN. Bump <code>--top-english</code> 2000→10000, regenerate qua wordfreq. File 257KB. App 1.6.2+ auto-fetch trong 24h.</li>
+          <li><strong>HUD prediction pixel-precise caret</strong>: dùng AX parametric API <code>kAXBoundsForRangeParameterizedAttribute</code> thay vì element bounds. Multi-line editor (TextEdit, VS Code, ...) HUD giờ sát dòng đang gõ, không che editor. Bổ sung flip-below nếu HUD vượt screen top + multi-display detection.</li>
+          <li><strong>EN phrase tracking</strong>: backend mới <code>enPhraseCounts2/3</code> + sliding window. Track khi commit raw EN/.keepRaw, reset khi xen VN. Export/import lossless.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.8 — "Right Names, Right Height"</title>
       <sparkle:version>17800</sparkle:version>
       <sparkle:shortVersionString>1.7.8</sparkle:shortVersionString>

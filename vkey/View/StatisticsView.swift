@@ -48,21 +48,7 @@ struct StatisticsView: View {
   var body: some View {
     VStack(spacing: 0) {
       Form {
-        // MARK: 1. Stats toggle + privacy note
-        Section {
-          Toggle(isOn: $statisticsEnabled) {
-            Label("Ghi nhận thống kê sử dụng", themedSymbol: "chart.bar")
-          }
-          .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-
-          Text("Dữ liệu chỉ lưu cục bộ tại `~/Library/Application Support/vkey/stats/`. Không có request mạng nào. Bạn có thể xóa toàn bộ bằng nút bên dưới.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        } header: {
-          Text("Quyền riêng tư")
-        }
-
-        // MARK: 2. Backup / Restore — 1.6.0: move up ngay sau toggle.
+        // MARK: 1. Backup / Restore — 1.7.9: lên top thay cho Privacy.
         // Luôn hiển thị (không gate trên statisticsEnabled) vì backup là
         // utility độc lập với việc bật/tắt ghi nhận.
         Section {
@@ -136,6 +122,22 @@ struct StatisticsView: View {
           Text("Đồng bộ hành vi vào Personal Dictionary")
         }
 
+        // MARK: 3. 1.7.9: Privacy toggle + note — chuyển từ top xuống đây,
+        // ngay TRƯỚC mảng số liệu thống kê (tuần / top). User feedback v1.7.8
+        // muốn "Quyền riêng tư" sát các mục thống kê.
+        Section {
+          Toggle(isOn: $statisticsEnabled) {
+            Label("Ghi nhận thống kê sử dụng", themedSymbol: "chart.bar")
+          }
+          .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+          Text("Dữ liệu chỉ lưu cục bộ tại `~/Library/Application Support/vkey/stats/`. Không có request mạng nào. Bạn có thể xóa toàn bộ bằng nút bên dưới.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        } header: {
+          Text("Quyền riêng tư")
+        }
+
         // MARK: 4. Current week summary (chỉ hiện khi statisticsEnabled)
         if statisticsEnabled, let s = currentSummary {
           Section {
@@ -179,6 +181,26 @@ struct StatisticsView: View {
             }
           }
 
+          // 1.7.9: top cụm 2-3 từ tiếng Việt từ aggregatedTopVietnamesePhrases.
+          // Threshold thấp (3) cho UI personal — cụm hiếm hơn từ đơn.
+          let topVnPhrases = UsageStatistics.shared
+            .aggregatedTopVietnamesePhrases(minWords: 2, maxWords: 3, threshold: 3)
+          if !topVnPhrases.isEmpty {
+            Section {
+              ForEach(topVnPhrases.prefix(10), id: \.word) { wc in
+                HStack {
+                  Text(wc.word)
+                  Spacer()
+                  Text("×\(wc.count)")
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                }
+              }
+            } header: {
+              Text("Top cụm 2-3 từ tiếng Việt (tuần này)")
+            }
+          }
+
           let filteredTopEN = s.topEnglishWords.filter {
             isCleanTopWord($0.word, category: .english)
           }
@@ -199,7 +221,26 @@ struct StatisticsView: View {
                 }
               }
             } header: {
-              Text("Top từ tiếng Anh / ký tự đặc biệt (tuần này)")
+              Text("Top từ ngoài tiếng Việt (gợi ý từ điển cá nhân)")
+            }
+          }
+
+          // 1.7.9: top cụm 2-3 từ EN/raw.
+          let topEnPhrases = UsageStatistics.shared
+            .aggregatedTopEnglishPhrases(minWords: 2, maxWords: 3, threshold: 3)
+          if !topEnPhrases.isEmpty {
+            Section {
+              ForEach(topEnPhrases.prefix(10), id: \.word) { wc in
+                HStack {
+                  Text(wc.word)
+                  Spacer()
+                  Text("×\(wc.count)")
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                }
+              }
+            } header: {
+              Text("Top cụm ngoài tiếng Việt (tuần này)")
             }
           }
 
@@ -290,15 +331,17 @@ struct StatisticsView: View {
 
   // MARK: - Top words filter (1.7.4)
 
-  /// Lọc 1 từ top khỏi display nếu là noise: quá ngắn (<3), bị deny, hoặc
+  /// Lọc 1 từ top khỏi display nếu là noise: quá ngắn (<2), bị deny, hoặc
   /// không có trong bất kỳ lexicon nào (VN/EN/Keep + user allow/keep).
   /// Recovery-path commits đã được loại tại record time (UsageStatistics).
+  /// 1.7.9: nới length 3 → 2 (user feedback top VN chỉ còn 1 từ vì cắt
+  /// nhiều từ ngắn phổ biến "để", "là", "có", ...).
   private func isCleanTopWord(
     _ word: String,
     category: UsageStatistics.StatCategory
   ) -> Bool {
     let normalized = word.normalizedDictionaryToken
-    guard normalized.count >= 3 else { return false }
+    guard normalized.count >= 2 else { return false }
     let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
     if denied.contains(normalized) { return false }
     switch category {

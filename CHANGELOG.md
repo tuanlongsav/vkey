@@ -37,6 +37,52 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.9] - 2026-05-20 — "Stats, EN Dict, Smart HUD"
+
+4 fix sau v1.7.8: tab Thống kê restructure + filter nới + cụm 2-3 từ, EN dict v7→v9 (126→9826), HUD prediction pixel-precise caret.
+
+### Tab Thống kê & Sao lưu restructure
+
+- **Section reorder**: "Quyền riêng tư" chuyển từ TOP xuống ngay TRƯỚC mảng số liệu (sau Backup + Personal Dict sync). User feedback "đặt sát các mục thống kê".
+- **Filter `isCleanTopWord` nới**: length 3 → **2** (giữ lexicon + deny check). Top từ tiếng Việt từ ~1 entry mở rộng nhiều từ phổ biến 2 ký tự (`để`, `là`, `có`, `mà`, ...).
+- **Rename header EN**: "Top từ tiếng Anh / ký tự đặc biệt" → **"Top từ ngoài tiếng Việt (gợi ý từ điển cá nhân)"** — rõ mục đích.
+- **Top cụm 2-3 từ tiếng Việt** (mới): dùng API có sẵn `aggregatedTopVietnamesePhrases` (1.6.1+). Threshold 3 cho UI personal.
+- **Top cụm ngoài tiếng Việt** (mới): backend mới `enPhraseCounts2/3` + sliding window `recentEnQueue` + helper `recordEnPhraseTransition`. Track khi commit `.restoreRawEnglish` hoặc `.keepRaw`, reset khi xen VN/suggest/SmartSwitch.
+
+### Backend phrase tracking
+
+- [vkey/Stats/UsageStatistics.swift](vkey/Stats/UsageStatistics.swift) — thêm `WeekBucket.enPhraseCounts2/3`, `recentEnQueue`, `recordEnPhraseTransition`, API `aggregatedTopEnglishPhrases`. Backward-compat Codable. Trim cap 300 mỗi dict.
+- [vkey/Stats/UsageStatistics.swift WeekBucketExport](vkey/Stats/UsageStatistics.swift) — thêm 2 fields với default empty trong init (backward-compat call sites cũ).
+
+### EN dictionary GitHub v7 → v9 (126 → 9826 từ)
+
+User feedback: "từ điển GitHub chỉ có tiếng Việt". Thật ra schema từ 1.5.0 đã có field `english` nhưng pipeline chỉ output 126 từ embedded.
+
+- [Tools/build_lexicon.py](Tools/build_lexicon.py) — bump `--top-english` default `2000` → `10000`.
+- Re-generate `lexicon-update.json`: dùng `wordfreq.top_n_list('en', 10000)`, filter alphabetic ≥2 chars, union với 126 embedded → **9826 EN words**. Version 8 → 9.
+- File size 257.6 KB (under 1 MB safe ceiling). Parse < 1ms. Set lookup O(1).
+- App 1.6.2+ auto-fetch trong 24h hoặc qua nút "Cập nhật từ điển ngay". Không cần update app binary.
+
+### HUD prediction: pixel-precise caret
+
+User feedback: "vị trí HUD không linh hoạt theo con trỏ, hay che nội dung".
+
+Root cause: [PredictionHUDWindow.focusedElementCaretRect](vkey/Platform/PredictionHUDWindow.swift:109) chỉ dùng `kAXPositionAttribute + kAXSizeAttribute` → trả bounds toàn focused element (vd TextEdit/VS Code editor 800×600), KHÔNG phải pixel caret. Multi-line editor → HUD đặt top editor che dòng đang gõ.
+
+**Fix**: dùng AX parametric API `kAXSelectedTextRangeAttribute` + `kAXBoundsForRangeParameterizedAttribute` để lấy bounds pixel của caret range. Fallback element bounds nếu app không support.
+
+**Bổ sung**:
+- Flip-below logic: nếu HUD top edge vượt screen.maxY → đặt HUD dưới caret line (top of screen edge case).
+- Multi-display: tìm `NSScreen` chứa caret thay vì luôn dùng `NSScreen.main`.
+
+### Files
+
+- [vkey/View/StatisticsView.swift](vkey/View/StatisticsView.swift) — reorder section, relax filter, rename EN, thêm 2 phrase sections.
+- [vkey/Stats/UsageStatistics.swift](vkey/Stats/UsageStatistics.swift) — EN phrase tracking + API + WeekBucketExport.
+- [Tools/build_lexicon.py](Tools/build_lexicon.py) — bump default top-english.
+- [lexicon-update.json](lexicon-update.json) + [lexicon/lexicon-update.json](lexicon/lexicon-update.json) — version 9, EN 9826 từ.
+- [vkey/Platform/PredictionHUDWindow.swift](vkey/Platform/PredictionHUDWindow.swift) — parametric AX + flip + multi-display.
+
 ## [1.7.8] - 2026-05-20 — "Right Names, Right Height"
 
 2 chỉnh sau v1.7.7: thu chiều cao Settings 40% + restore tab labels gốc với font compact.

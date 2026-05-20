@@ -348,7 +348,7 @@ def build(
 def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--out", type=Path, default=Path("vkey/lexicon/lexicon-update.json"))
-    p.add_argument("--top-english", type=int, default=2000,
+    p.add_argument("--top-english", type=int, default=10000,
                    help="How many wordfreq top English words to include in english[]")
     p.add_argument("--kaikki-download", action="store_true",
                    help="Download the full Kaikki dump (2.5GB) if not cached")

@@ -89,6 +89,9 @@ public struct WeekBucketExport: Codable {
   public let vnPhraseCounts2: [String: Int]   // 1.6.1+
   public let vnPhraseCounts3: [String: Int]
 
+  public let enPhraseCounts2: [String: Int]   // 1.7.9+
+  public let enPhraseCounts3: [String: Int]
+
   public let appLanguageVnCounts: [String: Int]  // 1.7.0+
   public let appLanguageEnCounts: [String: Int]
   public let appLanguageDays: [String: [Int]]
@@ -102,6 +105,7 @@ public struct WeekBucketExport: Codable {
     case vnWordCounts, enWordCounts, appCounts
     case vnKeepStreak, enRestoreStreak
     case vnPhraseCounts2, vnPhraseCounts3
+    case enPhraseCounts2, enPhraseCounts3   // 1.7.9+
     case appLanguageVnCounts, appLanguageEnCounts, appLanguageDays
   }
 
@@ -113,6 +117,7 @@ public struct WeekBucketExport: Codable {
     vnWordCounts: [String: Int], enWordCounts: [String: Int], appCounts: [String: Int],
     vnKeepStreak: [String: Int], enRestoreStreak: [String: Int],
     vnPhraseCounts2: [String: Int], vnPhraseCounts3: [String: Int],
+    enPhraseCounts2: [String: Int] = [:], enPhraseCounts3: [String: Int] = [:],
     appLanguageVnCounts: [String: Int], appLanguageEnCounts: [String: Int],
     appLanguageDays: [String: [Int]]
   ) {
@@ -132,6 +137,8 @@ public struct WeekBucketExport: Codable {
     self.enRestoreStreak = enRestoreStreak
     self.vnPhraseCounts2 = vnPhraseCounts2
     self.vnPhraseCounts3 = vnPhraseCounts3
+    self.enPhraseCounts2 = enPhraseCounts2
+    self.enPhraseCounts3 = enPhraseCounts3
     self.appLanguageVnCounts = appLanguageVnCounts
     self.appLanguageEnCounts = appLanguageEnCounts
     self.appLanguageDays = appLanguageDays
@@ -155,6 +162,8 @@ public struct WeekBucketExport: Codable {
     self.enRestoreStreak = try c.decodeIfPresent([String: Int].self, forKey: .enRestoreStreak) ?? [:]
     self.vnPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts2) ?? [:]
     self.vnPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts3) ?? [:]
+    self.enPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .enPhraseCounts2) ?? [:]
+    self.enPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .enPhraseCounts3) ?? [:]
     self.appLanguageVnCounts = try c.decodeIfPresent([String: Int].self, forKey: .appLanguageVnCounts) ?? [:]
     self.appLanguageEnCounts = try c.decodeIfPresent([String: Int].self, forKey: .appLanguageEnCounts) ?? [:]
     self.appLanguageDays = try c.decodeIfPresent([String: [Int]].self, forKey: .appLanguageDays) ?? [:]
@@ -206,6 +215,10 @@ final class UsageStatistics {
   /// 1.6.1: sliding window các từ tiếng Việt vừa commit (≤3) để tracking
   /// phrase bigram/trigram. Reset khi gõ tiếng Anh/raw/Smart Switch.
   private var recentVnQueue: [String] = []
+
+  /// 1.7.9: sliding window EN/raw vừa commit (≤3) — đối ứng với recentVnQueue.
+  /// Reset khi xen .keepVietnamese / .suggest / smart switch (đổi context).
+  private var recentEnQueue: [String] = []
 
   /// Limit on the number of weekly files we keep on disk. Older files get
   /// deleted automatically during flush.
@@ -276,6 +289,8 @@ final class UsageStatistics {
       }
       // 1.6.1: ngắt chain phrase khi Smart Switch (đổi context).
       self.recentVnQueue.removeAll()
+      // 1.7.9: ngắt EN phrase chain cùng lúc.
+      self.recentEnQueue.removeAll()
       self.scheduleFlush()
     }
   }
@@ -472,6 +487,29 @@ final class UsageStatistics {
     }
   }
 
+  /// 1.7.9: Aggregate top phrases EN/raw (2 hoặc 3 từ ngoài tiếng Việt liền).
+  /// Mirror logic của aggregatedTopVietnamesePhrases.
+  func aggregatedTopEnglishPhrases(
+    minWords: Int = 2, maxWords: Int = 3, threshold: Int = 3
+  ) -> [WordCount] {
+    queue.sync {
+      var out: [String: Int] = [:]
+      if minWords <= 2 && maxWords >= 2 {
+        for (phrase, count) in counters.enPhraseCounts2 where count >= threshold {
+          out[phrase] = count
+        }
+      }
+      if minWords <= 3 && maxWords >= 3 {
+        for (phrase, count) in counters.enPhraseCounts3 where count >= threshold {
+          out[phrase] = count
+        }
+      }
+      return out
+        .map { WordCount(word: $0.key, count: $0.value) }
+        .sorted { $0.count > $1.count }
+    }
+  }
+
   /// Aggregate `topApps` (bundle ID) qua tất cả tuần, dùng cho "Gợi ý từ
   /// Thống kê" trong SmartSwitchView (1.5.5+). `word` chứa bundle ID.
   func aggregatedTopApps(threshold: Int = 10) -> [WordCount] {
@@ -639,6 +677,12 @@ final class UsageStatistics {
     var vnPhraseCounts2: [String: Int] = [:]   // "công ty" → count
     var vnPhraseCounts3: [String: Int] = [:]   // "kính gửi anh" → count
 
+    /// 1.7.9: phrase counters cho EN/raw — đối ứng vnPhraseCounts.
+    /// Chỉ tăng khi commit liền nhau là `.restoreRawEnglish` hoặc `.keepRaw`;
+    /// ngắt khi xen VN / suggest / Smart Switch.
+    var enPhraseCounts2: [String: Int] = [:]   // "machine learning" → count
+    var enPhraseCounts3: [String: Int] = [:]   // "thank you so" → count
+
     /// 1.7.0: per-app language tracking — đếm số commit Tiếng Việt vs
     /// Tiếng Anh trong từng app. Dùng cho Smart Switch auto-learn:
     /// nếu app dùng đủ data và 1 ngôn ngữ chiếm ≥75%, auto-set state.
@@ -673,6 +717,9 @@ final class UsageStatistics {
       self.enRestoreStreak = export.enRestoreStreak
       self.vnPhraseCounts2 = export.vnPhraseCounts2
       self.vnPhraseCounts3 = export.vnPhraseCounts3
+      // 1.7.9: EN phrase counters từ export.
+      self.enPhraseCounts2 = export.enPhraseCounts2
+      self.enPhraseCounts3 = export.enPhraseCounts3
       self.appLanguageVnCounts = export.appLanguageVnCounts
       self.appLanguageEnCounts = export.appLanguageEnCounts
       self.appLanguageDays = export.appLanguageDays
@@ -696,6 +743,8 @@ final class UsageStatistics {
         enRestoreStreak: enRestoreStreak,
         vnPhraseCounts2: vnPhraseCounts2,
         vnPhraseCounts3: vnPhraseCounts3,
+        enPhraseCounts2: enPhraseCounts2,
+        enPhraseCounts3: enPhraseCounts3,
         appLanguageVnCounts: appLanguageVnCounts,
         appLanguageEnCounts: appLanguageEnCounts,
         appLanguageDays: appLanguageDays
@@ -710,6 +759,7 @@ final class UsageStatistics {
       case vnWordCounts, enWordCounts, appCounts
       case vnKeepStreak, enRestoreStreak
       case vnPhraseCounts2, vnPhraseCounts3   // 1.6.1+
+      case enPhraseCounts2, enPhraseCounts3   // 1.7.9+
       case appLanguageVnCounts, appLanguageEnCounts, appLanguageDays  // 1.7.0+
     }
 
@@ -738,6 +788,9 @@ final class UsageStatistics {
       // 1.6.1: phrase counters — luôn optional (file v1.5.x/1.6.0 không có).
       self.vnPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts2) ?? [:]
       self.vnPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts3) ?? [:]
+      // 1.7.9: EN phrase counters — optional (file < v1.7.9 không có).
+      self.enPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .enPhraseCounts2) ?? [:]
+      self.enPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .enPhraseCounts3) ?? [:]
       // 1.7.0: per-app language tracking — optional (file < v1.7.0 không có).
       self.appLanguageVnCounts = try c.decodeIfPresent([String: Int].self, forKey: .appLanguageVnCounts) ?? [:]
       self.appLanguageEnCounts = try c.decodeIfPresent([String: Int].self, forKey: .appLanguageEnCounts) ?? [:]
@@ -896,11 +949,17 @@ final class UsageStatistics {
       } else {
         recentVnQueue.removeAll()
       }
+      // 1.7.9: xen VN → reset EN phrase chain.
+      recentEnQueue.removeAll()
     case .restoreRawEnglish:
       counters.wordsRestoredEnglish += 1
       if trackPerToken, !rawToken.isEmpty {
         counters.enWordCounts[rawToken, default: 0] += 1
         counters.enRestoreStreak[rawToken, default: 0] += 1
+        // 1.7.9: phrase tracking EN.
+        recordEnPhraseTransition(append: rawToken)
+      } else {
+        recentEnQueue.removeAll()
       }
       recentVnQueue.removeAll()
     case .keepRaw:
@@ -909,6 +968,10 @@ final class UsageStatistics {
         // Track raw too — could be a name or technical term the user uses
         // often. They become candidates for personal dictionary later.
         counters.enWordCounts[rawToken, default: 0] += 1
+        // 1.7.9: keepRaw cũng đóng góp vào EN phrase chain.
+        recordEnPhraseTransition(append: rawToken)
+      } else {
+        recentEnQueue.removeAll()
       }
       recentVnQueue.removeAll()
     case .suggest:
@@ -942,6 +1005,9 @@ final class UsageStatistics {
     trimDict(&counters.enWordCounts, max: 500)
     trimDict(&counters.vnPhraseCounts2, max: 300)
     trimDict(&counters.vnPhraseCounts3, max: 300)
+    // 1.7.9: cap EN phrase counters tương tự.
+    trimDict(&counters.enPhraseCounts2, max: 300)
+    trimDict(&counters.enPhraseCounts3, max: 300)
 
     scheduleFlush()
   }
@@ -960,6 +1026,23 @@ final class UsageStatistics {
     if recentVnQueue.count >= 3 {
       let phrase3 = recentVnQueue.suffix(3).joined(separator: " ")
       counters.vnPhraseCounts3[phrase3, default: 0] += 1
+    }
+  }
+
+  /// 1.7.9: sliding window phrase counters cho EN/raw. Gọi từ `applyCommit`
+  /// khi commit `.restoreRawEnglish` hoặc `.keepRaw`.
+  private func recordEnPhraseTransition(append token: String) {
+    recentEnQueue.append(token)
+    if recentEnQueue.count > 3 {
+      recentEnQueue.removeFirst(recentEnQueue.count - 3)
+    }
+    if recentEnQueue.count >= 2 {
+      let phrase2 = recentEnQueue.suffix(2).joined(separator: " ")
+      counters.enPhraseCounts2[phrase2, default: 0] += 1
+    }
+    if recentEnQueue.count >= 3 {
+      let phrase3 = recentEnQueue.suffix(3).joined(separator: " ")
+      counters.enPhraseCounts3[phrase3, default: 0] += 1
     }
   }
 
