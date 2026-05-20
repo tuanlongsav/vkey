@@ -148,6 +148,15 @@ final class SpellDecisionEngine {
           case .englishFirst:
             return .restoreRawEnglish(rawInput)
           case .balanced:
+            // 1.7.11: nếu transformed có dấu Việt (ả/ư/đ/...) thì user
+            // rõ ràng đã gõ telex để tạo dấu → keep VN bất kể raw có
+            // match English. Trước đây chỉ check `extremelyCommonVietnameseWords`
+            // (~45 từ cherry-picked) → "cả", "nứt", "thể" và nhiều từ phổ
+            // biến khác bị restore raw EN sai. Sau khi check dấu Việt,
+            // mới fallback về common list cho các từ phẳng không dấu.
+            if Self.hasVietnameseDiacritic(transformedToken) {
+              return .keepVietnamese
+            }
             if extremelyCommonVietnameseWords.contains(transformedToken) {
               return .keepVietnamese
             } else {

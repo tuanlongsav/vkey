@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.11 — "VN Priority on Diacritic &amp; Personal Dict UX"</title>
+      <sparkle:version>17911</sparkle:version>
+      <sparkle:shortVersionString>1.7.11</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 23:35:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.11/vkey-1.7.11.dmg"
+        sparkle:edSignature="vWvwQPv5C/rJBsaetju4OLHo90/a01PfSvTMzFJFXtnvVHinSFwyILGzww1ja1CDm7Zheh9AeRGZLvKi3u5LDA=="
+        length="6021289"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.11 — "VN Priority on Diacritic &amp; Personal Dict UX":</h2>
+        <p>3 fix sau v1.7.10.</p>
+        <ul>
+          <li><strong>🚨 Sửa "car → cả" / "the → thể" trong chế độ Cân bằng</strong>: balanced policy giờ ưu tiên VN khi transformed có dấu Việt (ả/ư/đ/...) thay vì check cherry-picked list ~45 từ. User gõ telex tạo dấu là intent rõ ràng → giữ VN.</li>
+          <li><strong>UI: Đưa "Gửi từ điển cho tác giả" ra ngoài</strong>: nút giờ nằm ngay cạnh "Sửa từ điển cá nhân" (đổi tên từ "Quản lý") trong tab Chính tả. Bỏ block trùng lặp trong editor modal.</li>
+          <li><strong>README: gộp ảnh minh hoạ vào 1 section</strong>: 5 ảnh (menubar + 4 tab) trong một mục duy nhất.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.10 — "Hotfix Telex Collision"</title>
       <sparkle:version>17910</sparkle:version>
       <sparkle:shortVersionString>1.7.10</sparkle:shortVersionString>

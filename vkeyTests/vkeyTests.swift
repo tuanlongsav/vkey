@@ -1803,6 +1803,36 @@ final class TiengVietValidatorTests: XCTestCase {
     XCTAssertEqual(decision, .restoreRawEnglish("text"))
   }
 
+  /// Regression 1.7.11: balanced policy phải keep VN khi transformed có
+  /// dấu Việt (ả/ư/đ/...) — bất kể raw có match English (vd "car"/"cả",
+  /// "nuut"/"nứt"). Trước đây balanced chỉ check `extremelyCommonVietnameseWords`
+  /// cherry-picked → các từ phổ biến có dấu nhưng không trong list bị restore raw.
+  func testSpellDecisionBalancedKeepsVnDiacritic() throws {
+    let oldSpell = Defaults[.spellCheckEnabled]
+    let oldRestore = Defaults[.englishAutoRestoreEnabled]
+    let oldPolicy = Defaults[.restorePolicy]
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+      Defaults[.englishAutoRestoreEnabled] = oldRestore
+      Defaults[.restorePolicy] = oldPolicy
+    }
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.englishAutoRestoreEnabled] = true
+    Defaults[.restorePolicy] = .balanced
+
+    let engine = SpellDecisionEngine.shared
+    // "car" (English) → "cả" (telex hỏi). Balanced phải keep VN do dấu ả.
+    let d1 = engine.evaluate(rawInput: "car", transformed: "cả", needsRecovery: false)
+    XCTAssertEqual(d1, .keepVietnamese)
+    // "the" → "thể" (telex hỏi).
+    let d2 = engine.evaluate(rawInput: "the", transformed: "thể", needsRecovery: false)
+    XCTAssertEqual(d2, .keepVietnamese)
+    // "but" → "bụt" (telex nặng nếu user gõ "butj" — nhưng nếu commit thẳng
+    // "but" sẽ là raw không dấu). Test với có dấu:
+    let d3 = engine.evaluate(rawInput: "buj", transformed: "bụ", needsRecovery: false)
+    XCTAssertEqual(d3, .keepVietnamese)
+  }
+
   func testSpellDecisionVietnameseFirstKeepsValidVietnamese() throws {
     let oldSpell = Defaults[.spellCheckEnabled]
     let oldRestore = Defaults[.englishAutoRestoreEnabled]

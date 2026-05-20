@@ -37,6 +37,47 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.11] - 2026-05-20 — "VN Priority on Diacritic & Personal Dict UX"
+
+3 fix sau v1.7.10: balanced policy ưu tiên VN khi có dấu (car→cả không bị restore EN), gộp 1 section ảnh trong README, di chuyển nút "Gửi cho tác giả" ra tab Chính tả.
+
+### 🚨 Fix balanced policy: "car → cả" hiện đúng "cả" sau Space
+
+User feedback: gõ "car " (telex của "cả") → vkey hiển thị "car" thay vì "cả". Cùng class: "the→thể", "nuut→nứt".
+
+**Root cause**: ở chế độ **Cân bằng** ([SpellDecisionEngine.swift:151](vkey/Input/SpellDecisionEngine.swift:151)), code chỉ check `extremelyCommonVietnameseWords` (~45 từ cherry-picked) → "cả", "thể", "nứt" không trong list → restore raw EN.
+
+**Fix**: balanced mode giờ ưu tiên VN khi `transformedToken` chứa dấu Việt (`ả`/`ư`/`đ`/...). User gõ telex để tạo dấu → giữ VN luôn. Common-words list chỉ fallback cho các từ phẳng không dấu.
+
+Cases sau fix (balanced policy):
+- raw="car" / transformed="cả" → **keepVN** ✓ (trước: restoreEN "car").
+- raw="the" / transformed="thể" → **keepVN** ✓.
+- raw="text" / transformed="tẽt" → restoreEN "text" (giữ behaviour cũ vì "tẽt" KHÔNG phải VN word hợp lệ, dù có dấu).
+
+Test mới: `testSpellDecisionBalancedKeepsVnDiacritic`.
+
+### UI: Đưa "Gửi từ điển cho tác giả" ra tab Chính tả
+
+User feedback: nút "Gửi cho tác giả" nằm trong Personal Dict Editor modal, ít người tìm thấy.
+
+**Fix**:
+- Đưa nút ra **tab Chính tả** ngay cạnh nút "Sửa từ điển cá nhân" (đổi tên từ "Quản lý từ điển cá nhân").
+- Nút gate `disabled` khi tổng số từ < 50 (Allow + Keep + Deny).
+- Bỏ block trùng lặp trong Personal Dict Editor.
+
+### README: gộp ảnh vào 1 section duy nhất
+
+User feedback: README có 2 sub-section "Thao tác nhanh & HUD" + "Các tab Cài đặt" → cồng kềnh. Gộp thành **"Hình ảnh minh hoạ"** chứa 5 ảnh (menubar + 4 tabs: Chung/Macro/Chính tả/Thống kê).
+
+Xoá file ảnh không còn tham chiếu: `smart-switch-settings.png`.
+
+### Files
+
+- [vkey/Input/SpellDecisionEngine.swift](vkey/Input/SpellDecisionEngine.swift:151) — balanced check `hasVietnameseDiacritic` trước.
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — 2 nút HStack + helpers `sendDictToAuthor` cho SpellCheckView; xoá block trong PersonalDictionaryEditorView; rename "Quản lý" → "Sửa".
+- [README.md](README.md) — 1 section "Hình ảnh minh hoạ" 5 ảnh.
+- [images/smart-switch-settings.png](images/smart-switch-settings.png) — removed.
+
 ## [1.7.10] - 2026-05-20 — "Hotfix Telex Collision"
 
 🚨 HOTFIX cho regression nghiêm trọng v1.7.9 — telex stems ngắn không transform được do EN dict expansion. Kèm UI EN count + Stats filter relax.

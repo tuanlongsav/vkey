@@ -306,6 +306,10 @@ struct SpellCheckView: View {
     @Default(.useEnVnReference) private var useEnVnReference
     @Default(.autoPersonalDictFeedback) private var autoPersonalDictFeedback
     @Default(.pendingDictSuggestions) private var pendingSuggestions
+    // 1.7.11: cần đọc 3 danh sách để gate nút "Gửi cho tác giả" (≥50 từ).
+    @Default(.userAllowWords) private var userAllowWordsView
+    @Default(.userKeepWords) private var userKeepWordsView
+    @Default(.userDenyWords) private var userDenyWordsView
 
     @State private var showingPersonalDictEditor = false
     @State private var showingSuggestionSheet = false
@@ -380,10 +384,21 @@ struct SpellCheckView: View {
                         }
                         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                        Button(action: { showingPersonalDictEditor = true }) {
-                            Label("Quản lý từ điển cá nhân", themedSymbol: "pencil.and.outline")
+                        // 1.7.11: 2 nút song song — "Sửa từ điển cá nhân"
+                        // (đổi tên từ "Quản lý") + "Gửi cho tác giả" (đưa
+                        // ra ngoài, trước đây nằm trong Personal Dict Editor).
+                        HStack {
+                            Spacer()
+                            Button(action: { showingPersonalDictEditor = true }) {
+                                Label("Sửa từ điển cá nhân", themedSymbol: "pencil.and.outline")
+                            }
+                            Button(action: sendDictToAuthor) {
+                                Label("Gửi cho tác giả", themedSymbol: "envelope.fill")
+                            }
+                            .disabled(totalPersonalDictCount() < 50)
+                            .help("Yêu cầu ≥50 từ trong tổng 3 danh sách. Mở mail compose tới tuanlong.sav@gmail.com.")
+                            Spacer()
                         }
-                        .frame(maxWidth: .infinity, alignment: .center)
 
                         Toggle(isOn: $autoPersonalDictFeedback) {
                             Label("Tự động đề xuất hàng tuần",
@@ -554,6 +569,42 @@ struct SpellCheckView: View {
             }
         }
     }
+
+    // 1.7.11: helpers cho nút "Gửi cho tác giả" ngoài Personal Dict Editor.
+    private func totalPersonalDictCount() -> Int {
+        userAllowWordsView.count + userKeepWordsView.count + userDenyWordsView.count
+    }
+
+    private func sendDictToAuthor() {
+        let allowJoined = userAllowWordsView.joined(separator: ", ")
+        let keepJoined = userKeepWordsView.joined(separator: ", ")
+        let denyJoined = userDenyWordsView.joined(separator: ", ")
+        let body = """
+        Chào tác giả vkey,
+
+        Tôi xin gửi từ điển cá nhân để bạn rà soát và bổ sung vào từ điển chung nếu phù hợp.
+
+        --- Allow (\(userAllowWordsView.count) từ) ---
+        \(allowJoined)
+
+        --- Keep (\(userKeepWordsView.count) từ) ---
+        \(keepJoined)
+
+        --- Deny (\(userDenyWordsView.count) từ) ---
+        \(denyJoined)
+
+        ---
+        Phiên bản vkey: \(Bundle.main.appVersionLong)
+        """
+        let subject = "[vkey] Đề xuất bổ sung từ điển cá nhân"
+        let allowed = CharacterSet.urlQueryAllowed
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+        let urlStr = "mailto:tuanlong.sav@gmail.com?subject=\(encodedSubject)&body=\(encodedBody)"
+        if let url = URL(string: urlStr) {
+            NSWorkspace.shared.open(url)
+        }
+    }
 }
 
 struct SpellCheckView_Previews: PreviewProvider {
@@ -635,40 +686,8 @@ struct PersonalDictionaryEditorView: View {
 
             Divider()
 
-            // v1.7.2: Gửi từ điển cho tác giả
-            VStack(alignment: .leading, spacing: 4) {
-                let totalCount = userAllowWords.count + userKeepWords.count + userDenyWords.count
-                let canSend = totalCount >= 50
-
-                HStack(spacing: 6) {
-                    Image(systemName: "paperplane.fill")
-                        .foregroundStyle(canSend ? Color.accentColor : Color.secondary)
-                    Text("Gửi từ điển cho tác giả vkey")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    Spacer()
-                }
-
-                Text("Yêu cầu ≥50 từ trong tổng 3 danh sách (Allow/Keep/Deny). Bạn có \(totalCount) từ.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Text("Khi gửi, vkey mở app mail mặc định. Tác giả rà soát và bổ sung vào từ điển chung nếu phù hợp.")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-
-                Button(action: sendDictToAuthor) {
-                    Label(canSend ? "Gửi cho tuanlong.sav@gmail.com" : "Cần thêm \(max(0, 50 - totalCount)) từ",
-                          themedSymbol: "paperplane")
-                }
-                .disabled(!canSend)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 4)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-
-            Divider()
+            // 1.7.11: "Gửi từ điển cho tác giả" đã được đưa ra tab Chính tả
+            // (cạnh nút "Sửa từ điển cá nhân"), không cần lặp lại trong editor.
 
             HStack {
                 Spacer()
@@ -681,40 +700,6 @@ struct PersonalDictionaryEditorView: View {
             .padding(.vertical, 10)
         }
         .frame(width: 400, height: 520)
-    }
-
-    // v1.7.2: send dict to author via mailto.
-    private func sendDictToAuthor() {
-        let allowJoined = userAllowWords.joined(separator: ", ")
-        let keepJoined = userKeepWords.joined(separator: ", ")
-        let denyJoined = userDenyWords.joined(separator: ", ")
-
-        let body = """
-        Chào tác giả vkey,
-
-        Tôi xin gửi từ điển cá nhân để bạn rà soát và bổ sung vào từ điển chung nếu phù hợp.
-
-        --- Allow (\(userAllowWords.count) từ) ---
-        \(allowJoined)
-
-        --- Keep (\(userKeepWords.count) từ) ---
-        \(keepJoined)
-
-        --- Deny (\(userDenyWords.count) từ) ---
-        \(denyJoined)
-
-        ---
-        Phiên bản vkey: \(Bundle.main.appVersionLong)
-        """
-
-        let subject = "[vkey] Đề xuất bổ sung từ điển cá nhân"
-        let allowed = CharacterSet.urlQueryAllowed
-        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
-        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
-        let urlStr = "mailto:tuanlong.sav@gmail.com?subject=\(encodedSubject)&body=\(encodedBody)"
-        if let url = URL(string: urlStr) {
-            NSWorkspace.shared.open(url)
-        }
     }
     
     private func currentWordsList() -> [String] {
