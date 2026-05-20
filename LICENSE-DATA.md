@@ -13,9 +13,10 @@
 Starting in **v1.5.0** vkey ships a bilingual reference dictionary
 (`lexicon/lexicon-update.json`, schema v5) that includes:
 
-- **Vietnamese syllable list (~9412 entries, v1.6.1+)** — hợp nhất từ hai nguồn:
-  - [@hieuthi / common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable) (~7184 syllables phổ biến)
-  - [@undertheseanlp / dictionary](https://github.com/undertheseanlp/dictionary) (~2228 syllables bổ sung, tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN), tác giả Vũ Anh, license **GPL-3.0** — tương thích share-alike với CC BY-SA 4.0 aggregate của vkey lexicon.
+- **Vietnamese syllable list (~8,894 entries, v1.6.3 / lexicon v7)** — hợp nhất từ hai nguồn:
+  - [@hieuthi / common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable) (~7,184 syllables phổ biến, baseline curated từ v1.5.0).
+  - [@undertheseanlp / dictionary](https://github.com/undertheseanlp/dictionary) (+1,710 syllables bổ sung, tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN), tác giả Vũ Anh, license **GPL-3.0** — tương thích share-alike với CC BY-SA 4.0 aggregate của vkey lexicon.
+  - Mỗi entry mới được rà soát qua **phonotactic filter** học từ baseline (initial/final consonant + length) để loại foreign words (`chlorhydric`, `kpăng`) và **3-tier classification** (cross-validated A / single-phrase B / ASCII loanword C). Audit scripts: [Tools/audit_lexicon.py](Tools/audit_lexicon.py), [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py).
 - **English word list (~2000 entries)** — selected by frequency using
   [wordfreq](https://github.com/rspeer/wordfreq) (MIT for the code, CC BY-SA
   4.0 for the Wiktionary-derived portion of its data).
