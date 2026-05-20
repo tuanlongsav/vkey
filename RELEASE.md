@@ -2,9 +2,9 @@
 
 Tài liệu này là quy trình đóng gói/release để **không bị lỗi cập nhật qua Sparkle**.
 
-## 0) Tổng quan workflow release (v1.7.1+)
+## 0) Tổng quan workflow release (v1.7.1+, hardened v1.7.11+)
 
-Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự:
+Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự. **BƯỚC 9 (README) LÀ BLOCKING** — không được skip, không được push nếu README chưa được rà soát/cập nhật.
 
 ```
 1.  Implement code changes + build verify clean
@@ -14,20 +14,27 @@ Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự:
 5.  Sign Sparkle (Tools/sparkle_sign_update.sh) → capture edSignature + length
 6.  Update appcast.xml — thêm item mới ở ĐẦU danh sách (escape `&` → `&amp;` trong title)
 7.  Validate appcast (Tools/validate_appcast.sh) — XML lint pass
-8.  **CHANGELOG.md** — thêm section `## [x.y.z] - YYYY-MM-DD — "Title"` đầu file (sau credit block)
-9.  **🚨 README.md — RÀ SOÁT + CHỈNH SỬA** (NEW, BẮT BUỘC từ v1.7.1+):
-    - Bump version banner ở đầu README
-    - Cập nhật mô tả tính năng mới trong section "Chức năng"
-    - Update mô tả tab Settings nếu UI thay đổi
-    - Đảm bảo credit đầy đủ nếu có nguồn data/lib mới
-    - Xoá / sửa info outdated từ phiên bản trước
+8.  **CHANGELOG.md** — thêm section `## [x.y.z] - YYYY-MM-DD — "Title"` đầu file
+9.  **🚨 README.md — RÀ SOÁT + CHỈNH SỬA (BLOCKING, BẮT BUỘC từ v1.7.1+)** — xem checklist Section 5b bên dưới
 10. Verify version + signature + length khớp giữa pbxproj ↔ appcast ↔ DMG file size
-11. Commit (`git add -A && git commit`) — message tóm tắt thay đổi
-12. **Ask user confirm trước khi push** (release là shared action, không tự push)
-13. `git push origin main`
-14. `gh release create vX.Y.Z vkey-X.Y.Z.dmg --title "..." --notes-file <CHANGELOG section>`
-15. Verify release asset uploaded với size khớp `length` trong appcast
+11. **Verify README đã update** — `git diff --cached README.md` phải có diff khi version đổi
+12. Commit (`git add -A && git commit`) — message tóm tắt + nhắc đã rà soát README
+13. **Ask user confirm trước khi push** (release là shared action, không tự push)
+14. `git push origin main`
+15. `gh release create vX.Y.Z vkey-X.Y.Z.dmg --title "..." --notes-file <CHANGELOG section>`
+16. Verify release asset uploaded với size khớp `length` trong appcast
 ```
+
+### 🚨 Gating rule (v1.7.11+): README diff = release pass
+
+**Trước khi `git commit` cho release**, agent/maintainer PHẢI verify:
+- `git diff --cached README.md` có ≥ 1 dòng thay đổi.
+- Nếu version có UI/feature/data change → README phải có diff tương ứng (ít nhất bump version banner).
+- Commit message kèm chuỗi `README rà soát ✓` để track.
+
+**Nếu README chưa có diff** → STOP, quay lại Section 5b checklist, sửa README, rồi mới commit. KHÔNG được push nếu chưa pass gate này.
+
+`Tools/validate_release.sh` (sắp có) sẽ check tự động: `git diff HEAD~1 README.md | wc -l > 0`.
 
 ## 1) Nguyên tắc bắt buộc trước khi phát hành
 
@@ -119,25 +126,63 @@ Trước khi publish appcast/release, bắt buộc check:
 5. Đảm bảo `SUFeedURL` trỏ đúng appcast public.
 6. Đảm bảo release asset đã tồn tại thật (không 404).
 
-## 5b) 🚨 Checklist README rà soát (v1.7.1+, BẮT BUỘC)
+## 5b) 🚨 Checklist README rà soát (v1.7.1+, hardened v1.7.11+)
 
-Mọi release ship app binary đều phải rà soát README sau bước CHANGELOG:
+**BẮT BUỘC** — bất kỳ release nào bump version đều phải pass checklist này TRƯỚC khi commit. Không có ngoại lệ, kể cả hotfix.
 
-| Item | Kiểm tra |
-|------|----------|
-| **Version banner** | Line ~5: `**Phiên bản hiện tại: X.Y.Z — "Title"**` đã update? |
-| **Features list** (section "Chức năng") | Tính năng mới đã thêm? Tính năng deprecated đã xoá? Version annotation `(vX.Y.Z+)` đúng? |
-| **Tab descriptions** | Mỗi tab Settings (Chung / Smart Switch / Macro / Chính tả / Thống kê) có khớp UI thực tế? |
-| **Section restructure** | Nếu UI đã merge/move section, README phải phản ánh structure mới |
-| **Menu bar table** | Có item menu mới? Description khớp wording trong app? |
-| **Phím tắt section** | Phím tắt mới (vd Tab cho prediction) đã add? |
-| **Credits section** | Nếu có nguồn data/lib mới, đã credit đầy đủ với license? |
-| **Tools list** | Script mới (`audit_lexicon.py`, `merge_underthesea_deep.py`, ...) đã list? |
-| **LICENSE-DATA.md** | Nếu dataset thay đổi (size, source), đã sync số liệu? |
-| **Screenshots** | Nếu UI thay đổi nhiều, có cần re-capture? (optional, defer được) |
-| **Outdated wording** | Search "auto-promote", "luôn dùng tiếng Anh", "5 lần tự động", ... — cập nhật theo semantic mới |
+### Workflow chuẩn
 
-**Quy tắc**: README là API contract với user. Outdated README = user confused. Mỗi release commit phải có ít nhất 1 file `.md` thay đổi (CHANGELOG min, README nếu có UI change).
+```bash
+# 1. Sau khi xong code + CHANGELOG, chưa commit:
+git diff README.md   # Phải có thay đổi nếu version đổi/UI đổi
+
+# 2. Tick từng item dưới, sửa README cho mỗi item fail
+# 3. Re-run check:
+git diff --stat README.md   # Phải có ≥1 dòng
+
+# 4. Commit (message kèm marker "README rà soát ✓"):
+git add -A
+git commit -m "vX.Y.Z ... | README rà soát ✓"
+
+# 5. Push chỉ sau khi user confirm
+```
+
+### Checklist (tick từng dòng)
+
+- [ ] **Version banner** — line ~8: `**Phiên bản hiện tại: X.Y.Z — "Title"**` ↔ MARKETING_VERSION trong pbxproj.
+- [ ] **Lexicon stats** — câu "Bộ từ điển hiện tại (vN — vX.Y.Z+): ... syllables VN + ... từ EN" còn đúng?
+- [ ] **Features list** (section "Chức năng") — tính năng mới của release này đã thêm bullet? Bullet outdated đã sửa/xoá? Version annotation `(vX.Y.Z+)` chính xác?
+- [ ] **Tab descriptions** — mỗi tab Settings (Chung / Smart Switch / Macro / Chính tả / Thống kê) có khớp UI thực tế? Section reorder/rename đã reflect?
+- [ ] **Button/label rename** — vd "Quản lý từ điển cá nhân" → "Sửa từ điển cá nhân" (v1.7.11), tab labels rút gọn/restore (v1.7.7/v1.7.8). Search README cho tên cũ.
+- [ ] **Menu bar table** — item menu mới? Description khớp wording trong app?
+- [ ] **Phím gõ đặc biệt** — phím tắt mới (vd Tab smart-detect cho prediction v1.7.7) đã add?
+- [ ] **Credits section** — nguồn data/lib mới đã credit đầy đủ với license?
+- [ ] **Tools list** — script mới (`audit_lexicon.py`, `merge_underthesea_deep.py`, `build_lexicon.py` ...) đã list?
+- [ ] **LICENSE-DATA.md** — dataset thay đổi (size, source) đã sync số liệu?
+- [ ] **Screenshots (`images/`)** — UI thay đổi nhiều → re-capture ảnh tab tương ứng (xem section [Hình ảnh minh hoạ](README.md#hình-ảnh-minh-hoạ)). Đảm bảo các tham chiếu `images/*.png` trong README vẫn tồn tại.
+- [ ] **Outdated wording sweep** — search README các cụm từ deprecated:
+  - "auto-promote", "luôn dùng tiếng Anh", "5 lần tự động" (cũ trước v1.6.0).
+  - "Quản lý từ điển cá nhân" (đổi thành "Sửa từ điển cá nhân" ở v1.7.11).
+  - "180×720" / "270×720" / "minimalist tối đa" (cũ trước v1.7.6 windowResizability fix).
+  - "126 từ EN" / "wordfreq top 2000" (cũ trước v1.7.9 expansion).
+  - "Personal Dict Editor có button Gửi" (cũ trước v1.7.11 — nút đã ra ngoài tab Chính tả).
+
+### Gating rule
+
+**Quy tắc cứng (v1.7.11+):**
+
+1. **Mỗi release commit PHẢI có README diff ≥ 1 dòng** (ít nhất là bump version banner). Nếu không có → STOP, mở README cập nhật.
+2. **Commit message của release** phải kèm chuỗi `README rà soát ✓` để track. Ví dụ:
+   ```
+   vX.Y.Z "Title" — short summary
+
+   ... details ...
+
+   README rà soát ✓ | N/M tests pass
+   ```
+3. **`gh release create` chỉ được chạy SAU commit pass cả 2 điều kiện trên.**
+
+**README là API contract với user.** Outdated README = user confused → bug report giả + complaint. Phòng tránh bằng workflow chặt thay vì sửa post-hoc.
 
 ## 6) Các lỗi hay gặp và cách tránh
 

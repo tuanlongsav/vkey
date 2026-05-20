@@ -5,7 +5,7 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 1.7.3 — "Minimalist"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 1.7.11 — "VN Priority on Diacritic & Personal Dict UX"** ([CHANGELOG](CHANGELOG.md))
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
@@ -20,7 +20,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 > - **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của Luông Hiếu Thi ([@hieuthi](https://github.com/hieuthi)) — baseline 7,184 âm tiết tiếng Việt curated (v1.5.0+).
 > - **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của Vũ Anh ([@undertheseanlp](https://github.com/undertheseanlp)) — bổ sung 1,710 syllables (Hồ Ngọc Đức + tudientv + Wiktionary VN) qua audit + phonotactic filter, GPL-3.0 (v1.6.1+).
 >
-> Bộ từ điển hiện tại (v8 — v1.7.1+): **8,960 syllables** đã được rà soát qua [Tools/audit_lexicon.py](Tools/audit_lexicon.py) + [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py). v1.7.1 inject lại 66 single-char VN diacritics (`à`, `á`, `ý`, `ô`, `ở`...) đã bị drop nhầm ở v7.
+> Bộ từ điển hiện tại (v9 — v1.7.9+): **8,960 syllables tiếng Việt** + **9,826 từ tiếng Anh** (mở rộng từ 126 ở v1.7.8 → 9,826 ở v1.7.9 qua `wordfreq` top 10000). VN baseline rà soát qua [Tools/audit_lexicon.py](Tools/audit_lexicon.py) + [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py); EN qua [Tools/build_lexicon.py](Tools/build_lexicon.py). v1.7.1 inject lại 66 single-char VN diacritics (`à`, `á`, `ý`, `ô`, `ở`...) đã bị drop nhầm ở v7.
 
 ---
 
@@ -35,7 +35,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Smart Switch auto-learn (v1.7.0+, nhanh hơn v1.7.2+)**: vkey theo dõi ngôn ngữ user gõ trong từng app qua Stats. **v1.7.2**: threshold giảm còn ≥1 ngày dataset, ≥5 commit/ngày, ratio ≥75% một ngôn ngữ → tự động set state. Chạy **1 lần/ngày** (thay 1 lần/tuần) → user thấy gợi ý sau ~1 ngày gõ.
 - ✅ **AX Probing Smart Switch**: Tự động tắt khi vào các bảng nhập liệu dạng Overlay/Launcher (Spotlight, Raycast, Alfred, LaunchBar) nhờ cơ chế AX Overlay Probing siêu nhẹ (<0.1ms). Tự động khôi phục trạng thái bộ gõ của ứng dụng nền trước đó. Đồng thời **tự động quét ô nhập liệu** (`AXComboBox`/`AXSearchField`) để kích hoạt chế độ Overwrite chống dính chữ.
 - ✅ **Kiểm tra Chính tả 6 bước & Vowel Inclusion Pairs (từ GoNhanh.org)**: Triệt để ngăn chặn gõ dấu sai cấu trúc âm tiết tiếng Việt. Bộ whitelisting các cặp nguyên âm có thể đi cùng nhau loại bỏ triệt để hiện tượng tự động sửa nhầm trên các từ tiếng Anh (như `claus`, `metric`, `house`, `beyond`). Hỗ trợ gõ phụ âm đầu ghép `kr` (như trong *Krông Ana*) và phụ âm cuối `k` (như trong *Đắk Lắk*).
-- ✅ **Bảo toàn Phím đúp (Doubled Tone Mark Preservation)**: Giữ nguyên phím đúp liên tiếp (`ss`, `ff`, `rr`, `xx`, `jj`) thay vì tự động xoá/toggle, bảo vệ hoàn toàn các từ tiếng Anh thông dụng như `staff`, `off`, `class`, `pass`, `staff`.
+- ✅ **Bảo toàn Phím đúp (Doubled Tone Mark Preservation)**: Giữ nguyên phím đúp liên tiếp (`ss`, `ff`, `rr`, `xx`, `jj`) cho các từ tiếng Anh thông dụng như `staff`, `off`, `class`. **v1.7.5+**: tone-cancel ưu tiên hơn — gõ "ả" + "r" (xoá hỏi) + "m" giờ ra "arm" thay vì "arrm" (trước đây bị "arr" English-preservation chặn). Trade-off: từ tiếng Anh rất ngắn như "ass"/"arr" gõ tuần tự (không qua impossible-cluster) mất 1 ký tự.
 - ✅ **Tự động Khôi phục từ Tiếng Anh (Space Restore)**: Tự động phát hiện và khôi phục các ký tự tiếng Anh bị gõ nhầm khi nhấn phím Space (như `ò` -> `of`, `ì` -> `if`, `sê` -> `see`, `tê` -> `tee`).
 - ✅ **Phục hồi Nhanh phím ESC (Escape Reversion)**: Nhấn ESC để hoàn tác ngay lập tức từ đang gõ dở dang về dạng phím thô ban đầu và đặt lại bộ đệm.
 - ✅ **Hiển thị thông báo trực quan (Translucent Toggle HUD)**: Cửa sổ thông báo mờ kính (Glassmorphic HUD) hiển thị giữa màn hình khi chuyển đổi chế độ gõ (VI/EN) qua phím tắt, giúp nhận biết trạng thái gõ tức thời mà không cần nhìn lên Menu Bar. Tự động thông minh bỏ qua khi khởi động và Smart Switch.
@@ -49,13 +49,15 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Cập nhật trực tiếp (Sparkle Integration)**: Tải và cài đặt trực tiếp bản cập nhật mới nhanh gọn, an toàn. Auto-check khi launch (throttle 1 lần/ngày từ v1.6.0), thông báo banner macOS khi có bản mới.
 - ✅ **Thống kê sử dụng (v1.5.0+, cải tiến v1.6.0+)**: Theo dõi cục bộ (không gửi đi đâu) các từ bạn gõ nhiều nhất trong tuần. **v1.6.0+**: thay vì auto-promote ngầm, vkey hiển thị **danh sách đề xuất** để bạn review từng cụm ≥5 lần trước khi thêm vào Allow/Keep — tránh tích luỹ rác. **v1.6.1+**: track cụm 2-3 từ tiếng Việt liên tiếp (vd "công ty của tôi") để đề xuất macro. Có thể tắt hoàn toàn hoặc xoá dữ liệu.
 - ✅ **Section "Các tuần đã đóng" (v1.6.1+)**: hiển thị data thống kê tuần trước (historical) ngay trong tab Thống kê — không còn "biến mất" sau khi tuần ISO chuyển.
-- ✅ **Đoán từ tiếp theo (v1.6.0+, default OFF)**: HUD nổi cạnh caret hiện 1 ứng viên dự đoán sau khi gõ xong 1 từ. Nhấn **Tab** để chấp nhận; phím khác để bỏ qua. **v1.6.1+**: ranking ưu tiên từ điển gốc + cá nhân (LexiconManager + userKeepWords) thay vì chỉ frequency → tránh suggest rác. Bật ở tab Chung.
+- ✅ **Top cụm 2-3 từ tiếng Việt + ngoài tiếng Việt (v1.7.9+)**: tab Thống kê thêm 2 sections "Top cụm 2-3 từ tiếng Việt" (`vnPhraseCounts2/3` từ v1.6.1) và "Top cụm ngoài tiếng Việt" (backend mới `enPhraseCounts2/3`). Hữu ích để xác định cụm thường gõ → tạo macro hoặc đề xuất personal dict. Section "Top từ ngoài tiếng Việt" cho phép cả raw text + ký tự lạ (vd "lol", "okay") để dễ thấy candidate bổ sung Personal Dict (filter nới v1.7.10+).
+- ✅ **Balanced restore policy ưu tiên dấu Việt (v1.7.11+)**: ở chế độ **Cân bằng**, khi `transformed` có dấu Việt (`ả`/`ư`/`đ`/...) → vkey giữ VN bất kể raw có match English. Gõ "car " (telex của "cả") giờ ra "cả" thay vì "car"; "the→thể", "nuut→nứt" cũng đúng. Common-words list ~45 từ giờ chỉ fallback cho từ phẳng không dấu.
+- ✅ **Đoán từ tiếp theo (v1.6.0+, default OFF, HUD chính xác v1.7.9+)**: HUD nổi cạnh caret hiện 1 ứng viên dự đoán sau khi commit 1 từ. Nhấn **Tab** để chấp nhận; phím khác để bỏ qua. **v1.6.1+** ranking ưu tiên từ điển gốc + cá nhân. **v1.7.7+** HUD hiển thị PHÍA TRÊN caret line (đỡ che cursor) + Tab smart-detect: buffer sạch → chèn `" prediction"` (leading space); buffer còn từ chưa commit → Tab commit + chèn prediction trong 1 phím. **v1.7.9+** HUD dùng `kAXBoundsForRangeParameterizedAttribute` lấy pixel caret chính xác (multi-line editor không còn đặt HUD ở top editor). Bật ở tab Chung.
 - ✅ **Sao lưu & khôi phục dữ liệu cá nhân (v1.5.0+)**: Xuất / nhập JSON gồm toàn bộ Cài đặt, Macro, từ điển cá nhân, Smart Switch, per-app override, thống kê. Khi cập nhật phiên bản, app tự động hỏi sao lưu trước khi tiếp tục.
-- ✅ **Từ điển GitHub tự động cập nhật (v1.5.0+, cải tiến v1.6.2+)**: vkey tự fetch `lexicon-update.json` từ `raw.githubusercontent.com/tuanlongsav/vkey` (v1.6.2+ chuyển từ Contents API, không còn giới hạn 1 MB + bỏ rate-limit) mỗi 24h khi launch. **Nút "Cập nhật từ điển ngay" (v1.6.2+)** trong tab Chính tả để force kiểm tra ngay không đợi throttle. Hiện tại v7: 8,894 syllables tiếng Việt.
+- ✅ **Từ điển GitHub tự động cập nhật (v1.5.0+, cải tiến v1.6.2+ / v1.7.9+)**: vkey tự fetch `lexicon-update.json` từ `raw.githubusercontent.com/tuanlongsav/vkey` (v1.6.2+ chuyển từ Contents API, không còn giới hạn 1 MB + bỏ rate-limit) mỗi 24h khi launch. **Nút "Cập nhật từ điển ngay" (v1.6.2+)** trong tab Chính tả để force kiểm tra ngay. **v1.7.10** UI hiển thị riêng số từ VN + EN (`Tiếng Việt: vX · N từ` + `Tiếng Anh: vX · N từ`). Hiện tại **v9: 8,960 syllables VN + 9,826 từ EN** (file 257 KB).
 - ✅ **Đề xuất Macro từ Thống kê (v1.5.5+, mở rộng v1.6.1+)**: vkey nhận diện các từ và cụm từ tiếng Việt bạn gõ ≥10 lần → đề xuất tạo macro với viết tắt tự sinh (vd "công ty → ct", "kính gửi anh → kga").
 - ✅ **Sheet "Tự học từ Thống kê" (v1.7.0+)**: bấm trong tab Smart Switch để preview các app vkey gợi ý đổi state, áp dụng hàng loạt. User-set entries (🔒) tự động bị skip.
-- ✅ **Gửi từ điển cá nhân cho tác giả (v1.7.2+)**: trong Personal Dict Editor có button "Gửi cho tuanlong.sav@gmail.com" (gate ≥50 từ trong tổng Allow/Keep/Deny). Click mở app mail mặc định với body chứa 3 lists để tác giả rà soát + bổ sung vào từ điển chung.
-- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, kích thước mới v1.7.3+)**: drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở (autosave). **v1.7.3**: default **180×720** (còn 2/3 so với v1.7.2) — minimalist tối đa. Content auto-truncate / wrap khi cần. Vẫn resize lên rộng tuỳ ý.
+- ✅ **Gửi từ điển cá nhân cho tác giả (v1.7.2+, đưa ra ngoài v1.7.11+)**: nút **"Gửi cho tác giả"** đặt ngay trong tab Chính tả cạnh nút **"Sửa từ điển cá nhân"** (đổi tên từ "Quản lý" ở v1.7.11). Gate ≥50 từ trong tổng Allow/Keep/Deny. Click mở app mail mặc định gửi tới `tuanlong.sav@gmail.com` với body chứa 3 lists để tác giả rà soát + bổ sung vào từ điển chung.
+- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, đúng API v1.7.6+)**: dùng SwiftUI `.windowResizability(.contentMinSize)` cho phép drag góc/cạnh tự do; kích thước được nhớ qua `setFrameAutosaveName` giữa các lần mở. **v1.7.8** default opening **432×648** + tab labels gốc + font `.system(size: 10)` cho tab bar compact. User vẫn resize lên rộng tuỳ ý.
 - ✅ **3 giao diện ứng dụng (v1.5.5+)**: chọn ở menu bar → "Giao diện ứng dụng": **Mặc định** (SF Symbol đơn giản), **3D bóng bẩy** (gradient + double shadow), **Emoji vui tươi** (Unicode emoji icons).
 - ✅ **Diagnostic export Stats (v1.6.1+)**: nút "Xuất chẩn đoán Stats" trong tab Thống kê → ghi file text mô tả tình trạng files + counters → gửi maintainer khi báo lỗi.
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
@@ -184,24 +186,27 @@ Tab này được **tinh gọn liên tục qua các version**:
 - **v1.6.2**: thêm Section "Từ điển từ GitHub" với nút cập nhật thủ công.
 - **v1.7.0**: gộp 3 Section → 1 Section đổi tên **"Cấu hình kiểm tra chính tả"**. Còn 5 Section thay vì 7.
 - **v1.7.1**: gộp "Gợi ý sửa lỗi chính tả" + "Tự động sửa khi tin cậy cao" vào CÙNG Section "Cấu hình kiểm tra chính tả". Còn **4 Section** thay vì 5.
+- **v1.7.10**: section "Từ điển từ GitHub" hiển thị riêng 2 dòng VN + EN count.
+- **v1.7.11**: nút "Quản lý từ điển cá nhân" đổi tên thành **"Sửa từ điển cá nhân"** + thêm nút **"Gửi cho tác giả"** song song.
 
-4 Section hiện tại (v1.7.1):
+4 Section hiện tại (v1.7.11):
 
 1. **Phím tắt thông minh** — Master quick-enable toggle gộp.
-2. **Cấu hình kiểm tra chính tả** (gộp 4 group v1.7.1) — gồm:
+2. **Cấu hình kiểm tra chính tả** — gồm:
    - Toggle "Kiểm tra chính tả" (gộp luôn "Kiểm tra trong câu" từ v1.7.0)
-   - Toggle "Gợi ý sửa lỗi chính tả" + sub-toggle "Tự động sửa khi tin cậy cao" (mới merge v1.7.1)
-   - Toggle "Sử dụng từ điển cá nhân" + button "Quản lý từ điển cá nhân"
+   - Toggle "Gợi ý sửa lỗi chính tả" + sub-toggle "Tự động sửa khi tin cậy cao"
+   - Toggle "Sử dụng từ điển cá nhân" + 2 button: **"Sửa từ điển cá nhân"** + **"Gửi cho tác giả"** (v1.7.11)
    - Toggle "Tự động compute đề xuất hàng tuần" + button "Xem đề xuất pending"
 3. **Tự động khôi phục tiếng Anh (Space Restore)** — `englishAutoRestoreEnabled` + restorePolicy + `useEnVnReference`.
-4. **Từ điển từ GitHub** — version info + nút "Cập nhật từ điển ngay".
+4. **Từ điển từ GitHub** — 2 dòng version + count cho VN + EN, nút "Cập nhật từ điển ngay".
 
 | Mục | Tác dụng |
 |-----|---------|
 | Kích hoạt nhanh tất cả tính năng mới | Toggle gộp — bật/tắt cùng lúc mọi tính năng chính tả + từ điển bên dưới |
 | Kiểm tra chính tả (v1.7.0 gộp "trong câu") | Bật cơ chế 6-bước check + Vowel Inclusion Pairs (chặn gõ dấu sai cấu trúc âm tiết) cho cả từ vừa gõ và từ trong câu |
 | Sử dụng từ điển cá nhân | Bật danh sách Allow / Keep / Deny do bạn tự định nghĩa |
-| Quản lý từ điển cá nhân | Mở editor → thêm / xoá từ trong 3 danh sách Allow / Keep / Deny |
+| Sửa từ điển cá nhân (v1.7.11 đổi tên từ "Quản lý") | Mở editor → thêm / xoá từ trong 3 danh sách Allow / Keep / Deny |
+| Gửi cho tác giả (v1.7.11 đưa ra ngoài) | Mở mail compose tới tuanlong.sav@gmail.com với 3 lists. Gate ≥50 từ tổng Allow+Keep+Deny |
 | Tự động compute đề xuất hàng tuần (v1.6.0+) | Auto-compute đề xuất từ Thống kê tuần này. KHÔNG còn auto-promote ngầm — chỉ tạo danh sách để bạn review |
 | Xem đề xuất pending (v1.6.0+) | Mở sheet review từng từ ≥5 lần gõ thống nhất → chọn ✓ thêm vào Allow/Keep hoặc bỏ qua |
 | Gợi ý sửa lỗi chính tả | Hiện gợi ý khi gõ sai (Levenshtein + heuristic) |
@@ -209,23 +214,28 @@ Tab này được **tinh gọn liên tục qua các version**:
 | Tự động khôi phục tiếng Anh | Bật Space Restore (`ò → of`, `ì → if`, `sê → see`, `tê → tee`…) |
 | Chính sách khôi phục | **Ưu tiên tiếng Việt** / **Cân bằng** / **Ưu tiên tiếng Anh** cho từ mơ hồ |
 | Dùng từ điển tham chiếu Anh-Việt | Bật bộ từ điển song ngữ Anh ↔ Việt nhúng trong package (mới ở 1.5.0). Hiện đang trống — sẽ được populate ở phiên bản tới khi build pipeline cập nhật |
-| **Từ điển từ GitHub** (v1.6.2+) | Hiển thị phiên bản hiện tại + số từ tiếng Việt. Nút "Cập nhật từ điển ngay" để force-download bypass throttle 24h |
+| **Từ điển từ GitHub** (v1.6.2+, EN count v1.7.10+) | Hiển thị riêng 2 dòng: "Tiếng Việt: vX · N từ" + "Tiếng Anh: vX · N từ". Nút "Cập nhật từ điển ngay" để force-download bypass throttle 24h |
 
 ### Cài đặt → tab **Thống kê & Sao lưu**
 
-Header tuần này (v1.7.0+) hiển thị tiếng Việt: **"Tuần 21 năm 2026 (từ 18/05 đến 24/05/2026)"** thay cho format ISO "2026-W21" — tính từ thứ Hai đến Chủ Nhật. Áp dụng cho cả Section "Tuần này" và "Các tuần đã đóng".
+Header tuần này (v1.7.0+) hiển thị tiếng Việt: **"Tuần 21 năm 2026 (từ 18/05 đến 24/05/2026)"** thay cho format ISO "2026-W21" — tính từ thứ Hai đến Chủ Nhật.
+
+**Bố cục mới (v1.7.9+)**: Sao lưu → Personal Dict sync → **Quyền riêng tư** (chuyển xuống sát các mục thống kê) → Tuần hiện tại → Top từ tiếng Việt → **Top cụm 2-3 từ tiếng Việt** → Top từ ngoài tiếng Việt → **Top cụm ngoài tiếng Việt** → Top app → Các tuần đã đóng → Chẩn đoán.
 
 | Mục | Tác dụng |
 |-----|---------|
 | Ghi nhận thống kê sử dụng | Bật/tắt log cục bộ (`~/Library/Application Support/vkey/stats/`) |
 | Tự động hỏi sao lưu khi cập nhật app | Hiện prompt xuất JSON trước khi app chạy phiên bản mới |
 | Xuất dữ liệu cá nhân | Lưu JSON gồm Cài đặt + Macro + từ điển cá nhân + Smart Switch + per-app + thống kê |
-| Nhập từ tệp sao lưu | Chọn **"Gộp"** (giữ dữ liệu hiện tại) hoặc **"Ghi đè toàn bộ"** |
+| Nhập từ tệp sao lưu (semantics đúng v1.7.7+) | 2 chế độ: **"Gộp thêm (file thắng nếu trùng)"** = giữ data hiện tại + thêm imported, duplicate → imported wins. **"Ghi đè toàn bộ (xoá data hiện tại)"** = clear sạch defaults + replace bằng imported (kèm clearAll stats). v1.7.6+ export lossless full state (9 fields trước đây thiếu + WeekBucket raw frequency tables) |
 | Chạy compute đề xuất ngay (v1.6.0+) | Compute đề xuất từ Thống kê tuần này (không auto-write) |
 | Xem đề xuất (v1.6.0+) | Review danh sách pending suggestions → chốt thêm vào Allow/Keep |
 | Xoá toàn bộ dữ liệu thống kê | Reset cả tuần này lẫn các tuần đã đóng |
-| Top từ tiếng Việt / Anh / app (tuần này) | Mỗi row có 🗑 để xoá entry cụ thể khỏi current week (giữ history). Sắp xếp lại từ v1.6.0 |
-| **Các tuần đã đóng** (v1.6.1+) | Section mới hiển thị tóm tắt 4 tuần lịch sử gần nhất — đảm bảo data tuần cũ không "biến mất" sau khi tuần ISO chuyển |
+| Top từ tiếng Việt / app (tuần này) | Mỗi row có 🗑 để xoá entry cụ thể khỏi current week (giữ history). v1.7.4 đổi cap 20 → top 10% theo count + filter display |
+| **Top cụm 2-3 từ tiếng Việt** (v1.7.9+) | Section mới — dùng API `aggregatedTopVietnamesePhrases` (data từ v1.6.1 nhưng UI mới v1.7.9). Giúp xác định cụm thường gõ để tạo macro |
+| **Top từ ngoài tiếng Việt (gợi ý từ điển cá nhân)** (v1.7.9+, filter nới v1.7.10+) | Đổi tên từ "Top từ tiếng Anh / ký tự đặc biệt". Filter chỉ length≥2 + ngoài deny — hiện cả raw text ("hopwj") + ký tự lạ ("lol", "okay") để dễ thấy candidate add Personal Dict |
+| **Top cụm ngoài tiếng Việt** (v1.7.9+) | Section mới — backend `enPhraseCounts2/3` track khi commit `.restoreRawEnglish`/`.keepRaw` liền nhau |
+| **Các tuần đã đóng** (v1.6.1+) | Hiển thị tóm tắt 4 tuần lịch sử gần nhất — đảm bảo data tuần cũ không "biến mất" sau khi tuần ISO chuyển |
 | **Xuất chẩn đoán Stats** (v1.6.1+) | Ghi file `~/Desktop/vkey-stats-diagnostic.txt` mô tả tình trạng files + counters để gửi khi báo lỗi |
 
 ### Phím gõ đặc biệt khi đang gõ
@@ -234,7 +244,7 @@ Header tuần này (v1.7.0+) hiển thị tiếng Việt: **"Tuần 21 năm 2026
 |------|---------|
 | **Space** sau từ tiếng Anh bị gõ nhầm | Tự khôi phục về tiếng Anh (Space Restore) |
 | **Esc** giữa chừng | Hoàn tác về phím thô ban đầu, reset bộ đệm |
-| **Tab** khi HUD đoán từ đang hiện (v1.6.0+) | Chấp nhận prediction → vkey chèn từ gợi ý + space. Bất kỳ phím khác → bỏ qua HUD và tiếp tục gõ |
+| **Tab** khi HUD đoán từ đang hiện (v1.6.0+, smart-detect v1.7.7+) | Chấp nhận prediction. **Buffer sạch** (sau Space commit) → chèn `" prediction"` (leading space). **Buffer có từ chưa commit** → Tab commit từ + chèn prediction trong 1 phím. Bất kỳ phím khác → bỏ qua HUD và tiếp tục gõ |
 | Gõ đúp `ss`, `ff`, `rr`, `xx`, `jj` | Giữ nguyên đúp (không bị toggle dấu) — cho từ tiếng Anh như `staff`, `off`, `class`, `pass` |
 | Click chuột vào ô khác giữa từ | Reset bộ đệm sạch sẽ — không dính chữ qua ô khác |
 
