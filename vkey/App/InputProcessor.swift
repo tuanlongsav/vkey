@@ -288,7 +288,7 @@ struct WordBuffer {
       stoppedByEnglishWord = true
       transformed = String(keys)
       wordState = wordState.push(char)
-      
+
       if !snapshot.stopProcessing {
         lastValidSnapshot = snapshot
       }

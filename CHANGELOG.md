@@ -39,7 +39,23 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 
 ## [1.7.4] - 2026-05-20 — "Clean Stats"
 
-3 fix + 1 redesign nhỏ tiếp cải tiến tab Thống kê và cửa sổ Settings.
+4 fix + 1 redesign nhỏ tiếp cải tiến tab Thống kê và cửa sổ Settings, kèm fix bug gõ ARM/USA/API.
+
+### Fix bug gõ initialism English (ARM → Ảm)
+
+User gõ "ARM" (English initialism) bị vkey áp Telex tone hỏi từ "R" giữa A-M → output "Ảm" thay vì giữ "ARM". Tương tự "USA" → "Úa", "API" → "Apí", "OK", "AI", ...
+
+**Fix tại commit time** (SpellDecisionEngine.evaluate): detect English acronym pattern → restoreRawEnglish.
+
+Heuristic acronym:
+- rawInput length 2-5 chars
+- toàn ASCII uppercase letter
+- KHÔNG chứa double-letter Telex signal (`dd/aa/oo/ee/uu/ww/uw/ow/aw`)
+- KHÔNG kết bằng tone key (`s/f/r/x/j`)
+
+Cách này preserve các trường hợp VN typing all-caps hợp lệ (VIEEJT → VIỆT do "ee" double, DDOR → Đỏ do "dd" double + "r" cuối là tone, VIETJ → VIỆT do "j" cuối là tone).
+
+[vkey/Input/SpellDecisionEngine.swift](vkey/Input/SpellDecisionEngine.swift) — `isLikelyEnglishAcronym` helper + sớm restore trong `evaluate()`.
 
 ### Fix biên dịch test target (vkeyTests)
 

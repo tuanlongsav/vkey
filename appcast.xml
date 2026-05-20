@@ -6,6 +6,36 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.4 — "Clean Stats"</title>
+      <sparkle:version>17400</sparkle:version>
+      <sparkle:shortVersionString>1.7.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 16:30:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.4/vkey-1.7.4.dmg"
+        sparkle:edSignature="1QifIsZQMJNYDLcwCc80HIf97cLVmk/ay751FPu+zBl8Nwo6H1gLAPW3qwUSUgeVVPLZvPrdF02F/RTxWcSsDw=="
+        length="5935068"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.4 — "Clean Stats":</h2>
+        <p>3 fix + 1 redesign nhỏ — sạch top từ, fix lỗi gõ ARM, reset cửa sổ Settings.</p>
+        <ul>
+          <li><strong>🚨 Sửa bug gõ ARM hiện sai (Ảm/ARRM)</strong>: detect English acronym pattern (all-caps ASCII ≥2-≤5 chars, không có double-letter Telex signal, không kết bằng tone key) ở SpellDecisionEngine → restore raw. ARM/USA/API/OK/... giờ giữ nguyên thay vì bị Telex áp tone hỏi/sắc từ R/S giữa các consonant.</li>
+          <li><strong>Tab Thống kê: top từ 10% + lọc lỗi gõ + Xem chi tiết</strong>:
+            <ul>
+              <li>Recovery-path commits (parser flag lỗi gõ) không bơm vào top từ / đề xuất personal dictionary.</li>
+              <li>Top từ VN/EN = top 10% theo count (unlimited, không cap cứng 20). View filter: length≥3, ngoài deny, có trong lexicon.</li>
+              <li>UI mặc định hiện 10; nếu filtered > 10 → nút "Xem chi tiết (N)" mở sheet liệt kê đầy đủ.</li>
+            </ul>
+          </li>
+          <li><strong>Cửa sổ Settings: reset frame autosave</strong>: bump tên autosave "VkeySettingsWindow" → "VkeySettingsWindow.v174". User từ v1.7.2 (270px) nâng cấp giờ mở cửa sổ ở default 180×720 thay vì giữ frame cũ. Vẫn resizable qua góc/cạnh.</li>
+          <li><strong>Fix biên dịch test target</strong>: gỡ tham chiếu cũ (dictionaryUpdateChannel, reload(channel:)), cập nhật UserDataExport signature cho khớp struct 1.5.5+.</li>
+          <li><strong>SpellDecisionEngine guard 1.7.1 thu hẹp</strong>: chỉ keep VN khi transformed có dấu AND không phải VN word AND không phải EN word ("text" → "tẽt" giờ restore đúng về "text").</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.3 — "Minimalist"</title>
       <sparkle:version>17300</sparkle:version>
       <sparkle:shortVersionString>1.7.3</sparkle:shortVersionString>

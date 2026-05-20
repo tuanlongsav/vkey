@@ -643,6 +643,51 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "DDUOWNGF"), "ĐƯỜNG")
   }
 
+  /// Regression 1.7.4: gõ ARM (initialism English) khi commit phải restore
+  /// về "ARM" thay vì giữ "Ảm" (vkey vô tình áp tone hỏi cho R). Fix ở
+  /// SpellDecisionEngine: detect all-caps ASCII alphabetic ≥2-≤5 chars,
+  /// không có double-letter Telex signal, không kết bằng tone key → coi
+  /// là English acronym → restoreRawEnglish.
+  func testSpellDecisionArmAcronymRestore() throws {
+    let oldSpell = Defaults[.spellCheckEnabled]
+    let oldRestore = Defaults[.englishAutoRestoreEnabled]
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+      Defaults[.englishAutoRestoreEnabled] = oldRestore
+    }
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.englishAutoRestoreEnabled] = true
+
+    let engine = SpellDecisionEngine.shared
+    XCTAssertEqual(
+      engine.evaluate(rawInput: "ARM", transformed: "Ảm", needsRecovery: false),
+      .restoreRawEnglish("ARM")
+    )
+    XCTAssertEqual(
+      engine.evaluate(rawInput: "USA", transformed: "Úa", needsRecovery: false),
+      .restoreRawEnglish("USA")
+    )
+    XCTAssertEqual(
+      engine.evaluate(rawInput: "API", transformed: "Apí", needsRecovery: false),
+      .restoreRawEnglish("API")
+    )
+    // Không acronym (length > 5):
+    XCTAssertNotEqual(
+      engine.evaluate(rawInput: "VIEEJT", transformed: "VIỆT", needsRecovery: false),
+      .restoreRawEnglish("VIEEJT")
+    )
+    // Không acronym (last char là tone key):
+    XCTAssertNotEqual(
+      engine.evaluate(rawInput: "DDOR", transformed: "Đỏ", needsRecovery: false),
+      .restoreRawEnglish("DDOR")
+    )
+    // Không acronym (chứa double-letter Telex pattern "dd"):
+    XCTAssertNotEqual(
+      engine.evaluate(rawInput: "DDO", transformed: "Đo", needsRecovery: false),
+      .restoreRawEnglish("DDO")
+    )
+  }
+
   /// Test mixed case
   func testTelexMixedCase() throws {
     XCTAssertEqual(transform_text_telex(for: "Vieejt"), "Việt")

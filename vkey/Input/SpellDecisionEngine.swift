@@ -39,6 +39,29 @@ final class SpellDecisionEngine {
     return word.lowercased().contains { vnDiacriticChars.contains($0) }
   }
 
+  /// 1.7.4: detect English acronym pattern (e.g. ARM, USA, API, OK) ở
+  /// rawInput. Khi user gõ all-caps short word không có double-letter
+  /// Telex signal (dd/aa/oo/ee/uw/ow/aw) và không kết bằng tone key
+  /// (s/f/r/x/j) → coi là English initialism. Tránh trường hợp R/S
+  /// giữa các consonant bị Telex áp tone hỏi/sắc (ARM → Ảm).
+  static func isLikelyEnglishAcronym(_ raw: String) -> Bool {
+    let chars = Array(raw)
+    guard chars.count >= 2, chars.count <= 5 else { return false }
+    guard chars.allSatisfy({ $0.isASCII && $0.isUppercase && $0.isLetter }) else {
+      return false
+    }
+    let lower = raw.lowercased()
+    let vnDoublePatterns = ["dd", "aa", "oo", "ee", "uu", "ww", "uw", "ow", "aw"]
+    if vnDoublePatterns.contains(where: { lower.contains($0) }) {
+      return false
+    }
+    let toneEndKeys: Set<Character> = ["s", "f", "r", "x", "j"]
+    if let last = lower.last, toneEndKeys.contains(last) {
+      return false
+    }
+    return true
+  }
+
   init(
     lexiconManager: LexiconManager = .shared,
     suggestionService: SuggestionService = .shared
@@ -54,6 +77,14 @@ final class SpellDecisionEngine {
     let rawToken = rawInput.normalizedDictionaryToken
     let transformedToken = transformed.normalizedDictionaryToken
     guard !rawToken.isEmpty, !transformedToken.isEmpty else { return .keepRaw }
+
+    // 1.7.4: English acronym pattern (ARM, USA, API, OK, ...). User gõ all
+    // caps short word mà Telex vô tình áp tone (R/S/X/F/J giữa các consonant
+    // → tone hỏi/sắc/...). Restore raw để giữ initialism tiếng Anh.
+    if Defaults[.englishAutoRestoreEnabled],
+       Self.isLikelyEnglishAcronym(rawInput) {
+      return .restoreRawEnglish(rawInput)
+    }
 
     // Doubled Tone Mark Preservation: if raw input contains consecutive doubled tone marks, keep it raw
     let doubledTones = ["ss", "ff", "rr", "xx", "jj"]
