@@ -37,6 +37,89 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.2] - 2026-05-20 — "Compact & Connect"
+
+5 cải tiến UI và workflow — compact hơn, Smart Switch UX rõ ràng hơn, kết nối với tác giả qua mail.
+
+### Cửa sổ Cài đặt compact (-25% width)
+
+- `minWidth`: 360 → **270** (5 view files + AppDelegate).
+- `minHeight`: 720 (không đổi).
+- Stats "Tuần này" header tự wrap 2 dòng khi cần (`.lineLimit(2) + .fixedSize(horizontal: false, vertical: true)`).
+- Vẫn resize lên rộng tuỳ ý.
+
+### Tab Chính tả trim khoảng trắng
+
+- Bỏ Text mô tả dài 2-3 dòng (mỗi sub-toggle).
+- Bỏ HStack `Spacer() + Button + Spacer()` → `Button.frame(maxWidth: .infinity, alignment: .center)`.
+- Section "Cấu hình kiểm tra chính tả" gọn hơn ~80px chiều dọc.
+
+### Smart Switch — Merge state button (mới)
+
+Trước (v1.7.1): mỗi row có 4 elements bên phải — state badge text + source icon + "..." button + 🗑 trash.
+
+Sau (v1.7.2): chỉ 2 buttons — state-icon button (merged) + 🗑 trash.
+
+State icon hiển thị:
+- Source = `.user` → icon theo state: 🇻🇳 (vn-flag) / 🇺🇸 (us-flag) / 🚫 (nosign red).
+- Source = `.autoLearn` → 🤖 (SF Symbol `cpu` purple) — ưu tiên hiển thị nguồn auto-learn.
+- Tooltip: "🤖 Vkey tự quyết — đang là: [state]" hoặc "[state] (do bạn đặt)".
+
+Click button → popover 4 lựa chọn:
+1. 🇻🇳 Tiếng Việt → source=.user, state=.vietnameseMode
+2. 🇺🇸 Tiếng Anh → source=.user, state=.englishMode
+3. 🚫 Không sử dụng vkey → source=.user, state=.disabled
+4. 🤖 Để vkey tự quyết → **xoá entry** khỏi `configs` → auto-learn ngày kế tiếp re-evaluate.
+
+Checkmark hiển thị bên cạnh option đang selected (match cả state + source).
+
+### Auto-learn phản hồi nhanh hơn
+
+| | Trước (v1.7.0-1.7.1) | Sau (v1.7.2) |
+|--|--|--|
+| Days dataset | ≥5 ngày | **≥1 ngày** |
+| Avg commit/day | ≥5 | ≥5 (giữ) |
+| Ratio language | ≥75% | ≥75% (giữ) |
+| Check frequency | 1 lần/tuần | **1 lần/ngày** |
+| Gate key | `lastSmartSwitchAutoLearnWeek` (deprecated) | `lastSmartSwitchAutoLearnDate` (mới) |
+
+User gõ đủ ratio + commit trong 1 ngày → ngày kế tiếp launch sẽ thấy app được auto-set state.
+
+### Gửi từ điển cá nhân cho tác giả (mới)
+
+[PersonalDictionaryEditorView in SettingView.swift:551+](vkey/View/SettingView.swift):
+
+- Section mới ở cuối editor (trước Đóng button):
+  - Title: "Gửi từ điển cho tác giả vkey"
+  - Text: "Yêu cầu ≥50 từ trong tổng 3 danh sách (Allow/Keep/Deny). Bạn có X từ."
+  - Text: "Khi gửi, vkey mở app mail mặc định. Tác giả rà soát và bổ sung vào từ điển chung nếu phù hợp."
+  - Button: "Gửi cho tuanlong.sav@gmail.com" (disabled nếu < 50 từ, show "Cần thêm N từ").
+- `sendDictToAuthor()` action:
+  - Compose mailto URL với:
+    - `to`: `tuanlong.sav@gmail.com`
+    - `subject`: `[vkey] Đề xuất bổ sung từ điển cá nhân`
+    - `body`: 3 lists Allow/Keep/Deny + version info
+  - `NSWorkspace.shared.open(url)` → mở app Mail default.
+- Sheet frame: 400×420 → **400×520** để fit content mới.
+
+### Files
+
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — SpellCheckView trim + PersonalDictionaryEditorView send button; frame 270×720.
+- [vkey/View/SmartSwitchView.swift](vkey/View/SmartSwitchView.swift) — AppConfigRow merge button (state icon); AppConfigPicker 4 options; frame 270×720.
+- [vkey/View/MacroView.swift](vkey/View/MacroView.swift), [StatisticsView.swift](vkey/View/StatisticsView.swift) — frame 270×720; Stats header wrap.
+- [vkey/App/Setting.swift](vkey/App/Setting.swift) — thêm `lastSmartSwitchAutoLearnDate` key.
+- [vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift) — `runSmartSwitchAutoLearnIfDue` đổi daily gate; minSize 270×720.
+- [vkey/Stats/UsageStatistics.swift](vkey/Stats/UsageStatistics.swift) — `computeSmartSwitchAutoLearn` threshold `days >= 1`.
+
+### Verify
+
+- Mở Settings → window default 270px width, đủ rộng cho content.
+- Tab Chính tả → 4 Section gọn, không có khoảng trắng dư thừa.
+- Smart Switch → mỗi row có icon state (flag/🚫/🤖) clickable → popover 4 options.
+- Click 🤖 trong picker → entry xoá khỏi list (auto-learn sẽ re-evaluate ngày sau).
+- Gõ ≥5 commit trong 1 ngày trong 1 app với ratio ≥75% → ngày kế tiếp launch app → auto-learn set state.
+- Personal Dict Editor → nếu ≥50 từ → button "Gửi" active; click → mở Mail compose.
+
 ## [1.7.1] - 2026-05-20 — "Typing Fix & Polish"
 
 Hotfix CRITICAL bug gõ + 3 cải tiến UI.

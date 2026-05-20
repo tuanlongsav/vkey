@@ -304,6 +304,10 @@ extension Defaults.Keys {
   /// Throttle 1 lần/tuần để tránh churn.
   static let lastSmartSwitchAutoLearnWeek = Key<String>("last-smart-switch-auto-learn-week", default: "")
 
+  /// 1.7.2+: gate auto-learn theo NGÀY thay TUẦN. Format ISO date "YYYY-MM-DD".
+  /// Threshold mới: ≥1 ngày dataset, ≥5 commit/ngày, ratio ≥75% → daily check.
+  static let lastSmartSwitchAutoLearnDate = Key<String>("last-smart-switch-auto-learn-date", default: "")
+
   /// Bigram counts: previous word → next word → count. Học từ history
   /// user gõ (1.6.0+).
   static let userBigrams = Key<[String: [String: Int]]>("user-bigrams", default: [:])

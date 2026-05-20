@@ -170,7 +170,7 @@ struct SmartSwitchView: View {
                 .background(Color(NSColor.controlBackgroundColor))
             }
         }
-        .frame(minWidth: 360, minHeight: 720)
+        .frame(minWidth: 270, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingAutoLearnSheet) {
             SmartSwitchAutoLearnSheet()
@@ -229,12 +229,35 @@ private struct AppConfigRow: View {
         return bundleId
     }
 
-    var stateBadgeColor: Color {
-        switch config.state {
-        case .disabled: return .gray
-        case .vietnameseMode: return .red
-        case .englishMode: return .blue
+    /// v1.7.2: hợp nhất state badge + "..." picker button thành 1 button
+    /// hiển thị icon state. Source = .autoLearn → ưu tiên 🤖 icon.
+    @ViewBuilder
+    private var stateIcon: some View {
+        if config.source == .autoLearn {
+            Image(systemName: "cpu")
+                .foregroundStyle(.purple)
+        } else {
+            switch config.state {
+            case .vietnameseMode:
+                Image("vn-flag")
+                    .resizable()
+                    .scaledToFit()
+            case .englishMode:
+                Image("us-flag")
+                    .resizable()
+                    .scaledToFit()
+            case .disabled:
+                Image(systemName: "nosign")
+                    .foregroundStyle(.red)
+            }
         }
+    }
+
+    private var stateTooltip: String {
+        if config.source == .autoLearn {
+            return "🤖 Vkey tự quyết — đang là: \(config.state.displayName)"
+        }
+        return "\(config.state.displayName) (do bạn đặt)"
     }
 
     var body: some View {
@@ -264,29 +287,15 @@ private struct AppConfigRow: View {
 
             Spacer()
 
-            // State badge
-            Text(config.state.shortLabel)
-                .font(.system(.caption, design: .rounded))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(stateBadgeColor.opacity(0.15))
-                .foregroundStyle(stateBadgeColor)
-                .clipShape(Capsule())
-
-            // Source icon
-            Image(systemName: config.source.iconSymbol)
-                .font(.system(size: 12))
-                .foregroundStyle(config.source == .user ? .blue : .purple)
-                .help(config.source.displayName)
-
-            // Edit button
+            // v1.7.2: MERGED state button (was badge + ellipsis button)
             Button {
                 showingPicker = true
             } label: {
-                Image(systemName: "ellipsis.circle")
+                stateIcon
+                    .frame(width: 22, height: 16)
             }
             .buttonStyle(.borderless)
-            .help("Sửa state cho ứng dụng này")
+            .help(stateTooltip)
             .popover(isPresented: $showingPicker) {
                 AppConfigPicker(
                     bundleId: bundleId,
@@ -322,9 +331,11 @@ private struct AppConfigPicker: View {
     let onSelectState: (AppSmartSwitchState) -> Void
     let onReset: () -> Void
 
+    /// v1.7.2: picker 4 options — 3 explicit states + 🤖 "vkey tự quyết"
+    /// (chọn 🤖 = xoá entry, auto-learn re-evaluate ngày kế).
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Chọn chế độ cho")
+            Text("Chọn chế độ cho app này")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text(bundleId)
@@ -332,40 +343,63 @@ private struct AppConfigPicker: View {
                 .foregroundStyle(.secondary)
                 .padding(.bottom, 4)
 
-            ForEach(AppSmartSwitchState.allCases, id: \.self) { state in
-                Button {
-                    onSelectState(state)
-                } label: {
-                    HStack {
-                        Image(systemName: state == currentState ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(state == currentState ? Color.accentColor : Color.secondary)
-                        Text(state.displayName)
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+            pickerRow(
+                icon: AnyView(Image("vn-flag").resizable().scaledToFit().frame(width: 22, height: 16)),
+                label: "Tiếng Việt",
+                isSelected: currentSource == .user && currentState == .vietnameseMode
+            ) {
+                onSelectState(.vietnameseMode)
             }
 
-            if currentSource == .user {
-                Divider()
-                Button {
-                    onReset()
-                } label: {
-                    HStack {
-                        Image(systemName: "arrow.uturn.backward.circle")
-                            .foregroundStyle(.purple)
-                        Text("Để vkey tự học (auto-learn)")
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Xoá cấu hình thủ công → lần check kế tiếp auto-learn sẽ re-evaluate.")
+            pickerRow(
+                icon: AnyView(Image("us-flag").resizable().scaledToFit().frame(width: 22, height: 16)),
+                label: "Tiếng Anh",
+                isSelected: currentSource == .user && currentState == .englishMode
+            ) {
+                onSelectState(.englishMode)
+            }
+
+            pickerRow(
+                icon: AnyView(Image(systemName: "nosign").foregroundStyle(.red).frame(width: 22, height: 16)),
+                label: "Không sử dụng vkey",
+                isSelected: currentSource == .user && currentState == .disabled
+            ) {
+                onSelectState(.disabled)
+            }
+
+            Divider()
+
+            pickerRow(
+                icon: AnyView(Image(systemName: "cpu").foregroundStyle(.purple).frame(width: 22, height: 16)),
+                label: "Để vkey tự quyết",
+                isSelected: currentSource == .autoLearn
+            ) {
+                onReset()
             }
         }
         .padding(12)
-        .frame(width: 240)
+        .frame(width: 260)
+    }
+
+    @ViewBuilder
+    private func pickerRow(icon: AnyView, label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                icon
+                Text(label)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

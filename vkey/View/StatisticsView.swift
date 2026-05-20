@@ -127,6 +127,8 @@ struct StatisticsView: View {
             statRow("Smart Switch kích hoạt", value: "\(s.smartSwitchFires)")
           } header: {
             Text(UsageSummary.vietnameseHeader(for: s.weekId))
+              .lineLimit(2)
+              .fixedSize(horizontal: false, vertical: true)
           }
 
           // MARK: 5-7. Top words & apps (per-row delete)
@@ -212,7 +214,7 @@ struct StatisticsView: View {
       .formStyle(.grouped)
       .scrollDisabled(false)
     }
-    .frame(minWidth: 360, minHeight: 720)
+    .frame(minWidth: 270, minHeight: 720)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .onAppear(perform: refresh)
     .sheet(isPresented: $showingSuggestionSheet) {

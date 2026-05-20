@@ -5,7 +5,7 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 1.7.1 — "Typing Fix & Polish"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 1.7.2 — "Compact & Connect"** ([CHANGELOG](CHANGELOG.md))
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
@@ -32,7 +32,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ Bộ gõ chỉ duy nhất Unicode (UTF-8), không hỗ trợ TCVN3/VNI Windows (giữ đơn giản).
 - ✅ Nhớ chế độ Vi/En theo từng ứng dụng (per-app input mode memory).
 - ✅ **Smart Switch 3-state per-app (v1.7.0+, major refactor)**: mỗi app có thể có 1 trong 3 state — 🇻🇳 **Tiếng Việt** / 🇺🇸 **Tiếng Anh** / ⛔ **Không dùng vkey**. Mỗi state hiển thị icon nguồn: 👤 (user đặt thủ công) hoặc 🤖 (vkey tự học từ Thống kê). User setting LUÔN override auto-learn. Thay list 1-chiều cũ "luôn tắt VN" của v1.5.x-v1.6.x.
-- ✅ **Smart Switch auto-learn (v1.7.0+)**: vkey theo dõi ngôn ngữ user gõ trong từng app qua Stats. App dùng ≥5 ngày dataset trong tuần, ≥5 commit/ngày, ratio ≥75% một ngôn ngữ → tự động set state. Chạy 1 lần/tuần khi launch.
+- ✅ **Smart Switch auto-learn (v1.7.0+, nhanh hơn v1.7.2+)**: vkey theo dõi ngôn ngữ user gõ trong từng app qua Stats. **v1.7.2**: threshold giảm còn ≥1 ngày dataset, ≥5 commit/ngày, ratio ≥75% một ngôn ngữ → tự động set state. Chạy **1 lần/ngày** (thay 1 lần/tuần) → user thấy gợi ý sau ~1 ngày gõ.
 - ✅ **AX Probing Smart Switch**: Tự động tắt khi vào các bảng nhập liệu dạng Overlay/Launcher (Spotlight, Raycast, Alfred, LaunchBar) nhờ cơ chế AX Overlay Probing siêu nhẹ (<0.1ms). Tự động khôi phục trạng thái bộ gõ của ứng dụng nền trước đó. Đồng thời **tự động quét ô nhập liệu** (`AXComboBox`/`AXSearchField`) để kích hoạt chế độ Overwrite chống dính chữ.
 - ✅ **Kiểm tra Chính tả 6 bước & Vowel Inclusion Pairs (từ GoNhanh.org)**: Triệt để ngăn chặn gõ dấu sai cấu trúc âm tiết tiếng Việt. Bộ whitelisting các cặp nguyên âm có thể đi cùng nhau loại bỏ triệt để hiện tượng tự động sửa nhầm trên các từ tiếng Anh (như `claus`, `metric`, `house`, `beyond`). Hỗ trợ gõ phụ âm đầu ghép `kr` (như trong *Krông Ana*) và phụ âm cuối `k` (như trong *Đắk Lắk*).
 - ✅ **Bảo toàn Phím đúp (Doubled Tone Mark Preservation)**: Giữ nguyên phím đúp liên tiếp (`ss`, `ff`, `rr`, `xx`, `jj`) thay vì tự động xoá/toggle, bảo vệ hoàn toàn các từ tiếng Anh thông dụng như `staff`, `off`, `class`, `pass`, `staff`.
@@ -54,7 +54,8 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Từ điển GitHub tự động cập nhật (v1.5.0+, cải tiến v1.6.2+)**: vkey tự fetch `lexicon-update.json` từ `raw.githubusercontent.com/tuanlongsav/vkey` (v1.6.2+ chuyển từ Contents API, không còn giới hạn 1 MB + bỏ rate-limit) mỗi 24h khi launch. **Nút "Cập nhật từ điển ngay" (v1.6.2+)** trong tab Chính tả để force kiểm tra ngay không đợi throttle. Hiện tại v7: 8,894 syllables tiếng Việt.
 - ✅ **Đề xuất Macro từ Thống kê (v1.5.5+, mở rộng v1.6.1+)**: vkey nhận diện các từ và cụm từ tiếng Việt bạn gõ ≥10 lần → đề xuất tạo macro với viết tắt tự sinh (vd "công ty → ct", "kính gửi anh → kga").
 - ✅ **Sheet "Tự học từ Thống kê" (v1.7.0+)**: bấm trong tab Smart Switch để preview các app vkey gợi ý đổi state, áp dụng hàng loạt. User-set entries (🔒) tự động bị skip.
-- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, kích thước mới v1.7.1+)**: drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở (autosave). **v1.7.1**: default 360×720 (giảm 25% bề ngang) cho compact UI, content auto-truncate khi cần. Vẫn resize lên rộng tuỳ ý.
+- ✅ **Gửi từ điển cá nhân cho tác giả (v1.7.2+)**: trong Personal Dict Editor có button "Gửi cho tuanlong.sav@gmail.com" (gate ≥50 từ trong tổng Allow/Keep/Deny). Click mở app mail mặc định với body chứa 3 lists để tác giả rà soát + bổ sung vào từ điển chung.
+- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, kích thước mới v1.7.2+)**: drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở (autosave). **v1.7.2**: default **270×720** (giảm 25% bề ngang so với v1.7.1) — compact tối đa, content auto-truncate / wrap khi cần. Vẫn resize lên rộng tuỳ ý.
 - ✅ **3 giao diện ứng dụng (v1.5.5+)**: chọn ở menu bar → "Giao diện ứng dụng": **Mặc định** (SF Symbol đơn giản), **3D bóng bẩy** (gradient + double shadow), **Emoji vui tươi** (Unicode emoji icons).
 - ✅ **Diagnostic export Stats (v1.6.1+)**: nút "Xuất chẩn đoán Stats" trong tab Thống kê → ghi file text mô tả tình trạng files + counters → gửi maintainer khi báo lỗi.
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
@@ -163,21 +164,21 @@ Tab này được **redesign hoàn toàn ở v1.7.0** — thay list 1-chiều "l
 | Tác vụ | Cách dùng |
 |--------|----------|
 | Bật/tắt Smart Switch | Toggle ở đầu tab (hoặc nút nhanh ngoài menu bar) |
-| Hiểu state mỗi app (v1.7.0+) | Mỗi app trong list có badge state: 🇻🇳 **VN** (gõ Tiếng Việt) / 🇺🇸 **EN** (gõ Tiếng Anh) / **Tắt** (không dùng vkey). Icon nguồn: 👤 = bạn đặt thủ công, 🤖 = vkey tự học |
-| Đổi state thủ công | Click "**...**" trên row app → popover chọn 1 trong 3 state. Lưu là source=👤 (lock khỏi auto-learn) |
-| Reset về auto-learn | Click "..." → "Để vkey tự học (auto-learn)" → xoá entry; lần check tuần sau sẽ re-evaluate |
+| Hiểu state mỗi app (v1.7.2+) | Mỗi row có **1 button icon state** (merged badge + picker): 🇻🇳 (Tiếng Việt) / 🇺🇸 (Tiếng Anh) / 🚫 (Không dùng vkey) / 🤖 (Vkey tự quyết). Tooltip hover hiện nguồn (user/auto) + state |
+| Đổi state thủ công | Click button icon → popover **4 options** (🇻🇳/🇺🇸/🚫/🤖). Chọn 1-3 = source=👤 (lock khỏi auto-learn). Chọn 🤖 = xoá entry, vkey tự quyết ngày kế tiếp |
 | Thêm app mới (paste) | Nhập Bundle ID → bấm **"Thêm"** (mặc định state = 🇺🇸 EN + source=👤) |
 | **Thêm app từ list đang chạy (v1.7.1+)** | Button **"Chọn từ ứng dụng đang chạy"** → sheet hiển thị các app đang mở (filter `activationPolicy == .regular`). Click 1 app để thêm với state mặc định 🇺🇸 EN. Có search field filter theo tên/bundle ID |
 | **Xoá app (v1.7.1+)** | Click 🗑 inline trên mỗi row trong list (đỏ, sau button "Sửa"). Xoá ngay, không cần confirm — có thể re-add nếu lỡ |
 | Tự học từ Thống kê | Button **"Tự học từ Thống kê"** → sheet preview các app vkey gợi ý đổi state. Áp dụng hàng loạt; entries có 🔒 (user-set) tự skip |
 | Lấy Bundle ID thủ công | Mở Terminal: `osascript -e 'id of app "Tên Ứng Dụng"'` (chỉ cần khi app không có trong list đang chạy) |
 
-**Auto-learn rules** (v1.7.0+, chạy 1 lần/tuần khi launch):
-- App phải có ≥5 ngày dataset trong tuần này (user gõ trong app)
-- ≥5 commit/ngày trung bình (~35 commits/tuần)
+**Auto-learn rules** (v1.7.2+, chạy **1 lần/ngày** khi launch — đổi từ 1 lần/tuần ở v1.7.0):
+- App phải có ≥**1 ngày** dataset (giảm từ ≥5 ở v1.7.1)
+- ≥5 commit/ngày trung bình
 - Ratio ngôn ngữ ≥75% → set state tương ứng (Tiếng Việt hoặc Tiếng Anh)
 - Entries có source=👤 (user) KHÔNG bị thay đổi
 - User upgrade từ 1.6.x: smartSwitchApps cũ tự convert thành configs 3-state (englishMode + source=👤)
+- Reset 1 app về auto-learn: click button icon → chọn 🤖 "Để vkey tự quyết" → entry bị xoá, ngày kế tiếp auto-learn re-evaluate
 
 ### Cài đặt → tab **Macro**
 

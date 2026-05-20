@@ -6,6 +6,37 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.2 — "Compact &amp; Connect"</title>
+      <sparkle:version>17200</sparkle:version>
+      <sparkle:shortVersionString>1.7.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 13:25:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.2/vkey-1.7.2.dmg"
+        sparkle:edSignature="AtyNZ6Ir7gLHdISSIOQTpZF2Ji+l8GTXvlcY/X/LKDyTfDPLYV62CUbS0D8FFx98EBKf18hOt3DmSxsGWVcECA=="
+        length="5869287"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.2 — "Compact &amp; Connect":</h2>
+        <p>5 cải tiến UI và workflow.</p>
+        <ul>
+          <li><strong>Cửa sổ Cài đặt compact hơn</strong>: minWidth giảm 360→270 (-25%). Stats header tự wrap 2 dòng khi cần. AppDelegate minSize cập nhật. Vẫn resize lên rộng tuỳ ý.</li>
+          <li><strong>Tab Chính tả tinh gọn khoảng trắng</strong>: bỏ Text mô tả dài 2-3 dòng, bỏ Spacer() trong HStack button → Section "Cấu hình kiểm tra chính tả" gọn hơn ~80px chiều dọc.</li>
+          <li><strong>Smart Switch — Hợp nhất state badge + nút "..." thành 1 button (mới)</strong>:
+            <ul>
+              <li>Mỗi row hiển thị 1 button icon state: 🇻🇳 (Tiếng Việt) / 🇺🇸 (Tiếng Anh) / 🚫 (Không dùng vkey) / 🤖 (Tự quyết)</li>
+              <li>Click button → popover 4 lựa chọn (3 explicit states + 🤖 Để vkey tự quyết)</li>
+              <li>🤖 = xoá entry, auto-learn re-evaluate ngày kế tiếp</li>
+              <li>Tooltip: hiển thị nguồn (user/auto) + state hiện tại</li>
+            </ul>
+          </li>
+          <li><strong>Auto-learn nhanh hơn</strong>: threshold ≥**1 ngày** dataset (giảm từ ≥5 ngày), ≥5 commit/ngày, ratio ≥75%. Check chạy **1 lần/ngày** (thay 1 lần/tuần) → user thấy vkey gợi ý chỉ sau ~1 ngày gõ đủ data.</li>
+          <li><strong>Gửi từ điển cá nhân cho tác giả (mới)</strong>: trong Personal Dict Editor có button "Gửi từ điển cho tác giả vkey" — gate ≥50 từ trong tổng 3 danh sách (Allow + Keep + Deny). Click → mở app mail mặc định compose tới <code>tuanlong.sav@gmail.com</code> với body chứa 3 lists để tác giả rà soát và bổ sung vào từ điển chung.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.1 — "Typing Fix &amp; Polish"</title>
       <sparkle:version>17100</sparkle:version>
       <sparkle:shortVersionString>1.7.1</sparkle:shortVersionString>

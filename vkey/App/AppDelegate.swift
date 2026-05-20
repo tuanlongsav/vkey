@@ -136,19 +136,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     UserDataMigration.handleVersionChange()
   }
 
-  /// 1.7.0: Gate auto-learn Smart Switch chạy 1 lần/tuần.
+  /// 1.7.2+: Gate auto-learn Smart Switch chạy 1 lần/NGÀY (đổi từ 1 lần/tuần).
+  /// Combined với threshold ≥1 ngày dataset → user thấy auto-learn phản hồi
+  /// trong vòng 1-2 ngày sau khi gõ đủ data.
   private func runSmartSwitchAutoLearnIfDue() {
-    let cal = Calendar(identifier: .iso8601)
-    let now = Date()
-    let weekId = String(format: "%04d-W%02d",
-                        cal.component(.yearForWeekOfYear, from: now),
-                        cal.component(.weekOfYear, from: now))
-    guard Defaults[.lastSmartSwitchAutoLearnWeek] != weekId else { return }
+    let fmt = DateFormatter()
+    fmt.dateFormat = "yyyy-MM-dd"
+    fmt.calendar = Calendar(identifier: .iso8601)
+    let today = fmt.string(from: Date())
+    guard Defaults[.lastSmartSwitchAutoLearnDate] != today else { return }
     DispatchQueue.global(qos: .utility).async { [weak self] in
       let suggestions = UsageStatistics.shared.computeSmartSwitchAutoLearn()
       DispatchQueue.main.async {
         self?.appState.applySmartSwitchAutoLearn(suggestions)
-        Defaults[.lastSmartSwitchAutoLearnWeek] = weekId
+        Defaults[.lastSmartSwitchAutoLearnDate] = today
       }
     }
   }
@@ -266,7 +267,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // Idempotent — chỉ apply 1 lần.
     if !win.styleMask.contains(.resizable) {
       win.styleMask.insert(.resizable)
-      win.minSize = NSSize(width: 360, height: 720)
+      win.minSize = NSSize(width: 270, height: 720)
       if win.frameAutosaveName.isEmpty {
         win.setFrameAutosaveName("VkeySettingsWindow")
       }

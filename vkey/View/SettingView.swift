@@ -280,7 +280,7 @@ struct GeneralView: View {
             .padding(.bottom, 14)
             .frame(maxWidth: .infinity)
         }
-        .frame(minWidth: 360, minHeight: 720)
+        .frame(minWidth: 270, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -349,25 +349,16 @@ struct SpellCheckView: View {
                 // Section 2 (v1.7.0): "Cấu hình kiểm tra chính tả" — gộp
                 // master toggle + personal dict + auto-feedback vào CÙNG section
                 // để giảm cognitive load.
+                // v1.7.2: trim caption + bỏ Spacer() trong HStack button.
                 Section {
                     Toggle(isOn: $spellCheckEnabled) {
                         Label("Kiểm tra chính tả", themedSymbol: "checkmark.circle")
                     }
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                    Text("Bật kiểm tra cấu trúc âm tiết VN cho cả từ vừa gõ và từ trong câu.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, -4)
-                    // v1.7.0: bỏ sub-toggle `spellCheckInSentenceEnabled` —
-                    // master toggle gate cho cả 2 trường hợp. Defaults key
-                    // giữ trong codebase (luôn true logic-wise).
-
                     if spellCheckEnabled {
                         Divider()
 
-                        // v1.7.1: Inline "Gợi ý sửa lỗi chính tả" + "Tự động sửa
-                        // khi tin cậy cao" (was Section 3 — moved here).
                         Toggle(isOn: $suggestionEnabled) {
                             Label("Gợi ý sửa lỗi chính tả", themedSymbol: "lightbulb")
                         }
@@ -378,61 +369,36 @@ struct SpellCheckView: View {
                                 Label("Tự động sửa khi tin cậy cao", themedSymbol: "wand.and.stars")
                             }
                             .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-
-                            Text("Tự động áp dụng gợi ý nếu độ tin cậy ≥ 88%.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .padding(.top, -4)
                         }
 
                         Divider()
 
-                        // Inline: Từ điển cá nhân (was Section 5)
                         Toggle(isOn: $personalDictionaryEnabled) {
                             Label("Sử dụng từ điển cá nhân", themedSymbol: "person.circle")
                         }
                         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                        Text("Áp dụng danh sách từ tự thêm (allow/keep/deny) do bạn cấu hình.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, -4)
-
-                        HStack {
-                            Spacer()
-                            Button(action: { showingPersonalDictEditor = true }) {
-                                Label("Quản lý từ điển cá nhân", themedSymbol: "pencil.and.outline")
-                            }
-                            Spacer()
+                        Button(action: { showingPersonalDictEditor = true }) {
+                            Label("Quản lý từ điển cá nhân", themedSymbol: "pencil.and.outline")
                         }
-                        .padding(.top, 4)
+                        .frame(maxWidth: .infinity, alignment: .center)
 
                         Divider()
 
-                        // Inline: Học hành vi từ Thống kê (was Section 7)
                         Toggle(isOn: $autoPersonalDictFeedback) {
-                            Label("Tự động compute đề xuất hàng tuần",
+                            Label("Tự động đề xuất hàng tuần",
                                   themedSymbol: "person.crop.circle.badge.checkmark")
                         }
                         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
-                        Text("Mỗi tuần vkey nhận thấy các từ gõ nhiều → tạo danh sách ĐỀ XUẤT thêm vào Allow/Keep. Bạn review trước khi chốt thêm — vkey KHÔNG tự ý ghi vào.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, -4)
-
-                        HStack {
-                            Spacer()
-                            Button {
-                                showingSuggestionSheet = true
-                            } label: {
-                                Label("Xem đề xuất pending (\(pendingSuggestions.count))",
-                                      themedSymbol: "tray.full")
-                            }
-                            .disabled(pendingSuggestions.isEmpty)
-                            Spacer()
+                        Button {
+                            showingSuggestionSheet = true
+                        } label: {
+                            Label("Xem đề xuất (\(pendingSuggestions.count))",
+                                  themedSymbol: "tray.full")
                         }
-                        .padding(.top, 4)
+                        .disabled(pendingSuggestions.isEmpty)
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
                 } header: {
                     Text("Cấu hình kiểm tra chính tả")
@@ -537,7 +503,7 @@ struct SpellCheckView: View {
             .formStyle(.grouped)
             .scrollDisabled(false)
         }
-        .frame(minWidth: 360, minHeight: 720)
+        .frame(minWidth: 270, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingPersonalDictEditor) {
             PersonalDictionaryEditorView()
@@ -648,10 +614,45 @@ struct PersonalDictionaryEditorView: View {
                 }
             }
             .listStyle(.inset)
-            .frame(height: 240)
-            
+            .frame(height: 200)
+
             Divider()
-            
+
+            // v1.7.2: Gửi từ điển cho tác giả
+            VStack(alignment: .leading, spacing: 4) {
+                let totalCount = userAllowWords.count + userKeepWords.count + userDenyWords.count
+                let canSend = totalCount >= 50
+
+                HStack(spacing: 6) {
+                    Image(systemName: "paperplane.fill")
+                        .foregroundStyle(canSend ? Color.accentColor : Color.secondary)
+                    Text("Gửi từ điển cho tác giả vkey")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Spacer()
+                }
+
+                Text("Yêu cầu ≥50 từ trong tổng 3 danh sách (Allow/Keep/Deny). Bạn có \(totalCount) từ.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text("Khi gửi, vkey mở app mail mặc định. Tác giả rà soát và bổ sung vào từ điển chung nếu phù hợp.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+
+                Button(action: sendDictToAuthor) {
+                    Label(canSend ? "Gửi cho tuanlong.sav@gmail.com" : "Cần thêm \(max(0, 50 - totalCount)) từ",
+                          themedSymbol: "paperplane")
+                }
+                .disabled(!canSend)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 4)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+
+            Divider()
+
             HStack {
                 Spacer()
                 Button("Đóng") {
@@ -659,9 +660,44 @@ struct PersonalDictionaryEditorView: View {
                 }
                 .keyboardShortcut(.defaultAction)
             }
-            .padding(16)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
-        .frame(width: 400, height: 420)
+        .frame(width: 400, height: 520)
+    }
+
+    // v1.7.2: send dict to author via mailto.
+    private func sendDictToAuthor() {
+        let allowJoined = userAllowWords.joined(separator: ", ")
+        let keepJoined = userKeepWords.joined(separator: ", ")
+        let denyJoined = userDenyWords.joined(separator: ", ")
+
+        let body = """
+        Chào tác giả vkey,
+
+        Tôi xin gửi từ điển cá nhân để bạn rà soát và bổ sung vào từ điển chung nếu phù hợp.
+
+        --- Allow (\(userAllowWords.count) từ) ---
+        \(allowJoined)
+
+        --- Keep (\(userKeepWords.count) từ) ---
+        \(keepJoined)
+
+        --- Deny (\(userDenyWords.count) từ) ---
+        \(denyJoined)
+
+        ---
+        Phiên bản vkey: \(Bundle.main.appVersionLong)
+        """
+
+        let subject = "[vkey] Đề xuất bổ sung từ điển cá nhân"
+        let allowed = CharacterSet.urlQueryAllowed
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+        let urlStr = "mailto:tuanlong.sav@gmail.com?subject=\(encodedSubject)&body=\(encodedBody)"
+        if let url = URL(string: urlStr) {
+            NSWorkspace.shared.open(url)
+        }
     }
     
     private func currentWordsList() -> [String] {

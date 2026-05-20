@@ -325,7 +325,9 @@ final class UsageStatistics {
         let days = counters.appLanguageDays[bundleId]?.count ?? 0
         let avgPerDay = days > 0 ? Double(total) / Double(days) : 0
         // Gate: ≥5 ngày dataset spread, ≥5 commit/ngày avg
-        guard days >= 5, avgPerDay >= 5 else { continue }
+        // v1.7.2: lower threshold ≥1 day, ≥5 commit/day (was ≥5 days, ≥5/day).
+        // Combined với daily check (thay weekly) cho auto-learn phản hồi nhanh hơn.
+        guard days >= 1, avgPerDay >= 5 else { continue }
         let ratio = Double(vn) / Double(total)
         if ratio >= 0.75 {
           out[bundleId] = .vietnameseMode
