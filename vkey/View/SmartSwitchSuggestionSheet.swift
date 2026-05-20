@@ -94,9 +94,13 @@ struct SmartSwitchAutoLearnSheet: View {
               Text("Hiện: \(current.state.shortLabel)")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-              Image(systemName: current.source.iconSymbol)
-                .font(.caption2)
-                .foregroundStyle(current.source == .user ? .blue : .purple)
+              if current.source == .autoLearn {
+                Text("🤖").font(.caption2)
+              } else {
+                Image(systemName: "person.fill")
+                  .font(.caption2)
+                  .foregroundStyle(.blue)
+              }
               Image(systemName: "arrow.right")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)

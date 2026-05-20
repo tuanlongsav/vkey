@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.3 — "Minimalist"</title>
+      <sparkle:version>17300</sparkle:version>
+      <sparkle:shortVersionString>1.7.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 14:25:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.3/vkey-1.7.3.dmg"
+        sparkle:edSignature="GNk2QWM4TviNcb4VYmMkF1zWw+E3ZVz8xctfDttZRj4foxaR/zXwqh18Jpjb1ZC+InLfPcGCjHTxiEBMr3Z7Aw=="
+        length="5869160"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.3 — "Minimalist":</h2>
+        <p>3 cải tiến UI nhỏ — Settings nhỏ gọn tối đa, icon rõ ràng hơn.</p>
+        <ul>
+          <li><strong>Cửa sổ Cài đặt compact tối đa</strong>: minWidth giảm 270→**180** (-33%, còn 2/3). 5 tab fit content; vẫn resize lên rộng tuỳ ý.</li>
+          <li><strong>Tab Chính tả gọn hơn nữa</strong>: bỏ 3 `Divider()` thừa trong Section "Cấu hình kiểm tra chính tả" — Form đã có row separator tự nhiên. Tiết kiệm ~90px chiều dọc.</li>
+          <li><strong>Smart Switch icon "Tự động học" đổi thành 🤖</strong>: thay SF Symbol `cpu` (chip purple) bằng emoji robot 🤖 — trực quan và đúng ý nghĩa "máy tự quyết". Áp dụng cho: legend tab Smart Switch, icon trên mỗi row khi source=autoLearn, picker option "Để vkey tự quyết", và sheet "Tự học từ Thống kê".</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.2 — "Compact &amp; Connect"</title>
       <sparkle:version>17200</sparkle:version>
       <sparkle:shortVersionString>1.7.2</sparkle:shortVersionString>

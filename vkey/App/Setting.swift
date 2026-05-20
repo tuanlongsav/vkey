@@ -100,11 +100,20 @@ enum AppSmartSwitchSource: String, CaseIterable, Codable, Defaults.Serializable 
   case user        // 👤 User set thủ công (override auto-learn)
   case autoLearn   // 🤖 Auto-learn từ stats per-app language ratio
 
-  /// SF Symbol name cho UI badge.
+  /// SF Symbol name cho UI badge — chỉ áp dụng cho .user.
+  /// .autoLearn dùng emoji 🤖 (qua `emojiIcon`) thay SF Symbol để rõ ràng hơn.
   var iconSymbol: String {
     switch self {
     case .user: return "person.fill"
-    case .autoLearn: return "cpu"
+    case .autoLearn: return "cpu"  // legacy fallback, prefer emojiIcon for autoLearn
+    }
+  }
+
+  /// v1.7.3+: emoji icon cho display (ưu tiên hơn iconSymbol cho autoLearn).
+  var emojiIcon: String {
+    switch self {
+    case .user: return "👤"
+    case .autoLearn: return "🤖"
     }
   }
 

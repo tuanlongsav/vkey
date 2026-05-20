@@ -5,7 +5,7 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 1.7.2 — "Compact & Connect"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 1.7.3 — "Minimalist"** ([CHANGELOG](CHANGELOG.md))
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
@@ -55,7 +55,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Đề xuất Macro từ Thống kê (v1.5.5+, mở rộng v1.6.1+)**: vkey nhận diện các từ và cụm từ tiếng Việt bạn gõ ≥10 lần → đề xuất tạo macro với viết tắt tự sinh (vd "công ty → ct", "kính gửi anh → kga").
 - ✅ **Sheet "Tự học từ Thống kê" (v1.7.0+)**: bấm trong tab Smart Switch để preview các app vkey gợi ý đổi state, áp dụng hàng loạt. User-set entries (🔒) tự động bị skip.
 - ✅ **Gửi từ điển cá nhân cho tác giả (v1.7.2+)**: trong Personal Dict Editor có button "Gửi cho tuanlong.sav@gmail.com" (gate ≥50 từ trong tổng Allow/Keep/Deny). Click mở app mail mặc định với body chứa 3 lists để tác giả rà soát + bổ sung vào từ điển chung.
-- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, kích thước mới v1.7.2+)**: drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở (autosave). **v1.7.2**: default **270×720** (giảm 25% bề ngang so với v1.7.1) — compact tối đa, content auto-truncate / wrap khi cần. Vẫn resize lên rộng tuỳ ý.
+- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, kích thước mới v1.7.3+)**: drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở (autosave). **v1.7.3**: default **180×720** (còn 2/3 so với v1.7.2) — minimalist tối đa. Content auto-truncate / wrap khi cần. Vẫn resize lên rộng tuỳ ý.
 - ✅ **3 giao diện ứng dụng (v1.5.5+)**: chọn ở menu bar → "Giao diện ứng dụng": **Mặc định** (SF Symbol đơn giản), **3D bóng bẩy** (gradient + double shadow), **Emoji vui tươi** (Unicode emoji icons).
 - ✅ **Diagnostic export Stats (v1.6.1+)**: nút "Xuất chẩn đoán Stats" trong tab Thống kê → ghi file text mô tả tình trạng files + counters → gửi maintainer khi báo lỗi.
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
@@ -164,7 +164,7 @@ Tab này được **redesign hoàn toàn ở v1.7.0** — thay list 1-chiều "l
 | Tác vụ | Cách dùng |
 |--------|----------|
 | Bật/tắt Smart Switch | Toggle ở đầu tab (hoặc nút nhanh ngoài menu bar) |
-| Hiểu state mỗi app (v1.7.2+) | Mỗi row có **1 button icon state** (merged badge + picker): 🇻🇳 (Tiếng Việt) / 🇺🇸 (Tiếng Anh) / 🚫 (Không dùng vkey) / 🤖 (Vkey tự quyết). Tooltip hover hiện nguồn (user/auto) + state |
+| Hiểu state mỗi app (v1.7.2+, icon mới v1.7.3+) | Mỗi row có **1 button icon state** (merged badge + picker): 🇻🇳 (Tiếng Việt) / 🇺🇸 (Tiếng Anh) / 🚫 (Không dùng vkey) / 🤖 (Vkey tự quyết — icon mới v1.7.3 thay chip cpu cũ). Tooltip hover hiện nguồn (user/auto) + state |
 | Đổi state thủ công | Click button icon → popover **4 options** (🇻🇳/🇺🇸/🚫/🤖). Chọn 1-3 = source=👤 (lock khỏi auto-learn). Chọn 🤖 = xoá entry, vkey tự quyết ngày kế tiếp |
 | Thêm app mới (paste) | Nhập Bundle ID → bấm **"Thêm"** (mặc định state = 🇺🇸 EN + source=👤) |
 | **Thêm app từ list đang chạy (v1.7.1+)** | Button **"Chọn từ ứng dụng đang chạy"** → sheet hiển thị các app đang mở (filter `activationPolicy == .regular`). Click 1 app để thêm với state mặc định 🇺🇸 EN. Có search field filter theo tên/bundle ID |

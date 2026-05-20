@@ -267,7 +267,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // Idempotent — chỉ apply 1 lần.
     if !win.styleMask.contains(.resizable) {
       win.styleMask.insert(.resizable)
-      win.minSize = NSSize(width: 270, height: 720)
+      win.minSize = NSSize(width: 180, height: 720)
       if win.frameAutosaveName.isEmpty {
         win.setFrameAutosaveName("VkeySettingsWindow")
       }

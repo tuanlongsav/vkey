@@ -74,8 +74,7 @@ struct SmartSwitchView: View {
                             Text("Người dùng đặt")
                         }
                         HStack(spacing: 4) {
-                            Image(systemName: "cpu")
-                                .foregroundStyle(.purple)
+                            Text("🤖")
                             Text("Tự động học")
                         }
                         Spacer()
@@ -170,7 +169,7 @@ struct SmartSwitchView: View {
                 .background(Color(NSColor.controlBackgroundColor))
             }
         }
-        .frame(minWidth: 270, minHeight: 720)
+        .frame(minWidth: 180, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingAutoLearnSheet) {
             SmartSwitchAutoLearnSheet()
@@ -234,8 +233,8 @@ private struct AppConfigRow: View {
     @ViewBuilder
     private var stateIcon: some View {
         if config.source == .autoLearn {
-            Image(systemName: "cpu")
-                .foregroundStyle(.purple)
+            Text("🤖")
+                .font(.system(size: 14))
         } else {
             switch config.state {
             case .vietnameseMode:
@@ -370,7 +369,7 @@ private struct AppConfigPicker: View {
             Divider()
 
             pickerRow(
-                icon: AnyView(Image(systemName: "cpu").foregroundStyle(.purple).frame(width: 22, height: 16)),
+                icon: AnyView(Text("🤖").font(.system(size: 14)).frame(width: 22, height: 16)),
                 label: "Để vkey tự quyết",
                 isSelected: currentSource == .autoLearn
             ) {

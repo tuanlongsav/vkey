@@ -214,7 +214,7 @@ struct StatisticsView: View {
       .formStyle(.grouped)
       .scrollDisabled(false)
     }
-    .frame(minWidth: 270, minHeight: 720)
+    .frame(minWidth: 180, minHeight: 720)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .onAppear(perform: refresh)
     .sheet(isPresented: $showingSuggestionSheet) {

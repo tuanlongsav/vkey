@@ -37,6 +37,54 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.3] - 2026-05-20 — "Minimalist"
+
+3 cải tiến UI nhỏ tiếp tục stream "compact UI" của v1.7.x.
+
+### Cửa sổ Cài đặt compact tối đa (-33%)
+
+- `minWidth`: 270 → **180** (còn 2/3 so với v1.7.2).
+- 5 view files + AppDelegate minSize cập nhật.
+- Form `.grouped` style tự co content fit 180px; text label + monospace bundle ID đã có `lineLimit(1) + truncationMode(.middle)` từ v1.7.1.
+- Vẫn resize lên rộng tuỳ ý qua drag corner; `setFrameAutosaveName` nhớ kích thước.
+
+### Tab Chính tả: bỏ Dividers thừa
+
+User feedback (screenshot v1.7.2): có nhiều khoảng trắng dư giữa các sub-toggle trong Section "Cấu hình kiểm tra chính tả".
+
+**Root cause**: 3 `Divider()` explicit tôi thêm để tách 4 sub-section (master / suggestion / personal dict / auto-feedback). Form `.grouped` đã có row separator tự nhiên + Divider() thêm padding ~30px mỗi cái.
+
+**Fix**: bỏ 3 Divider trong Section "Cấu hình kiểm tra chính tả" của SpellCheckView. Tiết kiệm ~90px chiều dọc, sub-toggle nối liền nhau như native macOS Settings.
+
+### Smart Switch icon đổi cpu → 🤖
+
+User feedback: icon "Tự động học" hiện là `cpu` (chip purple) — không trực quan với ý "vkey tự quyết". Đổi thành emoji 🤖 robot.
+
+`AppSmartSwitchSource.emojiIcon` (mới) thay/bổ sung `iconSymbol`:
+- `.user` → "👤"
+- `.autoLearn` → "🤖"
+
+Call sites updated (4 chỗ):
+- Legend "Tự động học" ở header tab Smart Switch
+- `AppConfigRow.stateIcon` khi source=.autoLearn → Text("🤖") thay Image(systemName: "cpu")
+- `AppConfigPicker` row "Để vkey tự quyết" → Text("🤖")
+- `SmartSwitchAutoLearnSheet` row current config indicator
+
+### Files
+
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — bỏ 3 Divider trong SpellCheckView; frame 180×720.
+- [vkey/View/SmartSwitchView.swift](vkey/View/SmartSwitchView.swift) — đổi cpu → 🤖 (3 chỗ); frame 180×720.
+- [vkey/View/SmartSwitchSuggestionSheet.swift](vkey/View/SmartSwitchSuggestionSheet.swift) — current config icon dispatch user/autoLearn.
+- [vkey/View/MacroView.swift](vkey/View/MacroView.swift), [vkey/View/StatisticsView.swift](vkey/View/StatisticsView.swift) — frame 180×720.
+- [vkey/App/Setting.swift](vkey/App/Setting.swift) — thêm `AppSmartSwitchSource.emojiIcon`.
+- [vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift) — minSize 180×720.
+
+### Verify
+
+- Mở Settings → window default 180px width đủ rộng cho content.
+- Tab Chính tả → 4 sub-toggle Section "Cấu hình kiểm tra chính tả" nối liền nhau, không có khoảng trống thừa.
+- Smart Switch → row có app source=autoLearn hiển thị 🤖 thay vì chip cpu. Picker option "Để vkey tự quyết" cũng dùng 🤖.
+
 ## [1.7.2] - 2026-05-20 — "Compact & Connect"
 
 5 cải tiến UI và workflow — compact hơn, Smart Switch UX rõ ràng hơn, kết nối với tác giả qua mail.

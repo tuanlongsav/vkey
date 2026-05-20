@@ -280,7 +280,7 @@ struct GeneralView: View {
             .padding(.bottom, 14)
             .frame(maxWidth: .infinity)
         }
-        .frame(minWidth: 270, minHeight: 720)
+        .frame(minWidth: 180, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -350,6 +350,9 @@ struct SpellCheckView: View {
                 // master toggle + personal dict + auto-feedback vào CÙNG section
                 // để giảm cognitive load.
                 // v1.7.2: trim caption + bỏ Spacer() trong HStack button.
+                // v1.7.3: bỏ Divider() giữa các sub-toggle — Form đã có row
+                // separator tự nhiên. Bỏ giúp giảm ~30px khoảng trống mỗi
+                // Divider.
                 Section {
                     Toggle(isOn: $spellCheckEnabled) {
                         Label("Kiểm tra chính tả", themedSymbol: "checkmark.circle")
@@ -357,8 +360,6 @@ struct SpellCheckView: View {
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
                     if spellCheckEnabled {
-                        Divider()
-
                         Toggle(isOn: $suggestionEnabled) {
                             Label("Gợi ý sửa lỗi chính tả", themedSymbol: "lightbulb")
                         }
@@ -371,8 +372,6 @@ struct SpellCheckView: View {
                             .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                         }
 
-                        Divider()
-
                         Toggle(isOn: $personalDictionaryEnabled) {
                             Label("Sử dụng từ điển cá nhân", themedSymbol: "person.circle")
                         }
@@ -382,8 +381,6 @@ struct SpellCheckView: View {
                             Label("Quản lý từ điển cá nhân", themedSymbol: "pencil.and.outline")
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
-
-                        Divider()
 
                         Toggle(isOn: $autoPersonalDictFeedback) {
                             Label("Tự động đề xuất hàng tuần",
@@ -503,7 +500,7 @@ struct SpellCheckView: View {
             .formStyle(.grouped)
             .scrollDisabled(false)
         }
-        .frame(minWidth: 270, minHeight: 720)
+        .frame(minWidth: 180, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingPersonalDictEditor) {
             PersonalDictionaryEditorView()
