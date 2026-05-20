@@ -11,9 +11,8 @@ struct SmartSwitchView: View {
     @Default(.smartSwitchEnabled) private var smartSwitchEnabled
 
     @State private var newBundleId: String = ""
-    @State private var selectedBundleId: String? = nil
-    @State private var editingBundleId: String? = nil
     @State private var showingAutoLearnSheet = false
+    @State private var showingRunningAppsSheet = false  // v1.7.1+
 
     var sortedConfigs: [(bundleId: String, config: AppSmartSwitchConfig)] {
         configs.sorted { $0.key < $1.key }
@@ -112,7 +111,8 @@ struct SmartSwitchView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
-                        List(selection: $selectedBundleId) {
+                        // v1.7.1: bỏ selection (xoá inline trash thay)
+                        List {
                             ForEach(sortedConfigs, id: \.bundleId) { item in
                                 AppConfigRow(
                                     bundleId: item.bundleId,
@@ -120,9 +120,9 @@ struct SmartSwitchView: View {
                                     onStateChange: { newState in
                                         setState(newState, for: item.bundleId)
                                     },
-                                    onReset: { resetToAutoLearn(item.bundleId) }
+                                    onReset: { resetToAutoLearn(item.bundleId) },
+                                    onDelete: { deleteApp(item.bundleId) }
                                 )
-                                .tag(item.bundleId)
                             }
                         }
                         .listStyle(.inset)
@@ -130,7 +130,7 @@ struct SmartSwitchView: View {
 
                     Divider()
 
-                    // Add bundle ID input
+                    // Add bundle ID input + picker button (v1.7.1: bỏ nút Xoá bottom)
                     HStack(spacing: 8) {
                         TextField("com.example.app", text: $newBundleId)
                             .textFieldStyle(.roundedBorder)
@@ -142,18 +142,26 @@ struct SmartSwitchView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .disabled(newBundleId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                        Button(action: removeSelected) {
-                            Label("Xoá", themedSymbol: "trash")
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(selectedBundleId == nil)
                     }
-                    .padding(10)
+                    .padding(.horizontal, 10)
+                    .padding(.top, 10)
+
+                    HStack {
+                        Spacer()
+                        Button {
+                            showingRunningAppsSheet = true
+                        } label: {
+                            Label("Chọn từ ứng dụng đang chạy", themedSymbol: "rectangle.stack.badge.plus")
+                        }
+                        .help("Mở danh sách app đang chạy để chọn nhanh, không cần paste bundle ID.")
+                        Spacer()
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 6)
                     .background(Color(NSColor.windowBackgroundColor))
 
                     // Help text
-                    Text("💡 Lấy Bundle ID: mở Terminal → `osascript -e 'id of app \"Tên App\"'`. Hoặc click app trong danh sách trên rồi bấm \"Sửa\" để đổi state thủ công.")
+                    Text("💡 Nếu app không có trong danh sách \"đang chạy\", bạn có thể paste Bundle ID phía trên. Lấy bằng Terminal: `osascript -e 'id of app \"Tên App\"'`.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 12)
@@ -162,10 +170,13 @@ struct SmartSwitchView: View {
                 .background(Color(NSColor.controlBackgroundColor))
             }
         }
-        .frame(minWidth: 480, minHeight: 720)
+        .frame(minWidth: 360, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingAutoLearnSheet) {
             SmartSwitchAutoLearnSheet()
+        }
+        .sheet(isPresented: $showingRunningAppsSheet) {
+            SmartSwitchRunningAppsSheet()
         }
     }
 
@@ -182,10 +193,8 @@ struct SmartSwitchView: View {
         newBundleId = ""
     }
 
-    private func removeSelected() {
-        guard let sel = selectedBundleId else { return }
-        configs.removeValue(forKey: sel)
-        selectedBundleId = nil
+    private func deleteApp(_ bundleId: String) {
+        configs.removeValue(forKey: bundleId)
     }
 
     private func setState(_ state: AppSmartSwitchState, for bundleId: String) {
@@ -206,6 +215,7 @@ private struct AppConfigRow: View {
     let config: AppSmartSwitchConfig
     let onStateChange: (AppSmartSwitchState) -> Void
     let onReset: () -> Void
+    let onDelete: () -> Void
 
     @State private var showingPicker = false
 
@@ -243,9 +253,13 @@ private struct AppConfigRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(displayName)
                     .font(.body)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
                 Text(bundleId)
                     .font(.system(.caption2, design: .monospaced))
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
             }
 
             Spacer()
@@ -288,6 +302,14 @@ private struct AppConfigRow: View {
                     }
                 )
             }
+
+            // v1.7.1: inline trash button — xoá ngay app khỏi danh sách
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.borderless)
+            .help("Xoá ứng dụng này khỏi cấu hình Smart Switch")
         }
         .padding(.vertical, 2)
     }

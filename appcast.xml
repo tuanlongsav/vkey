@@ -6,6 +6,42 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.1 — "Typing Fix &amp; Polish"</title>
+      <sparkle:version>17100</sparkle:version>
+      <sparkle:shortVersionString>1.7.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 12:40:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.1/vkey-1.7.1.dmg"
+        sparkle:edSignature="PPHctBmWBpQ0Rt+ohe92zxvFRuU2AhT1+P+8UgzSK+19BUfKqYYdn+S7N4plZXLUit7TxQAUKTDe6EElqfqgAg=="
+        length="5846493"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.1 — "Typing Fix &amp; Polish":</h2>
+        <p>Hotfix CRITICAL bug gõ tiếng Việt 1 ký tự + 3 cải tiến UI khác.</p>
+        <ul>
+          <li><strong>🚨 SỬA BUG NGHIÊM TRỌNG: gõ `ý` hiện `ys`, `ô` hiện `oo`, `ở` hiện `owr`</strong>:
+            <ul>
+              <li><strong>Root cause</strong>: Lexicon v7 (8,894 syllables) bị audit_lexicon.py xoá hết 66 single-char Vietnamese diacritics (`ý`, `ô`, `ở`, `à`, `á`, `ã`...). Khi user gõ những từ này + Space, SpellDecisionEngine không tìm thấy trong VN lexicon → fallback `restoreRawEnglish` → user thấy raw Telex keys thay vì dấu.</li>
+              <li><strong>Fix data</strong>: lexicon v7 → v8 = 8,960 syllables (auto-inject 66 single-char VN). Đã commit lên GitHub, app fetch tự động.</li>
+              <li><strong>Fix engine (defense-in-depth)</strong>: SpellDecisionEngine giờ check `hasVietnameseDiacritic(transformed)` TRƯỚC khi restore raw — nếu transformed có dấu thanh / ư / ơ / đ, KHÔNG bao giờ restore. Bảo vệ trường hợp lexicon thiếu lần sau.</li>
+            </ul>
+          </li>
+          <li><strong>Tab Chính tả tinh gọn hơn</strong>: gộp "Gợi ý sửa lỗi chính tả" + "Tự động sửa khi tin cậy cao" vào CÙNG Section "Cấu hình kiểm tra chính tả" (trước đây tách riêng). Còn 4 Section thay vì 5.</li>
+          <li><strong>Cửa sổ Cài đặt gọn hơn</strong>: minWidth giảm 480→360 (-25%). Content auto-truncate (bundle ID dài) để fit khung. Vẫn resize được lên rộng tuỳ ý.</li>
+          <li><strong>Smart Switch UX cải thiện</strong>:
+            <ul>
+              <li>Nút 🗑 inline mỗi app trong list — xoá nhanh, không cần chọn rồi click bottom button</li>
+              <li>Nút "Chọn từ ứng dụng đang chạy" (mới) — mở sheet show list app đang mở, click 1 cái để thêm thay vì paste bundle ID thủ công</li>
+              <li>Search field trong sheet để filter theo tên/bundle ID</li>
+              <li>Bỏ nút "Xoá" bottom (không cần nữa)</li>
+            </ul>
+          </li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.0 — "Smart Context"</title>
       <sparkle:version>17000</sparkle:version>
       <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>

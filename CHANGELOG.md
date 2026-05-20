@@ -37,6 +37,83 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.1] - 2026-05-20 — "Typing Fix & Polish"
+
+Hotfix CRITICAL bug gõ + 3 cải tiến UI.
+
+### 🚨 CRITICAL: Sửa bug gõ `ý` hiện `ys`, `ô` hiện `oo`, `ở` hiện `owr`
+
+**Triệu chứng**: từ tiếng Việt 1 ký tự (`ý`, `ô`, `ở`, `à`, `á`, `ã`...) bị "khôi phục" về raw English keys (Telex) khi nhấn Space.
+
+**Root cause**: lexicon v7 (8,894 syllables) bị `Tools/audit_lexicon.py` xoá hết **66 single-char Vietnamese diacritics** ở phase v1.6.1 audit. Khi user gõ `ys` (Telex) → Telex transform → `ý` → user nhấn Space → SpellDecisionEngine evaluate:
+- `isVietnameseWord("ý")` → false (lexicon thiếu)
+- `englishAutoRestoreEnabled = true` → fallback `.restoreRawEnglish`
+- vkey gửi backspace + raw "ys" → user thấy "ys" thay vì "ý"
+
+**Fix 2 lớp (defense-in-depth)**:
+
+1. **Data fix — lexicon v7 → v8**: cập nhật [`Tools/audit_lexicon.py`](Tools/audit_lexicon.py) whitelist 66 single-char VN syllables (`à á ả ã ạ ă ắ ằ ẳ ẵ ặ â ấ ầ ẩ ẫ ậ è é ẻ ẽ ẹ ê ế ề ể ễ ệ ì í ỉ ĩ ị ò ó ỏ õ ọ ô ố ồ ổ ỗ ộ ơ ớ ờ ở ỡ ợ ù ú ủ ũ ụ ư ứ ừ ử ữ ự ỳ ý ỷ ỹ ỵ`) — vượt qua rule `len(word) == 1` drop. Cũng inject `idempotent` để đảm bảo present trong output. Re-run audit → `lexicon-update.json` v7 → v8 = **8,960 syllables**. Commit lên GitHub, app fetch tự động trong 24h.
+
+2. **Engine guard — defensive** ([SpellDecisionEngine.swift](vkey/Input/SpellDecisionEngine.swift)): thêm `hasVietnameseDiacritic(_:)` helper + check TRƯỚC nhánh restoreRawEnglish — nếu transformed token có chứa ký tự đặc trưng VN (66 dấu thanh + đ), KHÔNG BAO GIỜ restore. User đã chủ động gõ Telex để tạo dấu → ý định rõ ràng là VN. Bảo vệ trường hợp lexicon thiếu single-char lần sau.
+
+### Tab Chính tả tinh gọn hơn (4 Section thay vì 5)
+
+- Gộp "Gợi ý sửa lỗi chính tả" + "Tự động sửa khi tin cậy cao" vào CÙNG Section "Cấu hình kiểm tra chính tả" (trước đây tách riêng).
+- Cấu trúc Section "Cấu hình kiểm tra chính tả" hiện tại:
+  1. Toggle "Kiểm tra chính tả"
+  2. Toggle "Gợi ý sửa lỗi chính tả" + sub-toggle "Tự động sửa khi tin cậy cao" (mới merge)
+  3. Toggle "Sử dụng từ điển cá nhân" + button "Quản lý"
+  4. Toggle "Tự động compute đề xuất hàng tuần" + button "Xem đề xuất pending"
+
+### Cửa sổ Cài đặt — giảm bề ngang 25%
+
+- `minWidth`: 480 → **360** (-25%). Compact hơn, fit screen nhỏ.
+- `minHeight`: 720 (không đổi).
+- Content adjustments cho 360px:
+  - AppConfigRow trong SmartSwitch: bundle ID monospaced `lineLimit(1)` + `truncationMode(.middle)` — không overflow.
+  - Vẫn resize được lên rộng tuỳ ý (drag corner/edge).
+- AppDelegate `windowDidBecomeKey` minSize cập nhật 360×720.
+
+### Smart Switch UX cải thiện
+
+**(i) Inline trash button trên mỗi row** (thay nút "Xoá" bottom):
+- Mỗi `AppConfigRow` giờ có 🗑 button (red) bên phải, sau "Sửa" button.
+- Click trash → xoá ngay khỏi `appSmartSwitchConfigs` (không confirm — có thể re-add nếu lỡ).
+- Bỏ button "Xoá" bottom + selection state cũ (không cần nữa).
+
+**(ii) Nút "Chọn từ ứng dụng đang chạy"** (mới, [SmartSwitchRunningAppsSheet.swift](vkey/View/SmartSwitchRunningAppsSheet.swift)):
+- Sheet hiển thị list `NSWorkspace.shared.runningApplications` filter `activationPolicy == .regular` (loại helpers/daemons), loại vkey itself.
+- Mỗi row: app icon + tên + bundle ID + state badge nếu đã cấu hình (✓ green / + accent).
+- Search field filter theo tên hoặc bundle ID.
+- Click row → thêm vào configs với state mặc định `.englishMode` + source `.user`.
+- Đã cấu hình → row disabled, hiển thị state hiện tại.
+- 420×520 sheet, sorted theo tên app.
+
+### Files
+
+- [Tools/audit_lexicon.py](Tools/audit_lexicon.py) — whitelist 66 single-char VN diacritics + Tier C loanwords + inject if missing.
+- [lexicon-update.json](lexicon-update.json) — version 7 → 8, 8,894 → 8,960 syllables.
+- [vkey/Input/SpellDecisionEngine.swift](vkey/Input/SpellDecisionEngine.swift) — `hasVietnameseDiacritic` helper + guard.
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — merge Section "Gợi ý" vào "Cấu hình kiểm tra"; frame 480→360.
+- [vkey/View/SmartSwitchView.swift](vkey/View/SmartSwitchView.swift) — onDelete callback + inline trash; bỏ bottom Xoá; thêm nút "Chọn từ app đang chạy"; frame 480→360.
+- [vkey/View/SmartSwitchRunningAppsSheet.swift](vkey/View/SmartSwitchRunningAppsSheet.swift) (mới) — sheet picker từ running apps.
+- [vkey/View/MacroView.swift](vkey/View/MacroView.swift), [StatisticsView.swift](vkey/View/StatisticsView.swift) — frame 480→360.
+- [vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift) — windowDidBecomeKey minSize 360×720.
+
+### Verify
+
+Test typing single-char syllables (Telex):
+- `ys → ý` ✓ (không thành ys)
+- `oo → ô` ✓ (không thành oo)
+- `owr → ở` ✓ (không thành owr)
+- `ax → ã` ✓, `a` → à` ✓, `aa → á` ✓
+- Tất cả 66 single-char hợp lệ giờ kept correctly
+
+Smart Switch:
+- 🗑 trên row → xoá ngay
+- "Chọn từ app đang chạy" → list Slack, Safari, Notes...; click → thêm
+- vkey itself không xuất hiện trong list
+
 ## [1.7.0] - 2026-05-20 — "Smart Context"
 
 Bản nâng cấp lớn về Smart Switch + nhiều cải tiến UI. 4 thay đổi chính:

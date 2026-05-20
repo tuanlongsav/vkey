@@ -280,7 +280,7 @@ struct GeneralView: View {
             .padding(.bottom, 14)
             .frame(maxWidth: .infinity)
         }
-        .frame(minWidth: 480, minHeight: 720)
+        .frame(minWidth: 360, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -366,6 +366,27 @@ struct SpellCheckView: View {
                     if spellCheckEnabled {
                         Divider()
 
+                        // v1.7.1: Inline "Gợi ý sửa lỗi chính tả" + "Tự động sửa
+                        // khi tin cậy cao" (was Section 3 — moved here).
+                        Toggle(isOn: $suggestionEnabled) {
+                            Label("Gợi ý sửa lỗi chính tả", themedSymbol: "lightbulb")
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                        if suggestionEnabled {
+                            Toggle(isOn: $autoApplyHighConfidenceSuggestion) {
+                                Label("Tự động sửa khi tin cậy cao", themedSymbol: "wand.and.stars")
+                            }
+                            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                            Text("Tự động áp dụng gợi ý nếu độ tin cậy ≥ 88%.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, -4)
+                        }
+
+                        Divider()
+
                         // Inline: Từ điển cá nhân (was Section 5)
                         Toggle(isOn: $personalDictionaryEnabled) {
                             Label("Sử dụng từ điển cá nhân", themedSymbol: "person.circle")
@@ -418,29 +439,10 @@ struct SpellCheckView: View {
                 }
 
                 if spellCheckEnabled {
-                    // Section 3: Gợi ý & Sửa lỗi chính tả
-                    Section {
-                        Toggle(isOn: $suggestionEnabled) {
-                            Label("Gợi ý sửa lỗi chính tả", themedSymbol: "lightbulb")
-                        }
-                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    // v1.7.1: Section "Gợi ý & Sửa lỗi chính tả" đã được merge
+                    // vào Section "Cấu hình kiểm tra chính tả" ở trên.
 
-                        if suggestionEnabled {
-                            Toggle(isOn: $autoApplyHighConfidenceSuggestion) {
-                                Label("Tự động sửa khi tin cậy cao", themedSymbol: "wand.and.stars")
-                            }
-                            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-
-                            Text("Tự động áp dụng từ gợi ý nếu độ tin cậy đạt mức rất cao (>= 88%).")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .padding(.top, -4)
-                        }
-                    } header: {
-                        Text("Gợi ý & Sửa lỗi chính tả")
-                    }
-
-                    // Section 4: Space Restore
+                    // Section: Space Restore
                     Section {
                         Toggle(isOn: $englishAutoRestoreEnabled) {
                             Label("Tự động khôi phục tiếng Anh", themedSymbol: "arrow.uturn.backward")
@@ -535,7 +537,7 @@ struct SpellCheckView: View {
             .formStyle(.grouped)
             .scrollDisabled(false)
         }
-        .frame(minWidth: 480, minHeight: 720)
+        .frame(minWidth: 360, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingPersonalDictEditor) {
             PersonalDictionaryEditorView()

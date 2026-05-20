@@ -49,6 +49,7 @@
 		3FDB83CD2BB468BA00AD6322 /* EventSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */; };
 		4045075CC083173E587560A9 /* SpellDecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01E0C61F7740281BEB6DB9C7 /* SpellDecisionEngine.swift */; };
 		40D7FB871260EEC2B9077795 /* MenuBarFooterRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */; };
+		5501620FAC63ADA15F6A37B4 /* SmartSwitchRunningAppsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88B0AD4B1E7237CEF175AEB8 /* SmartSwitchRunningAppsSheet.swift */; };
 		5A21D21AF4397FCB9C827912 /* DonateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */; };
 		5DF6BF0E4EBC27745F7CA7AA /* DefaultMacros.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E12D557ABDC3D7864363DE /* DefaultMacros.swift */; };
 		6222920C197312B2360B6B43 /* UsageStatistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */; };
@@ -134,6 +135,7 @@
 		716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageStatistics.swift; sourceTree = "<group>"; };
 		76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartSwitchSuggestionSheet.swift; sourceTree = "<group>"; };
 		82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacroSuggestionSheet.swift; sourceTree = "<group>"; };
+		88B0AD4B1E7237CEF175AEB8 /* SmartSwitchRunningAppsSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartSwitchRunningAppsSheet.swift; sourceTree = "<group>"; };
 		8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DonateView.swift; sourceTree = "<group>"; };
 		92721E2546773FF5AAC7672C /* StatisticsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
 		9983D8DCAE1ACF9310738F1F /* PredictionEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PredictionEngine.swift; sourceTree = "<group>"; };
@@ -323,6 +325,7 @@
 				82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */,
 				76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */,
 				D5A620251BD70C5F36817A13 /* PersonalDictSuggestionSheet.swift */,
+				88B0AD4B1E7237CEF175AEB8 /* SmartSwitchRunningAppsSheet.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -566,6 +569,7 @@
 				D7BEBA3029B05306751A69B3 /* EmbeddedBigrams.swift in Sources */,
 				28F11D31D04926F7FB4860B4 /* PredictionEngine.swift in Sources */,
 				EC46658134875A59BD2FCBC3 /* PredictionHUDWindow.swift in Sources */,
+				5501620FAC63ADA15F6A37B4 /* SmartSwitchRunningAppsSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -731,7 +735,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 17000;
+				CURRENT_PROJECT_VERSION = 17100;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -746,7 +750,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.7.0;
+				MARKETING_VERSION = 1.7.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -763,7 +767,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 17000;
+				CURRENT_PROJECT_VERSION = 17100;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
@@ -779,7 +783,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.7.0;
+				MARKETING_VERSION = 1.7.1;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;
 				PRODUCT_NAME = "$(TARGET_NAME)";

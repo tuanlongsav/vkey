@@ -17,11 +17,27 @@ final class SpellDecisionEngine {
   private let suggestionService: SuggestionService
 
   private let extremelyCommonVietnameseWords: Set<String> = [
-    "mẹ", "ăn", "đi", "cho", "tôi", "anh", "em", "gì", "là", "và", "có", "không", "ở", "này", 
-    "của", "đã", "được", "trong", "người", "với", "một", "để", "những", "khi", "đến", "về", 
-    "tại", "cũng", "ra", "năm", "nhiều", "từ", "việc", "đồng", "nhà", "làm", "đó", "hiện", 
+    "mẹ", "ăn", "đi", "cho", "tôi", "anh", "em", "gì", "là", "và", "có", "không", "ở", "này",
+    "của", "đã", "được", "trong", "người", "với", "một", "để", "những", "khi", "đến", "về",
+    "tại", "cũng", "ra", "năm", "nhiều", "từ", "việc", "đồng", "nhà", "làm", "đó", "hiện",
     "ông", "vào", "học", "bị", "trên", "thể", "theo", "trường"
   ]
+
+  /// 1.7.1: tập ký tự đặc trưng Việt (dấu thanh + nguyên âm râu/móc + đ).
+  /// Nếu transformed chứa ít nhất 1 ký tự này, user intent rõ ràng là VN
+  /// (đã gõ Telex/VNI để tạo dấu) → engine KHÔNG được restore raw.
+  private static let vnDiacriticChars: Set<Character> = Set(
+    "àáảãạăắằẳẵặâấầẩẫậ" +
+    "èéẻẽẹêếềểễệ" +
+    "ìíỉĩị" +
+    "òóỏõọôốồổỗộơớờởỡợ" +
+    "ùúủũụưứừửữự" +
+    "ỳýỷỹỵđ"
+  )
+
+  static func hasVietnameseDiacritic(_ word: String) -> Bool {
+    return word.lowercased().contains { vnDiacriticChars.contains($0) }
+  }
 
   init(
     lexiconManager: LexiconManager = .shared,
@@ -69,6 +85,15 @@ final class SpellDecisionEngine {
     }
 
     if Defaults[.englishAutoRestoreEnabled] {
+      // 1.7.1: defensive — nếu transformed chứa dấu thanh / ký tự đặc
+      // trưng Việt (ý, ô, ở, à, ã, đ, ư...), KHÔNG bao giờ restore raw.
+      // Bảo vệ trường hợp lexicon thiếu single-char syllable hoặc từ vay
+      // chưa được nhận diện. User intent rõ ràng đã gõ Telex/VNI để tạo
+      // dấu → keep VN luôn an toàn.
+      if Self.hasVietnameseDiacritic(transformedToken) {
+        return .keepVietnamese
+      }
+
       // 1. If transformed output is NOT a valid Vietnamese word
       if !isVietnameseWord {
         if rawToken.isASCIIAlphabeticWord, rawToken != transformedToken {
@@ -77,7 +102,7 @@ final class SpellDecisionEngine {
         if needsRecovery && rawIsEnglish {
           return .restoreRawEnglish(rawInput)
         }
-      } 
+      }
       // 2. If transformed output IS a valid Vietnamese word (checking policies for ambiguous words)
       else {
         if rawIsEnglish {

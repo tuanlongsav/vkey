@@ -59,6 +59,38 @@ VN_DIACRITIC_CHARS = set(
 # hiệu phụ trợ khi entry không có diacritic nhưng vẫn là VN syllable.
 VN_INITIAL_CLUSTERS = {"ng", "ngh", "nh", "kh", "ph", "th", "tr", "ch", "gh", "gi", "qu"}
 
+# 1.7.1 fix: single-char VN syllables hợp lệ. Trước đây bị drop hết bởi
+# rule `len(word) == 1` → user gõ `ý` (Telex `ys`) + Space hiện `ys` vì
+# SpellDecisionEngine không tìm thấy `ý` trong vnLexicon → fallback
+# restoreRawEnglish. 48 ký tự dưới đây là các nguyên âm Việt + dấu thanh
+# có thể xuất hiện độc lập trong văn bản. KHÔNG bao gồm Latin a-z (vẫn drop).
+VIETNAMESE_SINGLE_CHAR_SYLLABLES: set[str] = {
+    "à", "á", "ả", "ã", "ạ",
+    "ă", "ắ", "ằ", "ẳ", "ẵ", "ặ",
+    "â", "ấ", "ầ", "ẩ", "ẫ", "ậ",
+    "è", "é", "ẻ", "ẽ", "ẹ",
+    "ê", "ế", "ề", "ể", "ễ", "ệ",
+    "ì", "í", "ỉ", "ĩ", "ị",
+    "ò", "ó", "ỏ", "õ", "ọ",
+    "ô", "ố", "ồ", "ổ", "ỗ", "ộ",
+    "ơ", "ớ", "ờ", "ở", "ỡ", "ợ",
+    "ù", "ú", "ủ", "ũ", "ụ",
+    "ư", "ứ", "ừ", "ử", "ữ", "ự",
+    "ỳ", "ý", "ỷ", "ỹ", "ỵ",
+}
+
+# 1.7.1: Tier C loanwords whitelist — đồng bộ với
+# Tools/merge_underthesea_deep.py để các từ vay phổ biến không bị
+# audit_lexicon.py drop (vì ASCII không có dấu nhưng vẫn là VN loanword).
+TIER_C_ASCII_LOANWORDS: set[str] = {
+    # Chemistry / units
+    "acid", "axit", "kali", "oxy", "ion", "clo", "nitrat", "kalium",
+    "celsius", "fahrenheit",
+    # Science / tech
+    "alpha", "beta", "logic", "euclid", "radio", "video", "internet",
+    "diesel", "cassette", "apacthai",
+}
+
 
 def has_vn_diacritic(word: str) -> bool:
     return any(c in VN_DIACRITIC_CHARS for c in word.lower())
@@ -89,9 +121,16 @@ def audit(raw: set[str], baseline: set[str]) -> tuple[set[str], dict]:
     kept_from_baseline = 0
     kept_new = 0
 
+    kept_single_vn = 0
     for w in raw:
         word = unicodedata.normalize("NFC", w.strip().lower())
         if not word:
+            continue
+        # 1.7.1 fix: exception cho single-char VN syllables hợp lệ
+        # (à, á, ý, ô, ở...). Latin a-z vẫn bị drop.
+        if len(word) == 1 and word in VIETNAMESE_SINGLE_CHAR_SYLLABLES:
+            final.add(word)
+            kept_single_vn += 1
             continue
         if len(word) == 1:
             dropped_single.append(word)
@@ -103,14 +142,36 @@ def audit(raw: set[str], baseline: set[str]) -> tuple[set[str], dict]:
         if has_vn_diacritic(word) or has_vn_initial_cluster(word):
             final.add(word)
             kept_new += 1
+        elif word in TIER_C_ASCII_LOANWORDS:
+            # 1.7.1: keep curated Tier C loanwords (acid, axit, internet...)
+            final.add(word)
+            kept_new += 1
         else:
             dropped_no_vn_markers.append(word)
+
+    # 1.7.1 fix: đảm bảo TẤT CẢ 48 single-char VN syllables có mặt, kể cả
+    # khi input v7 đã drop hết. Cần thiết để vkey nhận biết `ý`, `ô`, `ở`...
+    # là VN word (tránh SpellDecisionEngine restoreRawEnglish).
+    injected_single_vn = 0
+    for ch in VIETNAMESE_SINGLE_CHAR_SYLLABLES:
+        if ch not in final:
+            final.add(ch)
+            injected_single_vn += 1
+
+    # 1.7.1: ensure Tier C loanwords có mặt (idempotent injection).
+    injected_tier_c = 0
+    for w in TIER_C_ASCII_LOANWORDS:
+        if w not in final:
+            final.add(w)
+            injected_tier_c += 1
 
     return final, {
         "before": len(raw),
         "after": len(final),
         "dropped_total": len(dropped_single) + len(dropped_no_vn_markers),
-        "dropped_single_char": len(dropped_single),
+        "dropped_single_char_latin": len(dropped_single),
+        "kept_single_char_vn": kept_single_vn,
+        "injected_single_char_vn": injected_single_vn,
         "dropped_no_vn_markers": len(dropped_no_vn_markers),
         "kept_from_baseline": kept_from_baseline,
         "kept_new": kept_new,
