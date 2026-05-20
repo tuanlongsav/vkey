@@ -2,6 +2,33 @@
 
 Tài liệu này là quy trình đóng gói/release để **không bị lỗi cập nhật qua Sparkle**.
 
+## 0) Tổng quan workflow release (v1.7.1+)
+
+Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự:
+
+```
+1.  Implement code changes + build verify clean
+2.  Bump version (MARKETING_VERSION + CURRENT_PROJECT_VERSION trong pbxproj)
+3.  xcodebuild Release clean build
+4.  Package DMG (hdiutil)
+5.  Sign Sparkle (Tools/sparkle_sign_update.sh) → capture edSignature + length
+6.  Update appcast.xml — thêm item mới ở ĐẦU danh sách (escape `&` → `&amp;` trong title)
+7.  Validate appcast (Tools/validate_appcast.sh) — XML lint pass
+8.  **CHANGELOG.md** — thêm section `## [x.y.z] - YYYY-MM-DD — "Title"` đầu file (sau credit block)
+9.  **🚨 README.md — RÀ SOÁT + CHỈNH SỬA** (NEW, BẮT BUỘC từ v1.7.1+):
+    - Bump version banner ở đầu README
+    - Cập nhật mô tả tính năng mới trong section "Chức năng"
+    - Update mô tả tab Settings nếu UI thay đổi
+    - Đảm bảo credit đầy đủ nếu có nguồn data/lib mới
+    - Xoá / sửa info outdated từ phiên bản trước
+10. Verify version + signature + length khớp giữa pbxproj ↔ appcast ↔ DMG file size
+11. Commit (`git add -A && git commit`) — message tóm tắt thay đổi
+12. **Ask user confirm trước khi push** (release là shared action, không tự push)
+13. `git push origin main`
+14. `gh release create vX.Y.Z vkey-X.Y.Z.dmg --title "..." --notes-file <CHANGELOG section>`
+15. Verify release asset uploaded với size khớp `length` trong appcast
+```
+
 ## 1) Nguyên tắc bắt buộc trước khi phát hành
 
 1. `CFBundleVersion` phải **tăng dần tuyệt đối** mỗi release (ví dụ `14100` -> `14200`).
@@ -81,8 +108,8 @@ Ví dụ:
 
 Trước khi publish appcast/release, bắt buộc check:
 
-1. Mở app hiện tại -> “Check for Updates...”:
-   - Không được báo “latest” nếu build local thấp hơn appcast mới.
+1. Mở app hiện tại -> "Check for Updates...":
+   - Không được báo "latest" nếu build local thấp hơn appcast mới.
 2. So sánh cặp version:
    - `Info.plist` (`CFBundleVersion`, `CFBundleShortVersionString`)
    - `appcast.xml` item đầu.
@@ -91,6 +118,26 @@ Trước khi publish appcast/release, bắt buộc check:
 4. So sánh `sparkle:edSignature` với output mới từ `sparkle_sign_update.sh`.
 5. Đảm bảo `SUFeedURL` trỏ đúng appcast public.
 6. Đảm bảo release asset đã tồn tại thật (không 404).
+
+## 5b) 🚨 Checklist README rà soát (v1.7.1+, BẮT BUỘC)
+
+Mọi release ship app binary đều phải rà soát README sau bước CHANGELOG:
+
+| Item | Kiểm tra |
+|------|----------|
+| **Version banner** | Line ~5: `**Phiên bản hiện tại: X.Y.Z — "Title"**` đã update? |
+| **Features list** (section "Chức năng") | Tính năng mới đã thêm? Tính năng deprecated đã xoá? Version annotation `(vX.Y.Z+)` đúng? |
+| **Tab descriptions** | Mỗi tab Settings (Chung / Smart Switch / Macro / Chính tả / Thống kê) có khớp UI thực tế? |
+| **Section restructure** | Nếu UI đã merge/move section, README phải phản ánh structure mới |
+| **Menu bar table** | Có item menu mới? Description khớp wording trong app? |
+| **Phím tắt section** | Phím tắt mới (vd Tab cho prediction) đã add? |
+| **Credits section** | Nếu có nguồn data/lib mới, đã credit đầy đủ với license? |
+| **Tools list** | Script mới (`audit_lexicon.py`, `merge_underthesea_deep.py`, ...) đã list? |
+| **LICENSE-DATA.md** | Nếu dataset thay đổi (size, source), đã sync số liệu? |
+| **Screenshots** | Nếu UI thay đổi nhiều, có cần re-capture? (optional, defer được) |
+| **Outdated wording** | Search "auto-promote", "luôn dùng tiếng Anh", "5 lần tự động", ... — cập nhật theo semantic mới |
+
+**Quy tắc**: README là API contract với user. Outdated README = user confused. Mỗi release commit phải có ít nhất 1 file `.md` thay đổi (CHANGELOG min, README nếu có UI change).
 
 ## 6) Các lỗi hay gặp và cách tránh
 

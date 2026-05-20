@@ -20,7 +20,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 > - **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của Luông Hiếu Thi ([@hieuthi](https://github.com/hieuthi)) — baseline 7,184 âm tiết tiếng Việt curated (v1.5.0+).
 > - **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của Vũ Anh ([@undertheseanlp](https://github.com/undertheseanlp)) — bổ sung 1,710 syllables (Hồ Ngọc Đức + tudientv + Wiktionary VN) qua audit + phonotactic filter, GPL-3.0 (v1.6.1+).
 >
-> Bộ từ điển hiện tại (v7): **8,894 syllables** đã được rà soát qua [Tools/audit_lexicon.py](Tools/audit_lexicon.py) + [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py).
+> Bộ từ điển hiện tại (v8 — v1.7.1+): **8,960 syllables** đã được rà soát qua [Tools/audit_lexicon.py](Tools/audit_lexicon.py) + [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py). v1.7.1 inject lại 66 single-char VN diacritics (`à`, `á`, `ý`, `ô`, `ở`...) đã bị drop nhầm ở v7.
 
 ---
 
@@ -54,7 +54,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Từ điển GitHub tự động cập nhật (v1.5.0+, cải tiến v1.6.2+)**: vkey tự fetch `lexicon-update.json` từ `raw.githubusercontent.com/tuanlongsav/vkey` (v1.6.2+ chuyển từ Contents API, không còn giới hạn 1 MB + bỏ rate-limit) mỗi 24h khi launch. **Nút "Cập nhật từ điển ngay" (v1.6.2+)** trong tab Chính tả để force kiểm tra ngay không đợi throttle. Hiện tại v7: 8,894 syllables tiếng Việt.
 - ✅ **Đề xuất Macro từ Thống kê (v1.5.5+, mở rộng v1.6.1+)**: vkey nhận diện các từ và cụm từ tiếng Việt bạn gõ ≥10 lần → đề xuất tạo macro với viết tắt tự sinh (vd "công ty → ct", "kính gửi anh → kga").
 - ✅ **Sheet "Tự học từ Thống kê" (v1.7.0+)**: bấm trong tab Smart Switch để preview các app vkey gợi ý đổi state, áp dụng hàng loạt. User-set entries (🔒) tự động bị skip.
-- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, kích thước mới v1.7.0+)**: drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở (autosave). **v1.7.0**: default 480×720 (giảm bề ngang, tăng chiều dọc) để hiển thị hết content cho hầu hết tab không cần scroll.
+- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, kích thước mới v1.7.1+)**: drag góc/cạnh để mở rộng; kích thước được nhớ giữa các lần mở (autosave). **v1.7.1**: default 360×720 (giảm 25% bề ngang) cho compact UI, content auto-truncate khi cần. Vẫn resize lên rộng tuỳ ý.
 - ✅ **3 giao diện ứng dụng (v1.5.5+)**: chọn ở menu bar → "Giao diện ứng dụng": **Mặc định** (SF Symbol đơn giản), **3D bóng bẩy** (gradient + double shadow), **Emoji vui tươi** (Unicode emoji icons).
 - ✅ **Diagnostic export Stats (v1.6.1+)**: nút "Xuất chẩn đoán Stats" trong tab Thống kê → ghi file text mô tả tình trạng files + counters → gửi maintainer khi báo lỗi.
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
@@ -166,10 +166,11 @@ Tab này được **redesign hoàn toàn ở v1.7.0** — thay list 1-chiều "l
 | Hiểu state mỗi app (v1.7.0+) | Mỗi app trong list có badge state: 🇻🇳 **VN** (gõ Tiếng Việt) / 🇺🇸 **EN** (gõ Tiếng Anh) / **Tắt** (không dùng vkey). Icon nguồn: 👤 = bạn đặt thủ công, 🤖 = vkey tự học |
 | Đổi state thủ công | Click "**...**" trên row app → popover chọn 1 trong 3 state. Lưu là source=👤 (lock khỏi auto-learn) |
 | Reset về auto-learn | Click "..." → "Để vkey tự học (auto-learn)" → xoá entry; lần check tuần sau sẽ re-evaluate |
-| Thêm app mới | Nhập Bundle ID → bấm **"Thêm"** (mặc định state = 🇺🇸 EN + source=👤) |
-| Xoá app | Chọn row → bấm **"Xoá"** |
+| Thêm app mới (paste) | Nhập Bundle ID → bấm **"Thêm"** (mặc định state = 🇺🇸 EN + source=👤) |
+| **Thêm app từ list đang chạy (v1.7.1+)** | Button **"Chọn từ ứng dụng đang chạy"** → sheet hiển thị các app đang mở (filter `activationPolicy == .regular`). Click 1 app để thêm với state mặc định 🇺🇸 EN. Có search field filter theo tên/bundle ID |
+| **Xoá app (v1.7.1+)** | Click 🗑 inline trên mỗi row trong list (đỏ, sau button "Sửa"). Xoá ngay, không cần confirm — có thể re-add nếu lỡ |
 | Tự học từ Thống kê | Button **"Tự học từ Thống kê"** → sheet preview các app vkey gợi ý đổi state. Áp dụng hàng loạt; entries có 🔒 (user-set) tự skip |
-| Lấy Bundle ID | Mở Terminal: `osascript -e 'id of app "Tên Ứng Dụng"'` |
+| Lấy Bundle ID thủ công | Mở Terminal: `osascript -e 'id of app "Tên Ứng Dụng"'` (chỉ cần khi app không có trong list đang chạy) |
 
 **Auto-learn rules** (v1.7.0+, chạy 1 lần/tuần khi launch):
 - App phải có ≥5 ngày dataset trong tuần này (user gõ trong app)
@@ -198,17 +199,18 @@ Tab này được **tinh gọn liên tục qua các version**:
 - **v1.6.1**: chuyển toggle "Đoán từ tiếp theo" sang tab Chung.
 - **v1.6.2**: thêm Section "Từ điển từ GitHub" với nút cập nhật thủ công.
 - **v1.7.0**: gộp 3 Section → 1 Section đổi tên **"Cấu hình kiểm tra chính tả"**. Còn 5 Section thay vì 7.
+- **v1.7.1**: gộp "Gợi ý sửa lỗi chính tả" + "Tự động sửa khi tin cậy cao" vào CÙNG Section "Cấu hình kiểm tra chính tả". Còn **4 Section** thay vì 5.
 
-5 Section hiện tại:
+4 Section hiện tại (v1.7.1):
 
 1. **Phím tắt thông minh** — Master quick-enable toggle gộp.
-2. **Cấu hình kiểm tra chính tả** (đổi tên v1.7.0) — gồm:
+2. **Cấu hình kiểm tra chính tả** (gộp 4 group v1.7.1) — gồm:
    - Toggle "Kiểm tra chính tả" (gộp luôn "Kiểm tra trong câu" từ v1.7.0)
+   - Toggle "Gợi ý sửa lỗi chính tả" + sub-toggle "Tự động sửa khi tin cậy cao" (mới merge v1.7.1)
    - Toggle "Sử dụng từ điển cá nhân" + button "Quản lý từ điển cá nhân"
    - Toggle "Tự động compute đề xuất hàng tuần" + button "Xem đề xuất pending"
-3. **Gợi ý & Sửa lỗi chính tả** — `suggestionEnabled` + `autoApplyHighConfidenceSuggestion`.
-4. **Tự động khôi phục tiếng Anh (Space Restore)** — `englishAutoRestoreEnabled` + restorePolicy + `useEnVnReference`.
-5. **Từ điển từ GitHub** — version info + nút "Cập nhật từ điển ngay".
+3. **Tự động khôi phục tiếng Anh (Space Restore)** — `englishAutoRestoreEnabled` + restorePolicy + `useEnVnReference`.
+4. **Từ điển từ GitHub** — version info + nút "Cập nhật từ điển ngay".
 
 | Mục | Tác dụng |
 |-----|---------|
@@ -294,7 +296,7 @@ vkey tích hợp dữ liệu từ điển song ngữ Anh-Việt từ các nguồ
 - **English Wiktionary** qua **[Wiktextract](https://github.com/tatuylonen/wiktextract)** + **[Kaikki.org](https://kaikki.org)** — Dữ liệu cặp từ Anh↔Việt (`en_vn_mapping`). Phân phối lại theo **CC BY-SA 4.0**. Tích hợp từ **v1.5.0**.
 - **[wordfreq](https://github.com/rspeer/wordfreq)** © Robyn Speer — Bảng tần suất từ tiếng Anh để chọn lọc `english[]`. MIT license cho tool, CC BY-SA 4.0 cho phần data nguồn Wiktionary.
 
-Tổng `vietnamese[]` hiện tại (v7): **8,894 syllables** đã chuẩn hoá NFC + audit. Dữ liệu phái sinh nằm trong [`lexicon-update.json`](lexicon-update.json) (commit lên repo, app fetch qua `raw.githubusercontent.com`) và được phát hành lại theo **CC BY-SA 4.0** (data) song song với **GPL-3.0** (code). Xem chi tiết tại [`LICENSE-DATA.md`](LICENSE-DATA.md).
+Tổng `vietnamese[]` hiện tại (v8 — v1.7.1+): **8,960 syllables** đã chuẩn hoá NFC + audit, bao gồm 66 single-char Vietnamese diacritics (`à`, `á`, `ý`, `ô`, `ở`...) đã restore ở v1.7.1 sau khi bị drop nhầm v7. Dữ liệu phái sinh nằm trong [`lexicon-update.json`](lexicon-update.json) (commit lên repo, app fetch qua `raw.githubusercontent.com`) và được phát hành lại theo **CC BY-SA 4.0** (data) song song với **GPL-3.0** (code). Xem chi tiết tại [`LICENSE-DATA.md`](LICENSE-DATA.md).
 
 ### Tooling build/maintain lexicon
 
