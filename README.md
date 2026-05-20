@@ -60,32 +60,25 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Diagnostic export Stats (v1.6.1+)**: nút "Xuất chẩn đoán Stats" trong tab Thống kê → ghi file text mô tả tình trạng files + counters → gửi maintainer khi báo lỗi.
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
 
-## Hình ảnh giao diện
+## Hình ảnh giao diện (v1.7.10)
 
-### Thao tác nhanh & HUD
+### Menu bar dropdown
 
 <p align="center">
-  <img src="images/menubar-menu.png" width="240" alt="Dropdown menu bar">
-  <img src="images/hud-toggle.png" width="380" alt="HUD Chuyển đổi bộ gõ">
-  <img src="images/reinstall-alert.png" width="220" alt="Thông báo cài lại">
+  <img src="images/menubar-menu.png" width="260" alt="Menu bar dropdown — chuyển đổi ngôn ngữ, kiểu gõ, truy cập Cài đặt">
 </p>
 
 ### Các tab Cài đặt
 
 <p align="center">
-  <img src="images/general-settings.png" width="280" alt="Tab Chung">
-  <img src="images/smart-switch-settings.png" width="280" alt="Tab Smart Switch">
-  <img src="images/macro-settings.png" width="280" alt="Tab Macro">
+  <img src="images/general-settings.png" width="280" alt="Tab Chung — kiểu gõ, đoán từ, kích hoạt">
+  <img src="images/smart-switch-settings.png" width="280" alt="Tab Smart Switch — per-app language">
+  <img src="images/macro-settings.png" width="280" alt="Tab Macro — viết tắt → cụm dài">
 </p>
 
 <p align="center">
-  <img src="images/spellcheck-settings.png" width="280" alt="Tab Chính tả (phần trên)">
-  <img src="images/spellcheck-settings-bottom.png" width="280" alt="Tab Chính tả (phần dưới)">
-  <img src="images/statistics-settings.png" width="280" alt="Tab Thống kê & Sao lưu">
-</p>
-
-<p align="center">
-  <img src="images/personal-dict-editor.png" width="320" alt="Editor Từ điển cá nhân (Allow / Keep / Deny)">
+  <img src="images/spellcheck-settings.png" width="280" alt="Tab Chính tả — kiểm tra, đề xuất, từ điển cá nhân">
+  <img src="images/statistics-settings.png" width="280" alt="Tab Thống kê & Sao lưu — backup/restore + thống kê tuần">
 </p>
 
 ## Cài đặt
