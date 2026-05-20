@@ -37,6 +37,37 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.5] - 2026-05-20 — "Tone Cancel Fix"
+
+2 fix dứt điểm hậu 1.7.4: tone-cancel "ả + r + m" + thu hẹp Settings.
+
+### 🚨 Fix tone-cancel bị English doubled-tone preservation chặn (arrm)
+
+User feedback v1.7.4: "tôi gõ ả rồi gõ thêm r để bỏ dấu hỏi và gõ m thì hiện thành arrm phải gõ ảm rồi ấn esc thì mới ra arm".
+
+**Root cause**: `WordBuffer.push` có 2 nhánh "Doubled Tone Mark Preservation" (line 272) và "Instantaneous English word restoration" (line 286). Khi user gõ A → R (Ả) → R (cancel hỏi) → M:
+- Buffer keys = [a, r, r]. keysStr = "arr". `isEnglishWord("arr") = true` (lexicon có "arr" như từ tiếng Anh).
+- Nhánh 272 kick in: lock raw "arr" + stopProcessing.
+- Gõ M → nhánh 221 (stopProcessing + !wasOnlyEnglishRestored) append raw → "arrm".
+
+**Fix**: detect tone-cancel intent. Nếu state đã có tone applied AND char là tone key (s/f/r/x/j) → user đang xoá dấu → KHÔNG kích nhánh English preservation. Engine.push tiếp theo sẽ toggle tone off (state.withTone same-tone → .bang).
+
+**Trade-off**: từ tiếng Anh hiếm như "pass"/"arr"/"ass" gõ tuần tự bị mất 1 ký tự (→ "pas"/"ar"/"as"). "off"/"class"/"staff" không ảnh hưởng (đi qua nhánh khác: English prefix "of" lock sớm hoặc impossible cluster "cl"/"st").
+
+**Cũng update `SpellDecisionEngine.isLikelyEnglishAcronym`**: thêm `rr/ss/ff/xx/jj` vào danh sách double patterns không-acronym → "ARRM"/"OFFM" không bị restore raw sai khi commit.
+
+[vkey/App/InputProcessor.swift](vkey/App/InputProcessor.swift:271) — `isPossibleToneCancel` guard tại 2 chỗ.
+[vkey/Input/SpellDecisionEngine.swift](vkey/Input/SpellDecisionEngine.swift) — mở rộng `vnDoublePatterns`.
+
+### Settings window: thu hẹp default 180→160 + cleanup autosave cũ
+
+- `minWidth` 5 view files + AppDelegate: 180 → **160** (chỉ đủ chữ theo bề ngang).
+- Bump autosave name `VkeySettingsWindow.v174` → `VkeySettingsWindow.v175` để user upgrade từ 1.7.4 mở cửa sổ ở default 160×720 lần đầu.
+- Cleanup các key orphan trong `NSUserDefaults`: `"NSWindow Frame VkeySettingsWindow"`, `"NSWindow Frame VkeySettingsWindow.v174"`.
+- Vẫn `.resizable` styleMask + `setFrameAutosaveName` → user kéo góc/cạnh tuỳ chỉnh, kích thước mới được nhớ.
+
+[vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift:257) — `windowDidBecomeKey`.
+
 ## [1.7.4] - 2026-05-20 — "Clean Stats"
 
 4 fix + 1 redesign nhỏ tiếp cải tiến tab Thống kê và cửa sổ Settings, kèm fix bug gõ ARM/USA/API.

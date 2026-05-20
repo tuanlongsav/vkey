@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.5 — "Tone Cancel Fix"</title>
+      <sparkle:version>17500</sparkle:version>
+      <sparkle:shortVersionString>1.7.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 16:55:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.5/vkey-1.7.5.dmg"
+        sparkle:edSignature="TnlI7XPz25YcgH59YUOo0k5kwZtcPeQZ3MjpF6JEg4e4PW6Fmntx01UlLfNbGdvOat1bP5hnhx8OJNsIgwlIAQ=="
+        length="5936115"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.5 — "Tone Cancel Fix":</h2>
+        <p>2 fix dứt điểm hậu 1.7.4.</p>
+        <ul>
+          <li><strong>🚨 Sửa bug gõ "ả + r + m" hiện thành "arrm"</strong>: tone-cancel (gõ tone key 2 lần để xoá dấu) trước đây bị English-word "arr" preservation chặn → vkey lock raw "arr" thay vì xoá dấu. Fix: detect tone-cancel intent (state có tone applied + char là tone key) → skip English preservation, để engine.push toggle tone off. Gõ "ả + r + m" giờ ra "am" như mong muốn.</li>
+          <li><strong>Trade-off</strong>: từ tiếng Anh hiếm "pass"/"arr"/"ass" gõ tuần tự bị mất 1 ký tự (→ "pas"/"ar"/"as"). "off"/"class"/"staff" không ảnh hưởng (đi qua đường khác).</li>
+          <li><strong>Settings window: thu hẹp default 180→160</strong>: minWidth giảm thêm 11% — chỉ đủ chữ theo bề ngang. Bump autosave name + cleanup orphan keys trong NSUserDefaults → user upgrade từ 1.7.4 mở cửa sổ ở default 160×720 lần đầu. Vẫn resize tự do qua góc/cạnh.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.4 — "Clean Stats"</title>
       <sparkle:version>17400</sparkle:version>
       <sparkle:shortVersionString>1.7.4</sparkle:shortVersionString>

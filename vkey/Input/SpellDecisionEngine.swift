@@ -51,7 +51,13 @@ final class SpellDecisionEngine {
       return false
     }
     let lower = raw.lowercased()
-    let vnDoublePatterns = ["dd", "aa", "oo", "ee", "uu", "ww", "uw", "ow", "aw"]
+    // VN typing markers (mũ, móc, đ) + tone-cancel patterns (rr/ss/ff/xx/jj
+    // = user double-tap để xoá tone). Có bất kỳ pattern nào → KHÔNG phải
+    // acronym, để các nhánh khác xử lý (keepRaw cho doubled-tone).
+    let vnDoublePatterns = [
+      "dd", "aa", "oo", "ee", "uu", "ww", "uw", "ow", "aw",
+      "rr", "ss", "ff", "xx", "jj"
+    ]
     if vnDoublePatterns.contains(where: { lower.contains($0) }) {
       return false
     }

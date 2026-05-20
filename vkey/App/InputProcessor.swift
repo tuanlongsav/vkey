@@ -268,14 +268,22 @@ struct WordBuffer {
       return
     }
 
+    // 1.7.5: detect tone-cancel intent (Telex double-tap tone key xoá dấu).
+    // Nếu state đang có tone applied AND char là tone key → user xoá dấu,
+    // KHÔNG được lock raw English (vd "ả" + "r" để cancel hỏi → "a" thay vì
+    // bị giữ "arr"). Engine.push tiếp theo sẽ toggle tone off.
+    let telexToneKeys: Set<Character> = ["s","S","f","F","r","R","x","X","j","J"]
+    let isPossibleToneCancel = wordState.dauThanh != .bang && telexToneKeys.contains(char)
+
     // Doubled Tone Mark Preservation: if raw keys contains consecutive doubled tone marks, preserve it raw if it forms an English word
     if doubledTones.contains(where: { keysStr.contains($0) }),
-       LexiconManager.shared.isEnglishWord(keysStr) {
+       LexiconManager.shared.isEnglishWord(keysStr),
+       !isPossibleToneCancel {
       stopProcessing = true
       stoppedByEnglishWord = true
       transformed = String(keys)
       wordState = wordState.push(char)
-      
+
       if !snapshot.stopProcessing {
         lastValidSnapshot = snapshot
       }
@@ -283,7 +291,8 @@ struct WordBuffer {
     }
 
     // Instantaneous English word restoration: if the raw keys form a known English word, preserve it raw
-    if LexiconManager.shared.isEnglishWord(keysStr) {
+    if LexiconManager.shared.isEnglishWord(keysStr),
+       !isPossibleToneCancel {
       stopProcessing = true
       stoppedByEnglishWord = true
       transformed = String(keys)

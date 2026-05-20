@@ -254,9 +254,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
   /// 1.6.1: Settings window từ SwiftUI Settings scene mặc định fixed-size.
   /// Khi vừa key, áp resizable + min size + autosave frame để user resize
   /// được + remember kích thước giữa các lần mở.
-  /// 1.7.4: bump autosave name để reset frame cũ từ v1.7.2 (270px) →
-  /// default mới 180×720 cho user nâng cấp. Tên cũ "VkeySettingsWindow"
-  /// bị orphan trong NSUserDefaults nhưng không ảnh hưởng.
+  /// 1.7.5: minWidth 180 → 160 (chỉ đủ chữ theo bề ngang). Bump autosave
+  /// name v174 → v175 + cleanup các key cũ trong NSUserDefaults để user
+  /// upgrade từ 1.7.x đều mở cửa sổ ở default 160×720 lần đầu, vẫn
+  /// resize được tự do qua góc/cạnh sau đó.
   @objc func windowDidBecomeKey(_ note: Notification) {
     guard let win = note.object as? NSWindow else { return }
     // Settings window có title "vkey Settings" (English locale) hoặc local
@@ -270,16 +271,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // Idempotent — chỉ apply 1 lần.
     if !win.styleMask.contains(.resizable) {
       win.styleMask.insert(.resizable)
-      win.minSize = NSSize(width: 180, height: 720)
+      win.minSize = NSSize(width: 160, height: 720)
       if win.frameAutosaveName.isEmpty {
-        let autosaveName = "VkeySettingsWindow.v174"
+        // Dọn key autosave cũ để tránh tích luỹ orphan trong NSUserDefaults.
+        let legacyAutosaveKeys = [
+          "NSWindow Frame VkeySettingsWindow",
+          "NSWindow Frame VkeySettingsWindow.v174",
+        ]
+        for key in legacyAutosaveKeys {
+          UserDefaults.standard.removeObject(forKey: key)
+        }
+        let autosaveName = "VkeySettingsWindow.v175"
         let defaultsKey = "NSWindow Frame \(autosaveName)"
         let hasSavedFrame = UserDefaults.standard.object(forKey: defaultsKey) != nil
         win.setFrameAutosaveName(autosaveName)
         if !hasSavedFrame {
-          // Force default opening size = 180×720 cho cả user mới và
-          // user upgrade (không có frame saved dưới key v174).
-          win.setContentSize(NSSize(width: 180, height: 720))
+          // Force default opening size = 160×720 cho user mới và user upgrade
+          // (chưa có frame saved dưới key v175).
+          win.setContentSize(NSSize(width: 160, height: 720))
         }
       }
     }

@@ -280,7 +280,7 @@ struct GeneralView: View {
             .padding(.bottom, 14)
             .frame(maxWidth: .infinity)
         }
-        .frame(minWidth: 180, minHeight: 720)
+        .frame(minWidth: 160, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -500,7 +500,7 @@ struct SpellCheckView: View {
             .formStyle(.grouped)
             .scrollDisabled(false)
         }
-        .frame(minWidth: 180, minHeight: 720)
+        .frame(minWidth: 160, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingPersonalDictEditor) {
             PersonalDictionaryEditorView()

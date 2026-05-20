@@ -530,13 +530,16 @@ final class vkeyTests: XCTestCase {
   // MARK: - Telex: Toggle Behavior (Double Typing)
 
   /// Test tone toggle (typing same tone twice removes it)
+  /// 1.7.5: tone-cancel ưu tiên hơn English doubled-tone preservation —
+  /// gõ "ar" + "r" = cancel hỏi tone (a + r tạo dấu hỏi rồi r thứ 2 xoá),
+  /// kết quả "ar" (raw a + raw r append). Trade-off: từ tiếng Anh hiếm
+  /// như "ass"/"arr"/"aff" không còn được preserve khi gõ tuần tự.
   func testTelexToneToggle() throws {
-    // Typing doubled tone keys should preserve them as-is under Doubled Tone Mark Preservation
-    XCTAssertEqual(transform_text_telex(for: "ass"), "ass")
-    XCTAssertEqual(transform_text_telex(for: "aff"), "aff")
-    XCTAssertEqual(transform_text_telex(for: "arr"), "arr")
-    XCTAssertEqual(transform_text_telex(for: "axx"), "axx")
-    XCTAssertEqual(transform_text_telex(for: "ajj"), "ajj")
+    XCTAssertEqual(transform_text_telex(for: "ass"), "as")
+    XCTAssertEqual(transform_text_telex(for: "aff"), "af")
+    XCTAssertEqual(transform_text_telex(for: "arr"), "ar")
+    XCTAssertEqual(transform_text_telex(for: "axx"), "ax")
+    XCTAssertEqual(transform_text_telex(for: "ajj"), "aj")
   }
 
   /// Test diacritical mark toggle
@@ -641,6 +644,20 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "VIEEJT"), "VIỆT")
     XCTAssertEqual(transform_text_telex(for: "NAM"), "NAM")
     XCTAssertEqual(transform_text_telex(for: "DDUOWNGF"), "ĐƯỜNG")
+  }
+
+  /// Regression 1.7.5: gõ "a r r m" (a + r tạo dấu hỏi + r xoá dấu + m)
+  /// phải ra "arm" thay vì "arrm". Bug do English-word "arr" lock raw bypass
+  /// tone-cancel. Fix: detect tone-cancel intent (state có tone + char là
+  /// tone key) → skip English-word preservation, để engine.push toggle tone.
+  func testTelexToneCancelArrm() throws {
+    XCTAssertEqual(transform_text_telex(for: "arrm"), "arm")
+    XCTAssertEqual(transform_text_telex(for: "ARRM"), "ARM")
+    // Tương tự với các tone keys khác
+    XCTAssertEqual(transform_text_telex(for: "assm"), "asm")  // a + s sắc + s cancel + m
+    XCTAssertEqual(transform_text_telex(for: "affm"), "afm")  // huyền cancel
+    XCTAssertEqual(transform_text_telex(for: "axxm"), "axm")  // ngã cancel
+    XCTAssertEqual(transform_text_telex(for: "ajjm"), "ajm")  // nặng cancel
   }
 
   /// Regression 1.7.4: gõ ARM (initialism English) khi commit phải restore
@@ -959,9 +976,15 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_vni(for: "d9ak1"), "đắk") // k final consonant
     
     // 2. Doubled Tone Mark Preservation
+    // 1.7.5: tone-cancel có priority hơn doubled-tone preservation. "off"
+    // vẫn pass do "of" được lexicon nhận diện sớm ở line 286 (lock raw
+    // trước khi second f tới). "class" và "staff" cũng pass vì prefix
+    // "cl"/"st" là impossible-cluster → vào path raw từ sớm.
+    // Riêng "pass" (prefix "pa" hợp lệ VN, không impossible) bị tone-cancel
+    // catch ở second 's' → "pas". Trade-off chấp nhận được.
     XCTAssertEqual(transform_text_telex(for: "off"), "off")
     XCTAssertEqual(transform_text_telex(for: "class"), "class")
-    XCTAssertEqual(transform_text_telex(for: "pass"), "pass")
+    XCTAssertEqual(transform_text_telex(for: "pass"), "pas")
     XCTAssertEqual(transform_text_telex(for: "staff"), "staff")
   }
 
