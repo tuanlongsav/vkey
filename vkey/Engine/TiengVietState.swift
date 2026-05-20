@@ -221,7 +221,16 @@ extension TiengVietState {
       let chuCaiDau = chuKhongDau.first,
       chuCaiDau == "d" || chuCaiDau == "D",
       !gachD,
-      triggerChars.contains(char)
+      triggerChars.contains(char),
+      // 1.7.7: gate "late D" toggle chặt hơn — chỉ trigger khi syllable
+      // structure đã hoàn chỉnh (có vowel + không còn conLai/leftover).
+      // Ngăn gạch D toggle sai trong giữa từ chưa hoàn chỉnh.
+      // Vd "dungf" (telex của "dùng"): sau khi gõ "dung", thanhPhanTieng
+      // có phuAmDau=d, vowel=u, phuAmCuoi=ng, conLai=[] — đáng lẽ KHÔNG
+      // được trigger gạch D khi user gõ "f" sau. Trước fix, mọi char trong
+      // triggerChars sẽ toggle dù không phải "d" cuối từ.
+      thanhPhanTieng.conLai.isEmpty,
+      !thanhPhanTieng.nguyenAm.isEmpty
     else { return nil }
     return withGachD()
   }

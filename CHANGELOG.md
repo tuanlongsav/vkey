@@ -37,6 +37,66 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.7] - 2026-05-20 — "Compact Window & Right Imports"
+
+4 fix sau v1.7.6: cửa sổ Settings 432×1080 compact + drag tự do, Import semantics đúng theo user intent, fix bug "d→đ", Prediction HUD lên trên + Tab smart-detect.
+
+### Settings window: 432×1080 default + tab labels rút gọn
+
+v1.7.6 thêm `.windowResizability(.contentMinSize)` nhưng vẫn quá to vì tab bar 5 labels dài (`"Smart Switch"`, `"Thống kê & Sao lưu"`) buộc content min ≥600px. Thiếu `.defaultSize` cũng làm window mở ở content's ideal size.
+
+**Fix**: 
+- Thêm `.defaultSize(width: 432, height: 1080)` modifier ([vkeyApp.swift](vkey/vkeyApp.swift)).
+- Rút gọn tab labels: `"Smart Switch"` → `"Smart"`, `"Thống kê & Sao lưu"` → `"Sao lưu"`.
+- 5 view files: minWidth/Height `320/480` → `200/720` (cho phép drag thu nhỏ width thêm).
+- Bump autosave name `v176` → `v177` + cleanup orphan keys → user nâng cấp mở fresh ở 432×1080.
+
+### Import semantics đúng theo user intent
+
+User feedback: "Ghi đè" trước đây không thật sự xoá data default; "Kết hợp" với data trùng nhau dùng existing thay vì imported.
+
+**Fix**:
+- **Ghi đè (`replaceLists: true`)**:
+  - **Macros**: clear sạch defaults, set bằng imported (trước đây append vào existing → duplicate). [UserDataMigration.swift:449](vkey/App/UserDataMigration.swift:449).
+  - **Stats**: gọi `UsageStatistics.shared.clearAll()` trước `restoreFromBackup` để xoá toàn bộ tuần hiện có.
+- **Kết hợp (`replaceLists: false`) — file thắng khi trùng**:
+  - **Macros**: imported `to` overrides existing same `from`.
+  - **mergeStringDict** (perAppOverride): imported value thắng khi trùng key.
+  - **appSmartSwitchConfigs**: imported config thắng khi trùng bundle id.
+  - **userBigrams/userTrigrams**: imported count overrides khi trùng (prev, next).
+  - Lists (allow/keep/deny) union không cần winner (cùng string không có conflict).
+- **Dialog text**: `"Gộp thêm (file thắng nếu trùng)"` vs `"Ghi đè toàn bộ (xoá data hiện tại)"`.
+
+### Fix bug "d → đ" (gõ d hay hiện đ)
+
+User: "gõ dùng nhưng hiện đùng, xoá nhiều lần mới gõ đúng d được".
+
+Root cause: `tryLateDToggle` ([TiengVietState.swift](vkey/Engine/TiengVietState.swift)) trigger quá rộng — chỉ check `chuKhongDau.count >= 3 && first == 'd' && !gachD && trigger char là 'd'`. Không validate syllable structure → khi user gõ thêm 'd' trong/cuối từ chưa hoàn chỉnh, gạch D toggle on sai.
+
+**Fix**: thêm 2 guards — chỉ trigger khi `conLai.isEmpty` (không còn leftover chars) AND `!nguyenAm.isEmpty` (có vowel). Ngăn gạch D toggle sai trong giữa từ chưa hoàn chỉnh, vẫn giữ behavior đúng cho cases như `"dinjhd"` → `"định"`.
+
+### Prediction HUD lên trên dòng + Tab smart-detect
+
+User feedback: HUD dưới dòng che cursor; Tab cần gõ Space trước rồi mới Tab, không tiện.
+
+**Fix**:
+- **HUD position** ([PredictionHUDWindow.swift:80](vkey/Platform/PredictionHUDWindow.swift:80)): đổi từ `caret.maxY` (dưới) → `caret.minY` (trên). HUD giờ hiển thị ngay trên dòng đang gõ.
+- **Tab smart-detect** ([InputProcessor.swift:582](vkey/App/InputProcessor.swift:582)):
+  - **Buffer sạch** (sau commit qua Space): Tab chèn `" prediction"` (space + word).
+  - **Buffer có từ chưa commit**: Tab commit từ (emit space qua spell decision) rồi chèn prediction.
+  - User có thể gõ "viet" + Tab → "việt Nam" (commit + insert prediction trong 1 phím).
+
+### Files
+
+- [vkey/vkeyApp.swift](vkey/vkeyApp.swift) — `.defaultSize` + tab labels rút gọn.
+- [vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift:261) — autosave name v177.
+- 5 view files — frame minWidth/Height 200/720.
+- [vkey/App/UserDataMigration.swift](vkey/App/UserDataMigration.swift) — macros logic, dict/configs imported-wins, stats clearAll on replace.
+- [vkey/View/StatisticsView.swift](vkey/View/StatisticsView.swift:407) — dialog text mới.
+- [vkey/Engine/TiengVietState.swift](vkey/Engine/TiengVietState.swift:218) — `tryLateDToggle` guards.
+- [vkey/Platform/PredictionHUDWindow.swift](vkey/Platform/PredictionHUDWindow.swift:80) — HUD lên trên.
+- [vkey/App/InputProcessor.swift](vkey/App/InputProcessor.swift:582) — Tab smart-detect.
+
 ## [1.7.6] - 2026-05-20 — "Backup Complete & Resize Done"
 
 2 fix lớn sau v1.7.5: cửa sổ Settings auto-fit + resize tự do; Export/Import lossless toàn bộ user state (9 fields mới + stats raw).

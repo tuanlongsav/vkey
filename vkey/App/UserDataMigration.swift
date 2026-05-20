@@ -447,20 +447,27 @@ enum UserDataMigration {
     mergeStringList(.userDenyWords, export.userDenyWords,
                     replace: replaceLists, label: "Deny words", into: &changes)
 
-    // Macros — keyed by `from` for de-dup
+    // 1.7.7: macros — "Ghi đè" clear+replace toàn bộ; "Kết hợp" union với
+    // imported wins khi trùng `from`. Trước đây bug: replace mode append
+    // imported vào existing default (duplicate); merge mode existing wins.
     if let importMacros = export.macros {
-      var current = Defaults[.macros]
-      let existing = Set(current.map { $0.from })
-      var added = 0
-      for seed in importMacros {
-        if seed.from.isEmpty { continue }
-        if existing.contains(seed.from) && !replaceLists { continue }
-        current.append(Macro(from: seed.from, to: seed.to))
-        added += 1
-      }
-      if added > 0 {
-        Defaults[.macros] = current
-        changes.append("Macros: +\(added)")
+      let imported = importMacros
+        .filter { !$0.from.isEmpty }
+        .map { Macro(from: $0.from, to: $0.to) }
+      if replaceLists {
+        if Defaults[.macros] != imported {
+          Defaults[.macros] = imported
+          changes.append("Macros: \(imported.count) (overwrite)")
+        }
+      } else {
+        var current = Defaults[.macros]
+        let importedFroms = Set(imported.map { $0.from })
+        current.removeAll { importedFroms.contains($0.from) }
+        current.append(contentsOf: imported)
+        if Defaults[.macros] != current {
+          Defaults[.macros] = current
+          changes.append("Macros: +\(imported.count) (merge, file ưu tiên)")
+        }
       }
     }
     applyScalar(.macroEnabled, export.macroEnabled, label: "Bật macro")
@@ -495,6 +502,7 @@ enum UserDataMigration {
                 label: "Tự sao lưu khi cập nhật")
 
     // 1.7.6+: per-app Smart Switch configs (critical — 1.7.0+ 3-state).
+    // 1.7.7: merge mode đảo sang imported wins (file thắng khi trùng bundle id).
     if let configs = export.appSmartSwitchConfigs {
       if replaceLists {
         if Defaults[.appSmartSwitchConfigs] != configs {
@@ -503,19 +511,20 @@ enum UserDataMigration {
         }
       } else {
         var current = Defaults[.appSmartSwitchConfigs]
-        var added = 0
-        for (key, value) in configs where current[key] == nil {
+        var changed = 0
+        for (key, value) in configs where current[key] != value {
           current[key] = value
-          added += 1
+          changed += 1
         }
-        if added > 0 {
+        if changed > 0 {
           Defaults[.appSmartSwitchConfigs] = current
-          changes.append("Smart Switch per-app: +\(added)")
+          changes.append("Smart Switch per-app: +\(changed) (merge, file ưu tiên)")
         }
       }
     }
 
-    // 1.7.6+: bigram/trigram (prediction learning data) — merge: cộng counts.
+    // 1.7.6+: bigram/trigram (prediction learning data).
+    // 1.7.7: merge mode đảo sang imported wins — file thắng khi trùng (prev, next).
     if let bigrams = export.userBigrams {
       if replaceLists {
         if Defaults[.userBigrams] != bigrams {
@@ -524,20 +533,20 @@ enum UserDataMigration {
         }
       } else {
         var current = Defaults[.userBigrams]
-        var added = 0
+        var changed = 0
         for (prev, nextMap) in bigrams {
           var existingNext = current[prev] ?? [:]
           for (next, count) in nextMap {
-            if existingNext[next] == nil {
+            if existingNext[next] != count {
               existingNext[next] = count
-              added += 1
+              changed += 1
             }
           }
           current[prev] = existingNext
         }
-        if added > 0 {
+        if changed > 0 {
           Defaults[.userBigrams] = current
-          changes.append("Bigram dự đoán: +\(added)")
+          changes.append("Bigram dự đoán: +\(changed) (merge, file ưu tiên)")
         }
       }
     }
@@ -549,20 +558,20 @@ enum UserDataMigration {
         }
       } else {
         var current = Defaults[.userTrigrams]
-        var added = 0
+        var changed = 0
         for (prev, nextMap) in trigrams {
           var existingNext = current[prev] ?? [:]
           for (next, count) in nextMap {
-            if existingNext[next] == nil {
+            if existingNext[next] != count {
               existingNext[next] = count
-              added += 1
+              changed += 1
             }
           }
           current[prev] = existingNext
         }
-        if added > 0 {
+        if changed > 0 {
           Defaults[.userTrigrams] = current
-          changes.append("Trigram dự đoán: +\(added)")
+          changes.append("Trigram dự đoán: +\(changed) (merge, file ưu tiên)")
         }
       }
     }
@@ -570,10 +579,16 @@ enum UserDataMigration {
     // 1.7.6+: stats restoration. Trước đây bỏ qua hoàn toàn → tab Thống kê
     // hiện 0 sau import. Match weekId hiện tại → load thành in-memory
     // counters; tuần cũ → ghi file `<weekId>.json`.
+    // 1.7.7: khi "Ghi đè" (replaceLists), xoá sạch stats hiện có trước khi
+    // restore — tránh tích luỹ tuần default + tuần imported.
     if let stats = export.statistics, !stats.isEmpty {
+      if replaceLists {
+        UsageStatistics.shared.clearAll()
+      }
       let restored = UsageStatistics.shared.restoreFromBackup(stats)
       if restored > 0 {
-        changes.append("Thống kê: khôi phục \(restored) tuần")
+        let mode = replaceLists ? "(overwrite)" : "(merge)"
+        changes.append("Thống kê: khôi phục \(restored) tuần \(mode)")
       }
     }
 
@@ -708,15 +723,16 @@ enum UserDataMigration {
       }
       return
     }
+    // 1.7.7: merge mode đảo sang imported wins — file thắng khi trùng key.
     var current = Defaults[key]
-    var added = 0
-    for (k, v) in value where current[k] == nil {
+    var changed = 0
+    for (k, v) in value where current[k] != v {
       current[k] = v
-      added += 1
+      changed += 1
     }
-    if added > 0 {
+    if changed > 0 {
       Defaults[key] = current
-      changes.append("\(label): +\(added)")
+      changes.append("\(label): +\(changed) (merge, file ưu tiên)")
     }
   }
 }

@@ -75,7 +75,8 @@ final class PredictionHUDWindow {
     return p
   }
 
-  /// Cố gắng đặt HUD ngay dưới caret của focused text element qua AX.
+  /// Cố gắng đặt HUD ngay TRÊN dòng caret của focused text element qua AX.
+  /// 1.7.7: đổi từ dưới (cũ) lên trên — user feedback rằng HUD dưới che cursor.
   /// Fallback: bottom-center của main screen.
   private func targetFrame(forText text: String) -> NSRect {
     let width = max(160, CGFloat(text.count) * 9 + 40)
@@ -84,8 +85,10 @@ final class PredictionHUDWindow {
     if let caret = focusedElementCaretRect() {
       let screen = NSScreen.main?.frame ?? .zero
       // AX coordinates use top-down Y. Convert to AppKit (bottom-up):
-      let axY = caret.maxY  // bottom of caret in AX (top-down)
-      let appKitY = screen.height - axY - height - 4
+      // HUD nằm TRÊN caret line: top edge của HUD ngay sát top của text
+      // element (caret.minY trong AX = top edge), với 4pt margin.
+      let axY = caret.minY  // top of caret element in AX (top-down)
+      let appKitY = screen.height - axY + 4  // HUD bottom = AX top + margin
       return NSRect(
         x: max(8, min(caret.minX, screen.width - width - 8)),
         y: appKitY,

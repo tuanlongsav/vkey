@@ -18,8 +18,10 @@ struct vkeyApp: App {
           .environmentObject(appDelegate.appState)
           .tabItem { Label("Chung", themedSymbol: "gear") }
 
+        // 1.7.7: rút gọn "Smart Switch" → "Smart" để tab bar fit cửa sổ
+        // compact (432px width).
         SmartSwitchView()
-          .tabItem { Label("Smart Switch", themedSymbol: "arrow.left.arrow.right.circle") }
+          .tabItem { Label("Smart", themedSymbol: "arrow.left.arrow.right.circle") }
 
         MacroView()
           .tabItem { Label("Macro", themedSymbol: "text.cursor") }
@@ -30,8 +32,9 @@ struct vkeyApp: App {
         // 1.5.0: Usage Statistics + personal-data backup/restore. Tab is the
         // single user-visible touchpoint for both features — keeping them
         // together emphasises that statistics never leave the machine.
+        // 1.7.7: rút gọn "Thống kê & Sao lưu" → "Sao lưu".
         StatisticsView()
-          .tabItem { Label("Thống kê & Sao lưu", themedSymbol: "chart.bar.doc.horizontal") }
+          .tabItem { Label("Sao lưu", themedSymbol: "chart.bar.doc.horizontal") }
       }
     }
     // 1.7.6: cho phép user resize Settings window qua góc/cạnh. Default
@@ -39,6 +42,9 @@ struct vkeyApp: App {
     // → user không thay đổi được width. `.contentMinSize` cho phép drag
     // shrink xuống min của view content (.frame(minWidth:...)).
     .windowResizability(.contentMinSize)
+    // 1.7.7: opening size compact (432×1080). User vẫn drag resize được tự do
+    // sau đó qua góc/cạnh, frame autosave nhớ kích thước cho lần mở kế tiếp.
+    .defaultSize(width: 432, height: 1080)
   }
 }
 

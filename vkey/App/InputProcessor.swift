@@ -573,33 +573,50 @@ class InputProcessor {
   // MARK: - Private Event Handlers
 
   private func handleTaskKey(_ taskKey: TaskKey, event: CGEvent) -> Unmanaged<CGEvent>? {
-    // 1.6.1: Tab handling khi prediction enabled.
-    // - Nếu HUD đang show prediction → ALWAYS swallow Tab (defensive)
-    //   để OS autocomplete / form-tab không can thiệp. Insert prediction
-    //   chỉ khi buffer đã sạch; ngược lại chỉ dismiss HUD.
+    // 1.6.1/1.7.7: Tab handling khi prediction enabled — SMART-DETECT buffer.
+    // - Buffer sạch (sau commit qua Space): chèn " prediction" (space + word).
+    //   User không cần gõ Space rồi mới Tab — Tab đã handle space leading.
+    // - Buffer có từ chưa commit: commit từ qua spell decision (emit space)
+    //   rồi chèn prediction (không leading space — space đã được emit).
+    //   User có thể gõ "viet" + Tab → "việt Nam" (commit + insert prediction).
     // - Nếu không có activePrediction → fall-through cho Tab pass-through
     //   (legitimate form navigation / tab indent).
     if taskKey == .Tab,
        Defaults[.wordPredictionEnabled],
        activePrediction != nil
     {
-      if let prediction = activePrediction, wordBuffer.wordState.isBlank {
-        // Force-reset buffer (defensive — guarantee no residue from
-        // previous commit's transformed state). storePrevious: false để
-        // không tạo nhánh backspace recovery.
+      let prediction = activePrediction!
+      if wordBuffer.wordState.isBlank {
+        // Buffer sạch: chèn " prediction" (leading space).
         newWord(storePrevious: false)
-        let toInsert = "\(prediction) "
+        let toInsert = " \(prediction)"
         let telemetry = EventSimulator.sendReplacement(
           backspaceCount: 0,
           diffChars: Array(toInsert),
           strategy: strategyTracker.currentStrategy
         )
         observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
-        // Update prediction chain — prediction giờ trở thành prev1.
         prev2Committed = prev1Committed
         prev1Committed = prediction.lowercased()
+      } else {
+        // Buffer có từ chưa commit: commit qua space rồi chèn prediction.
+        applySpellDecisionOnCommit(endingChar: " ", swallowEndingChar: true)
+        newWord(storePrevious: true)
+        // Recompute prediction sau commit (prev1 đã đổi).
+        let newPrediction = PredictionEngine.shared.topPrediction(
+          prev2: prev2Committed,
+          prev1: prev1Committed ?? ""
+        ) ?? prediction
+        let telemetry = EventSimulator.sendReplacement(
+          backspaceCount: 0,
+          diffChars: Array(newPrediction),
+          strategy: strategyTracker.currentStrategy
+        )
+        observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
+        prev2Committed = prev1Committed
+        prev1Committed = newPrediction.lowercased()
       }
-      // Cả 2 nhánh (insert / dismiss) đều clear state + hide HUD + swallow Tab.
+      // Clear state + hide HUD + swallow Tab.
       activePrediction = nil
       DispatchQueue.main.async {
         PredictionHUDWindow.shared.hide()

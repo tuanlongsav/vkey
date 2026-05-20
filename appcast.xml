@@ -6,6 +6,40 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.7 — "Compact Window &amp; Right Imports"</title>
+      <sparkle:version>17700</sparkle:version>
+      <sparkle:shortVersionString>1.7.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 18:20:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.7/vkey-1.7.7.dmg"
+        sparkle:edSignature="HP+/W1pESqvu7cdQIhc3Y5ON7V2CMEpexdzW2AL5KVXqu5mNWV5qcUpaudGWuvkWQg7j+f59MpXAyiw/K2epDA=="
+        length="6012594"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.7 — "Compact Window &amp; Right Imports":</h2>
+        <p>4 fix sau v1.7.6.</p>
+        <ul>
+          <li><strong>Cửa sổ Settings 432×1080</strong>: thêm `.defaultSize` modifier, rút gọn tab labels (Smart Switch → Smart, Thống kê &amp; Sao lưu → Sao lưu) cho phép tab bar fit width compact. minWidth 320→200 (drag thu nhỏ thêm), minHeight 480→720 (vertical rộng hơn).</li>
+          <li><strong>Import semantics đúng intent</strong>:
+            <ul>
+              <li>Ghi đè: macros giờ thật sự clear+replace (trước đây append → duplicate); stats clearAll trước restore.</li>
+              <li>Kết hợp: khi data trùng → file thắng (trước đây existing thắng). Áp cho macros, perAppOverride, appSmartSwitchConfigs, userBigrams/Trigrams.</li>
+              <li>Dialog text rõ: "Gộp thêm (file thắng nếu trùng)" vs "Ghi đè toàn bộ (xoá data hiện tại)".</li>
+            </ul>
+          </li>
+          <li><strong>Fix bug "d → đ" (gõ d hay hiện đ)</strong>: tryLateDToggle thêm 2 guards (conLai empty + nguyenAm non-empty) để không trigger gạch D sai trong giữa từ chưa hoàn chỉnh. "dinjhd" → "định" vẫn hoạt động.</li>
+          <li><strong>Prediction HUD lên trên + Tab smart-detect</strong>:
+            <ul>
+              <li>HUD: từ dưới caret → TRÊN dòng đang gõ (không che cursor).</li>
+              <li>Tab: buffer sạch chèn " prediction" (leading space); buffer có từ chưa commit thì Tab commit + chèn prediction trong 1 phím. User gõ "viet" + Tab → "việt Nam".</li>
+            </ul>
+          </li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.6 — "Backup Complete &amp; Resize Done"</title>
       <sparkle:version>17600</sparkle:version>
       <sparkle:shortVersionString>1.7.6</sparkle:shortVersionString>

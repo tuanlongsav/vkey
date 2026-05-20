@@ -660,6 +660,18 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "ajjm"), "ajm")  // nặng cancel
   }
 
+  /// Regression 1.7.7: gõ "dùng" (telex: dungf) phải ra "dùng", không phải
+  /// "đùng". Trước đây tryLateDToggle có thể trigger nhầm khi user gõ thêm
+  /// 'd' trong/cuối từ chưa hoàn chỉnh hoặc khi state cho phép quá rộng.
+  /// Pattern "dinjhd" (telex của "định") vẫn phải toggle gạch D đúng.
+  func testTelexLateDToggleGated() throws {
+    XCTAssertEqual(transform_text_telex(for: "dungf"), "dùng")
+    XCTAssertEqual(transform_text_telex(for: "dung"), "dung")
+    XCTAssertEqual(transform_text_telex(for: "dinjhd"), "định")
+    XCTAssertEqual(transform_text_telex(for: "dd"), "đ")  // toggle dd vẫn đúng
+    XCTAssertEqual(transform_text_telex(for: "ddungf"), "đùng")  // intentional đ
+  }
+
   /// Regression 1.7.4: gõ ARM (initialism English) khi commit phải restore
   /// về "ARM" thay vì giữ "Ảm" (vkey vô tình áp tone hỏi cho R). Fix ở
   /// SpellDecisionEngine: detect all-caps ASCII alphabetic ≥2-≤5 chars,

@@ -265,7 +265,7 @@ struct StatisticsView: View {
       .formStyle(.grouped)
       .scrollDisabled(false)
     }
-    .frame(minWidth: 320, minHeight: 480)
+    .frame(minWidth: 200, minHeight: 720)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .onAppear(perform: refresh)
     .sheet(isPresented: $showingSuggestionSheet) {
@@ -408,13 +408,11 @@ struct StatisticsView: View {
       confirm.informativeText = """
       Tệp tạo lúc \(export.exportedAt) — vkey v\(export.appVersion).
 
-      • Gộp thêm: giữ dữ liệu hiện tại + bổ sung dữ liệu mới (union).
-      • Ghi đè toàn bộ: xoá dữ liệu hiện tại, thay bằng dữ liệu nhập.
-
-      Cả 2 chế độ đều khôi phục thống kê từ file backup.
+      • Gộp thêm: giữ data hiện tại + thêm data từ file. Khi trùng → dữ liệu từ file thắng.
+      • Ghi đè toàn bộ: xoá sạch data hiện tại (cả default app), thay bằng data từ file.
       """
       confirm.alertStyle = .informational
-      confirm.addButton(withTitle: "Gộp thêm (giữ data hiện tại)")
+      confirm.addButton(withTitle: "Gộp thêm (file thắng nếu trùng)")
       confirm.addButton(withTitle: "Ghi đè toàn bộ (xoá data hiện tại)")
       confirm.addButton(withTitle: "Huỷ")
       let resp = confirm.runModal()
