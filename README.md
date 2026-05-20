@@ -65,6 +65,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 <p align="center">
   <img src="images/menubar-menu.png" width="260" alt="Menu bar dropdown">
   <img src="images/general-settings.png" width="260" alt="Tab Chung">
+  <img src="images/smart-switch-settings.png" width="260" alt="Tab Smart Switch">
   <img src="images/macro-settings.png" width="260" alt="Tab Macro">
   <img src="images/spellcheck-settings.png" width="260" alt="Tab Chính tả">
   <img src="images/statistics-settings.png" width="260" alt="Tab Thống kê & Sao lưu">
