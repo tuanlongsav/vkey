@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.8 — "Right Names, Right Height"</title>
+      <sparkle:version>17800</sparkle:version>
+      <sparkle:shortVersionString>1.7.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 19:25:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.8/vkey-1.7.8.dmg"
+        sparkle:edSignature="C/B4eUPwf/q7FNRrUBxS7j0SBpQ5kbPiysOfRZKu8s4rUtK8+x4AtuPeweRfRBvaDews6ZtkYPSelIjUsdjNBA=="
+        length="6016423"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.8 — "Right Names, Right Height":</h2>
+        <p>2 chỉnh sau v1.7.7.</p>
+        <ul>
+          <li><strong>Cửa sổ Settings chiều cao -40%</strong>: defaultSize từ 432×1080 (v1.7.7) → 432×648. User feedback "cửa sổ quá dài". Drag resize qua góc/cạnh vẫn tự do.</li>
+          <li><strong>Restore tab labels gốc + font compact</strong>: trả lại "Smart Switch" (v1.7.7 rút thành "Smart") và "Thống kê &amp; Sao lưu" (v1.7.7 rút thành "Sao lưu") — labels có nghĩa đầy đủ. Bù bằng <code>.font(.system(size: 10))</code> trên 5 tabItem để font tab bar nhỏ hơn ~10-15%, fit width compact.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.7 — "Compact Window &amp; Right Imports"</title>
       <sparkle:version>17700</sparkle:version>
       <sparkle:shortVersionString>1.7.7</sparkle:shortVersionString>

@@ -273,11 +273,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
         "NSWindow Frame VkeySettingsWindow.v174",
         "NSWindow Frame VkeySettingsWindow.v175",
         "NSWindow Frame VkeySettingsWindow.v176",
+        "NSWindow Frame VkeySettingsWindow.v177",
       ]
       for key in legacyAutosaveKeys {
         UserDefaults.standard.removeObject(forKey: key)
       }
-      win.setFrameAutosaveName("VkeySettingsWindow.v177")
+      win.setFrameAutosaveName("VkeySettingsWindow.v178")
     }
   }
 

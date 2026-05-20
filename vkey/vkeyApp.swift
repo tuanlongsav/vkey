@@ -16,25 +16,41 @@ struct vkeyApp: App {
       TabView {
         GeneralView()
           .environmentObject(appDelegate.appState)
-          .tabItem { Label("Chung", themedSymbol: "gear") }
+          .tabItem {
+            Label("Chung", themedSymbol: "gear")
+              .font(.system(size: 10))
+          }
 
-        // 1.7.7: rút gọn "Smart Switch" → "Smart" để tab bar fit cửa sổ
-        // compact (432px width).
+        // 1.7.8: restore label gốc "Smart Switch" (1.7.7 đã rút gọn nhưng
+        // mất ngữ nghĩa). Bù lại bằng .font(.system(size: 10)) để tab bar
+        // vẫn compact.
         SmartSwitchView()
-          .tabItem { Label("Smart", themedSymbol: "arrow.left.arrow.right.circle") }
+          .tabItem {
+            Label("Smart Switch", themedSymbol: "arrow.left.arrow.right.circle")
+              .font(.system(size: 10))
+          }
 
         MacroView()
-          .tabItem { Label("Macro", themedSymbol: "text.cursor") }
+          .tabItem {
+            Label("Macro", themedSymbol: "text.cursor")
+              .font(.system(size: 10))
+          }
 
         SpellCheckView()
-          .tabItem { Label("Chính tả", themedSymbol: "text.badge.checkmark") }
+          .tabItem {
+            Label("Chính tả", themedSymbol: "text.badge.checkmark")
+              .font(.system(size: 10))
+          }
 
         // 1.5.0: Usage Statistics + personal-data backup/restore. Tab is the
         // single user-visible touchpoint for both features — keeping them
         // together emphasises that statistics never leave the machine.
-        // 1.7.7: rút gọn "Thống kê & Sao lưu" → "Sao lưu".
+        // 1.7.8: restore label gốc "Thống kê & Sao lưu".
         StatisticsView()
-          .tabItem { Label("Sao lưu", themedSymbol: "chart.bar.doc.horizontal") }
+          .tabItem {
+            Label("Thống kê & Sao lưu", themedSymbol: "chart.bar.doc.horizontal")
+              .font(.system(size: 10))
+          }
       }
     }
     // 1.7.6: cho phép user resize Settings window qua góc/cạnh. Default
@@ -42,9 +58,9 @@ struct vkeyApp: App {
     // → user không thay đổi được width. `.contentMinSize` cho phép drag
     // shrink xuống min của view content (.frame(minWidth:...)).
     .windowResizability(.contentMinSize)
-    // 1.7.7: opening size compact (432×1080). User vẫn drag resize được tự do
-    // sau đó qua góc/cạnh, frame autosave nhớ kích thước cho lần mở kế tiếp.
-    .defaultSize(width: 432, height: 1080)
+    // 1.7.8: opening size compact (432×648). Height giảm 40% so với 1080
+    // của 1.7.7 (user feedback "quá dài"). User vẫn drag resize được tự do.
+    .defaultSize(width: 432, height: 648)
   }
 }
 

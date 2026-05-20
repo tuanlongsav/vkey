@@ -37,6 +37,27 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.8] - 2026-05-20 — "Right Names, Right Height"
+
+2 chỉnh sau v1.7.7: thu chiều cao Settings 40% + restore tab labels gốc với font compact.
+
+### Settings window chiều cao 1080 → 648 (-40%)
+
+User feedback v1.7.7 "cửa sổ quá dài". Thu `.defaultSize` từ `(432, 1080)` → `(432, 648)`. Drag resize qua góc/cạnh vẫn hoạt động tự do qua `.windowResizability(.contentMinSize)`.
+
+Bump autosave name `v177` → `v178` + cleanup orphan `v177` key trong NSUserDefaults → user upgrade nhận default 432×648 fresh.
+
+### Tab labels gốc + font compact
+
+User feedback v1.7.7: tab labels rút gọn (`"Smart Switch"` → `"Smart"`, `"Thống kê & Sao lưu"` → `"Sao lưu"`) làm mất ngữ nghĩa. Restore labels gốc.
+
+Bù lại bằng `.font(.system(size: 10))` áp vào mỗi Label tabItem → font tab bar nhỏ hơn ~10-15%, fit width compact dù labels dài hơn.
+
+### Files
+
+- [vkey/vkeyApp.swift](vkey/vkeyApp.swift) — restore 2 labels, font cho 5 tabItem, defaultSize height 648.
+- [vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift:284) — autosave v178 + cleanup v177.
+
 ## [1.7.7] - 2026-05-20 — "Compact Window & Right Imports"
 
 4 fix sau v1.7.6: cửa sổ Settings 432×1080 compact + drag tự do, Import semantics đúng theo user intent, fix bug "d→đ", Prediction HUD lên trên + Tab smart-detect.
