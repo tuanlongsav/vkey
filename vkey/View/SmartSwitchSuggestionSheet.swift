@@ -1,38 +1,45 @@
 //
-//  SmartSwitchSuggestionSheet.swift
+//  SmartSwitchSuggestionSheet.swift / SmartSwitchAutoLearnSheet
 //  vkey
 //
-//  Sheet mở từ `SmartSwitchView` khi user bấm "Xem & thêm" ở dòng "Gợi
-//  ý từ Thống kê". Hiển thị các app user đã gõ ≥10 lần (cộng dồn qua
-//  tuần) mà chưa nằm trong danh sách `smartSwitchApps`. User bấm
-//  "Thêm" để add bundleID vào list.
+//  1.7.0: Đổi từ "Gợi ý apps thêm vào smartSwitchApps" thành "Auto-learn"
+//  sheet. Hiển thị các app vkey đề xuất set state (Tiếng Việt / Tiếng Anh)
+//  dựa trên Stats per-app language ratio, áp ngưỡng:
+//    - ≥5 ngày dataset trong tuần này
+//    - ≥5 commit/ngày trung bình
+//    - ratio language ≥75% (hoặc ≤25% cho Tiếng Anh)
+//
+//  User-set entries (source=.user) KHÔNG bị override khi áp dụng.
 //
 
 import AppKit
 import Defaults
 import SwiftUI
 
-struct SmartSwitchSuggestionSheet: View {
+/// 1.7.0: Sheet hiển thị auto-learn suggestions từ Stats. User review +
+/// apply để vkey set state (Tiếng Việt/Tiếng Anh) cho các app dùng nhiều.
+struct SmartSwitchAutoLearnSheet: View {
   @Environment(\.dismiss) private var dismiss
-  @Default(.smartSwitchApps) private var smartSwitchApps
+  @Default(.appSmartSwitchConfigs) private var configs
 
-  private struct Suggestion: Identifiable {
-    let id: String          // bundle ID
+  @State private var suggestions: [SuggestionRow] = []
+  @State private var statusMessage: String = ""
+
+  private struct SuggestionRow: Identifiable {
+    let id: String
     let bundleId: String
-    let count: Int
-    var added: Bool = false
-    var displayName: String  // best-effort human-friendly name
+    let displayName: String
+    let suggestedState: AppSmartSwitchState
+    let currentConfig: AppSmartSwitchConfig?
   }
-
-  @State private var suggestions: [Suggestion] = []
 
   var body: some View {
     VStack(spacing: 0) {
       // Header
       VStack(alignment: .leading, spacing: 4) {
-        Text("Gợi ý app cho Smart Switch")
+        Text("Tự động học từ Thống kê")
           .font(.headline)
-        Text("Các app bạn dùng ≥10 lần (tất cả tuần) mà chưa nằm trong danh sách. Bấm \"Thêm\" để Smart Switch tự chuyển sang tiếng Anh khi mở app đó.")
+        Text("vkey gợi ý chế độ phù hợp cho các app bạn đã dùng ≥5 ngày trong tuần với ≥5 commit/ngày. Cài đặt do bạn đặt thủ công (👤) KHÔNG bị thay đổi.")
           .font(.caption)
           .foregroundStyle(.secondary)
       }
@@ -45,49 +52,92 @@ struct SmartSwitchSuggestionSheet: View {
 
       if suggestions.isEmpty {
         Spacer()
-        Text("Chưa có gợi ý — gõ nhiều hơn trong các app bạn muốn Smart Switch.")
-          .font(.callout)
-          .foregroundStyle(.secondary)
-          .multilineTextAlignment(.center)
-          .padding()
+        VStack(spacing: 8) {
+          Image(systemName: "tray")
+            .font(.system(size: 36))
+            .foregroundStyle(.tertiary)
+          Text("Chưa có gợi ý")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+          Text("Gõ thêm trong các app khác nhau ít nhất 5 ngày để vkey có đủ data học pattern ngôn ngữ.")
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 30)
+        }
         Spacer()
       } else {
-        Table($suggestions) {
-          TableColumn("Ứng dụng") { $suggestion in
-            VStack(alignment: .leading, spacing: 2) {
-              Text(suggestion.displayName)
-                .foregroundStyle(suggestion.added ? .secondary : .primary)
-              Text(suggestion.bundleId)
-                .font(.caption)
+        List(suggestions) { row in
+          HStack(spacing: 10) {
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: row.bundleId) {
+              Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                .resizable()
+                .frame(width: 24, height: 24)
+            } else {
+              Image(systemName: "app.dashed")
+                .font(.system(size: 22))
                 .foregroundStyle(.tertiary)
-                .lineLimit(1)
-                .truncationMode(.middle)
+                .frame(width: 24, height: 24)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+              Text(row.displayName)
+                .font(.body)
+              Text(row.bundleId)
+                .font(.system(.caption2, design: .monospaced))
+                .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            if let current = row.currentConfig {
+              Text("Hiện: \(current.state.shortLabel)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+              Image(systemName: current.source.iconSymbol)
+                .font(.caption2)
+                .foregroundStyle(current.source == .user ? .blue : .purple)
+              Image(systemName: "arrow.right")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            }
+
+            Text(row.suggestedState.shortLabel)
+              .font(.system(.caption, design: .rounded))
+              .padding(.horizontal, 8)
+              .padding(.vertical, 3)
+              .background(badgeColor(for: row.suggestedState).opacity(0.15))
+              .foregroundStyle(badgeColor(for: row.suggestedState))
+              .clipShape(Capsule())
+
+            if row.currentConfig?.source == .user {
+              Image(systemName: "lock.fill")
+                .font(.caption2)
+                .foregroundStyle(.orange)
+                .help("Bạn đã đặt thủ công — sẽ KHÔNG bị thay đổi.")
             }
           }
-          TableColumn("Số lần") { $suggestion in
-            Text("\(suggestion.count)")
-              .foregroundStyle(.secondary)
-              .monospacedDigit()
-          }
-          .width(60)
-          TableColumn("") { $suggestion in
-            Button(suggestion.added ? "Đã thêm" : "Thêm") {
-              addApp(suggestion)
-            }
-            .disabled(suggestion.added)
-          }
-          .width(80)
+          .padding(.vertical, 2)
         }
-        .frame(minHeight: 240)
+        .listStyle(.inset)
       }
 
       Divider()
 
+      if !statusMessage.isEmpty {
+        Text(statusMessage)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 6)
+      }
+
       HStack {
-        Button("Thêm tất cả") {
-          addAllPending()
+        Button("Áp dụng tất cả") {
+          applyAll()
         }
-        .disabled(suggestions.allSatisfy { $0.added })
+        .disabled(suggestions.allSatisfy { $0.currentConfig?.source == .user })
+        .help("Áp dụng các gợi ý cho app vkey chưa lock (không có 🔒). User-set entries giữ nguyên.")
 
         Spacer()
 
@@ -96,52 +146,62 @@ struct SmartSwitchSuggestionSheet: View {
       }
       .padding(16)
     }
-    .frame(width: 520, height: 460)
+    .frame(width: 560, height: 480)
     .onAppear(perform: load)
   }
 
-  // MARK: - Actions
+  private func badgeColor(for state: AppSmartSwitchState) -> Color {
+    switch state {
+    case .disabled: return .gray
+    case .vietnameseMode: return .red
+    case .englishMode: return .blue
+    }
+  }
 
   private func load() {
-    let aggregated = UsageStatistics.shared.aggregatedTopApps(threshold: 10)
-    let existing = Set(smartSwitchApps)
-    suggestions = aggregated.compactMap { wc in
-      guard !existing.contains(wc.word) else { return nil }
-      return Suggestion(
-        id: wc.word,
-        bundleId: wc.word,
-        count: wc.count,
-        displayName: friendlyAppName(forBundleID: wc.word)
-      )
-    }
+    let computed = UsageStatistics.shared.computeSmartSwitchAutoLearn()
+    suggestions = computed
+      .sorted { $0.key < $1.key }
+      .map { (bundleId, state) in
+        SuggestionRow(
+          id: bundleId,
+          bundleId: bundleId,
+          displayName: friendlyName(for: bundleId),
+          suggestedState: state,
+          currentConfig: configs[bundleId]
+        )
+      }
   }
 
-  private func friendlyAppName(forBundleID bundleID: String) -> String {
-    // Try LaunchServices via NSWorkspace.
-    if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-      let bundle = Bundle(url: appURL)
-      if let display = bundle?.infoDictionary?["CFBundleDisplayName"] as? String {
-        return display
-      }
-      if let name = bundle?.infoDictionary?["CFBundleName"] as? String {
+  private func friendlyName(for bundleId: String) -> String {
+    if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId),
+       let bundle = Bundle(url: url) {
+      if let name = bundle.localizedInfoDictionary?["CFBundleDisplayName"] as? String {
         return name
       }
-      return appURL.deletingPathExtension().lastPathComponent
+      if let name = bundle.infoDictionary?["CFBundleName"] as? String {
+        return name
+      }
+      return url.lastPathComponent.replacingOccurrences(of: ".app", with: "")
     }
-    return bundleID
+    return bundleId
   }
 
-  private func addApp(_ suggestion: Suggestion) {
-    guard let idx = suggestions.firstIndex(where: { $0.id == suggestion.id }) else { return }
-    if !smartSwitchApps.contains(suggestion.bundleId) {
-      smartSwitchApps.append(suggestion.bundleId)
+  private func applyAll() {
+    var applied = 0
+    for row in suggestions {
+      // Skip user-set entries (source=.user)
+      if row.currentConfig?.source == .user { continue }
+      configs[row.bundleId] = AppSmartSwitchConfig(
+        state: row.suggestedState, source: .autoLearn, lastModified: Date()
+      )
+      applied += 1
     }
-    suggestions[idx].added = true
-  }
-
-  private func addAllPending() {
-    for s in suggestions where !s.added {
-      addApp(s)
+    if applied == 0 {
+      statusMessage = "Không có gợi ý nào để áp dụng (tất cả đã do bạn đặt thủ công)."
+    } else {
+      statusMessage = "Đã áp dụng \(applied) gợi ý. Đóng sheet để xem lại tab Smart Switch."
+      load()  // reload to refresh current state badges
     }
   }
 }

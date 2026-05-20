@@ -69,6 +69,67 @@ struct PendingDictSuggestion: Codable, Hashable, Identifiable, Defaults.Serializ
   var suggestedAt: Date
 }
 
+// MARK: - Smart Switch 3-state (1.7.0+)
+
+/// Trạng thái Smart Switch per-app. Thay cơ chế list 1-chiều
+/// `smartSwitchApps` (chỉ "tắt VN") bằng 3-state rõ ràng.
+enum AppSmartSwitchState: String, CaseIterable, Codable, Defaults.Serializable {
+  case disabled         // Không sử dụng vkey trong app này (bộ gõ TẮT)
+  case vietnameseMode   // Sử dụng vkey, gõ Tiếng Việt
+  case englishMode      // Sử dụng vkey, gõ Tiếng Anh (output passthrough)
+
+  var displayName: String {
+    switch self {
+    case .disabled: return "Không sử dụng vkey"
+    case .vietnameseMode: return "Tiếng Việt"
+    case .englishMode: return "Tiếng Anh"
+    }
+  }
+
+  var shortLabel: String {
+    switch self {
+    case .disabled: return "Tắt"
+    case .vietnameseMode: return "🇻🇳 VN"
+    case .englishMode: return "🇺🇸 EN"
+    }
+  }
+}
+
+/// Nguồn gốc cài đặt — phân biệt user thủ công vs auto-learn từ stats.
+enum AppSmartSwitchSource: String, CaseIterable, Codable, Defaults.Serializable {
+  case user        // 👤 User set thủ công (override auto-learn)
+  case autoLearn   // 🤖 Auto-learn từ stats per-app language ratio
+
+  /// SF Symbol name cho UI badge.
+  var iconSymbol: String {
+    switch self {
+    case .user: return "person.fill"
+    case .autoLearn: return "cpu"
+    }
+  }
+
+  var displayName: String {
+    switch self {
+    case .user: return "Người dùng đặt"
+    case .autoLearn: return "Tự động học"
+    }
+  }
+}
+
+/// Cấu hình Smart Switch per-app — replace `smartSwitchApps: [String]` từ 1.7.0.
+/// User setting (source=.user) LUÔN override auto-learn (source=.autoLearn).
+struct AppSmartSwitchConfig: Codable, Hashable, Defaults.Serializable {
+  var state: AppSmartSwitchState
+  var source: AppSmartSwitchSource
+  var lastModified: Date
+
+  init(state: AppSmartSwitchState, source: AppSmartSwitchSource, lastModified: Date = Date()) {
+    self.state = state
+    self.source = source
+    self.lastModified = lastModified
+  }
+}
+
 /// Giao diện ứng dụng. 3 theme khả dụng:
 /// - `.default`: SF Symbol gốc, không hiệu ứng.
 /// - `.threeD`: SF Symbol + gradient + shadow + multicolor — "bóng bẩy" 3D.
@@ -227,6 +288,21 @@ extension Defaults.Keys {
   /// Khi bật: sau khi commit 1 từ + space, vkey đoán từ tiếp theo và
   /// hiển thị HUD nổi gần cursor. Nhấn Tab để chấp nhận.
   static let wordPredictionEnabled = Key<Bool>("word-prediction-enabled", default: false)
+
+  // MARK: - 1.7.0 — Smart Switch 3-state per-app config
+
+  /// Cấu hình Smart Switch per-app (1.7.0+) — thay list smartSwitchApps cũ.
+  /// Mỗi bundle ID map sang `AppSmartSwitchConfig` (state + source).
+  /// Migration: smartSwitchApps cũ → englishMode + source=.user (chạy 1 lần
+  /// trong AppDelegate.applicationDidFinishLaunching).
+  static let appSmartSwitchConfigs = Key<[String: AppSmartSwitchConfig]>(
+    "app-smart-switch-configs",
+    default: [:]
+  )
+
+  /// Tuần ISO đã chạy auto-learn Smart Switch gần nhất (vd "2026-W21").
+  /// Throttle 1 lần/tuần để tránh churn.
+  static let lastSmartSwitchAutoLearnWeek = Key<String>("last-smart-switch-auto-learn-week", default: "")
 
   /// Bigram counts: previous word → next word → count. Học từ history
   /// user gõ (1.6.0+).

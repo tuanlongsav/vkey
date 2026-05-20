@@ -6,6 +6,39 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.0 — "Smart Context"</title>
+      <sparkle:version>17000</sparkle:version>
+      <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 10:40:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.0/vkey-1.7.0.dmg"
+        sparkle:edSignature="kk8B4nVQJZIEYYUFis2/6zUZHQhBASRv7PI6sM8O0f7RyL7f2yQz1sERtY50aN16zjTujxPilI1rQjqmChIzBw=="
+        length="5781491"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.7.0 — "Smart Context":</h2>
+        <p>Bản nâng cấp lớn về Smart Switch (3-state per-app + auto-learn) cùng nhiều cải tiến UI và sắp xếp lại Tab Chính tả.</p>
+        <ul>
+          <li><strong>Smart Switch 3-state per-app (mới)</strong>: thay list 1-chiều "luôn dùng Tiếng Anh" bằng 3-state rõ ràng:
+            <ul>
+              <li>🇻🇳 <strong>Tiếng Việt</strong> — sử dụng vkey gõ tiếng Việt</li>
+              <li>🇺🇸 <strong>Tiếng Anh</strong> — sử dụng vkey gõ thẳng tiếng Anh (passthrough)</li>
+              <li>⛔ <strong>Không dùng vkey</strong> — bộ gõ tắt hoàn toàn cho app này</li>
+            </ul>
+          </li>
+          <li><strong>Source tracking (👤 / 🤖)</strong>: mỗi state hiển thị icon nguồn — 👤 user đặt thủ công hoặc 🤖 vkey tự học. User setting LUÔN override auto-learn.</li>
+          <li><strong>Auto-learn từ Thống kê</strong>: vkey theo dõi ngôn ngữ user gõ trong từng app. App dùng ≥5 ngày dataset trong tuần, ≥5 commit/ngày, ratio ≥75% một ngôn ngữ → tự động set state phù hợp. Chạy 1 lần/tuần.</li>
+          <li><strong>UI Smart Switch redesign</strong>: list app với icon thật, tên hiển thị, badge state + source icon, popup picker để đổi state thủ công, nút "Để vkey tự học" reset về auto-learn. Sheet "Tự học từ Thống kê" preview gợi ý + áp dụng hàng loạt.</li>
+          <li><strong>Auto-migrate</strong>: user nâng từ 1.6.x lên 1.7.0 — danh sách smartSwitchApps cũ tự convert thành configs 3-state (englishMode + source=user) hiển thị ngay.</li>
+          <li><strong>Tab Chính tả gọn lại</strong>: gộp "Kiểm tra trong câu" vào "Kiểm tra chính tả" (1 toggle), gom "Từ điển cá nhân" + "Học hành vi từ Thống kê" vào CÙNG Section đổi tên "Cấu hình kiểm tra chính tả". Còn 5 Section thay vì 7.</li>
+          <li><strong>Cửa sổ Cài đặt kích thước mới</strong>: minWidth giảm 540→480 (bỏ thừa 2 bên), minHeight tăng 640→720 (hiển thị hết content nhiều tab không cần scroll). Vẫn resize được.</li>
+          <li><strong>Tab Thống kê — header việt hoá</strong>: "Tuần này — 2026-W21" → "Tuần 21 năm 2026 (từ 18/05 đến 24/05/2026)". Tính từ thứ Hai đến Chủ Nhật. Áp dụng cho cả tuần hiện tại và Các tuần đã đóng.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.6.3 — "Stats Restored"</title>
       <sparkle:version>16300</sparkle:version>
       <sparkle:shortVersionString>1.6.3</sparkle:shortVersionString>

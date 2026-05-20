@@ -1,36 +1,28 @@
 import SwiftUI
 import Defaults
+import AppKit
 
+/// SmartSwitchView 1.7.0: 3-state per-app (Tiếng Việt / Tiếng Anh / Không
+/// dùng vkey) + source icon (👤 user / 🤖 auto-learn). Thay UI list 1-chiều
+/// cũ. Tự động học state từ Stats per-app language ratio (≥5 ngày dataset,
+/// ≥5 commit/ngày, ratio ≥75%).
 struct SmartSwitchView: View {
-    @Default(.smartSwitchApps) private var smartSwitchApps
+    @Default(.appSmartSwitchConfigs) private var configs
     @Default(.smartSwitchEnabled) private var smartSwitchEnabled
 
     @State private var newBundleId: String = ""
-    @State private var selectedApp: String? = nil
-    @State private var showingAppSuggestionSheet = false
-    @State private var appSuggestionCount: Int = 0
-    
-    struct PresetApp: Identifiable {
-        let name: String
-        let bundleId: String
-        let icon: String
-        var id: String { bundleId }
+    @State private var selectedBundleId: String? = nil
+    @State private var editingBundleId: String? = nil
+    @State private var showingAutoLearnSheet = false
+
+    var sortedConfigs: [(bundleId: String, config: AppSmartSwitchConfig)] {
+        configs.sorted { $0.key < $1.key }
+            .map { (bundleId: $0.key, config: $0.value) }
     }
-    
-    // Popular macOS applications bundle IDs as presets
-    let presets: [PresetApp] = [
-        PresetApp(name: "Terminal", bundleId: "com.apple.Terminal", icon: "terminal"),
-        PresetApp(name: "iTerm2", bundleId: "com.googlecode.iterm2", icon: "terminal.fill"),
-        PresetApp(name: "VS Code", bundleId: "com.microsoft.VSCode", icon: "curlybraces"),
-        PresetApp(name: "Xcode", bundleId: "com.apple.dt.Xcode", icon: "hammer"),
-        PresetApp(name: "Raycast", bundleId: "com.raycast.macos", icon: "magnifyingglass.circle"),
-        PresetApp(name: "Spotlight", bundleId: "com.apple.Spotlight", icon: "magnifyingglass"),
-        PresetApp(name: "Alfred", bundleId: "com.runningwithcrayons.Alfred", icon: "hat.3")
-    ]
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header Section + Toggle (1.5.5+)
+            // Header
             HStack(alignment: .center, spacing: 12) {
                 ThemedSymbol(name: "arrow.left.arrow.right.circle.fill")
                     .font(.system(size: 32))
@@ -39,7 +31,7 @@ struct SmartSwitchView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Smart Switch")
                         .font(.headline)
-                    Text("Tự tắt Tiếng Việt khi chuyển sang ứng dụng lập trình/tìm kiếm")
+                    Text("Tự động chọn chế độ gõ phù hợp cho từng ứng dụng (Tiếng Việt / Tiếng Anh / Tắt)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -51,26 +43,9 @@ struct SmartSwitchView: View {
                     .labelsHidden()
             }
             .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(NSColor.windowBackgroundColor))
 
             Divider()
-
-            // 1.5.5: Gợi ý app từ Thống kê (luôn hiện khi smartSwitchEnabled).
-            if smartSwitchEnabled && appSuggestionCount > 0 {
-                HStack(spacing: 8) {
-                    Image(systemName: "lightbulb.fill")
-                        .foregroundStyle(.yellow)
-                    Text("Có \(appSuggestionCount) app bạn dùng ≥10 lần chưa nằm trong Smart Switch.")
-                        .font(.caption)
-                    Spacer()
-                    Button("Xem & thêm") { showingAppSuggestionSheet = true }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.yellow.opacity(0.06))
-                Divider()
-            }
 
             if !smartSwitchEnabled {
                 VStack(spacing: 12) {
@@ -81,7 +56,7 @@ struct SmartSwitchView: View {
                     Text("Tính năng đang tắt")
                         .font(.headline)
                         .foregroundStyle(.secondary)
-                    Text("Kích hoạt Smart Switch từ biểu tượng bộ gõ trên thanh Menu Bar để bắt đầu sử dụng.")
+                    Text("Kích hoạt Smart Switch ở menu bar hoặc toggle phía trên.")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .multilineTextAlignment(.center)
@@ -91,150 +66,284 @@ struct SmartSwitchView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(NSColor.controlBackgroundColor))
             } else {
-                HSplitView {
-                    // Left Column: List of current Apps
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("ỨNG DỤNG BỊ GIỚI HẠN")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 12)
-                            .padding(.top, 12)
-                            .padding(.bottom, 6)
-                        
-                        List(smartSwitchApps, id: \.self, selection: $selectedApp) { app in
-                            HStack {
-                                ThemedSymbol(name: "app.dashed")
-                                    .foregroundStyle(.secondary)
-                                Text(app)
-                                    .font(.system(.body, design: .monospaced))
-                                Spacer()
+                VStack(alignment: .leading, spacing: 0) {
+                    // Legend + auto-learn button
+                    HStack(spacing: 12) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.fill")
+                                .foregroundStyle(.blue)
+                            Text("Người dùng đặt")
+                        }
+                        HStack(spacing: 4) {
+                            Image(systemName: "cpu")
+                                .foregroundStyle(.purple)
+                            Text("Tự động học")
+                        }
+                        Spacer()
+                        Button {
+                            showingAutoLearnSheet = true
+                        } label: {
+                            Label("Tự học từ Thống kê", themedSymbol: "wand.and.stars")
+                        }
+                        .help("Xem các app vkey gợi ý đổi state dựa trên thống kê ngôn ngữ.")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+
+                    Divider()
+
+                    // App list
+                    if sortedConfigs.isEmpty {
+                        VStack(spacing: 8) {
+                            Spacer()
+                            ThemedSymbol(name: "tray")
+                                .font(.system(size: 36))
+                                .foregroundStyle(.tertiary)
+                            Text("Chưa có app nào được cấu hình")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                            Text("Thêm bundle ID bên dưới hoặc bấm \"Tự học từ Thống kê\".")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .multilineTextAlignment(.center)
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        List(selection: $selectedBundleId) {
+                            ForEach(sortedConfigs, id: \.bundleId) { item in
+                                AppConfigRow(
+                                    bundleId: item.bundleId,
+                                    config: item.config,
+                                    onStateChange: { newState in
+                                        setState(newState, for: item.bundleId)
+                                    },
+                                    onReset: { resetToAutoLearn(item.bundleId) }
+                                )
+                                .tag(item.bundleId)
                             }
-                            .tag(app)
                         }
                         .listStyle(.inset)
-                        
-                        // Add Bundle ID text field and buttons
-                        HStack(spacing: 8) {
-                            TextField("com.company.app", text: $newBundleId)
-                                .textFieldStyle(.roundedBorder)
-                                .font(.system(.body, design: .monospaced))
-                                .onSubmit {
-                                    addNewApp()
-                                }
-                            
-                            Button(action: addNewApp) {
-                                ThemedSymbol(name: "plus")
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(newBundleId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                            .help("Thêm ứng dụng")
-                            
-                            Button(action: removeSelectedApp) {
-                                ThemedSymbol(name: "trash")
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(selectedApp == nil)
-                            .help("Xóa ứng dụng đang chọn")
-                        }
-                        .padding(10)
-                        .background(Color(NSColor.windowBackgroundColor))
                     }
-                    .frame(minWidth: 220, maxWidth: .infinity, maxHeight: .infinity)
-                    
-                    // Right Column: Presets & Info
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("THÊM NHANH MẪU CÓ SẴN")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 12)
-                        
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 6) {
-                                ForEach(presets) { preset in
-                                    let isAdded = smartSwitchApps.contains(preset.bundleId)
-                                    Button(action: {
-                                        if isAdded {
-                                            smartSwitchApps.removeAll(where: { $0 == preset.bundleId })
-                                        } else {
-                                            smartSwitchApps.append(preset.bundleId)
-                                        }
-                                    }) {
-                                        HStack {
-                                            Label(preset.name, themedSymbol: preset.icon)
-                                            Spacer()
-                                            if isAdded {
-                                                ThemedSymbol(name: "checkmark.circle.fill")
-                                                    .foregroundStyle(.green)
-                                            } else {
-                                                ThemedSymbol(name: "plus.circle")
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                        }
-                                        .contentShape(Rectangle())
-                                        .padding(.vertical, 4)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
+
+                    Divider()
+
+                    // Add bundle ID input
+                    HStack(spacing: 8) {
+                        TextField("com.example.app", text: $newBundleId)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(.body, design: .monospaced))
+                            .onSubmit { addNewApp() }
+
+                        Button(action: addNewApp) {
+                            Label("Thêm", themedSymbol: "plus")
                         }
-                        
-                        Divider()
-                        
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("💡 Cách lấy Bundle ID:")
-                                .font(.caption)
-                                .bold()
-                            Text("Mở Terminal và gõ lệnh sau để lấy Bundle ID của ứng dụng đang chạy:")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.secondary)
-                            
-                            Text("osascript -e 'id of app \"Tên Ứng Dụng\"'")
-                                .font(.system(size: 9, design: .monospaced))
-                                .padding(6)
-                                .background(Color.black.opacity(0.06))
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                        .buttonStyle(.borderedProminent)
+                        .disabled(newBundleId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                        Button(action: removeSelected) {
+                            Label("Xoá", themedSymbol: "trash")
                         }
-                        .padding(.bottom, 12)
+                        .buttonStyle(.bordered)
+                        .disabled(selectedBundleId == nil)
                     }
-                    .padding(.horizontal, 12)
-                    .frame(width: 190)
-                    .frame(maxHeight: .infinity)
+                    .padding(10)
                     .background(Color(NSColor.windowBackgroundColor))
+
+                    // Help text
+                    Text("💡 Lấy Bundle ID: mở Terminal → `osascript -e 'id of app \"Tên App\"'`. Hoặc click app trong danh sách trên rồi bấm \"Sửa\" để đổi state thủ công.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 10)
                 }
                 .background(Color(NSColor.controlBackgroundColor))
             }
         }
-        .frame(minWidth: 540, minHeight: 640)
+        .frame(minWidth: 480, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(isPresented: $showingAppSuggestionSheet) {
-            SmartSwitchSuggestionSheet()
-                .onDisappear { recomputeAppSuggestionCount() }
+        .sheet(isPresented: $showingAutoLearnSheet) {
+            SmartSwitchAutoLearnSheet()
         }
-        .onAppear { recomputeAppSuggestionCount() }
-        .onChange(of: smartSwitchApps) { _ in recomputeAppSuggestionCount() }
     }
 
-    private func recomputeAppSuggestionCount() {
-        let aggregated = UsageStatistics.shared.aggregatedTopApps(threshold: 10)
-        let existing = Set(smartSwitchApps)
-        appSuggestionCount = aggregated.filter { !existing.contains($0.word) }.count
-    }
+    // MARK: - Actions
 
     private func addNewApp() {
         let cleanId = newBundleId.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanId.isEmpty else { return }
-        
-        if !smartSwitchApps.contains(cleanId) {
-            smartSwitchApps.append(cleanId)
+        if configs[cleanId] == nil {
+            configs[cleanId] = AppSmartSwitchConfig(
+                state: .englishMode, source: .user, lastModified: Date()
+            )
         }
         newBundleId = ""
     }
-    
-    private func removeSelectedApp() {
-        guard let selected = selectedApp else { return }
-        smartSwitchApps.removeAll(where: { $0 == selected })
-        selectedApp = nil
+
+    private func removeSelected() {
+        guard let sel = selectedBundleId else { return }
+        configs.removeValue(forKey: sel)
+        selectedBundleId = nil
+    }
+
+    private func setState(_ state: AppSmartSwitchState, for bundleId: String) {
+        configs[bundleId] = AppSmartSwitchConfig(
+            state: state, source: .user, lastModified: Date()
+        )
+    }
+
+    private func resetToAutoLearn(_ bundleId: String) {
+        configs.removeValue(forKey: bundleId)
+    }
+}
+
+// MARK: - Row UI
+
+private struct AppConfigRow: View {
+    let bundleId: String
+    let config: AppSmartSwitchConfig
+    let onStateChange: (AppSmartSwitchState) -> Void
+    let onReset: () -> Void
+
+    @State private var showingPicker = false
+
+    var displayName: String {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId),
+           let bundle = Bundle(url: url),
+           let name = bundle.localizedInfoDictionary?["CFBundleDisplayName"] as? String
+                  ?? bundle.infoDictionary?["CFBundleName"] as? String {
+            return name
+        }
+        return bundleId
+    }
+
+    var stateBadgeColor: Color {
+        switch config.state {
+        case .disabled: return .gray
+        case .vietnameseMode: return .red
+        case .englishMode: return .blue
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
+                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                    .resizable()
+                    .frame(width: 24, height: 24)
+            } else {
+                Image(systemName: "app.dashed")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 24, height: 24)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(displayName)
+                    .font(.body)
+                Text(bundleId)
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            // State badge
+            Text(config.state.shortLabel)
+                .font(.system(.caption, design: .rounded))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(stateBadgeColor.opacity(0.15))
+                .foregroundStyle(stateBadgeColor)
+                .clipShape(Capsule())
+
+            // Source icon
+            Image(systemName: config.source.iconSymbol)
+                .font(.system(size: 12))
+                .foregroundStyle(config.source == .user ? .blue : .purple)
+                .help(config.source.displayName)
+
+            // Edit button
+            Button {
+                showingPicker = true
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .buttonStyle(.borderless)
+            .help("Sửa state cho ứng dụng này")
+            .popover(isPresented: $showingPicker) {
+                AppConfigPicker(
+                    bundleId: bundleId,
+                    currentState: config.state,
+                    currentSource: config.source,
+                    onSelectState: { state in
+                        onStateChange(state)
+                        showingPicker = false
+                    },
+                    onReset: {
+                        onReset()
+                        showingPicker = false
+                    }
+                )
+            }
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+private struct AppConfigPicker: View {
+    let bundleId: String
+    let currentState: AppSmartSwitchState
+    let currentSource: AppSmartSwitchSource
+    let onSelectState: (AppSmartSwitchState) -> Void
+    let onReset: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Chọn chế độ cho")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(bundleId)
+                .font(.system(.caption2, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .padding(.bottom, 4)
+
+            ForEach(AppSmartSwitchState.allCases, id: \.self) { state in
+                Button {
+                    onSelectState(state)
+                } label: {
+                    HStack {
+                        Image(systemName: state == currentState ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(state == currentState ? Color.accentColor : Color.secondary)
+                        Text(state.displayName)
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+
+            if currentSource == .user {
+                Divider()
+                Button {
+                    onReset()
+                } label: {
+                    HStack {
+                        Image(systemName: "arrow.uturn.backward.circle")
+                            .foregroundStyle(.purple)
+                        Text("Để vkey tự học (auto-learn)")
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Xoá cấu hình thủ công → lần check kế tiếp auto-learn sẽ re-evaluate.")
+            }
+        }
+        .padding(12)
+        .frame(width: 240)
     }
 }
 

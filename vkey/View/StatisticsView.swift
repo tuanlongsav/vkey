@@ -126,7 +126,7 @@ struct StatisticsView: View {
             statRow("Có gợi ý", value: "\(s.wordsSuggested)")
             statRow("Smart Switch kích hoạt", value: "\(s.smartSwitchFires)")
           } header: {
-            Text("Tuần này — \(s.weekId)")
+            Text(UsageSummary.vietnameseHeader(for: s.weekId))
           }
 
           // MARK: 5-7. Top words & apps (per-row delete)
@@ -169,7 +169,7 @@ struct StatisticsView: View {
             Section {
               ForEach(historical.prefix(4), id: \.weekId) { week in
                 VStack(alignment: .leading, spacing: 4) {
-                  Text(week.weekId)
+                  Text(UsageSummary.vietnameseHeader(for: week.weekId))
                     .font(.headline)
                   HStack {
                     Text("Tổng: \(week.wordsTotal)")
@@ -212,7 +212,7 @@ struct StatisticsView: View {
       .formStyle(.grouped)
       .scrollDisabled(false)
     }
-    .frame(minWidth: 540, minHeight: 640)
+    .frame(minWidth: 480, minHeight: 720)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .onAppear(perform: refresh)
     .sheet(isPresented: $showingSuggestionSheet) {

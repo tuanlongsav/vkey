@@ -37,6 +37,73 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.0] - 2026-05-20 — "Smart Context"
+
+Bản nâng cấp lớn về Smart Switch + nhiều cải tiến UI. 4 thay đổi chính:
+
+### 1. Smart Switch 3-state per-app (major refactor)
+
+**Trước (v1.5.x – v1.6.x)**: `smartSwitchApps: [String]` — list bundle IDs "luôn tắt VN khi mở app". Không phân biệt user set vs default.
+
+**Sau (v1.7.0)**: `appSmartSwitchConfigs: [String: AppSmartSwitchConfig]` — mỗi app có:
+- **state**: 3 lựa chọn — `vietnameseMode` 🇻🇳 / `englishMode` 🇺🇸 / `disabled` ⛔
+- **source**: `user` 👤 (thủ công) hoặc `autoLearn` 🤖 (vkey tự học)
+- **lastModified**: timestamp track auto-learn updates
+
+**Auto-learn**: vkey theo dõi ngôn ngữ user gõ trong từng app qua Stats (per-app VN vs EN counts + dataset days spread). Threshold:
+- ≥5 ngày dataset trong tuần
+- ≥5 commit/ngày trung bình (~35 commits/tuần)
+- ratio language ≥75% (Tiếng Việt) hoặc ≤25% (Tiếng Anh)
+- Chạy 1 lần/tuần khi launch (gated qua `Defaults[.lastSmartSwitchAutoLearnWeek]`)
+
+**User override LUÔN thắng**: app có `source=.user` không bị auto-learn override. User reset về auto-learn qua nút "Để vkey tự học" trong popover.
+
+**Auto-migrate**: user upgrade từ 1.6.x — `smartSwitchApps` cũ → `englishMode + source=.user` cho mỗi entry. Chạy 1 lần khi `appSmartSwitchConfigs` đang rỗng. Idempotent.
+
+### 2. UI Smart Switch redesign
+
+- App row mới: icon NSWorkspace + tên hiển thị + bundle ID + badge state (3 colors) + source icon 👤/🤖 + popup picker "Sửa".
+- Popup picker: 3 lựa chọn state + (nếu source=user) nút "Để vkey tự học (auto-learn)" reset entry.
+- Sheet "Tự học từ Thống kê" (mới): preview gợi ý từ auto-learn engine, áp dụng hàng loạt, skip user-set entries (🔒).
+- Legend ở đầu list: giải thích 👤 vs 🤖.
+
+### 3. Tab Chính tả restructure
+
+- Gộp `spellCheckInSentenceEnabled` vào `spellCheckEnabled` (1 toggle thay 2). Defaults key giữ trong codebase (true logic-wise).
+- Merge 3 Section vào 1: "Từ điển cá nhân" + "Học hành vi từ Thống kê" + "Cấu hình Kiểm tra" → đổi tên thành **"Cấu hình kiểm tra chính tả"**.
+- Còn 5 Section thay vì 7 — giảm cognitive load.
+
+### 4. Cửa sổ Cài đặt — kích thước mới
+
+- `minWidth`: 540 → 480 (bỏ thừa 2 bên cho tab content compact).
+- `minHeight`: 640 → 720 (hiển thị hết content nhiều tab không scroll; SpellCheck + Statistics vẫn có scroll khi cần).
+- Default 5 tab đồng nhất. Drag góc/cạnh vẫn resize được; kích thước được nhớ qua `setFrameAutosaveName`.
+
+### 5. Tab Thống kê việt hoá header
+
+- "Tuần này — 2026-W21" → **"Tuần 21 năm 2026 (từ 18/05 đến 24/05/2026)"**.
+- Tính từ thứ Hai đến Chủ Nhật (ISO 8601 weekday=2 → weekday=1+7d).
+- Helper `UsageSummary.vietnameseHeader(for:)` + `UsageSummary.dateRange(for:)`.
+- Áp dụng cho cả Section "Tuần này" và "Các tuần đã đóng" (historical).
+
+### Files
+
+- [vkey/App/Setting.swift](vkey/App/Setting.swift) — thêm `AppSmartSwitchState`, `AppSmartSwitchSource`, `AppSmartSwitchConfig` + 2 Defaults keys mới.
+- [vkey/App/AppState.swift](vkey/App/AppState.swift) — refactor `activeApplicationDidChange` ưu tiên `appSmartSwitchConfigs`; thêm `migrateSmartSwitchTo3State`, `setAppSmartSwitchState`, `resetAppSmartSwitchToAutoLearn`, `applySmartSwitchAutoLearn`.
+- [vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift) — gọi migration + `runSmartSwitchAutoLearnIfDue` ở launch; bump minSize 480×720.
+- [vkey/Stats/UsageStatistics.swift](vkey/Stats/UsageStatistics.swift) — extend `WeekBucket` với `appLanguageVnCounts`, `appLanguageEnCounts`, `appLanguageDays`; recording trong `applyCommit`; thêm `computeSmartSwitchAutoLearn`; helper `UsageSummary.dateRange` + `vietnameseHeader`.
+- [vkey/App/InputProcessor.swift](vkey/App/InputProcessor.swift) — bỏ guard `spellCheckInSentenceEnabled` (gộp vào `spellCheckEnabled`).
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — SpellCheckView merge 3 section thành "Cấu hình kiểm tra chính tả"; frame 480×720.
+- [vkey/View/SmartSwitchView.swift](vkey/View/SmartSwitchView.swift) — full redesign 3-state + source icons + popover picker.
+- [vkey/View/SmartSwitchSuggestionSheet.swift](vkey/View/SmartSwitchSuggestionSheet.swift) — replace bằng `SmartSwitchAutoLearnSheet` preview auto-learn suggestions.
+- [vkey/View/StatisticsView.swift](vkey/View/StatisticsView.swift) — apply `vietnameseHeader` cho header current + historical weeks.
+- Frame `minWidth: 480, minHeight: 720` áp dụng cho 5 tab (SettingView, SmartSwitchView, MacroView, StatisticsView).
+
+### Schema backward-compat
+
+- `WeekBucket` codable: 3 field mới (`appLanguageVnCounts`, `appLanguageEnCounts`, `appLanguageDays`) đều `decodeIfPresent ?? [:]` — file v1.5.x/1.6.x không có sẽ default empty, không break.
+- `smartSwitchApps` Defaults key GIỮ trong codebase làm fallback (deprecated). Lần launch v1.7.0 đầu tiên migration đọc list này → ghi sang `appSmartSwitchConfigs` 1 lần.
+
 ## [1.6.3] - 2026-05-20 — "Stats Restored"
 
 Hotfix khẩn cấp cho lỗi **tab Thống kê hiển thị toàn 0 sau khi cài bản mới** — root cause THỰC SỰ phát hiện sau khi fix các nhánh khác không hiệu quả.

@@ -162,13 +162,31 @@ class AppState: ObservableObject, FileMonitorDelegate {
         let wasSkippingHUD = skipHUDNotification
         skipHUDNotification = true
         defer { skipHUDNotification = wasSkippingHUD }
-        
+
         if let activeApp = NSWorkspace.shared.frontmostApplication,
             let appName = activeApp.bundleIdentifier,
             appName != bundleId
         {
-            // Smart Switch: launcher / search apps default to English typing
-            // without overwriting per-app memory of the underlying app.
+            // 1.7.0: ưu tiên đọc từ appSmartSwitchConfigs (3-state).
+            // Fallback smartSwitchApps để backward-compat user chưa migrate.
+            let configs = Defaults[.appSmartSwitchConfigs]
+            if Defaults[.smartSwitchEnabled], let config = configs[appName] {
+                if !smartSwitchActive {
+                    enabledBeforeSmartSwitch = enabled
+                }
+                smartSwitchActive = true
+                activeAppName = appName
+                inputProcessor.changeActiveApp(activeAppName)
+                switch config.state {
+                case .disabled, .englishMode:
+                    setEnabledWithoutPersist(false)
+                case .vietnameseMode:
+                    setEnabledWithoutPersist(true)
+                }
+                return
+            }
+
+            // Legacy fallback: smartSwitchApps list (will be migrated later).
             if Defaults[.smartSwitchEnabled],
                 Defaults[.smartSwitchApps].contains(appName)
             {
@@ -194,6 +212,66 @@ class AppState: ObservableObject, FileMonitorDelegate {
             } else {
                 setEnabled(set: enabled)
             }
+        }
+    }
+
+    /// 1.7.0: Migration smartSwitchApps (list) → appSmartSwitchConfigs (3-state map).
+    /// Chạy 1 lần khi app launch v1.7.0 và `appSmartSwitchConfigs` đang rỗng
+    /// (user chưa migrate). Idempotent — gọi nhiều lần không sao.
+    public static func migrateSmartSwitchTo3State() {
+        guard Defaults[.appSmartSwitchConfigs].isEmpty else { return }
+        var newConfigs: [String: AppSmartSwitchConfig] = [:]
+        let now = Date()
+        for bundleId in Defaults[.smartSwitchApps] {
+            newConfigs[bundleId] = AppSmartSwitchConfig(
+                state: .englishMode,
+                source: .user,
+                lastModified: now
+            )
+        }
+        Defaults[.appSmartSwitchConfigs] = newConfigs
+    }
+
+    /// 1.7.0: User manual override → ghi vào appSmartSwitchConfigs với source=.user.
+    /// Gọi từ UI khi user click chuyển state thủ công, hoặc từ menu bar toggle.
+    public func setAppSmartSwitchState(_ state: AppSmartSwitchState, bundleId: String) {
+        var configs = Defaults[.appSmartSwitchConfigs]
+        configs[bundleId] = AppSmartSwitchConfig(
+            state: state,
+            source: .user,
+            lastModified: Date()
+        )
+        Defaults[.appSmartSwitchConfigs] = configs
+    }
+
+    /// 1.7.0: Reset 1 app về auto-learn → xoá entry, lần check kế tiếp
+    /// auto-learn sẽ re-evaluate.
+    public func resetAppSmartSwitchToAutoLearn(bundleId: String) {
+        var configs = Defaults[.appSmartSwitchConfigs]
+        configs.removeValue(forKey: bundleId)
+        Defaults[.appSmartSwitchConfigs] = configs
+    }
+
+    /// 1.7.0: Apply auto-learn suggestions → ghi vào configs với source=.autoLearn.
+    /// User-set entries (source=.user) KHÔNG bị override.
+    public func applySmartSwitchAutoLearn(_ suggestions: [String: AppSmartSwitchState]) {
+        var configs = Defaults[.appSmartSwitchConfigs]
+        let now = Date()
+        var updated = 0
+        for (bundleId, state) in suggestions {
+            // Skip nếu đã có user setting
+            if let existing = configs[bundleId], existing.source == .user { continue }
+            // Skip nếu state đã đúng (giữ lastModified ổn định)
+            if configs[bundleId]?.state == state { continue }
+            configs[bundleId] = AppSmartSwitchConfig(
+                state: state,
+                source: .autoLearn,
+                lastModified: now
+            )
+            updated += 1
+        }
+        if updated > 0 {
+            Defaults[.appSmartSwitchConfigs] = configs
         }
     }
 

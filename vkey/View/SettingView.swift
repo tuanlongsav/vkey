@@ -280,7 +280,7 @@ struct GeneralView: View {
             .padding(.bottom, 14)
             .frame(maxWidth: .infinity)
         }
-        .frame(minWidth: 540, minHeight: 640)
+        .frame(minWidth: 480, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -346,25 +346,79 @@ struct SpellCheckView: View {
                     Text("Phím tắt thông minh")
                 }
 
-                // Section 2: Kiểm tra chính tả
+                // Section 2 (v1.7.0): "Cấu hình kiểm tra chính tả" — gộp
+                // master toggle + personal dict + auto-feedback vào CÙNG section
+                // để giảm cognitive load.
                 Section {
                     Toggle(isOn: $spellCheckEnabled) {
                         Label("Kiểm tra chính tả", themedSymbol: "checkmark.circle")
                     }
                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
+                    Text("Bật kiểm tra cấu trúc âm tiết VN cho cả từ vừa gõ và từ trong câu.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, -4)
+                    // v1.7.0: bỏ sub-toggle `spellCheckInSentenceEnabled` —
+                    // master toggle gate cho cả 2 trường hợp. Defaults key
+                    // giữ trong codebase (luôn true logic-wise).
+
                     if spellCheckEnabled {
-                        Toggle(isOn: $spellCheckInSentenceEnabled) {
-                            Label("Kiểm tra trong câu", themedSymbol: "text.justify.left")
+                        Divider()
+
+                        // Inline: Từ điển cá nhân (was Section 5)
+                        Toggle(isOn: $personalDictionaryEnabled) {
+                            Label("Sử dụng từ điển cá nhân", themedSymbol: "person.circle")
                         }
                         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                        Text("Áp dụng danh sách từ tự thêm (allow/keep/deny) do bạn cấu hình.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, -4)
+
+                        HStack {
+                            Spacer()
+                            Button(action: { showingPersonalDictEditor = true }) {
+                                Label("Quản lý từ điển cá nhân", themedSymbol: "pencil.and.outline")
+                            }
+                            Spacer()
+                        }
+                        .padding(.top, 4)
+
+                        Divider()
+
+                        // Inline: Học hành vi từ Thống kê (was Section 7)
+                        Toggle(isOn: $autoPersonalDictFeedback) {
+                            Label("Tự động compute đề xuất hàng tuần",
+                                  themedSymbol: "person.crop.circle.badge.checkmark")
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                        Text("Mỗi tuần vkey nhận thấy các từ gõ nhiều → tạo danh sách ĐỀ XUẤT thêm vào Allow/Keep. Bạn review trước khi chốt thêm — vkey KHÔNG tự ý ghi vào.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, -4)
+
+                        HStack {
+                            Spacer()
+                            Button {
+                                showingSuggestionSheet = true
+                            } label: {
+                                Label("Xem đề xuất pending (\(pendingSuggestions.count))",
+                                      themedSymbol: "tray.full")
+                            }
+                            .disabled(pendingSuggestions.isEmpty)
+                            Spacer()
+                        }
+                        .padding(.top, 4)
                     }
                 } header: {
-                    Text("Cấu hình Kiểm tra")
+                    Text("Cấu hình kiểm tra chính tả")
                 }
 
                 if spellCheckEnabled {
-                    // Section 3: Gợi ý & Sửa lỗi chính tả (moved up, sát "Kiểm tra")
+                    // Section 3: Gợi ý & Sửa lỗi chính tả
                     Section {
                         Toggle(isOn: $suggestionEnabled) {
                             Label("Gợi ý sửa lỗi chính tả", themedSymbol: "lightbulb")
@@ -422,33 +476,8 @@ struct SpellCheckView: View {
                         Text("Tự động khôi phục tiếng Anh (Space Restore)")
                     }
 
-                    // Section 5: Personal dictionary
-                    Section {
-                        Toggle(isOn: $personalDictionaryEnabled) {
-                            Label("Sử dụng từ điển cá nhân", themedSymbol: "person.circle")
-                        }
-                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-
-                        Text("Áp dụng danh sách từ tự thêm (allow/keep/deny) do bạn cấu hình trong phần mềm.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, -4)
-
-                        // 1.5.6: button luôn hiển thị (kể cả khi toggle tắt) để user
-                        // còn có chỗ chỉnh sửa cố định 1 nơi. Cũng dùng cho user
-                        // bật "Tự động cập nhật từ Thống kê" ở Section bên dưới
-                        // — họ vẫn cần chỗ chỉnh sửa khi auto promote sai.
-                        HStack {
-                            Spacer()
-                            Button(action: { showingPersonalDictEditor = true }) {
-                                Label("Quản lý từ điển cá nhân", themedSymbol: "pencil.and.outline")
-                            }
-                            Spacer()
-                        }
-                        .padding(.top, 4)
-                    } header: {
-                        Text("Từ điển cá nhân")
-                    }
+                    // v1.7.0: "Từ điển cá nhân" + "Học hành vi từ Thống kê"
+                    // đã được merge vào Section "Cấu hình kiểm tra chính tả" ở trên.
 
                     // Section: Từ điển từ GitHub (1.6.2+ — manual update button).
                     // Auto-update vẫn chạy 24h/lần khi launch; button này cho user
@@ -496,35 +525,8 @@ struct SpellCheckView: View {
                         Text("Từ điển từ GitHub")
                     }
 
-                    // Section 6: Auto-feedback đề xuất từ Thống kê (1.6.0+).
-                    // Thay đổi semantic: KHÔNG còn auto-write nữa — chỉ compute
-                    // đề xuất pending. User review qua sheet, chốt thêm.
-                    Section {
-                        Toggle(isOn: $autoPersonalDictFeedback) {
-                            Label("Tự động compute đề xuất hàng tuần",
-                                  themedSymbol: "person.crop.circle.badge.checkmark")
-                        }
-                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-
-                        Text("Mỗi tuần, vkey nhận thấy các từ bạn gõ nhiều và tạo danh sách ĐỀ XUẤT thêm vào Allow / Keep. Bạn review, sửa loại, rồi quyết định thêm — vkey KHÔNG tự ý ghi vào từ điển cá nhân (tránh sai).")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        HStack {
-                            Spacer()
-                            Button {
-                                showingSuggestionSheet = true
-                            } label: {
-                                Label("Xem đề xuất pending (\(pendingSuggestions.count))",
-                                      themedSymbol: "tray.full")
-                            }
-                            .disabled(pendingSuggestions.isEmpty)
-                            Spacer()
-                        }
-                        .padding(.top, 4)
-                    } header: {
-                        Text("Học hành vi từ Thống kê")
-                    }
+                    // v1.7.0: Section "Học hành vi từ Thống kê" đã được merge
+                    // vào Section "Cấu hình kiểm tra chính tả" ở trên.
 
                     // 1.6.1: Section "Đoán từ tiếp theo" đã chuyển sang
                     // tab Chung — feature global, không trực thuộc spell check.
@@ -533,7 +535,7 @@ struct SpellCheckView: View {
             .formStyle(.grouped)
             .scrollDisabled(false)
         }
-        .frame(minWidth: 540, minHeight: 640)
+        .frame(minWidth: 480, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingPersonalDictEditor) {
             PersonalDictionaryEditorView()

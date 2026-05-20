@@ -736,7 +736,10 @@ class InputProcessor {
       return false
     }
 
-    guard Defaults[.spellCheckInSentenceEnabled] else {
+    // v1.7.0: bỏ guard spellCheckInSentenceEnabled — sub-toggle UI đã gộp vào
+    // master `spellCheckEnabled`. Khi master ON thì luôn check cả single word
+    // và in-sentence. Key vẫn giữ trong Defaults cho backward-compat.
+    guard Defaults[.spellCheckEnabled] else {
       lastSuggestions = []
       return false
     }

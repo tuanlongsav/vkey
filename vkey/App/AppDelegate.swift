@@ -41,6 +41,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // 1 lần khi user lên version mới. Chi tiết trong `DefaultMacros.swift`.
     seedDefaultMacrosIfNeeded()
 
+    // 1.7.0: migrate smartSwitchApps (list) → appSmartSwitchConfigs (3-state map).
+    // Idempotent — chỉ chạy nếu configs đang rỗng.
+    AppState.migrateSmartSwitchTo3State()
+
+    // 1.7.0: chạy auto-learn Smart Switch nếu chưa chạy tuần này.
+    runSmartSwitchAutoLearnIfDue()
+
     // When the Settings (or onboarding) window closes, slide the app back to
     // .accessory so it disappears from Cmd-Tab and the Dock. We only need to
     // be .regular while a real window is on screen — otherwise the menu bar
@@ -127,6 +134,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // 1.5.0: prompt for a personal-data backup the first launch after a
     // version upgrade (gated by Defaults[.autoBackupOnUpgrade]).
     UserDataMigration.handleVersionChange()
+  }
+
+  /// 1.7.0: Gate auto-learn Smart Switch chạy 1 lần/tuần.
+  private func runSmartSwitchAutoLearnIfDue() {
+    let cal = Calendar(identifier: .iso8601)
+    let now = Date()
+    let weekId = String(format: "%04d-W%02d",
+                        cal.component(.yearForWeekOfYear, from: now),
+                        cal.component(.weekOfYear, from: now))
+    guard Defaults[.lastSmartSwitchAutoLearnWeek] != weekId else { return }
+    DispatchQueue.global(qos: .utility).async { [weak self] in
+      let suggestions = UsageStatistics.shared.computeSmartSwitchAutoLearn()
+      DispatchQueue.main.async {
+        self?.appState.applySmartSwitchAutoLearn(suggestions)
+        Defaults[.lastSmartSwitchAutoLearnWeek] = weekId
+      }
+    }
   }
 
   /// Gate `performWeeklyFeedback()` so it fires once per ISO week even if
@@ -242,7 +266,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // Idempotent — chỉ apply 1 lần.
     if !win.styleMask.contains(.resizable) {
       win.styleMask.insert(.resizable)
-      win.minSize = NSSize(width: 540, height: 640)
+      win.minSize = NSSize(width: 480, height: 720)
       if win.frameAutosaveName.isEmpty {
         win.setFrameAutosaveName("VkeySettingsWindow")
       }

@@ -309,6 +309,35 @@ final class UsageStatistics {
       .sorted { $0.count > $1.count }
   }
 
+  /// 1.7.0: Auto-learn Smart Switch state per-app từ stats current week.
+  /// Threshold: ≥5 ngày dataset, ≥5 commit/ngày trung bình (~35/tuần),
+  /// ratio language ≥75% (Tiếng Việt hoặc Tiếng Anh).
+  /// User-set entries (source=.user) KHÔNG bị override.
+  /// Returns: map bundleId → suggested state cho các app pass tất cả gates.
+  func computeSmartSwitchAutoLearn() -> [String: AppSmartSwitchState] {
+    queue.sync {
+      var out: [String: AppSmartSwitchState] = [:]
+      for bundleId in Set(counters.appLanguageVnCounts.keys).union(counters.appLanguageEnCounts.keys) {
+        let vn = counters.appLanguageVnCounts[bundleId] ?? 0
+        let en = counters.appLanguageEnCounts[bundleId] ?? 0
+        let total = vn + en
+        guard total > 0 else { continue }
+        let days = counters.appLanguageDays[bundleId]?.count ?? 0
+        let avgPerDay = days > 0 ? Double(total) / Double(days) : 0
+        // Gate: ≥5 ngày dataset spread, ≥5 commit/ngày avg
+        guard days >= 5, avgPerDay >= 5 else { continue }
+        let ratio = Double(vn) / Double(total)
+        if ratio >= 0.75 {
+          out[bundleId] = .vietnameseMode
+        } else if ratio <= 0.25 {
+          out[bundleId] = .englishMode
+        }
+        // else: ambiguous, không auto-set
+      }
+      return out
+    }
+  }
+
   /// Promote frequently-confirmed words into the user's personal dictionary.
   /// Returns the summary of the closed week so the UI can show what changed.
   ///
@@ -429,6 +458,16 @@ final class UsageStatistics {
     var vnPhraseCounts2: [String: Int] = [:]   // "công ty" → count
     var vnPhraseCounts3: [String: Int] = [:]   // "kính gửi anh" → count
 
+    /// 1.7.0: per-app language tracking — đếm số commit Tiếng Việt vs
+    /// Tiếng Anh trong từng app. Dùng cho Smart Switch auto-learn:
+    /// nếu app dùng đủ data và 1 ngôn ngữ chiếm ≥75%, auto-set state.
+    /// `vn` = .keepVietnamese commits; `en` = .restoreRawEnglish + .keepRaw.
+    /// `days` = set ngày-trong-tuần đã ghi (1-7, ISO Monday=1) → để check
+    /// dataset spread ≥5 ngày.
+    var appLanguageVnCounts: [String: Int] = [:]
+    var appLanguageEnCounts: [String: Int] = [:]
+    var appLanguageDays: [String: [Int]] = [:]  // bundle → list of weekday (1-7)
+
     init(weekId: String = WeekBucket.currentWeekId(),
          weekEnd: Date = WeekBucket.endOfCurrentWeek()) {
       self.weekId = weekId
@@ -443,6 +482,7 @@ final class UsageStatistics {
       case vnWordCounts, enWordCounts, appCounts
       case vnKeepStreak, enRestoreStreak
       case vnPhraseCounts2, vnPhraseCounts3   // 1.6.1+
+      case appLanguageVnCounts, appLanguageEnCounts, appLanguageDays  // 1.7.0+
     }
 
     /// 1.6.0: backward-compat Codable. Mọi field optional với fallback
@@ -470,6 +510,10 @@ final class UsageStatistics {
       // 1.6.1: phrase counters — luôn optional (file v1.5.x/1.6.0 không có).
       self.vnPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts2) ?? [:]
       self.vnPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts3) ?? [:]
+      // 1.7.0: per-app language tracking — optional (file < v1.7.0 không có).
+      self.appLanguageVnCounts = try c.decodeIfPresent([String: Int].self, forKey: .appLanguageVnCounts) ?? [:]
+      self.appLanguageEnCounts = try c.decodeIfPresent([String: Int].self, forKey: .appLanguageEnCounts) ?? [:]
+      self.appLanguageDays = try c.decodeIfPresent([String: [Int]].self, forKey: .appLanguageDays) ?? [:]
     }
 
     func summary(promotedAllow: [String], promotedKeep: [String]) -> UsageSummary {
@@ -629,6 +673,20 @@ final class UsageStatistics {
     }
     if let app = appBundleId, !app.isEmpty {
       counters.appCounts[app, default: 0] += 1
+      // 1.7.0: per-app language tracking cho Smart Switch auto-learn.
+      switch decision {
+      case .keepVietnamese:
+        counters.appLanguageVnCounts[app, default: 0] += 1
+      case .restoreRawEnglish, .keepRaw:
+        counters.appLanguageEnCounts[app, default: 0] += 1
+      case .suggest:
+        break
+      }
+      // Track which weekdays user typed in this app (for dataset spread).
+      let today = Calendar(identifier: .iso8601).component(.weekday, from: Date())
+      var days = counters.appLanguageDays[app] ?? []
+      if !days.contains(today) { days.append(today) }
+      counters.appLanguageDays[app] = days
     }
 
     // Cap the per-bucket sizes so a runaway map can't blow disk.
@@ -831,4 +889,45 @@ private extension JSONDecoder {
     d.dateDecodingStrategy = .iso8601
     return d
   }()
+}
+
+// MARK: - UsageSummary date helpers (v1.7.0+)
+
+extension UsageSummary {
+  /// Parse `weekId` (vd "2026-W21") → (Monday, Sunday) Date range.
+  /// Trả nil nếu format sai.
+  static func dateRange(for weekId: String) -> (monday: Date, sunday: Date)? {
+    let parts = weekId.split(separator: "-W")
+    guard parts.count == 2,
+          let year = Int(parts[0]),
+          let week = Int(parts[1])
+    else { return nil }
+    var cal = Calendar(identifier: .iso8601)
+    cal.firstWeekday = 2  // Monday
+    var monComps = DateComponents()
+    monComps.yearForWeekOfYear = year
+    monComps.weekOfYear = week
+    monComps.weekday = 2  // Monday
+    monComps.hour = 0
+    monComps.minute = 0
+    guard let monday = cal.date(from: monComps) else { return nil }
+    let sunday = cal.date(byAdding: .day, value: 6, to: monday) ?? monday
+    return (monday, sunday)
+  }
+
+  /// Format header tiếng Việt: "Tuần 21 năm 2026 (từ 18/05 đến 24/05/2026)".
+  /// Fallback raw weekId nếu không parse được.
+  static func vietnameseHeader(for weekId: String) -> String {
+    guard let range = dateRange(for: weekId) else { return "Tuần — \(weekId)" }
+    let parts = weekId.split(separator: "-W")
+    guard parts.count == 2,
+          let year = Int(parts[0]),
+          let week = Int(parts[1])
+    else { return "Tuần — \(weekId)" }
+    let fDay = DateFormatter()
+    fDay.dateFormat = "dd/MM"
+    let fFull = DateFormatter()
+    fFull.dateFormat = "dd/MM/yyyy"
+    return "Tuần \(week) năm \(year) (từ \(fDay.string(from: range.monday)) đến \(fFull.string(from: range.sunday)))"
+  }
 }
