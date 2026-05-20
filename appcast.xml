@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.7.10 — "Hotfix Telex Collision"</title>
+      <sparkle:version>17910</sparkle:version>
+      <sparkle:shortVersionString>1.7.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 20 May 2026 23:05:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.7.10/vkey-1.7.10.dmg"
+        sparkle:edSignature="zDUa/pMYQWKdxbIGUjCsix/Tt5dRVgW27geBEYG2bVwv4W5emKq56+FzITBAGEyZeKHxhBMqzh37f5vQs+EeAQ=="
+        length="6030185"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>🚨 HOTFIX 1.7.10 — "Hotfix Telex Collision":</h2>
+        <p>Hotfix gấp cho regression v1.7.9.</p>
+        <ul>
+          <li><strong>🚨 Sửa bug telex không transform</strong>: v1.7.9 bump EN dict 126→9826 từ làm các telex stem ngắn "cos/the/tie/hop" match English → lock raw → user gõ "cos" ra "cos" thay vì "có". Fix: phân biệt instant-restore (typing-time, dùng list HẸP 126 embedded) vs spell decision (commit-time, dùng full 9826). Giờ "cos→có", "tieengs→tiếng", "hopwj→hợp" đúng. "off"/"class"/"staff" vẫn instant-lock như trước.</li>
+          <li><strong>UI: Settings hiện số từ EN</strong>: trước chỉ hiện "8.960 từ tiếng Việt". Giờ thêm dòng "Tiếng Anh: v9 · 9826 từ".</li>
+          <li><strong>Stats nới filter</strong>: section "Top từ ngoài tiếng Việt" giờ hiện cả raw text + ký tự đặc biệt (vd "lol", "okay", "!@#") để dễ thấy candidate bổ sung Personal Dict.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.9 — "Stats, EN Dict, Smart HUD"</title>
       <sparkle:version>17900</sparkle:version>
       <sparkle:shortVersionString>1.7.9</sparkle:shortVersionString>

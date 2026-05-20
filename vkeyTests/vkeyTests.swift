@@ -646,6 +646,28 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "DDUOWNGF"), "ĐƯỜNG")
   }
 
+  /// Regression 1.7.10: v1.7.9 bump EN dict 126 → 9826 từ làm các telex
+  /// stem ngắn ("cos", "hop", "the", "tie") match English → lock raw,
+  /// bỏ qua telex transform. Fix: instant-restore dùng list HẸP (embedded
+  /// 126 + userAllow) thay vì full lexicon.
+  func testTelexEnglishCollisionHotfix() throws {
+    XCTAssertEqual(transform_text_telex(for: "cos"), "có")
+    XCTAssertEqual(transform_text_telex(for: "hopwj"), "hợp")
+    XCTAssertEqual(transform_text_telex(for: "tieengs"), "tiếng")
+    XCTAssertEqual(transform_text_telex(for: "theer"), "thể")
+    XCTAssertEqual(transform_text_telex(for: "thoongs"), "thống")
+    XCTAssertEqual(transform_text_telex(for: "cof"), "cò")
+    XCTAssertEqual(transform_text_telex(for: "cor"), "cỏ")
+  }
+
+  /// Regression 1.7.10: instant-restore vẫn hoạt động cho các từ trong
+  /// embedded EmbeddedLexiconData.englishWords (off/class/staff).
+  func testEnglishInstantRestoreEmbeddedStillWorks() throws {
+    XCTAssertEqual(transform_text_telex(for: "off"), "off")
+    XCTAssertEqual(transform_text_telex(for: "class"), "class")
+    XCTAssertEqual(transform_text_telex(for: "staff"), "staff")
+  }
+
   /// Regression 1.7.5: gõ "a r r m" (a + r tạo dấu hỏi + r xoá dấu + m)
   /// phải ra "arm" thay vì "arrm". Bug do English-word "arr" lock raw bypass
   /// tone-cancel. Fix: detect tone-cancel intent (state có tone + char là

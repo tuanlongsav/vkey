@@ -315,6 +315,9 @@ struct SpellCheckView: View {
     @State private var dictUpdateStatus = ""
     @State private var lexiconVnVersion: Int = 0
     @State private var lexiconVnEntries: Int = 0
+    // 1.7.10: expose số từ Anh trong bộ nhớ + version.
+    @State private var lexiconEnVersion: Int = 0
+    @State private var lexiconEnEntries: Int = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -449,15 +452,29 @@ struct SpellCheckView: View {
                     // force refresh ngay khi cần (vd vừa thấy maintainer release
                     // version mới mà chưa đợi đủ 24h).
                     Section {
+                        // 1.7.10: hiện 2 dòng cho VN + EN counts.
                         HStack {
-                            Text("Phiên bản từ điển:")
+                            Text("Tiếng Việt:")
                                 .font(.caption)
                             Text("v\(lexiconVnVersion)")
                                 .font(.caption.monospacedDigit())
                                 .foregroundStyle(.secondary)
                             Text("·")
                                 .foregroundStyle(.tertiary)
-                            Text("\(lexiconVnEntries) từ tiếng Việt")
+                            Text("\(lexiconVnEntries) từ")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+                        HStack {
+                            Text("Tiếng Anh:")
+                                .font(.caption)
+                            Text("v\(lexiconEnVersion)")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                            Text("·")
+                                .foregroundStyle(.tertiary)
+                            Text("\(lexiconEnEntries) từ")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -517,6 +534,9 @@ struct SpellCheckView: View {
         let versions = LexiconManager.shared.snapshotVersions()
         lexiconVnVersion = versions.vn
         lexiconVnEntries = LexiconManager.shared.vietnameseWordsSnapshot().count
+        // 1.7.10: cũng đọc EN.
+        lexiconEnVersion = versions.en
+        lexiconEnEntries = LexiconManager.shared.englishWordsSnapshot().count
     }
 
     private func triggerManualDictUpdate() {

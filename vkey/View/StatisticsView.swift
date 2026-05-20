@@ -349,8 +349,11 @@ struct StatisticsView: View {
       return LexiconManager.shared.isVietnameseWord(normalized)
         || LexiconManager.shared.shouldKeepVietnamese(normalized)
     case .english:
-      return LexiconManager.shared.isEnglishWord(normalized)
-        || Defaults[.userAllowWords].contains(normalized)
+      // 1.7.10: bỏ yêu cầu lexicon — section "Top từ ngoài tiếng Việt"
+      // có mục đích gợi ý bổ sung từ điển cá nhân, nên hiển thị cả từ
+      // CHƯA CÓ trong lexicon (vd raw "hopwj", "lol", "okay") + ký tự
+      // đặc biệt. Vẫn lọc deny + length≥2.
+      return true
     case .app:
       return true
     }

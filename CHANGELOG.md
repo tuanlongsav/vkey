@@ -37,6 +37,56 @@ Phase v6 (1.6.1) chỉ extract single-token entries. Phase v7 này extract token
 - Script mới: [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py) — re-runnable, idempotent (skip nếu token đã có).
 - Bump `lexicon-update.json` version 6 → 7 → app sẽ fetch tự động.
 
+## [1.7.10] - 2026-05-20 — "Hotfix Telex Collision"
+
+🚨 HOTFIX cho regression nghiêm trọng v1.7.9 — telex stems ngắn không transform được do EN dict expansion. Kèm UI EN count + Stats filter relax.
+
+### 🚨 HOTFIX: Telex stems "cos/the/tie/hop" không transform được
+
+**Root cause v1.7.9**: bump EN dict 126 → 9826 từ chứa các stem ngắn ("cos", "hop", "the", "tie"). [InputProcessor.swift:286](vkey/App/InputProcessor.swift:286) line "Instantaneous English word restoration" check `isEnglishWord(keysStr)` (full 9826) → lock raw → bỏ qua engine.push transform. User gõ "cos " ra "cos" thay vì "có".
+
+**Fix**: phân biệt 2 lexicon use-case:
+- **Instant restore** (typing-time, lock raw ngay): dùng list HẸP `EmbeddedLexiconData.englishWords` (126 từ hand-curated) + `userAllowWords`. Method mới `LexiconManager.isInstantRestoreEnglish(_)`.
+- **Spell decision** (commit-time): vẫn dùng full list 9826 cho restore decision tinh tế qua SpellDecisionEngine.
+
+Cases sau hotfix:
+- "cos " → "có" ✓ (telex sắc, không bị lock).
+- "hopwj " → "hợp" ✓.
+- "tieengs " → "tiếng" ✓.
+- "theer " → "thể" ✓.
+- "thoongs " → "thống" ✓.
+- "off " → "off" ✓ (embedded list, instant lock vẫn hoạt động).
+- "class"/"staff" → giữ raw ✓ (impossible cluster path).
+
+### UI: Settings hiện số từ Anh
+
+User feedback: section "Từ điển từ GitHub" chỉ hiện "8.960 từ tiếng Việt", không thấy số từ EN dù v1.7.9 đã có 9826 từ EN.
+
+**Fix**:
+- [LexiconManager.swift](vkey/Lexicon/LexiconManager.swift) — thêm `englishWordsSnapshot()` mirror VN.
+- [SettingView.swift](vkey/View/SettingView.swift) — thêm state `lexiconEnVersion/Entries` + 2 dòng UI riêng cho VN và EN.
+
+### Stats: nới filter "Top từ ngoài tiếng Việt"
+
+User feedback: section vẫn không hiện các từ raw / ký tự lạ. Filter cũ yêu cầu `isEnglishWord || userAllowWords` — raw "hopwj", "lol", "!@#" bị lọc.
+
+**Fix** ([StatisticsView.swift:347](vkey/View/StatisticsView.swift:347) `isCleanTopWord(.english)`): bỏ lexicon check, chỉ giữ length≥2 + deny check. Section "Top từ ngoài tiếng Việt" giờ hiện đầy đủ các từ user thực sự gõ → dễ thấy candidate bổ sung Personal Dict.
+
+### Tests
+
+Thêm 2 test cases trong [vkeyTests.swift](vkeyTests/vkeyTests.swift):
+- `testTelexEnglishCollisionHotfix` — verify cos/hopwj/tieengs/theer/thoongs/cof/cor transform đúng.
+- `testEnglishInstantRestoreEmbeddedStillWorks` — verify off/class/staff vẫn instant-lock.
+
+189/189 tests pass.
+
+### Files
+
+- [vkey/Lexicon/LexiconManager.swift](vkey/Lexicon/LexiconManager.swift) — `isInstantRestoreEnglish`, `englishWordsSnapshot`.
+- [vkey/App/InputProcessor.swift](vkey/App/InputProcessor.swift:272,294) — 2 chỗ lock raw dùng `isInstantRestoreEnglish`.
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — UI EN count.
+- [vkey/View/StatisticsView.swift](vkey/View/StatisticsView.swift:347) — filter nới.
+
 ## [1.7.9] - 2026-05-20 — "Stats, EN Dict, Smart HUD"
 
 4 fix sau v1.7.8: tab Thống kê restructure + filter nới + cụm 2-3 từ, EN dict v7→v9 (126→9826), HUD prediction pixel-precise caret.

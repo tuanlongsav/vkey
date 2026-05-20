@@ -332,6 +332,27 @@ final class LexiconManager {
     queue.sync { Array(vnLexicon.words) }
   }
 
+  /// 1.7.10: snapshot từ điển EN trong bộ nhớ — dùng cho UI count + diag.
+  func englishWordsSnapshot() -> [String] {
+    queue.sync { Array(enLexicon.words) }
+  }
+
+  /// 1.7.10: list HẸP cho instant-raw-restore tại typing time. Chỉ dùng
+  /// `EmbeddedLexiconData.englishWords` (126 từ hand-curated cho cases
+  /// thường conflict telex như "off", "ass", "of") + `userAllowWords`.
+  /// KHÔNG dùng package EN (~9826 từ) để tránh collision với telex stems
+  /// ngắn (`cos`/`the`/`tie`/`hop`/`thee` → "có"/"thế"/"tiếng"/"họp"/"thế").
+  /// Spell decision tại commit-time vẫn dùng `isEnglishWord(_)` full list.
+  func isInstantRestoreEnglish(_ word: String) -> Bool {
+    let token = word.normalizedDictionaryToken
+    guard !token.isEmpty else { return false }
+    if Defaults[.personalDictionaryEnabled] {
+      let allowed = Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken })
+      if allowed.contains(token) { return true }
+    }
+    return EmbeddedLexiconData.englishWords.contains(token)
+  }
+
   func snapshotVersions() -> (vn: Int, en: Int, keep: Int) {
     queue.sync { (vnLexicon.version, enLexicon.version, keepLexicon.version) }
   }

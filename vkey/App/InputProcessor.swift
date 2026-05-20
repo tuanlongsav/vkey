@@ -275,9 +275,13 @@ struct WordBuffer {
     let telexToneKeys: Set<Character> = ["s","S","f","F","r","R","x","X","j","J"]
     let isPossibleToneCancel = wordState.dauThanh != .bang && telexToneKeys.contains(char)
 
-    // Doubled Tone Mark Preservation: if raw keys contains consecutive doubled tone marks, preserve it raw if it forms an English word
+    // Doubled Tone Mark Preservation: if raw keys contains consecutive
+    // doubled tone marks, preserve it raw if it forms an English word.
+    // 1.7.10: dùng `isInstantRestoreEnglish` (list HẸP: embedded 126 +
+    // userAllow) thay vì `isEnglishWord` (full 9826) để tránh collision
+    // telex stems "cos/the/tie/hop" trong package EN.
     if doubledTones.contains(where: { keysStr.contains($0) }),
-       LexiconManager.shared.isEnglishWord(keysStr),
+       LexiconManager.shared.isInstantRestoreEnglish(keysStr),
        !isPossibleToneCancel {
       stopProcessing = true
       stoppedByEnglishWord = true
@@ -290,8 +294,9 @@ struct WordBuffer {
       return
     }
 
-    // Instantaneous English word restoration: if the raw keys form a known English word, preserve it raw
-    if LexiconManager.shared.isEnglishWord(keysStr),
+    // Instantaneous English word restoration: if the raw keys form a known
+    // English word, preserve it raw. 1.7.10: dùng instant-restore narrow list.
+    if LexiconManager.shared.isInstantRestoreEnglish(keysStr),
        !isPossibleToneCancel {
       stopProcessing = true
       stoppedByEnglishWord = true
