@@ -37,16 +37,25 @@ final class PredictionHUDWindow {
     hideTimer?.invalidate()
 
     let text = "→ \(prediction)   ⇥ Tab"
-    let view = PredictionHUDView(text: text)
+    // 1.9.1: đọc Defaults 1 lần ở show(), pass vào view qua init. Tránh
+    // @Default trong View struct gây re-render → hosting view request
+    // window resize → NSException crash (xảy ra ở v1.9.0).
+    let fontSize = max(10, min(20, Defaults[.predictionHUDFontSize]))
+    let opacityPct = max(50, min(100, Defaults[.hudOpacityPercent]))
+    let view = PredictionHUDView(
+      text: text,
+      fontSize: fontSize,
+      opacity: Double(opacityPct) / 100.0
+    )
     let panel = ensurePanel()
 
-    if let hosting = hostingView {
-      hosting.rootView = view
-    } else {
-      let hosting = NSHostingView(rootView: view)
-      hostingView = hosting
-      panel.contentView = hosting
-    }
+    // 1.9.1: recreate hosting view mỗi lần show — tránh in-place rootView
+    // update gây hosting view animated resize → crash. Cost negligible:
+    // rebuild 1 lần / 3s (HUD auto-hide timeout).
+    hostingView?.removeFromSuperview()
+    let hosting = NSHostingView(rootView: view)
+    hostingView = hosting
+    panel.contentView = hosting
 
     panel.setFrame(targetFrame(forText: text), display: true, animate: false)
     panel.orderFrontRegardless()
@@ -233,23 +242,23 @@ final class PredictionHUDWindow {
 
 struct PredictionHUDView: View {
   let text: String
-  // 1.9.0: customizable font size + opacity từ Defaults.
-  @Default(.predictionHUDFontSize) private var fontSize
-  @Default(.hudOpacityPercent) private var opacityPercent
+  // 1.9.1: pass qua init thay vì @Default trong struct — tránh crash
+  // NSHostingView khi Defaults change trigger re-render + animated resize.
+  let fontSize: Int
+  let opacity: Double
 
   var body: some View {
-    let clampedFont = max(10, min(20, fontSize))
-    let opacity = Double(max(50, min(100, opacityPercent))) / 100.0
     Text(text)
-      .font(.system(size: CGFloat(clampedFont), weight: .medium, design: .rounded))
+      .font(.system(size: CGFloat(fontSize), weight: .medium, design: .rounded))
       .foregroundStyle(.primary)
       .padding(.horizontal, 14)
       .padding(.vertical, 8)
       .background(.ultraThinMaterial)
-      .clipShape(RoundedRectangle(cornerRadius: 10))
+      // 1.9.1: cornerRadius 10→16 — bo tròn rõ hơn theo user feedback.
+      .clipShape(RoundedRectangle(cornerRadius: 16))
       .overlay(
-        RoundedRectangle(cornerRadius: 10)
-          .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+        RoundedRectangle(cornerRadius: 16)
+          .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
       )
       .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
       .opacity(opacity)

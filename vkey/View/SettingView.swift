@@ -285,7 +285,7 @@ struct GeneralView: View {
             .scrollDisabled(false)
 
             // 1.8.3: tiếng Việt, không nghiêng. Date hardcode mỗi release.
-            // 1.9.0: cập nhật ngày phát hành.
+            // 1.9.1: cập nhật ngày phát hành.
             Text("Phiên bản \(appVersion) ngày 21/5/2026")
                 .font(.caption)
                 .multilineTextAlignment(.center)
@@ -309,6 +309,14 @@ struct GeneralView_Previews: PreviewProvider {
     }
 }
 
+/// 1.9.1: Preset cấu hình nhanh tính năng. Tags 0..3 map vào Defaults Int.
+enum QuickConfigPreset: Int {
+    case custom = 0
+    case basic = 1
+    case medium = 2
+    case high = 3
+}
+
 struct SpellCheckView: View {
     @Default(.spellCheckEnabled) private var spellCheckEnabled
     @Default(.spellCheckInSentenceEnabled) private var spellCheckInSentenceEnabled
@@ -323,6 +331,10 @@ struct SpellCheckView: View {
     // 1.8.3: chuyển từ Tab Chung sang đây — prediction thuộc chức năng spell-checking.
     @Default(.wordPredictionEnabled) private var wordPredictionEnabled
     @Default(.predictionHUDLineOffset) private var predictionHUDLineOffset
+
+    // 1.9.1: quick config preset
+    @Default(.quickConfigPreset) private var quickConfigPreset
+    @Default(.autoTypoCorrection) private var autoTypoCorrection
     // 1.7.11: cần đọc 3 danh sách để gate nút "Gửi cho tác giả" (≥50 từ).
     @Default(.userAllowWords) private var userAllowWordsView
     @Default(.userKeepWords) private var userKeepWordsView
@@ -342,6 +354,61 @@ struct SpellCheckView: View {
 
     // 1.9.0: state cho section "Tra cứu từ điển".
     @State private var lexiconSearchQuery: String = ""
+
+    /// 1.9.1: mô tả ngắn của preset hiện tại để hiển thị dưới Picker.
+    private var quickConfigDescription: String {
+        switch QuickConfigPreset(rawValue: quickConfigPreset) ?? .custom {
+        case .high:
+            return "Bật tất cả tính năng auto: spell-check, suggestion, auto-apply, personal dict, prediction, auto-typo, EnVn reference, auto-feedback. vkey can thiệp tối đa để \"hiểu ý\" user."
+        case .medium:
+            return "Cân bằng: spell-check + auto-restore EN + suggestion (không auto-apply) + personal dict + auto-typo. User vẫn review suggestion thủ công. Tắt: prediction, auto-feedback."
+        case .basic:
+            return "Tối giản: chỉ spell-check master + personal dict. Tắt mọi auto-feature. vkey \"trong suốt\" nhất, không can thiệp."
+        case .custom:
+            return "Tự chỉnh từng toggle bên dưới. Picker này chỉ áp dụng preset 1 chiều — sau đó user free điều chỉnh, picker vẫn hiển thị preset gốc đã chọn."
+        }
+    }
+
+    /// 1.9.1: apply preset → batch update các toggle. Skip nếu preset .custom.
+    private func applyQuickConfigPreset(_ preset: QuickConfigPreset) {
+        switch preset {
+        case .high:
+            spellCheckEnabled = true
+            spellCheckInSentenceEnabled = true
+            englishAutoRestoreEnabled = true
+            suggestionEnabled = true
+            autoApplyHighConfidenceSuggestion = true
+            personalDictionaryEnabled = true
+            autoPersonalDictFeedback = true
+            useEnVnReference = true
+            wordPredictionEnabled = true
+            autoTypoCorrection = true
+        case .medium:
+            spellCheckEnabled = true
+            spellCheckInSentenceEnabled = true
+            englishAutoRestoreEnabled = true
+            suggestionEnabled = true
+            autoApplyHighConfidenceSuggestion = false
+            personalDictionaryEnabled = true
+            autoPersonalDictFeedback = false
+            useEnVnReference = true
+            wordPredictionEnabled = false
+            autoTypoCorrection = true
+        case .basic:
+            spellCheckEnabled = true
+            spellCheckInSentenceEnabled = false
+            englishAutoRestoreEnabled = false
+            suggestionEnabled = false
+            autoApplyHighConfidenceSuggestion = false
+            personalDictionaryEnabled = true
+            autoPersonalDictFeedback = false
+            useEnVnReference = false
+            wordPredictionEnabled = false
+            autoTypoCorrection = false
+        case .custom:
+            break  // không change toggles
+        }
+    }
 
     /// 1.9.0: tra cứu 1 từ trong toàn bộ lexicon — VN/EN/Keep + user lists.
     /// Hiển thị markdown để bullet rõ ràng.
@@ -377,31 +444,26 @@ struct SpellCheckView: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
-                // Section 1: Master quick-enable
+                // 1.9.1: Section "Cấu hình nhanh" — thay thế toggle "Kích
+                // hoạt nhanh tất cả" cũ bằng Picker 4-state cho phép user
+                // chọn mức tính năng (Cao/Trung bình/Cơ bản/Người dùng).
                 Section {
-                    Toggle(isOn: Binding(
-                        get: {
-                            spellCheckEnabled && spellCheckInSentenceEnabled
-                                && englishAutoRestoreEnabled && suggestionEnabled
-                                && autoApplyHighConfidenceSuggestion && personalDictionaryEnabled
-                                && useEnVnReference
-                        },
-                        set: { newValue in
-                            spellCheckEnabled = newValue
-                            spellCheckInSentenceEnabled = newValue
-                            englishAutoRestoreEnabled = newValue
-                            suggestionEnabled = newValue
-                            autoApplyHighConfidenceSuggestion = newValue
-                            personalDictionaryEnabled = newValue
-                            useEnVnReference = newValue
-                        }
-                    )) {
-                        Label("Kích hoạt nhanh tất cả tính năng mới", themedSymbol: "sparkles")
-                            .fontWeight(.semibold)
+                    Picker("", selection: $quickConfigPreset) {
+                        Text("Cao").tag(QuickConfigPreset.high.rawValue)
+                        Text("Trung bình").tag(QuickConfigPreset.medium.rawValue)
+                        Text("Cơ bản").tag(QuickConfigPreset.basic.rawValue)
+                        Text("Người dùng").tag(QuickConfigPreset.custom.rawValue)
                     }
-                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .onChange(of: quickConfigPreset) { _, newValue in
+                        applyQuickConfigPreset(QuickConfigPreset(rawValue: newValue) ?? .custom)
+                    }
+                    Text(quickConfigDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 } header: {
-                    Text("Phím tắt thông minh")
+                    Label("Cấu hình nhanh", themedSymbol: "slider.horizontal.3")
                 }
 
                 // Section 2 (v1.7.0): "Cấu hình kiểm tra chính tả" — gộp

@@ -2,6 +2,67 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.9.1] - 2026-05-21 — "Crash Fix + Quick Config Preset"
+
+Hotfix v1.9.0 crash + UX restructure tab Chính tả.
+
+### 🚨 Fix crash khi bật Prediction HUD (URGENT)
+
+User báo crash liên tục sau khi bật prediction HUD (tắt thì OK). Crash log cho thấy:
+
+```
+NSException trong _postWindowNeedsUpdateConstraints
+↳ NSHostingView.invalidateSafeAreaInsets
+↳ NSHostingView.windowDidLayout → updateAnimatedWindowSize
+```
+
+**Root cause v1.9.0**: thêm `@Default(.predictionHUDFontSize)` + `@Default(.hudOpacityPercent)` vào struct `PredictionHUDView` + `ToggleHUDView`. Khi Defaults change (hoặc publisher fires lúc launch), SwiftUI re-render → intrinsic content size change → hosting view request window resize → animation conflict trong NSPanel → NSException → SIGABRT.
+
+**Fix**: refactor View structs — bỏ `@Default`, pass `fontSize`/`opacity` qua init parameters. `PredictionHUDWindow.show()` đọc Defaults 1 lần, recreate hosting view mỗi show (cost negligible: 1 lần / 3s). ToggleHUD opacity moved sang `panel.alphaValue` (NSPanel level, không phụ thuộc SwiftUI re-render).
+
+### 🎨 HUD nền bo tròn hơn
+
+User feedback HUD góc bo nhỏ. Tăng PredictionHUD cornerRadius **10 → 16** + stroke opacity **0.15 → 0.10** (mềm hơn). ToggleHUD giữ nguyên 20 (đã đẹp).
+
+### 🧹 Bỏ "Kích hoạt nhanh tất cả tính năng"
+
+Section "Phím tắt thông minh" trong tab Chính tả với toggle bulk 7 settings — đã bị thay thế bằng Quick Config Preset (4 mức rõ ràng hơn).
+
+### 🎛️ Quick Config Preset 4-state
+
+Section mới "Cấu hình nhanh" ở đầu tab Chính tả với Picker 4 mức:
+
+| Toggle | Cao | Trung bình | Cơ bản | Người dùng |
+|---|---|---|---|---|
+| `spellCheckEnabled` | ✓ | ✓ | ✓ | _giữ_ |
+| `spellCheckInSentenceEnabled` | ✓ | ✓ | _tắt_ | _giữ_ |
+| `englishAutoRestoreEnabled` | ✓ | ✓ | _tắt_ | _giữ_ |
+| `suggestionEnabled` | ✓ | ✓ | _tắt_ | _giữ_ |
+| `autoApplyHighConfidenceSuggestion` | ✓ | _tắt_ | _tắt_ | _giữ_ |
+| `personalDictionaryEnabled` | ✓ | ✓ | ✓ | _giữ_ |
+| `autoPersonalDictFeedback` | ✓ | _tắt_ | _tắt_ | _giữ_ |
+| `useEnVnReference` | ✓ | ✓ | _tắt_ | _giữ_ |
+| `wordPredictionEnabled` | ✓ | _tắt_ | _tắt_ | _giữ_ |
+| `autoTypoCorrection` | ✓ | ✓ | _tắt_ | _giữ_ |
+
+**Logic giảm dần**:
+- **Cao**: tất cả auto-features — vkey "hiểu ý" tối đa.
+- **Trung bình**: spell-check + auto-restore + suggestion (không auto-apply) + personal dict + auto-typo. User vẫn review.
+- **Cơ bản**: chỉ spell-check master + personal dict. Tắt mọi auto-feature.
+- **Người dùng**: không thay đổi gì (custom).
+
+### Files
+
+- [vkey/Platform/PredictionHUDWindow.swift](vkey/Platform/PredictionHUDWindow.swift) — fix crash + cornerRadius 16.
+- [vkey/Platform/ToggleHUDWindow.swift](vkey/Platform/ToggleHUDWindow.swift) — opacity ở panel.alphaValue.
+- [vkey/App/Setting.swift](vkey/App/Setting.swift) — `quickConfigPreset` key mới.
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — enum `QuickConfigPreset` + helpers + Picker UI.
+
+### Verify
+
+- 194/194 tests pass.
+- Build clean.
+
 ## [1.9.0] - 2026-05-21 — "Deep Audit Patch + UX Upgrades"
 
 Sau khi rà soát toàn diện qua 3 audit agents (Engine/Lexicon, Platform/UI, Stats/Data), v1.9.0 bao gồm: 1 bug fix HIGH, gỡ dead code, 4 upgrade nội bộ, và 4 feature mới.

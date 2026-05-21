@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.9.1 — "Crash Fix &amp; Quick Config Preset"</title>
+      <sparkle:version>19001</sparkle:version>
+      <sparkle:shortVersionString>1.9.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 15:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.9.1/vkey-1.9.1.dmg"
+        sparkle:edSignature="ThttMEqpj9tjUz473MR5UNASyHiXQaVi1ZVVVYkq8nKkEppT4cC0HqggsXg8aBFF/W2P4zJnyXTeUsq4i8ZEAw=="
+        length="7082190"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.9.1 — "Crash Fix &amp; Quick Config Preset":</h2>
+        <p>Hotfix v1.9.0 crash + UX restructure.</p>
+        <ul>
+          <li><strong>🚨 Fix crash khi bật Prediction HUD</strong>: v1.9.0 thêm @Default trong View struct → khi Defaults change trigger SwiftUI re-render → NSHostingView request window resize → NSException crash. Fix: pass fontSize/opacity qua init params (không observe Defaults), recreate hosting view mỗi show. ToggleHUD opacity move sang panel.alphaValue (NSPanel level).</li>
+          <li><strong>🎨 HUD bo tròn rõ hơn</strong>: PredictionHUD cornerRadius 10→16 + stroke 0.15→0.10.</li>
+          <li><strong>🧹 Bỏ "Kích hoạt nhanh tất cả tính năng"</strong>: section cũ bị thay bằng Quick Config Preset rõ ràng hơn.</li>
+          <li><strong>🎛️ Quick Config Preset 4-state</strong>: Picker "Cao / Trung bình / Cơ bản / Người dùng" ở đầu tab Chính tả. Cao = tất cả auto-features, Trung bình = cân bằng (suggestion không auto-apply, không prediction), Cơ bản = chỉ spell-check + personal dict, Người dùng = tự chỉnh.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.9.0 — "Deep Audit Patch &amp; UX Upgrades"</title>
       <sparkle:version>19000</sparkle:version>
       <sparkle:shortVersionString>1.9.0</sparkle:shortVersionString>

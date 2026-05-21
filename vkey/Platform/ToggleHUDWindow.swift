@@ -73,11 +73,16 @@ final class ToggleHUDWindow {
         // Đưa panel lên trước mà không cướp focus (orderFrontRegardless)
         panel.alphaValue = 0
         panel.orderFrontRegardless()
-        
+
+        // 1.9.1: opacity user-configurable từ Defaults — apply ở panel level
+        // qua alphaValue. Tránh dùng .opacity() modifier trong SwiftUI view
+        // (gây crash khi @Default trigger re-render → hosting view resize).
+        let targetAlpha = CGFloat(max(50, min(100, Defaults[.hudOpacityPercent]))) / 100.0
+
         // Hiệu ứng mờ dần (Fade-in)
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.12
-            panel.animator().alphaValue = 1
+            panel.animator().alphaValue = targetAlpha
         }
         
         // Lên lịch ẩn tự động
@@ -187,8 +192,9 @@ private struct ToggleHUDView: View {
                 )
         )
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
-        // 1.9.0: opacity user-configurable từ Settings.
-        .opacity(Double(max(50, min(100, Defaults[.hudOpacityPercent]))) / 100.0)
+        // 1.9.1: opacity moved to panel.alphaValue trong ToggleHUDWindow.show()
+        // — tránh `.opacity()` modifier ở đây vì Defaults[...] direct read trong
+        // body gây SwiftUI evaluate stale + hosting view crash.
     }
 }
 

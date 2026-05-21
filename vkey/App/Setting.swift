@@ -338,6 +338,12 @@ extension Defaults.Keys {
   static let smartSwitchSuggestionsTotal = Key<Int>("smart-switch-suggestions-total", default: 0)
   static let smartSwitchSuggestionsAccepted = Key<Int>("smart-switch-suggestions-accepted", default: 0)
 
+  /// 1.9.1: preset cấu hình nhanh tính năng. 0=Người dùng (custom),
+  /// 1=Cơ bản, 2=Trung bình, 3=Cao. Khi user select preset → batch update
+  /// các toggle theo mapping ở SettingView. Khi user edit individual
+  /// toggle → tự revert sang .custom.
+  static let quickConfigPreset = Key<Int>("quick-config-preset", default: 0)
+
   /// Bigram counts: previous word → next word → count. Học từ history
   /// user gõ (1.6.0+).
   ///
