@@ -54,6 +54,13 @@ struct WordBuffer {
   /// Last valid snapshot for single-step rollback out of recovery mode.
   var lastValidSnapshot: Snapshot?
 
+  /// 1.9.7: stage flag cho anywhere `dd` → `đ` toggle trong recovery state.
+  /// - 0 = none (chưa toggle): nếu 'd' tới và transformed.last == 'd' → toggle ON.
+  /// - 1 = toggle ON ('đ' đang hiển thị): nếu 'd' tới → toggle OFF.
+  /// - 2 = toggle OFF ('dd' raw): subsequent 'd' đều no-op (frozen).
+  /// Reset về 0 trên non-'d' char hoặc newWord.
+  var ddToggleStage: Int = 0
+
   private static let impossible2LetterPrefixes: Set<String> = [
     "bl", "cl", "fl", "gl", "pl", "sl", "vl",
     "br", "cr", "dr", "fr", "gr", "pr", "wr",
@@ -118,6 +125,7 @@ struct WordBuffer {
     lastValidSnapshot = nil
     stopProcessing = false
     stoppedByEnglishWord = false
+    ddToggleStage = 0
     lastTransformed = ""
     transformed = ""
   }
@@ -190,6 +198,8 @@ struct WordBuffer {
 
     var currentKeys: [Character] = []
     var currentSnapshot: Snapshot? = nil
+    // 1.9.7: local stage cho anywhere-dd toggle khi replay recovery state.
+    var localDdToggleStage = 0
 
     for k in keys {
       let lastTransformedForStep = transformed
@@ -234,6 +244,36 @@ struct WordBuffer {
       }
 
       if stopProcessing {
+        // 1.9.7: anywhere-dd toggle khi replay recovery — match forward typing.
+        if k == "d" || k == "D" {
+          switch localDdToggleStage {
+          case 0:
+            if let last = transformed.last, last == "d" || last == "D" {
+              let lastIsUpper = last == "D"
+              transformed.removeLast()
+              transformed.append(lastIsUpper ? "Đ" : "đ")
+              localDdToggleStage = 1
+              wordState = wordState.push(k)
+              continue
+            }
+          case 1:
+            if let last = transformed.last, last == "đ" || last == "Đ" {
+              let wasUpper = last == "Đ"
+              transformed.removeLast()
+              transformed.append(contentsOf: wasUpper ? "DD" : "dd")
+              localDdToggleStage = 2
+              wordState = wordState.push(k)
+              continue
+            }
+          case 2:
+            wordState = wordState.push(k)
+            continue
+          default:
+            break
+          }
+        } else {
+          localDdToggleStage = 0
+        }
         transformed.append(k)
         wordState = wordState.push(k)
         continue
@@ -295,6 +335,45 @@ struct WordBuffer {
     }
 
     if stopProcessing && !wasOnlyEnglishRestored {
+      // 1.9.7: anywhere `dd` ↔ `đ` toggle trong recovery state.
+      // State machine ddToggleStage:
+      //   0 → 1: 2nd 'd' liên tiếp (transformed.last == 'd') → toggle ON ('d' → 'đ').
+      //   1 → 2: 3rd 'd' (transformed.last == 'đ') → toggle OFF ('đ' → 'dd').
+      //   2: subsequent 'd' = no-op (frozen, giữ nguyên dd).
+      //   non-'d' char → reset về 0.
+      if char == "d" || char == "D" {
+        switch ddToggleStage {
+        case 0:
+          // Toggle ON nếu last char là 'd'/'D'.
+          if let last = transformed.last, last == "d" || last == "D" {
+            let lastIsUpper = last == "D"
+            transformed.removeLast()
+            transformed.append(lastIsUpper ? "Đ" : "đ")
+            ddToggleStage = 1
+            wordState = wordState.push(char)
+            return
+          }
+          // first 'd' (or last char not 'd') → append bình thường, stage=0.
+        case 1:
+          // Toggle OFF nếu last char là 'đ'/'Đ'.
+          if let last = transformed.last, last == "đ" || last == "Đ" {
+            let wasUpper = last == "Đ"
+            transformed.removeLast()
+            transformed.append(contentsOf: wasUpper ? "DD" : "dd")
+            ddToggleStage = 2
+            wordState = wordState.push(char)
+            return
+          }
+        case 2:
+          // Frozen — no-op (keys đã append qua line 277, transformed giữ nguyên).
+          wordState = wordState.push(char)
+          return
+        default:
+          break
+        }
+      } else {
+        ddToggleStage = 0
+      }
       transformed.append(char)
       wordState = wordState.push(char)
       return

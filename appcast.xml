@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.9.7 — "Anywhere DD Toggle"</title>
+      <sparkle:version>19007</sparkle:version>
+      <sparkle:shortVersionString>1.9.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 21:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.9.7/vkey-1.9.7.dmg"
+        sparkle:edSignature="liKYJ5dUmaX2xFl+3ePau4/i0WarvSmb9+rYoNMmjAh945XGbLUI5hvZH7w16v8UCA/vjQbcy+z38u424dn9Aw=="
+        length="7135176"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.9.7 — "Anywhere DD Toggle":</h2>
+        <ul>
+          <li><strong>🎯 Anywhere dd ↔ đ toggle</strong>: user feedback gõ "vcdd" muốn ra "vcđ". State machine: 2nd 'd' → toggle ON (d→đ), 3rd 'd' → toggle OFF (đ→dd), 4+ 'd' → frozen (giữ dd). Non-'d' char giữa → reset stage. Áp dụng anywhere trong recovery state, không chỉ initial.</li>
+          <li><strong>Examples</strong>: vcdd → vcđ; vcddd → vcdd; add → ađ; addd → add.</li>
+          <li><strong>Regression-safe</strong>: initial 'dd' Telex chuẩn vẫn work (dduowngf → đường, ddi → đi).</li>
+          <li><strong>Bug "download → dowwnload" defer</strong>: blocklist approach gây regression VN typing. Có thể là target app autocomplete inflation, không phải engine.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.9.6 — "HUD Manual Sizing &amp; Background Strength"</title>
       <sparkle:version>19006</sparkle:version>
       <sparkle:shortVersionString>1.9.6</sparkle:shortVersionString>

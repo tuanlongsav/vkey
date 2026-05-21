@@ -2,6 +2,44 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.9.7] - 2026-05-21 — "Anywhere DD Toggle"
+
+User feedback: gõ `vcdd` muốn ra `vcđ` (cho phép `dd` → `đ` ở mọi vị trí, không chỉ initial).
+
+### 🎯 Anywhere `dd` ↔ `đ` toggle trong recovery state
+
+Khi vkey ở recovery state (chuỗi keys không hợp lệ tiếng Việt), 'd' liên tiếp theo state machine:
+- **Stage 0 → 1**: 'd' thứ 2 (transformed.last == 'd') → toggle ON ('d' → 'đ').
+- **Stage 1 → 2**: 'd' thứ 3 (transformed.last == 'đ') → toggle OFF ('đ' → 'dd').
+- **Stage 2**: subsequent 'd' = no-op (frozen, giữ nguyên "dd").
+- Non-'d' char giữa → reset stage về 0.
+
+**Examples**:
+- `vcdd` → `vcđ` ✓
+- `vcddd` → `vcdd` (toggle off) ✓
+- `vcdddd` → `vcdd` (frozen) ✓
+- `add` → `ađ` (English bị toggle vì 'd' sau 'a' rơi conLai)
+- `addd` → `add` (toggle off để giữ raw)
+
+### Regression-safe
+
+- Initial `dd → đ` (Telex chuẩn) **vẫn work**: `dduowngf → đường`, `ddi → đi`.
+- Toggle áp dụng chỉ trong recovery branch — không ảnh hưởng VN typing flow.
+- Backspace replay đồng bộ qua `reconstructState` (local stage var).
+
+### Bug 1 "download → dowwnload" — defer
+
+Thử blocklist English prefix check trong Telex `w`/`a`/`o`/`e` mark, nhưng làm regression VN typing (vd `aww → ăw` thay vì `aw`, `awn → ăn`). Defer fix bug này — nguyên nhân có thể là target app autocomplete inflation (TextEdit, Word) không phải engine. Workaround: dùng Smart Switch English mode cho app target nếu cần.
+
+### Files
+
+- [vkey/App/InputProcessor.swift](vkey/App/InputProcessor.swift) — `ddToggleStage` property + recovery branch toggle logic + `reconstructState` replay path.
+- [vkeyTests/vkeyTests.swift](vkeyTests/vkeyTests.swift) — `testTelexAnywhereDDToggle` (5 cases).
+
+### Verify
+
+- 199/199 tests pass.
+
 ## [1.9.6] - 2026-05-21 — "HUD Manual Sizing & Background Strength Refactor"
 
 Refactor HUD rendering pipeline để fix căn cơ: chữ rõ + nền clear + không crash + không invisible. Đây là tổng kết các vấn đề từ v1.9.0 đến v1.9.5.

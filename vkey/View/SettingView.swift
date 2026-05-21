@@ -262,7 +262,7 @@ struct GeneralView: View {
             .scrollDisabled(false)
 
             // 1.8.3: tiếng Việt, không nghiêng. Date hardcode mỗi release.
-            // 1.9.6: cập nhật ngày phát hành.
+            // 1.9.7: cập nhật ngày phát hành.
             Text("Phiên bản \(appVersion) ngày 21/5/2026")
                 .font(.caption)
                 .multilineTextAlignment(.center)

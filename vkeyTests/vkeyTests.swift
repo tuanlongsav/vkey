@@ -505,6 +505,30 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "them"), "them")
   }
 
+  /// 1.9.7: anywhere `dd` ↔ `đ` toggle trong recovery state.
+  /// State machine:
+  /// - Stage 0 → 1: 2nd 'd' liên tiếp → toggle ON ('d' → 'đ').
+  /// - Stage 1 → 2: 3rd 'd' → toggle OFF ('đ' → 'dd').
+  /// - Stage 2: subsequent 'd' = no-op (frozen, giữ nguyên "dd").
+  /// Reset stage trên non-'d' char hoặc newWord.
+  func testTelexAnywhereDDToggle() throws {
+    XCTAssertEqual(transform_text_telex(for: "vcdd"), "vcđ")
+    XCTAssertEqual(transform_text_telex(for: "vcddd"), "vcdd")    // toggle off
+    XCTAssertEqual(transform_text_telex(for: "vcdddd"), "vcdd")   // frozen
+    XCTAssertEqual(transform_text_telex(for: "vcddddd"), "vcdd")  // frozen
+    // "add" trigger anywhere-dd vì 'd' sau 'a' rơi conLai (recovery).
+    XCTAssertEqual(transform_text_telex(for: "add"), "ađ")
+    XCTAssertEqual(transform_text_telex(for: "addd"), "add")
+    XCTAssertEqual(transform_text_telex(for: "adddd"), "add")  // frozen
+  }
+
+  /// 1.9.7: regression — initial 'dd' (Telex chuẩn `dd → đ` ở đầu từ) phải
+  /// vẫn work bình thường, không bị anywhere-toggle override.
+  func testTelexInitialDDStillWorks() throws {
+    XCTAssertEqual(transform_text_telex(for: "dduowngf"), "đường")
+    XCTAssertEqual(transform_text_telex(for: "ddi"), "đi")
+  }
+
   /// 1.8.4: Telex regression — gõ "teen" (t + ee→ê + n) phải ra "tên" VN,
   /// không lock raw "teen". Bug v1.7.9: post-replay check dùng full enLexicon
   /// 9826 từ — "teen" match → override sang raw. Fix: dùng isInstantRestoreEnglish

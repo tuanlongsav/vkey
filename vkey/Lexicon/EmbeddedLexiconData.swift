@@ -7229,6 +7229,33 @@ bửa
     "they", "them", "their", "then", "there", "these", "this", "that", "those", "than",
   ])
 
+  /// 1.9.7: từ EN thông dụng có "ow"/"aw"/"ew" mid-word — Telex skip mark
+  /// 'w' / 'a' / 'o' / 'e' để tránh xáo trộn state engine khi user gõ
+  /// English (vd "download → dowwnload" trên target app autocomplete).
+  /// Curated kỹ — chỉ từ English có prefix KHÔNG conflict với VN typing.
+  static let englishWMarkBlocklist: Set<String> = Set([
+    // "ow" pattern
+    "down", "downs", "download", "downloads", "downward", "downstream",
+    "now", "knows", "know", "known",
+    "how", "however",
+    "show", "shows", "showed", "shown",
+    "row", "rows", "tow", "towed", "wow",
+    "below", "fellow", "follow", "follows", "followed", "following",
+    "swallow", "swallows", "borrow", "borrows", "borrowed",
+    "narrow", "narrows", "sparrow", "throw", "throws", "thrown",
+    "elbow", "shadow", "shadows", "yellow", "pillow", "window", "windows",
+    "slow", "slowly", "flow", "flows", "crow", "crows", "grow", "grown",
+    "snow", "blow", "blown", "glow", "plow",
+    // "aw" pattern
+    "saw", "paw", "raw", "jaw", "draw", "drawn", "drawing", "claw",
+    "law", "laws", "lawn", "flaw", "flaws", "thaw",
+    "awesome", "awful", "always", "awake",
+    // "ew" pattern
+    "new", "news", "newer", "few", "knew", "blew", "threw", "drew",
+    "review", "reviews", "preview", "view", "viewer", "interview", "interviews",
+    "screw", "crew", "stew", "brew",
+  ])
+
   static let keepVietnameseWords: Set<String> = Set([
     "lisa", "maria", "para", "sara"
   ])
