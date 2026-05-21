@@ -237,18 +237,38 @@ func eventTapCallback(
   }
 
   // ── Smart Switch Overlay Probing ──────────────────────────────────────────
+  // 1.7.x: KHÔNG gọi AX đồng bộ trong callback. Đọc `currentFocusedBundleId`
+  // do AppState cache (cập nhật bởi NSWorkspace.didActivateApplicationNotification).
+  // Trên mouse-click, trigger async refresh để bắt sub-window focus changes.
   if let appState = eventHook.appState, Defaults[.smartSwitchEnabled],
      (type == .keyDown || type == .leftMouseDown || type == .rightMouseDown) {
-    if let focusedBundleId = Focused.focusedAppBundleId() {
-      let isLauncher = Defaults[.smartSwitchApps].contains(focusedBundleId)
-      if isLauncher {
+    if type == .leftMouseDown || type == .rightMouseDown {
+      appState.refreshFocusedBundleIdAsync()
+    }
+    if let focusedBundleId = appState.currentFocusedBundleId {
+      let configs = Defaults[.appSmartSwitchConfigs]
+      let desiredEnabled: Bool?
+      if let config = configs[focusedBundleId] {
+        switch config.state {
+        case .disabled, .englishMode: desiredEnabled = false
+        case .vietnameseMode:         desiredEnabled = true
+        }
+      } else if Defaults[.smartSwitchApps].contains(focusedBundleId) {
+        desiredEnabled = false
+      } else {
+        desiredEnabled = nil
+      }
+
+      if let desired = desiredEnabled {
         if !appState.smartSwitchActive {
           appState.enabledBeforeSmartSwitch = appState.enabled
           appState.smartSwitchActive = true
-          appState.setEnabledWithoutPersist(false)
           // 1.5.0: record fire for weekly stats. Async-recorded inside
           // UsageStatistics so the event tap callback stays fast.
           UsageStatistics.shared.recordSmartSwitchFire(toApp: focusedBundleId)
+        }
+        if appState.enabled != desired {
+          appState.setEnabledWithoutPersist(desired)
         }
       } else if appState.smartSwitchActive {
         appState.smartSwitchActive = false

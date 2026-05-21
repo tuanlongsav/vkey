@@ -1141,6 +1141,10 @@ final class UsageStatistics {
     let now = Date()
     var out: [PendingDictSuggestion] = []
 
+    // 1.7.x: snapshot English lexicon once per pass — tránh gọi nhiều
+    // lần qua queue.sync trong vòng for ở looksLikeKeyboardMashing.
+    let enWordsSnapshot = LexiconManager.shared.englishWordsSnapshot()
+
     // Allow candidates: enRestoreStreak ≥ threshold, ASCII-only.
     for (token, count) in counters.enRestoreStreak where count >= promotionThreshold {
       let n = token.normalizedDictionaryToken
@@ -1148,6 +1152,10 @@ final class UsageStatistics {
       if existingAllow.contains(n) || existingDeny.contains(n) { continue }
       // Loại nếu LexiconManager nhận là tiếng Việt (sai mục đích allow).
       if LexiconManager.shared.isVietnameseWord(n) { continue }
+      // 1.7.x: bỏ qua chuỗi gõ ngẫu nhiên (asdfgh, xzcvbn...) — chỉ
+      // promote nếu gần một từ tiếng Anh thực sự (Levenshtein ≤ ngưỡng
+      // phụ thuộc độ dài) hoặc là từ exact-match trong lexicon.
+      if looksLikeKeyboardMashing(n, enWords: enWordsSnapshot) { continue }
       out.append(PendingDictSuggestion(
         word: n, count: count, kind: .allow, suggestedAt: now
       ))
@@ -1169,6 +1177,22 @@ final class UsageStatistics {
     }
 
     return out
+  }
+
+  /// Heuristic loại keyboard mashing: chuỗi không có nguyên âm, hoặc quá
+  /// dài, hoặc cách quá xa mọi từ tiếng Anh đã biết. Distance threshold
+  /// scale theo độ dài (max(2, n/4)) để cho phép typo dài hơn ở từ dài.
+  private func looksLikeKeyboardMashing(_ word: String, enWords: [String]) -> Bool {
+    if word.count > 18 { return true }
+
+    let vowels: Set<Character> = ["a", "e", "i", "o", "u", "y"]
+    guard word.lowercased().contains(where: { vowels.contains($0) }) else { return true }
+
+    let maxDist = max(2, word.count / 4)
+    for candidate in enWords where abs(candidate.count - word.count) <= maxDist {
+      if SuggestionService.levenshtein(word, candidate) <= maxDist { return false }
+    }
+    return true
   }
 
   /// Append suggestions vào pending list, dedupe theo `id`. Public-equivalent

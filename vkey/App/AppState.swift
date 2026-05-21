@@ -76,6 +76,13 @@ class AppState: ObservableObject, FileMonitorDelegate {
     @Published public var activeAppName = "Unknown"
     public var bundleId: String
 
+    /// 1.7.x: cached bundle ID của focused app — cập nhật bởi NSWorkspace
+    /// notification (cross-app) và async AX refresh trên mouse-click
+    /// (cho in-app sub-window focus). EventHook callback đọc property
+    /// này thay vì gọi `Focused.focusedAppBundleId()` đồng bộ.
+    public private(set) var currentFocusedBundleId: String?
+    private let focusRefreshQueue = DispatchQueue(label: "dev.longht.vkey.focusRefresh", qos: .userInteractive)
+
     init() {
         bundleId = Bundle.main.bundleIdentifier ?? "dev.longht.vkey"
 
@@ -106,6 +113,16 @@ class AppState: ObservableObject, FileMonitorDelegate {
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(activeApplicationDidChange),
             name: NSWorkspace.didActivateApplicationNotification, object: nil)
+
+        // 1.7.x: seed currentFocusedBundleId từ frontmost app — đảm bảo
+        // EventHook callback có giá trị valid trước khi notification đầu
+        // tiên fire (e.g. app khởi động khi Spotlight đang mở).
+        if let frontmost = NSWorkspace.shared.frontmostApplication,
+           let bid = frontmost.bundleIdentifier,
+           bid != bundleId
+        {
+            currentFocusedBundleId = bid
+        }
             
         // Enable HUD notifications after a brief delay once startup is fully completed
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
@@ -167,6 +184,10 @@ class AppState: ObservableObject, FileMonitorDelegate {
             let appName = activeApp.bundleIdentifier,
             appName != bundleId
         {
+            // 1.7.x: cập nhật cached focused bundle ID — push-based,
+            // tránh AX query đồng bộ trong EventHook callback.
+            currentFocusedBundleId = appName
+
             // 1.7.0: ưu tiên đọc từ appSmartSwitchConfigs (3-state).
             // Fallback smartSwitchApps để backward-compat user chưa migrate.
             let configs = Defaults[.appSmartSwitchConfigs]
@@ -211,6 +232,19 @@ class AppState: ObservableObject, FileMonitorDelegate {
                 setEnabled(set: enabledBeforeSmartSwitch)
             } else {
                 setEnabled(set: enabled)
+            }
+        }
+    }
+
+    /// 1.7.x: refresh `currentFocusedBundleId` async — gọi từ EventHook
+    /// callback trên mouse-click events. Chạy trên background queue để
+    /// không block event tap. NSWorkspace notification đã đủ cho cross-app
+    /// switch; refresh này bắt sub-window focus changes trong cùng app.
+    public func refreshFocusedBundleIdAsync() {
+        focusRefreshQueue.async { [weak self] in
+            let bid = Focused.focusedAppBundleId()
+            DispatchQueue.main.async {
+                self?.currentFocusedBundleId = bid
             }
         }
     }

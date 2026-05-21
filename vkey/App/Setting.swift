@@ -319,10 +319,18 @@ extension Defaults.Keys {
 
   /// Bigram counts: previous word → next word → count. Học từ history
   /// user gõ (1.6.0+).
+  ///
+  /// **Deprecated 1.7.x:** Storage chuyển sang `NGramStore` (file-backed
+  /// trong `~/Library/Application Support/vkey/ngram/`) để tránh jank UI
+  /// khi dict tăng vài MB. Key này chỉ còn cho migration 1 chiều
+  /// (Defaults → NGramStore) và import từ user-data export cũ.
+  /// Live read/write phải qua `NGramStore.shared`.
   static let userBigrams = Key<[String: [String: Int]]>("user-bigrams", default: [:])
 
   /// Trigram counts: "prev2|prev1" → next word → count. Compose key
   /// bằng `|` để giảm nested level (Defaults serializer dễ hơn).
+  ///
+  /// **Deprecated 1.7.x:** xem ghi chú `userBigrams`.
   static let userTrigrams = Key<[String: [String: Int]]>("user-trigrams", default: [:])
 
   /// Giao diện ứng dụng — `.threeD` là default mới ở 1.5.4 (gradient +

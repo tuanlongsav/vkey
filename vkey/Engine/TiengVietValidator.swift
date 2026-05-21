@@ -36,6 +36,7 @@ enum TiengVietValidator {
     "oa", "oe", "oi",
     "ua", "ue", "ui", "uo", "uy", "uu",
     "ye",
+    "ou", "yu", "ya",
     // Telex intermediate states:
     "aa", "ee", "oo"
   ]

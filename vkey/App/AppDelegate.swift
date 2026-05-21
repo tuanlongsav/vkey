@@ -45,6 +45,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // Idempotent — chỉ chạy nếu configs đang rỗng.
     AppState.migrateSmartSwitchTo3State()
 
+    // 1.7.x: bootstrap NGramStore (singleton lazy init). Touch shared để
+    // chạy migration từ Defaults[.userBigrams]/[.userTrigrams] sang file
+    // store ngay khi launch — tránh delay tới lần commit từ đầu tiên.
+    _ = NGramStore.shared
+
     // 1.7.0: chạy auto-learn Smart Switch nếu chưa chạy tuần này.
     runSmartSwitchAutoLearnIfDue()
 
@@ -318,6 +323,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // install). Bình thường scheduleFlush debounce 10s, nhưng terminate
     // race không thể đợi.
     UsageStatistics.shared.flushSynchronously()
+    // 1.7.x: cùng pattern cho n-gram store.
+    NGramStore.shared.flushNowSync()
   }
 
   /// Shown after the trust polling loop has given up. The alert links the

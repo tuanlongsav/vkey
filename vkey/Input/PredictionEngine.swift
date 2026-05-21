@@ -66,21 +66,18 @@ final class PredictionEngine {
   func collectCandidates(prev2: String?, prev1: String) -> [(word: String, freq: Int)] {
     var out: [String: Int] = [:]
 
-    // Layer 1: trigram user
+    // Layer 1: trigram user (1.7.x: NGramStore thay Defaults)
     if let prev2 = prev2 {
-      let key = "\(prev2.lowercased())|\(prev1)"
-      if let nexts = Defaults[.userTrigrams][key] {
-        for (w, c) in nexts where c >= userTrigramThreshold {
-          out[w, default: 0] += c * 2  // trigram weight 2× (more specific)
-        }
+      let nexts = NGramStore.shared.trigramNexts(prev2: prev2.lowercased(), prev1: prev1)
+      for (w, c) in nexts where c >= userTrigramThreshold {
+        out[w, default: 0] += c * 2  // trigram weight 2× (more specific)
       }
     }
 
-    // Layer 2: bigram user
-    if let nexts = Defaults[.userBigrams][prev1] {
-      for (w, c) in nexts where c >= userBigramThreshold {
-        out[w, default: 0] += c
-      }
+    // Layer 2: bigram user (1.7.x: NGramStore thay Defaults)
+    let bigramNexts = NGramStore.shared.bigramNexts(prev1: prev1)
+    for (w, c) in bigramNexts where c >= userBigramThreshold {
+      out[w, default: 0] += c
     }
 
     // Layer 3: embedded VN corpus
@@ -95,6 +92,7 @@ final class PredictionEngine {
 
   /// Học từ commit: update bigram[prev1][curr] + trigram[prev2|prev1][curr].
   /// Skip nếu word quá ngắn, hoặc chứa ký tự đặc biệt (số, punctuation).
+  /// 1.7.x: delegate sang NGramStore — async, không block main thread.
   func learnTransition(prev2: String?, prev1: String?, current: String) {
     let cur = current.lowercased()
     // Skip ngắn / chứa non-letter.
@@ -103,21 +101,6 @@ final class PredictionEngine {
     else { return }
     guard let prev1 = prev1?.lowercased(), !prev1.isEmpty else { return }
 
-    // Bigram update
-    var bigrams = Defaults[.userBigrams]
-    var nexts = bigrams[prev1, default: [:]]
-    nexts[cur, default: 0] += 1
-    bigrams[prev1] = nexts
-    Defaults[.userBigrams] = bigrams
-
-    // Trigram update (chỉ khi có prev2)
-    if let prev2 = prev2?.lowercased(), !prev2.isEmpty {
-      let key = "\(prev2)|\(prev1)"
-      var trigrams = Defaults[.userTrigrams]
-      var trinexts = trigrams[key, default: [:]]
-      trinexts[cur, default: 0] += 1
-      trigrams[key] = trinexts
-      Defaults[.userTrigrams] = trigrams
-    }
+    NGramStore.shared.learn(prev2: prev2?.lowercased(), prev1: prev1, current: cur)
   }
 }

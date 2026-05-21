@@ -2,6 +2,78 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.8.0] - 2026-05-21 — "Platform Plumbing: Event-Driven + File-Backed N-grams"
+
+4 cải tiến platform-layer: Smart Switch 3-trạng thái hoàn chỉnh trong overlay path, event tap callback nhẹ hơn (gỡ AX call đồng bộ), Personal Dict thông minh hơn (lọc keyboard mashing), bigram/trigram tách ra file-backed store thay vì UserDefaults plist.
+
+### 🚨 Fix Smart Switch trong overlay: hỗ trợ đủ 3 trạng thái
+
+Phiên bản v1.7.0 đưa cấu hình Smart Switch 3-trạng thái (`.disabled` / `.englishMode` / `.vietnameseMode`), nhưng [Overlay Probing trong EventHook](vkey/Platform/EventHook.swift) chỉ phản ứng đúng với `.englishMode`. App được cấu hình `.vietnameseMode` (muốn bật bộ gõ trong overlay) không được kích hoạt; `.disabled` cũng không khớp pattern canonical trong `AppState.activeApplicationDidChange`.
+
+**Fix**: thay decision boolean bằng decision 3-trạng thái dùng `Bool?` (nil = không can thiệp, true = bật, false = tắt). Khớp với pattern ở [AppState.swift:180-185](vkey/App/AppState.swift:180). Legacy `smartSwitchApps` fallback giữ behaviour cũ (tắt bộ gõ).
+
+| Cấu hình | Hành vi cũ | Hành vi mới |
+|---|---|---|
+| `.englishMode` | ✓ Tắt | ✓ Tắt |
+| `.vietnameseMode` | ✗ Không thay đổi | ✓ Bật bộ gõ |
+| `.disabled` | ✗ Không thay đổi | ✓ Tắt |
+| Legacy list | ✓ Tắt | ✓ Tắt |
+| Không cấu hình | Restore | Restore |
+
+### ⚡ Event Tap nhẹ hơn: gỡ AX call đồng bộ khỏi callback
+
+Trước: mỗi `keyDown` callback trong [EventHook event tap](vkey/Platform/EventHook.swift) có thể trigger `Focused.focusedAppBundleId()` đồng bộ → gọi chuỗi AX API (`AXUIElementCopyAttributeValue`, `AXUIElementGetPid`, `NSRunningApplication(processIdentifier:)`). Dù throttle 300ms, vẫn có nguy cơ macOS vô hiệu hóa event tap khi callback chậm.
+
+Fix: chuyển sang push-based. [AppState](vkey/App/AppState.swift) cache `currentFocusedBundleId`, cập nhật trên `NSWorkspace.didActivateApplicationNotification` (cross-app overlay như Spotlight/Raycast/Alfred) + async refresh trên mouse-click (in-app sub-window focus). Event tap callback chỉ đọc property cached → zero AX work trong hot path.
+
+Gỡ luôn `lastAXQueryTime` + `cachedFocusedBundleId` (không còn dùng).
+
+### 🤖 Personal Dict: lọc keyboard mashing trước khi gợi ý
+
+Trước: `computePendingSuggestions` trong [UsageStatistics](vkey/Stats/UsageStatistics.swift) chỉ check restoration frequency ≥ 5. User vô tình gõ ngẫu nhiên (`asdfgh`, `xzcvbn`, `qwertyu`) đủ 5 lần → chuỗi này lọt vào Personal Dictionary suggestion list, gây nhiễu.
+
+Fix: thêm filter `looksLikeKeyboardMashing` cho candidate `.allow`:
+1. Độ dài > 18 ký tự → reject (không phải từ tiếng Anh hợp lý).
+2. Không có nguyên âm → reject (loại `xzcvbn`, `qwrtp`).
+3. Levenshtein distance > `max(2, len/4)` với MỌI từ trong English lexicon → reject (loại `asdfgh`).
+
+Không áp dụng cho `.keep` (từ tiếng Việt có dấu — không nên so với English lexicon). Tái sử dụng `SuggestionService.levenshtein` (đổi từ `private` → `static internal`).
+
+### 💾 Bigram/Trigram: tách khỏi UserDefaults plist
+
+Trước: [PredictionEngine](vkey/Input/PredictionEngine.swift) lưu `userBigrams`/`userTrigrams` dạng `[String: [String: Int]]` trong Defaults. Mỗi commit từ → đọc-mutate-ghi toàn bộ dict trên main thread. Sau vài tháng dict có thể đạt vài MB → mỗi lần ghi block UI vài chục ms.
+
+Fix: tách ra `NGramStore` mới ([vkey/Stats/NGramStore.swift](vkey/Stats/NGramStore.swift)), match pattern `UsageStatistics`:
+- Concurrent queue + barrier writes (cho phép multiple readers từ `topPrediction` đồng thời).
+- Throttled flush 10s ra atomic JSON tại `~/Library/Application Support/vkey/ngram/ngrams.json`.
+- Migration 1 chiều khi launch: `Defaults[.userBigrams]/[.userTrigrams]` → file store → xóa Defaults (idempotent).
+- Pruning bounded: mỗi prev key cap 50 next words, max 5000 bigram keys / 10000 trigram keys (giữ top theo count).
+
+Refactor:
+- [PredictionEngine.swift](vkey/Input/PredictionEngine.swift) — `collectCandidates` và `learnTransition` đi qua `NGramStore.shared`.
+- [UserDataMigration.swift](vkey/App/UserDataMigration.swift) — import/export đọc qua `NGramStore.snapshot()` / `replaceAll()` / `merge()`.
+- [Setting.swift](vkey/App/Setting.swift:322) — `userBigrams`/`userTrigrams` keys đánh dấu Deprecated 1.8.0.
+- [AppDelegate.swift](vkey/App/AppDelegate.swift) — bootstrap `NGramStore.shared` lúc launch (chạy migration ngay) + `flushNowSync` lúc terminate.
+
+### Verify
+
+- Build clean: ✓
+- Test suite: 190 tests pass (0 failures).
+- Migration: idempotent — Defaults đã clear sẽ skip; data từ Defaults cũ copy nguyên vẹn sang file lần đầu launch.
+- Backward-compat: import từ file backup v1.7.x cũ vẫn hoạt động (UserDataMigration đọc cùng JSON shape).
+
+### Files
+
+- [vkey/Platform/EventHook.swift](vkey/Platform/EventHook.swift) — 3-state overlay logic + bỏ AX query sync + bỏ cache properties.
+- [vkey/App/AppState.swift](vkey/App/AppState.swift) — thêm `currentFocusedBundleId` + `refreshFocusedBundleIdAsync`.
+- [vkey/Stats/UsageStatistics.swift](vkey/Stats/UsageStatistics.swift) — `looksLikeKeyboardMashing` filter trong `computePendingSuggestions`.
+- [vkey/Lexicon/SuggestionService.swift](vkey/Lexicon/SuggestionService.swift) — `levenshtein` từ `private` → `static internal`.
+- [vkey/Stats/NGramStore.swift](vkey/Stats/NGramStore.swift) — MỚI: file-backed n-gram store singleton.
+- [vkey/Input/PredictionEngine.swift](vkey/Input/PredictionEngine.swift) — refactor read/write sites sang `NGramStore`.
+- [vkey/App/UserDataMigration.swift](vkey/App/UserDataMigration.swift) — import/export qua `NGramStore` API.
+- [vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift) — bootstrap + terminate flush.
+- [vkey/App/Setting.swift](vkey/App/Setting.swift) — deprecated comments cho legacy keys.
+
 ## [data] - 2026-05-20 — lexicon v6 → v7 (deep merge undertheseanlp)
 
 Lexicon data update (KHÔNG cần release app mới — chỉ commit + push `lexicon-update.json`; app v1.6.2+ tự fetch trong 24h hoặc bấm nút "Cập nhật từ điển ngay").

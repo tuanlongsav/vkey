@@ -274,7 +274,8 @@ enum UserDataMigration {
 
   /// Build a `UserDataExport` from the running app's current state.
   static func currentExport(includeStatistics: Bool = true) -> UserDataExport {
-    UserDataExport(
+    let ngrams = NGramStore.shared.snapshot()
+    return UserDataExport(
       schemaVersion: UserDataExport.currentSchemaVersion,
       exportedAt: Date(),
       appVersion: Bundle.main.appVersionLong,
@@ -319,8 +320,8 @@ enum UserDataMigration {
       translationHUDEnabled: Defaults[.translationHUDEnabled],
       translationHUDDurationMs: Defaults[.translationHUDDurationMs],
       programmingMode: Defaults[.programmingMode],
-      userBigrams: Defaults[.userBigrams],
-      userTrigrams: Defaults[.userTrigrams],
+      userBigrams: ngrams.bigrams,
+      userTrigrams: ngrams.trigrams,
       statisticsEnabled: Defaults[.statisticsEnabled],
       autoBackupOnUpgrade: Defaults[.autoBackupOnUpgrade],
 
@@ -525,55 +526,19 @@ enum UserDataMigration {
 
     // 1.7.6+: bigram/trigram (prediction learning data).
     // 1.7.7: merge mode đảo sang imported wins — file thắng khi trùng (prev, next).
-    if let bigrams = export.userBigrams {
-      if replaceLists {
-        if Defaults[.userBigrams] != bigrams {
-          Defaults[.userBigrams] = bigrams
-          changes.append("Bigram dự đoán: \(bigrams.count) (overwrite)")
-        }
-      } else {
-        var current = Defaults[.userBigrams]
-        var changed = 0
-        for (prev, nextMap) in bigrams {
-          var existingNext = current[prev] ?? [:]
-          for (next, count) in nextMap {
-            if existingNext[next] != count {
-              existingNext[next] = count
-              changed += 1
-            }
-          }
-          current[prev] = existingNext
-        }
-        if changed > 0 {
-          Defaults[.userBigrams] = current
-          changes.append("Bigram dự đoán: +\(changed) (merge, file ưu tiên)")
-        }
+    // 1.7.x: storage chuyển sang NGramStore (file-backed), không qua Defaults.
+    let importBi = export.userBigrams ?? [:]
+    let importTri = export.userTrigrams ?? [:]
+    if replaceLists {
+      if !importBi.isEmpty || !importTri.isEmpty {
+        NGramStore.shared.replaceAll(bigrams: importBi, trigrams: importTri)
+        if !importBi.isEmpty { changes.append("Bigram dự đoán: \(importBi.count) (overwrite)") }
+        if !importTri.isEmpty { changes.append("Trigram dự đoán: \(importTri.count) (overwrite)") }
       }
-    }
-    if let trigrams = export.userTrigrams {
-      if replaceLists {
-        if Defaults[.userTrigrams] != trigrams {
-          Defaults[.userTrigrams] = trigrams
-          changes.append("Trigram dự đoán: \(trigrams.count) (overwrite)")
-        }
-      } else {
-        var current = Defaults[.userTrigrams]
-        var changed = 0
-        for (prev, nextMap) in trigrams {
-          var existingNext = current[prev] ?? [:]
-          for (next, count) in nextMap {
-            if existingNext[next] != count {
-              existingNext[next] = count
-              changed += 1
-            }
-          }
-          current[prev] = existingNext
-        }
-        if changed > 0 {
-          Defaults[.userTrigrams] = current
-          changes.append("Trigram dự đoán: +\(changed) (merge, file ưu tiên)")
-        }
-      }
+    } else if !importBi.isEmpty || !importTri.isEmpty {
+      let (biChanged, triChanged) = NGramStore.shared.merge(bigrams: importBi, trigrams: importTri)
+      if biChanged > 0 { changes.append("Bigram dự đoán: +\(biChanged) (merge, file ưu tiên)") }
+      if triChanged > 0 { changes.append("Trigram dự đoán: +\(triChanged) (merge, file ưu tiên)") }
     }
 
     // 1.7.6+: stats restoration. Trước đây bỏ qua hoàn toàn → tab Thống kê

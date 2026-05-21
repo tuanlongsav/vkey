@@ -47,7 +47,7 @@ final class SuggestionService {
     return Array(candidates.prefix(limit))
   }
 
-  private static func levenshtein(_ lhs: String, _ rhs: String) -> Int {
+  static func levenshtein(_ lhs: String, _ rhs: String) -> Int {
     let a = Array(lhs)
     let b = Array(rhs)
     if a.isEmpty { return b.count }

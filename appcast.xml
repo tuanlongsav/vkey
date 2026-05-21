@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.8.0 — "Platform Plumbing: Event-Driven &amp; File-Backed N-grams"</title>
+      <sparkle:version>18000</sparkle:version>
+      <sparkle:shortVersionString>1.8.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 07:55:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.8.0/vkey-1.8.0.dmg"
+        sparkle:edSignature="XSnJdgrq5ORuBWS+KQj2u57uPPCbOj3pG5z5KRfiriKg4axoB7pz8DiKIyG86jZ2qRufBfYnuMo6DlUXFyf3Bw=="
+        length="7029287"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.8.0 — "Platform Plumbing: Event-Driven &amp; File-Backed N-grams":</h2>
+        <p>4 cải tiến platform-layer.</p>
+        <ul>
+          <li><strong>🚨 Smart Switch 3-trạng thái hoàn chỉnh trong overlay</strong>: v1.7.0 đưa cấu hình 3-trạng thái (.disabled/.englishMode/.vietnameseMode) nhưng overlay path (Spotlight/Raycast/Alfred) chỉ phản ứng đúng .englishMode. Giờ app cấu hình .vietnameseMode được bật bộ gõ khi xuất hiện overlay; .disabled tắt bộ gõ đúng pattern.</li>
+          <li><strong>⚡ Event Tap nhẹ hơn</strong>: gỡ AX query đồng bộ khỏi event tap callback. Bundle ID của focused app giờ cập nhật push-based qua NSWorkspace notification + async refresh mouse-click. Giảm nguy cơ macOS vô hiệu hóa tap khi callback chậm.</li>
+          <li><strong>🤖 Personal Dict thông minh hơn</strong>: lọc keyboard mashing trước khi gợi ý vào từ điển cá nhân. Chuỗi ngẫu nhiên như "asdfgh", "xzcvbn" hoặc từ quá xa English lexicon (Levenshtein > max(2, len/4)) bị loại. Hết noise trong tab gợi ý.</li>
+          <li><strong>💾 Bigram/Trigram tách khỏi UserDefaults</strong>: dict prediction giờ lưu trong file JSON tại ~/Library/Application Support/vkey/ngram/ + background queue + throttled flush 10s. Bigram/trigram mở rộng tới vài MB không còn block UI khi commit từ. Migration tự động khi launch (idempotent).</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.7.11 — "VN Priority on Diacritic &amp; Personal Dict UX"</title>
       <sparkle:version>17911</sparkle:version>
       <sparkle:shortVersionString>1.7.11</sparkle:shortVersionString>

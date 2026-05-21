@@ -494,6 +494,10 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "dduowngf"), "đường")
     XCTAssertEqual(transform_text_telex(for: "chuowng"), "chương")
     XCTAssertEqual(transform_text_telex(for: "trinhf"), "trình")
+    XCTAssertEqual(transform_text_telex(for: "ruoujw"), "rượu")
+    XCTAssertEqual(transform_text_telex(for: "huouw"), "hươu")
+    XCTAssertEqual(transform_text_telex(for: "khuyur"), "khuỷu")
+    XCTAssertEqual(transform_text_telex(for: "khuya"), "khuya")
   }
 
   func testTelexTheemTransformation() throws {
