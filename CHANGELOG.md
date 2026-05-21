@@ -2,6 +2,50 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.9.2] - 2026-05-21 — "HUD Visual Polish"
+
+3 fix UX HUD.
+
+### 📦 Gom HUD customization vào block "Đoán từ tiếp theo"
+
+Trước v1.9.2: Stepper "Cỡ chữ HUD đoán từ" + "Độ đậm HUD" ở Tab Chung (đáy form). Stepper "Khoảng cách HUD đến caret" ở Tab Chính tả (block prediction). 3 cài đặt liên quan đoán từ nhưng tách 2 tab.
+
+**v1.9.2**: gom tất cả 3 Stepper vào cùng block `if wordPredictionEnabled` trong Tab Chính tả → section "Cấu hình kiểm tra chính tả". Chỉ visible khi bật prediction. Logic gom: 3 cài đặt đều ảnh hưởng PredictionHUD nên nên gọi cùng nhau.
+
+### 🔤 ToggleHUD font cố định to + nền trong suốt
+
+User feedback: HUD báo chuyển Tiếng Việt / Tiếng Anh font nhỏ khó nhìn.
+
+[ToggleHUDView](vkey/Platform/ToggleHUDWindow.swift):
+- Icon size **38 → 56pt** (font symbol).
+- Frame icon **44×44 → 64×64**.
+- Label "Tiếng Việt"/"English" size **14 → 20pt**.
+- Badge "VI"/"EN" size **11 → 13pt** + padding rộng hơn.
+- Frame width **130 → 170**.
+- Padding vertical **18 → 22**.
+- CornerRadius **20 → 24**.
+
+Áp dụng pattern `.background(.ultraThinMaterial, in: shape)` thay vì `RoundedRectangle.fill(material)` — đảm bảo nền clipped vào shape, trong suốt rõ hơn.
+
+### 🚨 Fix bug bitmap bo góc HUD
+
+User báo HUD có lỗi visual: "bên phải bo nhiều còn bên trái có hình đè vuông góc".
+
+**Root cause**:
+1. **PredictionHUDWindow**: `targetFrame` dùng heuristic `text.count × 9 + 40` cho width — không match SwiftUI intrinsic content width. Panel rộng hơn SwiftUI clipShape → vùng panel ngoài shape không có background → default panel chrome (vuông góc) lộ ra.
+2. **ToggleHUDWindow**: styleMask thiếu `.borderless` → default window chrome render vuông góc cạnh shape SwiftUI.
+3. SwiftUI pattern `.background(.material).clipShape(...)` đôi khi material vẽ trước clip → bitmap render khác nhau giữa các góc.
+
+**Fix**:
+- [PredictionHUDWindow.swift:55-69](vkey/Platform/PredictionHUDWindow.swift:55) — dùng `hosting.fittingSize` cho panel content size thay vì heuristic.
+- [ToggleHUDWindow.swift:104](vkey/Platform/ToggleHUDWindow.swift:104) — thêm `.borderless` vào styleMask.
+- Cả 2 HUD view — `.background(.ultraThinMaterial, in: RoundedRectangle(...))` thay pattern cũ.
+
+### Verify
+
+- 194/194 tests pass.
+- Build clean.
+
 ## [1.9.1] - 2026-05-21 — "Crash Fix + Quick Config Preset"
 
 Hotfix v1.9.0 crash + UX restructure tab Chính tả.

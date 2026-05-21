@@ -96,16 +96,20 @@ final class ToggleHUDWindow {
     private func createPanel() {
         let hudView = ToggleHUDView(viewModel: viewModel)
         let controller = NSHostingController(rootView: hudView)
-        
+
         let fittingSize = controller.view.fittingSize
-        
+
+        // 1.9.2: thêm `.borderless` style mask để loại bỏ default window
+        // chrome rendering — fix bug bo góc bên trái có hình vuông đè
+        // (default panel chrome vẽ chevron/title area mà SwiftUI clipShape
+        // không che được).
         let newPanel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: fittingSize.width, height: fittingSize.height),
-            styleMask: [.nonactivatingPanel, .fullSizeContentView],
+            styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        
+
         newPanel.contentViewController = controller
         newPanel.isFloatingPanel = true
         newPanel.level = .popUpMenu // Hiển thị trên cả các ứng dụng Fullscreen/Menus
@@ -116,7 +120,7 @@ final class ToggleHUDWindow {
         newPanel.isReleasedWhenClosed = false
         newPanel.hidesOnDeactivate = false
         newPanel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
-        
+
         hostingController = controller
         panel = newPanel
     }
@@ -145,30 +149,32 @@ private struct ToggleHUDView: View {
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        VStack(spacing: 8) {
+        // 1.9.2: font cố định LỚN hơn để dễ nhìn (user feedback).
+        // Icon 38→56, label 14→20, badge 11→13. Frame width 130→170.
+        VStack(spacing: 10) {
             // Icon trạng thái với hiệu ứng chuyển đổi mượt mà
             ThemedSymbol(name: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
-                .font(.system(size: 38, weight: .semibold))
+                .font(.system(size: 56, weight: .semibold))
                 .foregroundStyle(
                     viewModel.isEnabled
                     ? AnyShapeStyle(Color.accentColor.gradient)
                     : AnyShapeStyle(Color.secondary.gradient)
                 )
-                .frame(width: 44, height: 44)
+                .frame(width: 64, height: 64)
                 .vkeySymbolReplacementTransition()
-            
-            // Nhãn hiển thị ngôn ngữ (bảo đảm không bị nén hoặc cắt ngắn)
+
+            // Nhãn hiển thị ngôn ngữ
             Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .font(.system(size: 20, weight: .bold, design: .rounded))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
-            
+
             // Ký hiệu viết tắt (VI / EN)
             Text(viewModel.isEnabled ? "VI" : "EN")
-                .font(.system(size: 11, weight: .black, design: .rounded))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
+                .font(.system(size: 13, weight: .black, design: .rounded))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
                 .background(
                     viewModel.isEnabled
                     ? Color.accentColor.opacity(0.15)
@@ -177,20 +183,21 @@ private struct ToggleHUDView: View {
                 .foregroundStyle(viewModel.isEnabled ? Color.accentColor : Color.secondary)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
         }
-        .frame(width: 130) // Kích thước HUD đồng bộ đối xứng, sang trọng và không đổi khi switch
-        .padding(.vertical, 18)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.4 : 0.15), radius: 15, x: 0, y: 5)
-        )
+        .frame(width: 170)
+        .padding(.vertical, 22)
+        .padding(.horizontal, 10)
+        // 1.9.2: dùng `.background(material, in: shape)` thay vì
+        // `RoundedRectangle.fill(material)` — clip shape consistent giữa
+        // background, shadow, overlay. Tránh bug bitmap bo góc khác nhau.
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 24)
                 .strokeBorder(
                     .white.opacity(colorScheme == .dark ? 0.15 : 0.4),
                     lineWidth: 1
                 )
         )
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.4 : 0.15), radius: 15, x: 0, y: 5)
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
         // 1.9.1: opacity moved to panel.alphaValue trong ToggleHUDWindow.show()
         // — tránh `.opacity()` modifier ở đây vì Defaults[...] direct read trong

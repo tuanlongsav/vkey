@@ -175,8 +175,7 @@ struct GeneralView: View {
     @Default(.autoTypoCorrection) private var autoTypoCorrection
     @Default(.hudEnabled) private var hudEnabled
     // 1.9.0: HUD customization
-    @Default(.predictionHUDFontSize) private var predictionHUDFontSize
-    @Default(.hudOpacityPercent) private var hudOpacityPercent
+    // 1.9.2: 2 vars dưới chuyển sang SpellCheckView (cùng block prediction).
 
     let appVersion = Bundle.main.appVersionLong
 
@@ -255,37 +254,15 @@ struct GeneralView: View {
                     Label("Phím tắt", themedSymbol: "command")
                 }
 
-                // 1.9.0: HUD customization — fontSize + opacity. Áp dụng cho
-                // cả ToggleHUD (báo Vi/En) và PredictionHUD (đoán từ).
-                Stepper(value: $predictionHUDFontSize, in: 10...20) {
-                    HStack {
-                        Label("Cỡ chữ HUD đoán từ", themedSymbol: "textformat.size")
-                        Spacer()
-                        Text("\(predictionHUDFontSize) pt")
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
-                Stepper(value: $hudOpacityPercent, in: 50...100, step: 5) {
-                    HStack {
-                        Label("Độ đậm HUD", themedSymbol: "circle.lefthalf.filled")
-                        Spacer()
-                        Text("\(hudOpacityPercent)%")
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
-                Text("Áp dụng cho cả HUD báo Vi/En và HUD đoán từ. Giảm độ đậm để HUD trong suốt hơn, đỡ \"tranh\" với nội dung editor.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, -8)
+                // 1.9.2: HUD customization Steppers chuyển sang block "Đoán từ
+                // tiếp theo" trong tab Chính tả (cùng với khoảng cách HUD).
 
             }
             .formStyle(.grouped)
             .scrollDisabled(false)
 
             // 1.8.3: tiếng Việt, không nghiêng. Date hardcode mỗi release.
-            // 1.9.1: cập nhật ngày phát hành.
+            // 1.9.2: cập nhật ngày phát hành.
             Text("Phiên bản \(appVersion) ngày 21/5/2026")
                 .font(.caption)
                 .multilineTextAlignment(.center)
@@ -331,6 +308,10 @@ struct SpellCheckView: View {
     // 1.8.3: chuyển từ Tab Chung sang đây — prediction thuộc chức năng spell-checking.
     @Default(.wordPredictionEnabled) private var wordPredictionEnabled
     @Default(.predictionHUDLineOffset) private var predictionHUDLineOffset
+    // 1.9.2: HUD customization chuyển từ Tab Chung sang đây — chỉ visible
+    // khi `wordPredictionEnabled = true`. Gom cùng nhóm cài đặt prediction.
+    @Default(.predictionHUDFontSize) private var predictionHUDFontSize
+    @Default(.hudOpacityPercent) private var hudOpacityPercent
 
     // 1.9.1: quick config preset
     @Default(.quickConfigPreset) private var quickConfigPreset
@@ -550,6 +531,30 @@ struct SpellCheckView: View {
                                 }
                             }
                             Text("HUD đặt phía trên (hoặc dưới nếu không đủ chỗ) caret line, cách xa khoảng N dòng văn bản để không che nội dung đang gõ.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, -8)
+
+                            // 1.9.2: cỡ chữ + độ đậm HUD đoán từ — gom cùng block.
+                            Stepper(value: $predictionHUDFontSize, in: 10...20) {
+                                HStack {
+                                    Label("Cỡ chữ HUD đoán từ", themedSymbol: "textformat.size")
+                                    Spacer()
+                                    Text("\(predictionHUDFontSize) pt")
+                                        .foregroundStyle(.secondary)
+                                        .monospacedDigit()
+                                }
+                            }
+                            Stepper(value: $hudOpacityPercent, in: 50...100, step: 5) {
+                                HStack {
+                                    Label("Độ đậm HUD đoán từ", themedSymbol: "circle.lefthalf.filled")
+                                    Spacer()
+                                    Text("\(hudOpacityPercent)%")
+                                        .foregroundStyle(.secondary)
+                                        .monospacedDigit()
+                                }
+                            }
+                            Text("Cỡ chữ và độ đậm chỉ áp dụng cho HUD đoán từ. HUD báo chuyển bộ gõ (Tiếng Việt / Tiếng Anh) dùng font cố định to để dễ nhìn.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .padding(.top, -8)

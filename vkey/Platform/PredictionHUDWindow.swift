@@ -50,14 +50,28 @@ final class PredictionHUDWindow {
     let panel = ensurePanel()
 
     // 1.9.1: recreate hosting view mỗi lần show — tránh in-place rootView
-    // update gây hosting view animated resize → crash. Cost negligible:
-    // rebuild 1 lần / 3s (HUD auto-hide timeout).
+    // update gây hosting view animated resize → crash.
     hostingView?.removeFromSuperview()
     let hosting = NSHostingView(rootView: view)
     hostingView = hosting
     panel.contentView = hosting
 
-    panel.setFrame(targetFrame(forText: text), display: true, animate: false)
+    // 1.9.2: dùng SwiftUI fittingSize cho panel content size thay vì
+    // heuristic char-count × 9. Tránh bug bitmap bo góc do panel rộng/hẹp
+    // hơn SwiftUI clipShape — frame ngoài clipped shape không có background
+    // → render artifact (default panel chrome vẽ vuông góc lên).
+    let fitSize = hosting.fittingSize
+    let originFrame = targetFrame(forText: text)
+    let actualFrame = NSRect(
+      x: originFrame.origin.x,
+      // Re-align: keep top edge — origin.y in NSScreen coord (bottom-up)
+      // → top = origin.y + height. New height fitSize.height → new origin.y
+      // = top - fitSize.height = originFrame.origin.y + originFrame.height - fitSize.height.
+      y: originFrame.origin.y + originFrame.height - fitSize.height,
+      width: fitSize.width,
+      height: fitSize.height
+    )
+    panel.setFrame(actualFrame, display: true, animate: false)
     panel.orderFrontRegardless()
 
     // Auto-dismiss sau 3 giây.
@@ -253,9 +267,12 @@ struct PredictionHUDView: View {
       .foregroundStyle(.primary)
       .padding(.horizontal, 14)
       .padding(.vertical, 8)
-      .background(.ultraThinMaterial)
-      // 1.9.1: cornerRadius 10→16 — bo tròn rõ hơn theo user feedback.
-      .clipShape(RoundedRectangle(cornerRadius: 16))
+      // 1.9.2: dùng `.background(material, in: shape)` pattern. Trước
+      // dùng `.background(.ultraThinMaterial).clipShape(...)` → material
+      // được vẽ trước clip, dẫn tới bitmap bị crop khác nhau giữa các
+      // góc (bug "bên phải bo nhiều, bên trái vuông góc"). Pattern mới
+      // background đã clipped vào shape ngay từ đầu — render consistent.
+      .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
       .overlay(
         RoundedRectangle(cornerRadius: 16)
           .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)

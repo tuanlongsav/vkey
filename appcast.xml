@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.9.2 — "HUD Visual Polish"</title>
+      <sparkle:version>19002</sparkle:version>
+      <sparkle:shortVersionString>1.9.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 16:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.9.2/vkey-1.9.2.dmg"
+        sparkle:edSignature="hv744t8nnSU6nFptETLVd9Wj1geBHaIlEgcX/pasuxnr9RdZ0ugi2sCekC1h/tqLOJtq+fivPV9D6i5D+B3iCQ=="
+        length="7080533"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.9.2 — "HUD Visual Polish":</h2>
+        <p>3 fix UX HUD.</p>
+        <ul>
+          <li><strong>📦 Gom cài đặt HUD vào "Đoán từ tiếp theo"</strong>: 3 Stepper (cỡ chữ, độ đậm, khoảng cách caret) giờ cùng nằm trong block prediction tab Chính tả. Chỉ visible khi bật prediction.</li>
+          <li><strong>🔤 ToggleHUD font cố định to</strong>: HUD báo chuyển Tiếng Việt/Tiếng Anh giờ icon 56pt (trước 38), label 20pt (trước 14), frame 170 (trước 130). Dễ nhìn hơn rõ rệt.</li>
+          <li><strong>🚨 Fix bug bitmap bo góc HUD</strong>: trước v1.9.2 HUD có lỗi "bên phải bo nhiều, bên trái vuông góc". Root causes: panel content size không match SwiftUI clipShape (heuristic char-count), ToggleHUD thiếu .borderless styleMask, pattern background+clipShape vẽ material trước clip. Fix: dùng hosting.fittingSize cho panel size, thêm .borderless, dùng .background(material, in: shape) pattern.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.9.1 — "Crash Fix &amp; Quick Config Preset"</title>
       <sparkle:version>19001</sparkle:version>
       <sparkle:shortVersionString>1.9.1</sparkle:shortVersionString>
