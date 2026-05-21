@@ -303,14 +303,18 @@ extension Defaults.Keys {
   /// Trước 1.8.1 HUD chỉ cách caret 4px — quá gần, hay che dòng đang gõ.
   static let predictionHUDLineOffset = Key<Int>("prediction-hud-line-offset", default: 4)
 
-  /// 1.9.0: font size cho text trong PredictionHUD. Range 10-20, default 13.
-  /// User feedback HUD đôi khi quá nhỏ/quá to so với font editor của họ.
-  static let predictionHUDFontSize = Key<Int>("prediction-hud-font-size", default: 13)
+  /// 1.9.0: font size cho text trong PredictionHUD.
+  /// 1.9.4: default 13 → 16, range 10-20 → 12-24. User feedback v1.9.3 chữ
+  /// quá bé, khó đọc trên material background. Font weight cũng tăng
+  /// medium → semibold trong View (đậm hơn).
+  static let predictionHUDFontSize = Key<Int>("prediction-hud-font-size", default: 16)
 
-  /// 1.9.0: opacity cho HUD (cả PredictionHUD và ToggleHUD). Range 50-100
-  /// (representing 0.50-1.00). Default 100 (đậm). User có thể giảm để HUD
-  /// trong suốt hơn, đỡ "tranh" với nội dung editor.
-  static let hudOpacityPercent = Key<Int>("hud-opacity-percent", default: 100)
+  /// 1.9.0: opacity cho HUD (cả PredictionHUD và ToggleHUD).
+  /// 1.9.4: default 100 → 75, range 50-100 → 30-100. User feedback ToggleHUD
+  /// cần trong suốt hơn. User mới install sẽ thấy 75% — có thể chỉnh xuống
+  /// 30% (rất trong suốt) hoặc lên 100% (đậm hẳn). User existing với value
+  /// đã set giữ nguyên (Defaults default chỉ apply lần đầu).
+  static let hudOpacityPercent = Key<Int>("hud-opacity-percent", default: 75)
 
   // MARK: - 1.7.0 — Smart Switch 3-state per-app config
 

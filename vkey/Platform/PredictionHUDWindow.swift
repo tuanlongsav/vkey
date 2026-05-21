@@ -106,8 +106,14 @@ final class PredictionHUDWindow {
     p.isFloatingPanel = true
     p.level = .floating
     p.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
+    // 1.9.4: bổ sung theo Apple docs cho transparent window:
+    //   window.isOpaque = false
+    //   window.backgroundColor = .clear
+    // PredictionHUDWindow trước v1.9.4 thiếu `isOpaque = false` → nền không
+    // trong suốt hẳn dù SwiftUI dùng .ultraThinMaterial.
+    p.isOpaque = false
     p.backgroundColor = .clear
-    p.hasShadow = false
+    p.hasShadow = false  // SwiftUI vẽ shadow riêng (.shadow modifier)
     p.isMovable = false
     p.becomesKeyOnlyIfNeeded = true
     panel = p
@@ -270,19 +276,20 @@ struct PredictionHUDView: View {
 
   var body: some View {
     Text(text)
-      .font(.system(size: CGFloat(fontSize), weight: .medium, design: .rounded))
+      // 1.9.4: font weight medium → semibold để chữ đậm rõ trên material
+      // background. Default size 16 (thay 13). User feedback "chữ quá bé,
+      // không rõ".
+      .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .rounded))
       .foregroundStyle(.primary)
-      .padding(.horizontal, 14)
-      .padding(.vertical, 8)
-      // 1.9.2: dùng `.background(material, in: shape)` pattern. Trước
-      // dùng `.background(.ultraThinMaterial).clipShape(...)` → material
-      // được vẽ trước clip, dẫn tới bitmap bị crop khác nhau giữa các
-      // góc (bug "bên phải bo nhiều, bên trái vuông góc"). Pattern mới
-      // background đã clipped vào shape ngay từ đầu — render consistent.
+      // 1.9.4: thêm subtle text shadow giúp đọc trên material blur — tăng
+      // contrast khi nền sau editor sáng/tối lẫn lộn.
+      .shadow(color: .black.opacity(0.15), radius: 0.5, x: 0, y: 0.5)
+      .padding(.horizontal, 16)
+      .padding(.vertical, 10)
       .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
       .overlay(
         RoundedRectangle(cornerRadius: 16)
-          .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
+          .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.6)
       )
       .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
       .opacity(opacity)

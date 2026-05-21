@@ -262,7 +262,7 @@ struct GeneralView: View {
             .scrollDisabled(false)
 
             // 1.8.3: tiếng Việt, không nghiêng. Date hardcode mỗi release.
-            // 1.9.3: cập nhật ngày phát hành.
+            // 1.9.4: cập nhật ngày phát hành.
             Text("Phiên bản \(appVersion) ngày 21/5/2026")
                 .font(.caption)
                 .multilineTextAlignment(.center)
@@ -504,8 +504,11 @@ struct SpellCheckView: View {
                                 .foregroundStyle(.secondary)
                                 .padding(.top, -8)
 
-                            // 1.9.2: cỡ chữ + độ đậm HUD đoán từ — gom cùng block.
-                            Stepper(value: $predictionHUDFontSize, in: 10...20) {
+                            // 1.9.2: cỡ chữ + độ đậm HUD — gom cùng block.
+                            // 1.9.4: range mở rộng — chữ 10-20 → 12-24,
+                            // opacity 50-100 → 30-100. Default font 13→16,
+                            // opacity 100→75 (cho user mới).
+                            Stepper(value: $predictionHUDFontSize, in: 12...24) {
                                 HStack {
                                     Label("Cỡ chữ HUD đoán từ", themedSymbol: "textformat.size")
                                     Spacer()
@@ -514,16 +517,16 @@ struct SpellCheckView: View {
                                         .monospacedDigit()
                                 }
                             }
-                            Stepper(value: $hudOpacityPercent, in: 50...100, step: 5) {
+                            Stepper(value: $hudOpacityPercent, in: 30...100, step: 5) {
                                 HStack {
-                                    Label("Độ đậm HUD đoán từ", themedSymbol: "circle.lefthalf.filled")
+                                    Label("Độ đậm HUD", themedSymbol: "circle.lefthalf.filled")
                                     Spacer()
                                     Text("\(hudOpacityPercent)%")
                                         .foregroundStyle(.secondary)
                                         .monospacedDigit()
                                 }
                             }
-                            Text("Cỡ chữ và độ đậm chỉ áp dụng cho HUD đoán từ. HUD báo chuyển bộ gõ (Tiếng Việt / Tiếng Anh) dùng font cố định to để dễ nhìn.")
+                            Text("Cỡ chữ chỉ áp dụng cho HUD đoán từ. Độ đậm áp dụng cho cả HUD đoán từ và HUD báo chuyển bộ gõ (Tiếng Việt / Tiếng Anh). Giảm độ đậm xuống thấp để HUD rất trong suốt.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .padding(.top, -8)

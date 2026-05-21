@@ -2,6 +2,36 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.9.4] - 2026-05-21 — "HUD Readability & Transparency"
+
+2 fix UX HUD theo user feedback.
+
+### 🔤 PredictionHUD chữ to + đậm rõ
+
+User feedback: chữ HUD đoán từ quá bé, khó đọc trên material background.
+
+- Default font size **13 → 16pt** (vẫn user-configurable).
+- Range Stepper **10-20 → 12-24pt**.
+- Font weight `medium → semibold` (đậm hơn rõ rệt).
+- Thêm subtle text shadow để tăng contrast trên material blur.
+- Padding tăng `14×8 → 16×10` để chữ không sát cạnh.
+- Stroke border opacity `0.10 → 0.15`.
+
+### 🪟 HUD trong suốt hơn
+
+User feedback: HUD chuyển ngôn ngữ cần trong suốt hơn hiện tại.
+
+- Default `hudOpacityPercent` **100 → 75%** (cho user mới install).
+- Range Stepper **50-100 → 30-100%** — user có thể chỉnh xuống rất trong suốt.
+- Bổ sung `NSPanel.isOpaque = false` cho PredictionHUDWindow (trước v1.9.4 thiếu, theo Apple docs cho transparent window cần cả `isOpaque = false` + `backgroundColor = .clear`).
+- Áp dụng cho cả ToggleHUD (chuyển ngôn ngữ) và PredictionHUD (đoán từ).
+
+### Verify
+
+- 194/194 tests pass.
+- Build clean.
+- Manual: HUD đoán từ hiện chữ 16pt semibold rõ; ToggleHUD ở 75% opacity nhẹ nhàng hơn.
+
 ## [1.9.3] - 2026-05-21 — "Critical HUD Crash Fix"
 
 Hotfix khẩn cấp: v1.9.0/1/2 vẫn crash dù 2 đợt fix trước. Root cause cuối cùng đã được xác định + sửa triệt để.

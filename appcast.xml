@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.9.4 — "HUD Readability &amp; Transparency"</title>
+      <sparkle:version>19004</sparkle:version>
+      <sparkle:shortVersionString>1.9.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 18:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.9.4/vkey-1.9.4.dmg"
+        sparkle:edSignature="bCZ2eLcHKs62x+WoJVH2OOHfcbsxHhiVLtNcUjM4SNb08btSl6t4g6h05Hqkp47e7ow1GLJhtvXsuAZ7MdQzBw=="
+        length="7059102"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.9.4 — "HUD Readability &amp; Transparency":</h2>
+        <p>2 fix UX HUD theo user feedback.</p>
+        <ul>
+          <li><strong>🔤 PredictionHUD chữ to + đậm rõ</strong>: default font 13→16pt, range 10-20 → 12-24. Weight medium→semibold + text shadow để rõ trên material blur.</li>
+          <li><strong>🪟 HUD trong suốt hơn</strong>: default opacity 100→75% (user mới install), range 50-100 → 30-100%. Bổ sung NSPanel.isOpaque=false cho PredictionHUDWindow theo Apple docs cho transparent window.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.9.3 — "Critical HUD Crash Fix"</title>
       <sparkle:version>19003</sparkle:version>
       <sparkle:shortVersionString>1.9.3</sparkle:shortVersionString>
