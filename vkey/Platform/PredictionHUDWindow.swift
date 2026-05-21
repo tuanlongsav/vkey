@@ -57,17 +57,20 @@ final class PredictionHUDWindow {
     let panel = ensurePanel()
 
     // 1.9.3: tạo NSHostingController mới mỗi lần show (match ToggleHUD pattern).
-    // sizingOptions = [] để controller KHÔNG tự propose window size → fix crash
-    // NSHostingView.updateWindowContentSizeExtremaIfNecessary trong borderless
-    // NSPanel.
+    // 1.9.5: bỏ sizingOptions = [] vì nó disable fittingSize computation
+    // → panel size 0 → text bị clip → HUD không hiển thị (user feedback).
+    // Dùng .preferredContentSize (default macOS 13+) để fittingSize compute
+    // đúng. ToggleHUD đã không set sizingOptions → fittingSize work.
     let controller = NSHostingController(rootView: view)
     if #available(macOS 13.0, *) {
-      controller.sizingOptions = []
+      controller.sizingOptions = .preferredContentSize
     }
     hostingController = controller
     panel.contentViewController = controller
 
-    // Lấy fittingSize SAU khi controller attached vào panel.
+    // Force layout subtree để fittingSize có giá trị correct trước khi
+    // setContentSize. Trước v1.9.5 fittingSize có thể return 0 nếu chưa layout.
+    controller.view.layoutSubtreeIfNeeded()
     let fitSize = controller.view.fittingSize
     panel.setContentSize(fitSize)
 

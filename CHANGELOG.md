@@ -2,6 +2,39 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.9.5] - 2026-05-21 — "HUD Invisible Fix + ToggleHUD Compact"
+
+🚨 Hotfix v1.9.3-1.9.4: HUD đoán từ không hiển thị text.
+
+### 🚨 Fix HUD đoán từ INVISIBLE (chỉ thấy box trắng trống)
+
+User báo: gõ xong + commit → HUD chỉ hiện 1 box nhỏ trống, không có text "→ word ⇥ Tab".
+
+**Root cause**: v1.9.3 đã set `controller.sizingOptions = []` với ý định "disable automatic window size proposing". NHƯNG `sizingOptions = []` cũng DISABLE compute fittingSize → `controller.view.fittingSize` return 0 hoặc tiny → `panel.setContentSize(fitSize)` set panel quá nhỏ → text bị clip mất khỏi vùng visible.
+
+**Fix v1.9.5**:
+- `sizingOptions = .preferredContentSize` (macOS 13+) — đúng chế độ: controller compute size, gọi `preferredContentSize` cho window biết.
+- Thêm `controller.view.layoutSubtreeIfNeeded()` trước khi đọc `fittingSize` — force layout pass để có giá trị correct.
+
+### 🪟 ToggleHUD giảm size + clear hẳn
+
+User feedback v1.9.4: HUD chuyển ngôn ngữ vẫn to + chưa đủ trong suốt.
+
+- Icon **56 → 40pt**.
+- Label "Tiếng Việt"/"English" **20 → 16pt**.
+- Frame width **170 → 130**.
+- Padding vertical **22 → 14**.
+- CornerRadius **24 → 18**.
+- Spacing VStack **10 → 6**.
+- Background layered: dùng `Color.black.opacity(0.08/0.35)` + `.ultraThinMaterial` → cảm giác "kính trong suốt" rõ hơn.
+- Stroke border opacity giảm `0.15/0.40 → 0.10/0.25` (mềm hơn).
+- Shadow nhẹ hơn (15→10 radius).
+
+### Verify
+
+- 194/194 tests pass.
+- Manual: HUD đoán từ hiện text rõ "→ word ⇥ Tab" với font 16pt semibold; ToggleHUD compact + glass clear.
+
 ## [1.9.4] - 2026-05-21 — "HUD Readability & Transparency"
 
 2 fix UX HUD theo user feedback.

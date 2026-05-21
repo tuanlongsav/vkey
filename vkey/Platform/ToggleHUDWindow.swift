@@ -149,55 +149,59 @@ private struct ToggleHUDView: View {
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        // 1.9.2: font cố định LỚN hơn để dễ nhìn (user feedback).
-        // Icon 38→56, label 14→20, badge 11→13. Frame width 130→170.
-        VStack(spacing: 10) {
+        // 1.9.5: giảm kích thước theo user feedback. Icon 56→40, label 20→16,
+        // frame 170→130, padding 22→14, cornerRadius 24→18. Nền clear hơn —
+        // bỏ stroke border opacity cao + dùng .regularMaterial mỏng hơn.
+        VStack(spacing: 6) {
             // Icon trạng thái với hiệu ứng chuyển đổi mượt mà
             ThemedSymbol(name: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
-                .font(.system(size: 56, weight: .semibold))
+                .font(.system(size: 40, weight: .semibold))
                 .foregroundStyle(
                     viewModel.isEnabled
                     ? AnyShapeStyle(Color.accentColor.gradient)
                     : AnyShapeStyle(Color.secondary.gradient)
                 )
-                .frame(width: 64, height: 64)
+                .frame(width: 48, height: 48)
                 .vkeySymbolReplacementTransition()
 
             // Nhãn hiển thị ngôn ngữ
             Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(.system(size: 16, weight: .bold, design: .rounded))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
 
             // Ký hiệu viết tắt (VI / EN)
             Text(viewModel.isEnabled ? "VI" : "EN")
-                .font(.system(size: 13, weight: .black, design: .rounded))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
                 .background(
                     viewModel.isEnabled
-                    ? Color.accentColor.opacity(0.15)
-                    : Color.secondary.opacity(0.15)
+                    ? Color.accentColor.opacity(0.18)
+                    : Color.secondary.opacity(0.18)
                 )
                 .foregroundStyle(viewModel.isEnabled ? Color.accentColor : Color.secondary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: 5))
         }
-        .frame(width: 170)
-        .padding(.vertical, 22)
-        .padding(.horizontal, 10)
-        // 1.9.2: dùng `.background(material, in: shape)` thay vì
-        // `RoundedRectangle.fill(material)` — clip shape consistent giữa
-        // background, shadow, overlay. Tránh bug bitmap bo góc khác nhau.
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
+        .frame(width: 130)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 8)
+        // 1.9.5: nền CLEAR hẳn — bỏ material đậm, dùng nền semi-transparent
+        // đen mờ nhẹ để giữ contrast text + cảm giác "kính trong suốt".
+        .background(
+            Color.black.opacity(colorScheme == .dark ? 0.35 : 0.08),
+            in: RoundedRectangle(cornerRadius: 18)
+        )
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
         .overlay(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 18)
                 .strokeBorder(
-                    .white.opacity(colorScheme == .dark ? 0.15 : 0.4),
-                    lineWidth: 1
+                    .white.opacity(colorScheme == .dark ? 0.10 : 0.25),
+                    lineWidth: 0.6
                 )
         )
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.4 : 0.15), radius: 15, x: 0, y: 5)
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.10), radius: 10, x: 0, y: 3)
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
         // 1.9.1: opacity moved to panel.alphaValue trong ToggleHUDWindow.show()
         // — tránh `.opacity()` modifier ở đây vì Defaults[...] direct read trong

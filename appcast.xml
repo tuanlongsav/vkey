@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.9.5 — "HUD Invisible Fix &amp; ToggleHUD Compact"</title>
+      <sparkle:version>19005</sparkle:version>
+      <sparkle:shortVersionString>1.9.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 19:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.9.5/vkey-1.9.5.dmg"
+        sparkle:edSignature="zjLRX44jP49UCk5ZyjGvWEo668QWvzVWbvaeRGBqhYAlq1Inv0WP/1NFX5hRXjndK+Xaiax9KEelH5QUVo6XBQ=="
+        length="7115059"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.9.5 — "HUD Invisible Fix &amp; ToggleHUD Compact":</h2>
+        <p>Hotfix khẩn v1.9.3-1.9.4 + UX polish.</p>
+        <ul>
+          <li><strong>🚨 Fix HUD đoán từ KHÔNG HIỂN THỊ text</strong>: v1.9.3 set `sizingOptions = []` để fix crash, nhưng option này cũng disable fittingSize compute → panel size = 0 → text bị clip mất. Fix: dùng `.preferredContentSize` + `layoutSubtreeIfNeeded` trước khi đọc fittingSize.</li>
+          <li><strong>🪟 ToggleHUD compact + clear hẳn</strong>: icon 56→40pt, label 20→16pt, frame 170→130, padding 22→14, cornerRadius 24→18. Background layered Color.black.opacity + ultraThinMaterial → cảm giác kính trong suốt rõ hơn.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.9.4 — "HUD Readability &amp; Transparency"</title>
       <sparkle:version>19004</sparkle:version>
       <sparkle:shortVersionString>1.9.4</sparkle:shortVersionString>
