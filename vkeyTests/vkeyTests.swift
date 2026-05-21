@@ -505,6 +505,19 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "them"), "them")
   }
 
+  /// 1.8.4: Telex regression — gõ "teen" (t + ee→ê + n) phải ra "tên" VN,
+  /// không lock raw "teen". Bug v1.7.9: post-replay check dùng full enLexicon
+  /// 9826 từ — "teen" match → override sang raw. Fix: dùng isInstantRestoreEnglish
+  /// (narrow 126 + userAllow). Verify VN typing chính xác cho các stem ngắn.
+  func testTelexPostReplayKeepsVN() throws {
+    XCTAssertEqual(transform_text_telex(for: "teen"), "tên")
+    // Regression check: tees vẫn ra tế (tee là embedded English nhưng tees
+    // không phải English word → replay → keep VN).
+    XCTAssertEqual(transform_text_telex(for: "tees"), "tế")
+    // theem → thêm (the là English nhưng theem không) — đã có ở testV146BugFixes.
+    XCTAssertEqual(transform_text_telex(for: "theem"), "thêm")
+  }
+
   /// 1.8.3: các từ tiếng Anh có "oo" mà engine tự recovery (raw output)
   /// nhờ vowel+final cluster không hợp lệ VN. Đảm bảo những từ này KHÔNG
   /// bị nhầm sang VN khi gõ. Một số từ khác như "room"/"door"/"foot" mà

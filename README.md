@@ -5,7 +5,7 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 1.8.3 — "Spell-Check UX + Telex App Compat"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 1.8.4 — "Settings Width + Telex Restoration Fix"** ([CHANGELOG](CHANGELOG.md))
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
@@ -57,7 +57,7 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 - ✅ **Đề xuất Macro từ Thống kê (v1.5.5+, mở rộng v1.6.1+)**: vkey nhận diện các từ và cụm từ tiếng Việt bạn gõ ≥10 lần → đề xuất tạo macro với viết tắt tự sinh (vd "công ty → ct", "kính gửi anh → kga").
 - ✅ **Sheet "Tự học từ Thống kê" (v1.7.0+)**: bấm trong tab Smart Switch để preview các app vkey gợi ý đổi state, áp dụng hàng loạt. User-set entries (🔒) tự động bị skip.
 - ✅ **Gửi từ điển cá nhân cho tác giả (v1.7.2+, đưa ra ngoài v1.7.11+)**: nút **"Gửi cho tác giả"** đặt ngay trong tab Chính tả cạnh nút **"Sửa từ điển cá nhân"** (đổi tên từ "Quản lý" ở v1.7.11). Gate ≥50 từ trong tổng Allow/Keep/Deny. Click mở app mail mặc định gửi tới `tuanlong.sav@gmail.com` với body chứa 3 lists để tác giả rà soát + bổ sung vào từ điển chung.
-- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, đúng API v1.7.6+)**: dùng SwiftUI `.windowResizability(.contentMinSize)` cho phép drag góc/cạnh tự do; kích thước được nhớ qua `setFrameAutosaveName` giữa các lần mở. **v1.7.8** default opening **432×648** + tab labels gốc + font `.system(size: 10)` cho tab bar compact. User vẫn resize lên rộng tuỳ ý.
+- ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, đúng API v1.7.6+, rộng hơn v1.8.4+)**: dùng SwiftUI `.windowResizability(.contentMinSize)` cho phép drag góc/cạnh tự do; kích thước được nhớ qua `setFrameAutosaveName` giữa các lần mở. **v1.7.8** default opening 432×648 + tab labels gốc + font `.system(size: 10)` cho tab bar compact. **v1.8.4** width 432→**540** để fit nút "Chạy compute đề xuất ngay" trong tab Thống kê. User vẫn resize lên rộng tuỳ ý.
 - ✅ **3 giao diện ứng dụng (v1.5.5+, hoàn thiện v1.8.2+)**: chọn ở menu bar → "Giao diện ứng dụng": **Mặc định** (SF Symbol đơn giản), **3D bóng bẩy** (gradient + double shadow), **Emoji vui tươi** (Unicode emoji icons). **v1.8.2** rà soát toàn bộ View files + menu bar state icons + HUD icons sang dùng `ThemedSymbol` → theme apply consistent 100% (trước còn 6 file dùng `Image(systemName:)` không apply theme).
 - ✅ **Diagnostic export Stats (v1.6.1+)**: nút "Xuất chẩn đoán Stats" trong tab Thống kê → ghi file text mô tả tình trạng files + counters → gửi maintainer khi báo lỗi.
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.

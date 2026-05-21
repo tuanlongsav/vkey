@@ -1153,6 +1153,10 @@ final class UsageStatistics {
       if existingAllow.contains(n) || existingDeny.contains(n) { continue }
       // Loại nếu LexiconManager nhận là tiếng Việt (sai mục đích allow).
       if LexiconManager.shared.isVietnameseWord(n) { continue }
+      // 1.8.4: loại từ đã có trong built-in enLexicon — user không cần
+      // promote "footer", "syntax", "abacus", ... vào Personal Dict vì
+      // spell-check đã nhận diện sẵn. Tránh suggestion list trùng lặp.
+      if LexiconManager.shared.isEnglishWord(n) { continue }
       // 1.7.x: bỏ qua chuỗi gõ ngẫu nhiên (asdfgh, xzcvbn...) — chỉ
       // promote nếu gần một từ tiếng Anh thực sự (Levenshtein ≤ ngưỡng
       // phụ thuộc độ dài) hoặc là từ exact-match trong lexicon.

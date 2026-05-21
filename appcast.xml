@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.8.4 — "Settings Width &amp; Telex Restoration Fix"</title>
+      <sparkle:version>18004</sparkle:version>
+      <sparkle:shortVersionString>1.8.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 13:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.8.4/vkey-1.8.4.dmg"
+        sparkle:edSignature="EJPke5pES4MXZsZQFh0NKL92IN+xMRg/FdVOseBXk/82qLpLTgdLNRp3NAeM7mqxPZ/2QYyD5sDFbeq/s4eCBw=="
+        length="7012036"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.8.4 — "Settings Width &amp; Telex Restoration Fix":</h2>
+        <p>4 fix UX nhỏ.</p>
+        <ul>
+          <li><strong>📐 Settings window rộng hơn</strong>: Default 432→540px. Nút "Chạy compute đề xuất ngay" không còn truncate.</li>
+          <li><strong>🚨 Fix bug Telex "teen → tên"</strong>: Regression v1.7.9 — post-replay check dùng full enLexicon 9826 từ (chứa "teen"/"men"/"tens"), nhầm sang raw English. Giờ dùng narrow embedded list 126 từ. Stem ngắn (cos/the/tee/see) vẫn lock đúng.</li>
+          <li><strong>🤖 Personal Dict loại từ đã có trong từ điển chung</strong>: filter isEnglishWord cho .allow candidates. "footer", "syntax", "abacus" không còn suggest vì đã có trong built-in dict.</li>
+          <li><strong>📊 Top cụm 2-3 từ tiếng Việt — Xem chi tiết</strong>: thêm button "Xem chi tiết (N)" giống top từ đơn. Click mở sheet full list.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.8.3 — "Spell-Check UX &amp; Telex App Compat"</title>
       <sparkle:version>18003</sparkle:version>
       <sparkle:shortVersionString>1.8.3</sparkle:shortVersionString>

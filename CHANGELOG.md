@@ -2,6 +2,48 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.8.4] - 2026-05-21 — "Settings Width + Telex Restoration Fix"
+
+4 fix UX phát hiện qua dùng thực tế v1.8.3.
+
+### 📐 Settings window mở rộng default
+
+Default size 432×648 → **540×648**. Lý do: nút "Chạy compute đề xuất ngay" trong tab Thống kê bị truncate (`Chạy compute đề xuấ…`) ở 432px. Height giữ nguyên. Vì dùng `.contentMinSize`, user vẫn drag resize tự do; autosave lưu size đã chỉnh.
+
+### 🚨 Fix bug Telex "teen → tên" regression
+
+User báo bug: gõ "teen" mong ra "tên" (Telex t + ee→ê + n) nhưng output "teen" raw. Root cause: regression v1.7.9 — post-replay English check ở [InputProcessor.swift:330](vkey/App/InputProcessor.swift:330) dùng `isEnglishWord` (full enLexicon 9826 từ). Sau khi bump dict 126→9826, các từ EN ngắn match Telex VN pattern ("teen"/"men"/"tens"/...) bị nhầm sang raw thay vì giữ VN.
+
+**Fix**: thay `isEnglishWord` → `isInstantRestoreEnglish` (narrow 126 từ embedded + userAllow). Khớp philosophy ở line 359-360 (doubled tone check). Các stem ngắn telex (cos/the/tee/see/tie/hop/thee) vẫn lock raw đúng vì có trong embedded list; "teen"/"men"/"tens"/... được giải phóng → giữ VN.
+
+Test `testTelexPostReplayKeepsVN`: `teen → tên`, `tees → tế` (regression ko đụng), `theem → thêm`.
+
+### 🤖 Personal Dict — loại từ đã có trong từ điển chung
+
+[UsageStatistics.swift:1157](vkey/Stats/UsageStatistics.swift:1157) thêm filter `isEnglishWord` cho `.allow` candidates. Từ như "footer", "syntax", "abacus" đã có trong built-in enLexicon (9826 từ) — không cần promote vào Personal Dict (spell-check đã nhận diện). Tránh suggestion list trùng lặp.
+
+### 📊 Top cụm 2-3 từ tiếng Việt — thêm "Xem chi tiết"
+
+Trước v1.8.4: section "Top cụm 2-3 từ tiếng Việt" chỉ hiển thị `prefix(10)`, không có button. Section "Top từ tiếng Việt (tuần này)" đã có pattern button "Xem chi tiết" mở sheet — giờ replicate cho phrases.
+
+- Extend `TopWordsDetailCategory` enum thêm `.vietnamesePhrases`.
+- Phrase section render button "Xem chi tiết (N)" khi total > 10.
+- `detailWords(for:)` switch case mới — return `aggregatedTopVietnamesePhrases(minWords: 2, maxWords: 3, threshold: 3)`.
+- Reuse `TopWordsDetailSheet` — title "Top cụm 2-3 từ tiếng Việt".
+
+### Verify
+
+- 194/194 tests pass (từ 193, +1 `testTelexPostReplayKeepsVN`).
+- Build clean.
+
+### Files
+
+- [vkey/vkeyApp.swift:63-66](vkey/vkeyApp.swift:63) — defaultSize width 432→540.
+- [vkey/App/InputProcessor.swift:330-340](vkey/App/InputProcessor.swift:330) — isEnglishWord → isInstantRestoreEnglish.
+- [vkey/Stats/UsageStatistics.swift:1156-1160](vkey/Stats/UsageStatistics.swift:1156) — filter isEnglishWord cho .allow.
+- [vkey/View/StatisticsView.swift](vkey/View/StatisticsView.swift) — enum extension + phrase button + detailWords case.
+- [vkeyTests/vkeyTests.swift](vkeyTests/vkeyTests.swift) — testTelexPostReplayKeepsVN.
+
 ## [1.8.3] - 2026-05-21 — "Spell-Check UX + Telex App Compat"
 
 4 fix UX phát hiện qua dùng thực tế.

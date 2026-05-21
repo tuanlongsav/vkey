@@ -60,7 +60,9 @@ struct vkeyApp: App {
     .windowResizability(.contentMinSize)
     // 1.7.8: opening size compact (432×648). Height giảm 40% so với 1080
     // của 1.7.7 (user feedback "quá dài"). User vẫn drag resize được tự do.
-    .defaultSize(width: 432, height: 648)
+    // 1.8.4: width 432→540 — fit nút "Chạy compute đề xuất ngay" (text VN
+    // dài) trong tab Thống kê. Height giữ nguyên.
+    .defaultSize(width: 540, height: 648)
   }
 }
 

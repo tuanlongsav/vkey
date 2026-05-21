@@ -326,8 +326,12 @@ struct WordBuffer {
             wordState = wordState.push(char)
           }
         }
-        // Check if the full replayed word is an English word
-        if LexiconManager.shared.isEnglishWord(keysStr) {
+        // Check if the full replayed word is an English word.
+        // 1.8.4: dùng isInstantRestoreEnglish (narrow 126 + userAllow) khớp
+        // philosophy ở line 359-360 (doubled tone check). Tránh regression
+        // v1.7.9 khi full enLexicon 9826 chứa "teen"/"men"/"tens"/... match
+        // Telex VN pattern → bị nhầm sang raw English thay vì giữ VN.
+        if LexiconManager.shared.isInstantRestoreEnglish(keysStr) {
           stopProcessing = true
           transformed = String(keys)
           if !snapshot.stopProcessing {

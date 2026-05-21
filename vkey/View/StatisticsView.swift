@@ -14,20 +14,23 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// 1.7.4: identifier cho sheet "Xem chi tiết" của top từ — VN hoặc EN.
+/// 1.8.4: thêm `.vietnamesePhrases` cho cụm 2-3 từ tiếng Việt.
 enum TopWordsDetailCategory: Identifiable {
   case vietnamese
   case english
+  case vietnamesePhrases
   var id: Self { self }
   var title: String {
     switch self {
-    case .vietnamese: return "Top từ tiếng Việt"
-    case .english:    return "Top từ tiếng Anh / ký tự đặc biệt"
+    case .vietnamese:        return "Top từ tiếng Việt"
+    case .english:           return "Top từ tiếng Anh / ký tự đặc biệt"
+    case .vietnamesePhrases: return "Top cụm 2-3 từ tiếng Việt"
     }
   }
   var statCategory: UsageStatistics.StatCategory {
     switch self {
-    case .vietnamese: return .vietnamese
-    case .english:    return .english
+    case .vietnamese, .vietnamesePhrases: return .vietnamese
+    case .english:                        return .english
     }
   }
 }
@@ -196,6 +199,18 @@ struct StatisticsView: View {
                     .monospacedDigit()
                 }
               }
+              // 1.8.4: button "Xem chi tiết" như top từ đơn — mở sheet full list.
+              if topVnPhrases.count > 10 {
+                HStack {
+                  Spacer()
+                  Button {
+                    detailCategory = .vietnamesePhrases
+                  } label: {
+                    Label("Xem chi tiết (\(topVnPhrases.count))", themedSymbol: "list.bullet")
+                  }
+                  Spacer()
+                }
+              }
             } header: {
               Text("Top cụm 2-3 từ tiếng Việt (tuần này)")
             }
@@ -362,13 +377,20 @@ struct StatisticsView: View {
   }
 
   private func detailWords(for category: TopWordsDetailCategory) -> [WordCount] {
-    guard let s = currentSummary else { return [] }
-    let source: [WordCount]
     switch category {
-    case .vietnamese: source = s.topVietnameseWords
-    case .english:    source = s.topEnglishWords
+    case .vietnamese:
+      guard let s = currentSummary else { return [] }
+      return s.topVietnameseWords.filter { isCleanTopWord($0.word, category: .vietnamese) }
+    case .english:
+      guard let s = currentSummary else { return [] }
+      return s.topEnglishWords.filter { isCleanTopWord($0.word, category: .english) }
+    case .vietnamesePhrases:
+      // 1.8.4: phrase data từ aggregatedTopVietnamesePhrases — không filter
+      // qua isCleanTopWord vì phrases được aggregate theo threshold riêng.
+      return UsageStatistics.shared.aggregatedTopVietnamesePhrases(
+        minWords: 2, maxWords: 3, threshold: 3
+      )
     }
-    return source.filter { isCleanTopWord($0.word, category: category.statCategory) }
   }
 
   // MARK: - Actions
