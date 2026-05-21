@@ -390,7 +390,7 @@ struct WordBuffer {
       stopProcessing = true
       transformed = String(keys)
       wordState = wordState.push(char)
-      
+
       // Save snapshot for rollback if we just entered recovery/stopProcessing
       if !snapshot.stopProcessing {
         lastValidSnapshot = snapshot
@@ -914,12 +914,30 @@ class InputProcessor {
         includeEndingChar: swallowEndingChar
       )
       let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(from: current, to: target)
-      let telemetry = EventSimulator.sendReplacement(
-        backspaceCount: numBackspaces,
-        diffChars: diffChars,
-        strategy: strategyTracker.currentStrategy
-      )
-      observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
+      // 1.8.3: dùng select-and-replace cho commit-time restore khi
+      // target app có autocomplete/strategy-mismatch (Word, Slack, Notion,
+      // browsers, search fields...). Tránh bug "footer → foooter" do
+      // backspace nuốt sai trên những app này. handleKey đã dùng pattern
+      // tương tự ở line 791; đây cover thêm path commit-time restore.
+      if isFixAutocompleteApp() {
+        let strategy = effectiveTypingStrategy(
+          backspaceCount: numBackspaces,
+          diffCharCount: diffChars.count
+        )
+        let telemetry = EventSimulator.sendSelectAndReplace(
+          selectLeftCount: numBackspaces,
+          diffChars: diffChars,
+          strategy: strategy
+        )
+        observeTelemetry(telemetry, appLikelySensitive: true)
+      } else {
+        let telemetry = EventSimulator.sendReplacement(
+          backspaceCount: numBackspaces,
+          diffChars: diffChars,
+          strategy: strategyTracker.currentStrategy
+        )
+        observeTelemetry(telemetry, appLikelySensitive: false)
+      }
       return true
 
     case .suggest(let suggestions):

@@ -505,6 +505,20 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "them"), "them")
   }
 
+  /// 1.8.3: các từ tiếng Anh có "oo" mà engine tự recovery (raw output)
+  /// nhờ vowel+final cluster không hợp lệ VN. Đảm bảo những từ này KHÔNG
+  /// bị nhầm sang VN khi gõ. Một số từ khác như "room"/"door"/"foot" mà
+  /// "ôm"/"ổ"/"ôt" đều là VN valid → engine transform sang VN, fix bằng
+  /// select-and-replace strategy ở commit-time (xem applySpellDecisionOnCommit).
+  func testTelexEnglishOORecovery() throws {
+    XCTAssertEqual(transform_text_telex(for: "footer"), "footer")
+    XCTAssertEqual(transform_text_telex(for: "book"), "book")
+    XCTAssertEqual(transform_text_telex(for: "books"), "books")
+    XCTAssertEqual(transform_text_telex(for: "look"), "look")
+    XCTAssertEqual(transform_text_telex(for: "wood"), "wood")
+    XCTAssertEqual(transform_text_telex(for: "food"), "food")
+  }
+
   /// Test v1.4.6 bug fixes: English word restoration replay, uo horn handling, and common words
   func testV146BugFixes() throws {
     // English word restoration replay fixes

@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.8.3 — "Spell-Check UX &amp; Telex App Compat"</title>
+      <sparkle:version>18003</sparkle:version>
+      <sparkle:shortVersionString>1.8.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 12:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.8.3/vkey-1.8.3.dmg"
+        sparkle:edSignature="BqjEsmYineyleLV/rUurYuDuKpcKR4W9DIVBIoFUX++lHwA4gtbHzFiUZil6raarkrz/NHc5tsu9oD2Olj2XDA=="
+        length="7003117"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.8.3 — "Spell-Check UX &amp; Telex App Compat":</h2>
+        <p>4 fix UX nhỏ.</p>
+        <ul>
+          <li><strong>📁 Move "Đoán từ tiếp theo" sang Tab Chính tả</strong>: Toggle + Stepper "Khoảng cách HUD" trước đây ở Tab Chung → giờ thuộc Tab Chính tả → section "Cấu hình kiểm tra chính tả" (cùng nhóm với spell-checking).</li>
+          <li><strong>🚨 Fix Top từ ngoài tiếng Việt</strong>: trước đây hiển thị các từ VN không dấu (hay/chi/cho/to) — giờ filter qua VN lexicon, chỉ hiển thị từ THỰC SỰ ngoài VN (raw English, "lol", "okay"...).</li>
+          <li><strong>🚨 Fix bug "footer→foooter" trên target app</strong>: commit-time restoreRawEnglish giờ dùng select-and-replace strategy (Shift+Left + insert) thay vì backspace+insert khi caret ở search/combobox hoặc app fix-autocomplete. Tránh backspace strategy mismatch trên Word/Slack/Notion/browsers.</li>
+          <li><strong>🇻🇳 Footer version label tiếng Việt</strong>: "Version 1.8.2" italic → "Phiên bản 1.8.3 ngày 21/5/2026" thường.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.8.2 — "Focus Tracking &amp; Polish"</title>
       <sparkle:version>18002</sparkle:version>
       <sparkle:shortVersionString>1.8.2</sparkle:shortVersionString>

@@ -19,6 +19,11 @@ final class LexiconManager {
   private var enLexicon: InMemoryLexicon
   private var keepLexicon: InMemoryLexicon
 
+  /// 1.8.3: prefix set của enLexicon — dùng để gate Telex transform
+  /// "oo"/"aa"/"ee" tránh nhầm từ tiếng Anh thành tiếng Việt (vd "footer",
+  /// "book", "room"). Build trong `reload()`, query qua `hasEnglishPrefix(_:)`.
+  private var enWordPrefixes: Set<String> = []
+
   private let updatePackageURL: URL
 
   init(updatePackageURL: URL? = nil) {
@@ -123,10 +128,23 @@ final class LexiconManager {
         packageForBilingual = package
       }
 
+      // 1.8.3: pre-compute prefix set của enLexicon (chỉ generate khi
+      // enWords thay đổi). Skip prefix == full word (đã có isEnglishWord).
+      var prefixes: Set<String> = []
+      for w in selectedEN.words {
+        let lower = w.lowercased()
+        guard lower.count >= 2 else { continue }
+        for i in 2..<lower.count {
+          prefixes.insert(String(lower.prefix(i)))
+        }
+        prefixes.insert(lower)
+      }
+
       self.queue.sync(flags: .barrier) {
         self.vnLexicon = selectedVN
         self.enLexicon = selectedEN
         self.keepLexicon = selectedKeep
+        self.enWordPrefixes = prefixes
       }
 
       // EnVnReference is loaded outside the lexicon queue because it has its
@@ -306,6 +324,15 @@ final class LexiconManager {
     let token = word.normalizedDictionaryToken
     guard !token.isEmpty else { return false }
     return queue.sync { enLexicon.contains(token) }
+  }
+
+  /// 1.8.3: kiểm tra `prefix` có phải là tiền tố của bất kỳ từ tiếng Anh
+  /// nào không. Dùng để gate Telex transform "oo"→ô / "aa"→â / "ee"→ê
+  /// tránh nhầm từ Anh thành VN (vd "foo" → footer/food/foot).
+  func hasEnglishPrefix(_ prefix: String) -> Bool {
+    let token = prefix.lowercased()
+    guard token.count >= 2 else { return false }
+    return queue.sync { enWordPrefixes.contains(token) }
   }
 
   func shouldKeepVietnamese(_ word: String) -> Bool {

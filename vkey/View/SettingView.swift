@@ -174,8 +174,6 @@ struct GeneralView: View {
     @Default(.newStyleTonePlacement) private var newStyleTonePlacement
     @Default(.autoTypoCorrection) private var autoTypoCorrection
     @Default(.hudEnabled) private var hudEnabled
-    @Default(.wordPredictionEnabled) private var wordPredictionEnabled
-    @Default(.predictionHUDLineOffset) private var predictionHUDLineOffset
 
     let appVersion = Bundle.main.appVersionLong
 
@@ -254,47 +252,18 @@ struct GeneralView: View {
                     Label("Phím tắt", themedSymbol: "command")
                 }
 
-                // 1.6.1: Đoán từ tiếp theo — chuyển từ tab Chính tả sang đây.
-                Toggle(isOn: $wordPredictionEnabled) {
-                    Label("Đoán từ tiếp theo", themedSymbol: "wand.and.stars")
-                }
-                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-
-                if wordPredictionEnabled {
-                    Text("Sau khi gõ xong 1 từ + dấu cách, vkey hiển thị HUD nhỏ cạnh cursor với từ đoán tiếp theo (vd \"tiếp\" → \"theo\"). Nhấn ⇥ Tab để chấp nhận; phím khác → bỏ qua. Ưu tiên gợi ý từ trong từ điển gốc + từ điển cá nhân.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, -8)
-
-                    // 1.8.1: Stepper khoảng cách HUD ↔ caret (đơn vị "dòng văn bản").
-                    Stepper(value: $predictionHUDLineOffset, in: 1...10) {
-                        HStack {
-                            Label("Khoảng cách HUD đến caret", themedSymbol: "arrow.up.and.down")
-                            Spacer()
-                            Text("\(predictionHUDLineOffset) dòng")
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
-                        }
-                    }
-                    Text("HUD đặt phía trên (hoặc dưới nếu không đủ chỗ) caret line, cách xa khoảng N dòng văn bản để không che nội dung đang gõ.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, -8)
-                }
             }
             .formStyle(.grouped)
             .scrollDisabled(false)
 
-            Text(
-                "Version \(appVersion)"
-            )
-            .font(.caption)
-            .multilineTextAlignment(.center)
-            .foregroundStyle(.secondary)
-            .italic()
-            .padding(.top, 8)
-            .padding(.bottom, 14)
-            .frame(maxWidth: .infinity)
+            // 1.8.3: tiếng Việt, không nghiêng. Date hardcode mỗi release.
+            Text("Phiên bản \(appVersion) ngày 21/5/2026")
+                .font(.caption)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+                .padding(.top, 8)
+                .padding(.bottom, 14)
+                .frame(maxWidth: .infinity)
         }
         .frame(minWidth: 200, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -322,6 +291,9 @@ struct SpellCheckView: View {
     @Default(.useEnVnReference) private var useEnVnReference
     @Default(.autoPersonalDictFeedback) private var autoPersonalDictFeedback
     @Default(.pendingDictSuggestions) private var pendingSuggestions
+    // 1.8.3: chuyển từ Tab Chung sang đây — prediction thuộc chức năng spell-checking.
+    @Default(.wordPredictionEnabled) private var wordPredictionEnabled
+    @Default(.predictionHUDLineOffset) private var predictionHUDLineOffset
     // 1.7.11: cần đọc 3 danh sách để gate nút "Gửi cho tác giả" (≥50 từ).
     @Default(.userAllowWords) private var userAllowWordsView
     @Default(.userKeepWords) private var userKeepWordsView
@@ -430,6 +402,33 @@ struct SpellCheckView: View {
                         }
                         .disabled(pendingSuggestions.isEmpty)
                         .frame(maxWidth: .infinity, alignment: .center)
+
+                        // 1.8.3: Đoán từ tiếp theo — chuyển từ Tab Chung sang đây.
+                        Toggle(isOn: $wordPredictionEnabled) {
+                            Label("Đoán từ tiếp theo", themedSymbol: "wand.and.stars")
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                        if wordPredictionEnabled {
+                            Text("Sau khi gõ xong 1 từ + dấu cách, vkey hiển thị HUD nhỏ cạnh cursor với từ đoán tiếp theo (vd \"tiếp\" → \"theo\"). Nhấn ⇥ Tab để chấp nhận; phím khác → bỏ qua. Ưu tiên gợi ý từ trong từ điển gốc + từ điển cá nhân.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, -8)
+
+                            Stepper(value: $predictionHUDLineOffset, in: 1...10) {
+                                HStack {
+                                    Label("Khoảng cách HUD đến caret", themedSymbol: "arrow.up.and.down")
+                                    Spacer()
+                                    Text("\(predictionHUDLineOffset) dòng")
+                                        .foregroundStyle(.secondary)
+                                        .monospacedDigit()
+                                }
+                            }
+                            Text("HUD đặt phía trên (hoặc dưới nếu không đủ chỗ) caret line, cách xa khoảng N dòng văn bản để không che nội dung đang gõ.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, -8)
+                        }
                     }
                 } header: {
                     Text("Cấu hình kiểm tra chính tả")

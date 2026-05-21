@@ -349,10 +349,12 @@ struct StatisticsView: View {
       return LexiconManager.shared.isVietnameseWord(normalized)
         || LexiconManager.shared.shouldKeepVietnamese(normalized)
     case .english:
-      // 1.7.10: bỏ yêu cầu lexicon — section "Top từ ngoài tiếng Việt"
-      // có mục đích gợi ý bổ sung từ điển cá nhân, nên hiển thị cả từ
-      // CHƯA CÓ trong lexicon (vd raw "hopwj", "lol", "okay") + ký tự
-      // đặc biệt. Vẫn lọc deny + length≥2.
+      // 1.7.10: section "Top từ ngoài tiếng Việt" hiển thị raw text + ký
+      // tự đặc biệt để gợi ý bổ sung từ điển cá nhân (vd "lol", "okay").
+      // 1.8.3: thêm filter — loại từ có trong VN lexicon (vd "hay", "chi",
+      // "cho", "to" — user gõ không dấu, decision restoreRawEnglish nhưng
+      // vẫn là từ VN). Section giờ chỉ hiển thị từ THỰC SỰ ngoài VN.
+      if LexiconManager.shared.isVietnameseWord(normalized) { return false }
       return true
     case .app:
       return true

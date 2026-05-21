@@ -2,6 +2,46 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.8.3] - 2026-05-21 — "Spell-Check UX + Telex App Compat"
+
+4 fix UX phát hiện qua dùng thực tế.
+
+### Move Word Prediction UI Tab Chung → Tab Chính tả
+
+Toggle "Đoán từ tiếp theo" + Stepper "Khoảng cách HUD đến caret" trước đây nằm ở Tab Chung. Vì prediction thuộc chức năng spell-checking (gợi ý từ tiếp theo dựa trên từ điển), giờ chuyển vào Tab Chính tả → section "Cấu hình kiểm tra chính tả" — gom cùng các toggle khác (auto-restore, suggestion, personal dict).
+
+### 🚨 Fix Top từ ngoài tiếng Việt — loại các từ VN không dấu
+
+Section "Top từ ngoài tiếng Việt" (tab Thống kê) đang hiển thị các từ tiếng Việt phổ thông không dấu như `hay`, `chi`, `cho`, `to`, ... Đây là từ VN trong lexicon, không phải từ ngoài VN. Lý do: khi user gõ "hay" không dấu, SpellDecisionEngine quyết định `.restoreRawEnglish` → counter `enWordCounts` tăng — UI cũ không filter.
+
+**Fix**: [StatisticsView.swift:351-357](vkey/View/StatisticsView.swift:351) `isCleanTopWord` case `.english` giờ check `LexiconManager.shared.isVietnameseWord(word)` → return false. Section giờ chỉ hiển thị từ THỰC SỰ ngoài VN (raw English, ký tự đặc biệt, "lol", "okay"...).
+
+### 🚨 Fix bug Telex "footer → foooter" trên target app
+
+User báo bug: gõ "footer" + Space trên một số app (Word, Slack, Notion, browsers...) → output "foooter" (thừa 'o'). Root cause: Telex transform "oo" → "ô" ở giữa word, sau đó commit-time `restoreRawEnglish` dùng `sendReplacement` (backspace+insert). Trên các app có autocomplete inline / silent-swallow backspace, màn hình hiển thị bị chồng → raw 'o' + transformed 'ô' lẫn nhau.
+
+**Fix**: [InputProcessor.swift:909-940](vkey/App/InputProcessor.swift:909) — commit-time `.restoreRawEnglish` giờ dùng `sendSelectAndReplace` (Shift+Left + insert) khi `isFixAutocompleteApp()` return true (search/combobox/per-app override). Khớp pattern đã dùng ở `handleKey` line 791. Tránh backspace strategy mismatch.
+
+**Cũng tận dụng v1.8.2 `currentFocusedElementIsSearchOrCombo`**: nếu caret rơi vào search field hoặc combobox bất kể app — `isFixAutocompleteApp()` return true → cũng dùng select-and-replace path.
+
+### Footer version label tiếng Việt
+
+[SettingView.swift:259-266](vkey/View/SettingView.swift:259) — đổi `Version 1.8.2` italic sang `Phiên bản 1.8.3 ngày 21/5/2026` thường. Date hardcode cho release, update mỗi version.
+
+### Verify
+
+- 193/193 tests pass (từ 192, +1 test `testTelexEnglishOORecovery` cover footer/book/books/look/wood/food).
+- Build clean.
+- Lưu ý: một số từ tiếng Anh có "oo" + final cluster valid VN (room/door/foot) vẫn transform sang VN tại engine — đây là behavior intent (user thực sự muốn gõ "rôm"/"dổ"/"fôt"?). Fix UX bug "foooter" via select-and-replace path đảm bảo commit-time restore không thừa ký tự nếu user gõ rồi commit như English word.
+
+### Files
+
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — move Word Prediction UI + footer version label.
+- [vkey/View/StatisticsView.swift](vkey/View/StatisticsView.swift) — filter VN words case `.english`.
+- [vkey/Lexicon/LexiconManager.swift](vkey/Lexicon/LexiconManager.swift) — thêm `enWordPrefixes` cache + `hasEnglishPrefix(_:)` API (chưa dùng ở 1.8.3, để dành cho v1.9 nếu cần generic prefix lock).
+- [vkey/App/InputProcessor.swift](vkey/App/InputProcessor.swift) — commit-time restore dùng select-and-replace khi fix-autocomplete app.
+- [vkeyTests/vkeyTests.swift](vkeyTests/vkeyTests.swift) — `testTelexEnglishOORecovery`.
+
 ## [1.8.2] - 2026-05-21 — "Focus Tracking + Polish"
 
 Bundle các cải tiến platform-layer + 4 fix nhỏ-trung bình phát hiện qua audit toàn dự án.
