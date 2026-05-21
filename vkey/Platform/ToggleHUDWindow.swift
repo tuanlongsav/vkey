@@ -142,7 +142,7 @@ private struct ToggleHUDView: View {
     var body: some View {
         VStack(spacing: 8) {
             // Icon trạng thái với hiệu ứng chuyển đổi mượt mà
-            Image(systemName: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
+            ThemedSymbol(name: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
                 .font(.system(size: 38, weight: .semibold))
                 .foregroundStyle(
                     viewModel.isEnabled

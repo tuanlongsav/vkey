@@ -2,6 +2,46 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.8.2] - 2026-05-21 — "Focus Tracking + Polish"
+
+Bundle các cải tiến platform-layer + 4 fix nhỏ-trung bình phát hiện qua audit toàn dự án.
+
+### Focus tracking nâng cấp
+
+- **Focus-shifting key detection (EventHook)**: phím chuyển focus trong app (Tab, Enter, Esc, mũi tên) giờ cũng trigger `refreshFocusedBundleIdAsync()` — không chỉ mouse-click. Trước đây nếu user dùng phím để chuyển ô input, vkey chỉ cập nhật cached bundle ID khi click chuột tiếp theo → có thể miss tới lần keystroke kế.
+- **Search/ComboBox auto fix-autocomplete**: thêm `Focused.isComboBoxOrSearchField()` query song song với bundle ID query trong async refresh. Khi caret rơi vào search field hoặc combo box (bất kể app nào), `isFixAutocompleteApp()` tự động return true → kích hoạt strategy chống dính chữ. Cải thiện UX với Spotlight, Find bar, autocomplete dropdown trong Safari/Chrome.
+
+### Engine accuracy
+
+- **Backspace replay accuracy**: `reconstructState` (InputProcessor) thêm `lastTransformedForStep` + `shouldStopProcessing` integration cho double-tap tone marks. Backspace replay giờ khớp luồng push() chính → đảm bảo cùng output transform với typing live (vd. "tess" sau backspace + replay = đúng "tess" English-locked, không nhầm tone).
+- **Length-2 late D toggle**: `chuKhongDau.count >= 2` (trước >= 3) trong `tryLateDToggle` (TiengVietState). Cho phép gõ `dad → đa`, `da9 → đa`, `ded → đe` — không cần 3 ký tự mới trigger gạch D late.
+
+### Polish + perf
+
+- **🎨 Theme system hoàn thiện**: thêm 14 emoji mappings mới vào ThemedSymbol (arrow.up.and.down, envelope.fill, tray.full, rectangle.stack.badge.plus, list.bullet, stethoscope, tray, person.fill, lock.fill, nosign, gear.badge.questionmark, lock.square, character.bubble.fill, keyboard). Refactor 6 file View còn dùng `Image(systemName:)` sang `ThemedSymbol(name:)` — toàn app giờ consistent theme `.default`/`.threeD`/`.emoji`.
+- **⚡ Levenshtein perf**: `looksLikeKeyboardMashing` (UsageStatistics) pre-build length-bucketed English lexicon (`[Int: [String]]`). Scan chỉ buckets có độ dài trong khoảng `[n-maxDist, n+maxDist]` thay vì full 9826 từ. **Performance**: ~50-100× faster cho weekly feedback pass.
+- **📊 NGramStore trigram pruning log**: thêm `os_log` cho trigram pruning (trước chỉ có cho bigram). Giúp diagnose disk growth.
+- **🛡️ HUD timer deinit**: `PredictionHUDWindow` thêm `deinit { hideTimer?.invalidate() }` — defensive cho future refactor (singleton hiện không bao giờ release, nhưng tránh timer fire vào freed memory).
+
+### Verify
+
+- 192/192 tests pass (từ 190 ở v1.8.1, +2 tests cho `dad/ded/da9` stroked D + revised `testBackspaceRollback`).
+- Build clean trên Release.
+- `secureInputActive` race con: rà soát kỹ — bypass IME check (EventHook:215) dùng `isSecureInput` LOCAL không phụ thuộc `appState.secureInputActive`, không có functional race ảnh hưởng IME. UI menu bar có lag ms-level (không đáng fix).
+
+### Files
+
+- [vkey/App/InputProcessor.swift](vkey/App/InputProcessor.swift) — `reconstructState` + `isSearchOrComboFocused`.
+- [vkey/App/AppState.swift](vkey/App/AppState.swift) — `currentFocusedElementIsSearchOrCombo` + double-call `refreshFocusedBundleIdAsync` (init + activeApp change).
+- [vkey/Platform/EventHook.swift](vkey/Platform/EventHook.swift) — focus-shifting key detection.
+- [vkey/Engine/TiengVietState.swift](vkey/Engine/TiengVietState.swift) — chuKhongDau.count >= 2.
+- [vkey/Platform/PredictionHUDWindow.swift](vkey/Platform/PredictionHUDWindow.swift) — deinit timer.
+- [vkey/Stats/UsageStatistics.swift](vkey/Stats/UsageStatistics.swift) — length-bucketed mashing detector.
+- [vkey/Stats/NGramStore.swift](vkey/Stats/NGramStore.swift) — trigram log.
+- [vkey/View/ThemedSymbol.swift](vkey/View/ThemedSymbol.swift) — 14 emoji mappings mới.
+- [vkey/vkeyApp.swift](vkey/vkeyApp.swift), [vkey/Platform/ToggleHUDWindow.swift](vkey/Platform/ToggleHUDWindow.swift), [vkey/View/MacroView.swift](vkey/View/MacroView.swift), [vkey/View/SmartSwitch*.swift](vkey/View/) — Image(systemName) → ThemedSymbol.
+- [vkeyTests/vkeyTests.swift](vkeyTests/vkeyTests.swift) — +2 tests, total 192.
+
 ## [1.8.1] - 2026-05-21 — "Prediction UX Fix"
 
 3 fix UX cho tính năng Đoán từ tiếp theo (`wordPredictionEnabled`):

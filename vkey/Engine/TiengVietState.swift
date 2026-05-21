@@ -217,7 +217,7 @@ extension TiengVietState {
   /// - Returns: State mới sau khi áp gachD, hoặc nil nếu điều kiện không đủ
   func tryLateDToggle(char: Character, triggerChars: Set<Character>) -> TiengVietState? {
     guard Defaults[.autoTypoCorrection],
-      chuKhongDau.count >= 3,
+      chuKhongDau.count >= 2,
       let chuCaiDau = chuKhongDau.first,
       chuCaiDau == "d" || chuCaiDau == "D",
       !gachD,

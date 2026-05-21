@@ -69,7 +69,7 @@ struct SmartSwitchView: View {
                     // Legend + auto-learn button
                     HStack(spacing: 12) {
                         HStack(spacing: 4) {
-                            Image(systemName: "person.fill")
+                            ThemedSymbol(name: "person.fill")
                                 .foregroundStyle(.blue)
                             Text("Người dùng đặt")
                         }
@@ -246,7 +246,7 @@ private struct AppConfigRow: View {
                     .resizable()
                     .scaledToFit()
             case .disabled:
-                Image(systemName: "nosign")
+                ThemedSymbol(name: "nosign")
                     .foregroundStyle(.red)
             }
         }
@@ -266,7 +266,7 @@ private struct AppConfigRow: View {
                     .resizable()
                     .frame(width: 24, height: 24)
             } else {
-                Image(systemName: "app.dashed")
+                ThemedSymbol(name: "app.dashed")
                     .font(.system(size: 22))
                     .foregroundStyle(.tertiary)
                     .frame(width: 24, height: 24)
@@ -313,7 +313,7 @@ private struct AppConfigRow: View {
 
             // v1.7.1: inline trash button — xoá ngay app khỏi danh sách
             Button(action: onDelete) {
-                Image(systemName: "trash")
+                ThemedSymbol(name: "trash")
                     .foregroundStyle(.red)
             }
             .buttonStyle(.borderless)
@@ -359,7 +359,7 @@ private struct AppConfigPicker: View {
             }
 
             pickerRow(
-                icon: AnyView(Image(systemName: "nosign").foregroundStyle(.red).frame(width: 22, height: 16)),
+                icon: AnyView(ThemedSymbol(name: "nosign").foregroundStyle(.red).frame(width: 22, height: 16)),
                 label: "Không sử dụng vkey",
                 isSelected: currentSource == .user && currentState == .disabled
             ) {
@@ -390,7 +390,7 @@ private struct AppConfigPicker: View {
                     .foregroundStyle(.primary)
                 Spacer()
                 if isSelected {
-                    Image(systemName: "checkmark")
+                    ThemedSymbol(name: "checkmark")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Color.accentColor)
                 }

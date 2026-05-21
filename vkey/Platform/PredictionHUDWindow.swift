@@ -25,6 +25,14 @@ final class PredictionHUDWindow {
   private var hostingView: NSHostingView<PredictionHUDView>?
   private var hideTimer: Timer?
 
+  // 1.8.2: defensive cleanup — singleton thực chất không bao giờ release,
+  // nhưng nếu future refactor đổi sang non-singleton, đảm bảo timer không
+  // fire vào freed memory.
+  deinit {
+    hideTimer?.invalidate()
+    hideTimer = nil
+  }
+
   func show(prediction: String) {
     hideTimer?.invalidate()
 

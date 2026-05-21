@@ -229,18 +229,25 @@ final class NGramStore {
       biTotalChanged = true
     }
 
+    var triTotalChanged = false
     for (prev, nexts) in trigrams where nexts.count > maxNextsPerKey {
       let trimmed = nexts.sorted { $0.value > $1.value }.prefix(maxNextsPerKey)
       trigrams[prev] = Dictionary(uniqueKeysWithValues: trimmed.map { ($0.key, $0.value) })
+      triTotalChanged = true
     }
     if trigrams.count > maxTrigramKeys {
       let keepers = trigrams.sorted { ($0.value.values.max() ?? 0) > ($1.value.values.max() ?? 0) }
         .prefix(maxTrigramKeys)
       trigrams = Dictionary(uniqueKeysWithValues: keepers.map { ($0.key, $0.value) })
+      triTotalChanged = true
     }
     if biTotalChanged {
       os_log("NGramStore: pruned to %{public}d bigram keys",
              log: ngramLog, type: .info, bigrams.count)
+    }
+    if triTotalChanged {
+      os_log("NGramStore: pruned to %{public}d trigram keys",
+             log: ngramLog, type: .info, trigrams.count)
     }
   }
 }

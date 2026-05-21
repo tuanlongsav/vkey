@@ -406,8 +406,8 @@ final class vkeyTests: XCTestCase {
   /// Test that dd only toggles đ immediately after an initial d.
   func testTelexStrokedDOnlyAtInitialDD() throws {
     XCTAssertEqual(transform_text_telex(for: "dduowngf"), "đường")
-    XCTAssertEqual(transform_text_telex(for: "dad"), "dad")
-    XCTAssertEqual(transform_text_telex(for: "ded"), "ded")
+    XCTAssertEqual(transform_text_telex(for: "dad"), "đa")
+    XCTAssertEqual(transform_text_telex(for: "ded"), "đe")
   }
 
   // MARK: - Telex: Combined Diacritics and Tones
@@ -698,6 +698,74 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "ddungf"), "đùng")  // intentional đ
   }
 
+  /// Test late D toggle for syllables of length 2 (Telex and VNI)
+  func testLateDToggleLength2() throws {
+    XCTAssertEqual(transform_text_telex(for: "did"), "đi")
+    XCTAssertEqual(transform_text_vni(for: "di9"), "đi")
+    
+    // Non-syllable boundary should not trigger
+    XCTAssertEqual(transform_text_telex(for: "d"), "d")
+    XCTAssertEqual(transform_text_telex(for: "di"), "di")
+  }
+
+  /// Test backspace rollback for late-D and complex syllables
+  func testBackspaceRollback() throws {
+    // Telex
+    let processor = InputProcessor(method: .Telex)
+    
+    // test "did" -> backspace -> "di"
+    processor.newWord()
+    processor.push(char: "d")
+    processor.push(char: "i")
+    processor.push(char: "d")
+    XCTAssertEqual(processor.transformed, "đi")
+    
+    let (backspaces1, diff1) = processor.pop()
+    XCTAssertEqual(backspaces1, 2)
+    XCTAssertEqual(String(diff1), "di")
+    XCTAssertEqual(processor.transformed, "di")
+    
+    // test "dinjhd" -> backspace -> "dịnh"
+    processor.newWord()
+    processor.push(char: "d")
+    processor.push(char: "i")
+    processor.push(char: "n")
+    processor.push(char: "h")
+    processor.push(char: "j")
+    XCTAssertEqual(processor.transformed, "dịnh")
+    processor.push(char: "h")
+    XCTAssertEqual(processor.transformed, "dinhjh") // enters recovery/stopProcessing
+    processor.push(char: "d")
+    XCTAssertEqual(processor.transformed, "dinhjhd") // recovery continues
+    
+    // Backspace once to get "dinhjh" (keys: "dinhjh")
+    let (backspaces2, diff2) = processor.pop()
+    XCTAssertEqual(backspaces2, 0) // lets OS handle it (1-char delete)
+    XCTAssertEqual(String(diff2), "")
+    XCTAssertEqual(processor.transformed, "dinhjh")
+    
+    // Backspace again to restore "dịnh" (keys: "dinjh", from snapshot)
+    let (backspaces3, diff3) = processor.pop()
+    XCTAssertEqual(backspaces3, 5) // deletes "inhjh" (5 chars)
+    XCTAssertEqual(String(diff3), "ịnh")
+    XCTAssertEqual(processor.transformed, "dịnh")
+    
+    // VNI
+    let vniProcessor = InputProcessor(method: .VNI)
+    
+    // test "di9" -> backspace -> "di"
+    vniProcessor.newWord()
+    vniProcessor.push(char: "d")
+    vniProcessor.push(char: "i")
+    vniProcessor.push(char: "9")
+    XCTAssertEqual(vniProcessor.transformed, "đi")
+    
+    let (vniB1, vniD1) = vniProcessor.pop()
+    XCTAssertEqual(vniB1, 2)
+    XCTAssertEqual(String(vniD1), "di")
+    XCTAssertEqual(vniProcessor.transformed, "di")
+  }
+
   /// Regression 1.7.4: gõ ARM (initialism English) khi commit phải restore
   /// về "ARM" thay vì giữ "Ảm" (vkey vô tình áp tone hỏi cho R). Fix ở
   /// SpellDecisionEngine: detect all-caps ASCII alphabetic ≥2-≤5 chars,
@@ -834,7 +902,7 @@ final class vkeyTests: XCTestCase {
   /// Test that d9 only toggles đ immediately after an initial d.
   func testVNIStrokedDOnlyAtInitialD9() throws {
     XCTAssertEqual(transform_text_vni(for: "d9uo7ng2"), "đường")
-    XCTAssertEqual(transform_text_vni(for: "da9"), "da9")
+    XCTAssertEqual(transform_text_vni(for: "da9"), "đa")
   }
 
   // MARK: - VNI: Combined Diacritics and Tones

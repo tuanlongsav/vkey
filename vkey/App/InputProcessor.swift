@@ -146,34 +146,22 @@ struct WordBuffer {
     }
 
     // Normal pop: restore previous word on empty buffer
-    if wordState.isBlank, let prev = previousWordState {
-      wordState = prev
-      previousWordState = nil
-      keys = Array(wordState.chuKhongDau)
-      transformed = wordState.transformed
-      lastTransformed = transformed
-      stopProcessing = false
-      lastValidSnapshot = nil
+    if keys.isEmpty {
+      if let prev = previousWordState {
+        wordState = prev
+        previousWordState = nil
+        keys = Array(wordState.chuKhongDau)
+        transformed = wordState.transformed
+        lastTransformed = transformed
+        stopProcessing = false
+        lastValidSnapshot = nil
+      }
       return (0, [])  // Let OS handle the backspace that brought us here
     }
 
-    // Normal pop: remove last character
-    wordState = engine.pop(state: wordState)
-    keys = Array(wordState.chuKhongDau)
-    
-    if isImpossibleCluster(keys, engine: engine) {
-      stopProcessing = true
-    } else {
-      stopProcessing = wordState.needsRecovery
-    }
-
-    if stopProcessing {
-      transformed = String(keys)
-    } else {
-      transformed = wordState.transformed
-    }
-
-    lastValidSnapshot = nil
+    // Replay-based pop: drop the last character of keys and replay from scratch
+    let remainingKeys = Array(keys.dropLast())
+    reconstructState(for: remainingKeys, engine: engine)
 
     let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
       from: lastTransformed, to: transformed)
@@ -184,6 +172,94 @@ struct WordBuffer {
     }
 
     return (numBackspaces, diffChars)
+  }
+
+  mutating func reconstructState(for replayedKeys: [Character], engine: TypingMethod) {
+    keys = replayedKeys
+
+    // Clear state
+    stopProcessing = false
+    stoppedByEnglishWord = false
+    wordState = .empty
+    lastValidSnapshot = nil
+
+    if keys.isEmpty {
+      transformed = ""
+      return
+    }
+
+    var currentKeys: [Character] = []
+    var currentSnapshot: Snapshot? = nil
+
+    for k in keys {
+      let lastTransformedForStep = transformed
+      currentKeys.append(k)
+      let keysStr = String(currentKeys)
+
+      // Save snapshot BEFORE pushing if the state was valid
+      if !stopProcessing {
+        currentSnapshot = Snapshot(
+          wordState: wordState,
+          keys: Array(currentKeys.dropLast()),
+          transformed: transformed,
+          stopProcessing: false,
+          stoppedByEnglishWord: false
+        )
+      }
+
+      let telexToneKeys: Set<Character> = ["s","S","f","F","r","R","x","X","j","J"]
+      let isPossibleToneCancel = wordState.dauThanh != .bang && telexToneKeys.contains(k)
+
+      // 1. Check instant restore English
+      if LexiconManager.shared.isInstantRestoreEnglish(keysStr), !isPossibleToneCancel {
+        stopProcessing = true
+        stoppedByEnglishWord = true
+        transformed = keysStr
+        wordState = wordState.push(k)
+        if let snap = currentSnapshot {
+          lastValidSnapshot = snap
+        }
+        continue
+      }
+
+      // 2. Check impossible cluster
+      if isImpossibleCluster(currentKeys, engine: engine) {
+        stopProcessing = true
+        transformed = keysStr
+        wordState = wordState.push(k)
+        if let snap = currentSnapshot {
+          lastValidSnapshot = snap
+        }
+        continue
+      }
+
+      if stopProcessing {
+        transformed.append(k)
+        wordState = wordState.push(k)
+        continue
+      }
+
+      let result = engine.push(char: k, state: wordState)
+      wordState = result.state
+
+      if wordState.needsRecovery {
+        stopProcessing = true
+        transformed = keysStr
+        if let snap = currentSnapshot {
+          lastValidSnapshot = snap
+        }
+      } else {
+        transformed = wordState.transformed
+      }
+
+      if engine.shouldStopProcessing(keyStr: keysStr) {
+        stopProcessing = true
+        if transformed.count == lastTransformedForStep.count {
+          transformed.append(k)
+          wordState = wordState.push(k)
+        }
+      }
+    }
   }
 
   // MARK: - Push (New Character)
@@ -458,6 +534,7 @@ class InputProcessor {
   public var typingMethod: TypingMethods
   public var keyLayout = KeyboardUS()
   public var activeApp = ""
+  public var isSearchOrComboFocused = false
   public private(set) var lastSuggestions: [SuggestionCandidate] = []
 
   private let spellDecisionEngine = SpellDecisionEngine.shared
@@ -872,7 +949,7 @@ class InputProcessor {
   }
 
   func isFixAutocompleteApp() -> Bool {
-    if Focused.isComboBoxOrSearchField() {
+    if isSearchOrComboFocused {
       return true
     }
     return InputProcessor.FixAutocompleteApps.contains { app in

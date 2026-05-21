@@ -53,7 +53,7 @@ struct SmartSwitchAutoLearnSheet: View {
       if suggestions.isEmpty {
         Spacer()
         VStack(spacing: 8) {
-          Image(systemName: "tray")
+          ThemedSymbol(name: "tray")
             .font(.system(size: 36))
             .foregroundStyle(.tertiary)
           Text("Chưa có gợi ý")
@@ -74,7 +74,7 @@ struct SmartSwitchAutoLearnSheet: View {
                 .resizable()
                 .frame(width: 24, height: 24)
             } else {
-              Image(systemName: "app.dashed")
+              ThemedSymbol(name: "app.dashed")
                 .font(.system(size: 22))
                 .foregroundStyle(.tertiary)
                 .frame(width: 24, height: 24)
@@ -97,11 +97,11 @@ struct SmartSwitchAutoLearnSheet: View {
               if current.source == .autoLearn {
                 Text("🤖").font(.caption2)
               } else {
-                Image(systemName: "person.fill")
+                ThemedSymbol(name: "person.fill")
                   .font(.caption2)
                   .foregroundStyle(.blue)
               }
-              Image(systemName: "arrow.right")
+              ThemedSymbol(name: "arrow.right")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
             }
@@ -115,7 +115,7 @@ struct SmartSwitchAutoLearnSheet: View {
               .clipShape(Capsule())
 
             if row.currentConfig?.source == .user {
-              Image(systemName: "lock.fill")
+              ThemedSymbol(name: "lock.fill")
                 .font(.caption2)
                 .foregroundStyle(.orange)
                 .help("Bạn đã đặt thủ công — sẽ KHÔNG bị thay đổi.")

@@ -51,7 +51,7 @@ struct SmartSwitchRunningAppsSheet: View {
       .padding(.bottom, 8)
 
       HStack {
-        Image(systemName: "magnifyingglass")
+        ThemedSymbol(name: "magnifyingglass")
           .foregroundStyle(.secondary)
         TextField("Tìm theo tên hoặc bundle ID", text: $searchText)
           .textFieldStyle(.plain)
@@ -68,7 +68,7 @@ struct SmartSwitchRunningAppsSheet: View {
       if filteredApps.isEmpty {
         VStack(spacing: 8) {
           Spacer()
-          Image(systemName: "tray")
+          ThemedSymbol(name: "tray")
             .font(.system(size: 36))
             .foregroundStyle(.tertiary)
           Text(apps.isEmpty ? "Không tìm thấy app đang chạy" : "Không có app khớp tìm kiếm")
@@ -87,7 +87,7 @@ struct SmartSwitchRunningAppsSheet: View {
                   .resizable()
                   .frame(width: 24, height: 24)
               } else {
-                Image(systemName: "app.dashed")
+                ThemedSymbol(name: "app.dashed")
                   .font(.system(size: 22))
                   .foregroundStyle(.tertiary)
                   .frame(width: 24, height: 24)
@@ -108,10 +108,10 @@ struct SmartSwitchRunningAppsSheet: View {
                 Text("Đã cấu hình: \(existing.state.shortLabel)")
                   .font(.caption2)
                   .foregroundStyle(.secondary)
-                Image(systemName: "checkmark.circle.fill")
+                ThemedSymbol(name: "checkmark.circle.fill")
                   .foregroundStyle(.green)
               } else {
-                Image(systemName: "plus.circle")
+                ThemedSymbol(name: "plus.circle")
                   .foregroundStyle(Color.accentColor)
               }
             }

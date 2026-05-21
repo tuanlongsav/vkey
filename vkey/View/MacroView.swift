@@ -100,7 +100,7 @@ struct MacroView: View {
       if macroEnabled {
         Divider()
         HStack(spacing: 8) {
-          Image(systemName: "lightbulb.fill")
+          ThemedSymbol(name: "lightbulb.fill")
             .foregroundStyle(.yellow)
           if suggestionCount == 0 {
             Text("Chưa có gợi ý — gõ nhiều hơn để vkey học thói quen của bạn (cần ≥10 lần/từ).")

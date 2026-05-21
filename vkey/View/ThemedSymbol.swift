@@ -214,6 +214,24 @@ struct ThemedSymbol: View {
     case "circle":                            return "⚪"
     case "cube":                              return "🧊"
 
+    // Additional Views & HUD Symbols
+    case "arrow.up.and.down":                 return "↕️"
+    case "envelope.fill":                     return "✉️"
+    case "tray.full":                         return "📥"
+    case "rectangle.stack.badge.plus":        return "🗂️"
+    case "list.bullet":                       return "📋"
+    case "stethoscope":                       return "🩺"
+    case "tray":                              return "📥"
+    case "person.fill":                       return "👤"
+    case "lock.fill":                         return "🔒"
+    case "nosign":                            return "🚫"
+
+    // 1.8.2: Menu bar state + HUD icons
+    case "gear.badge.questionmark":           return "⚙️"
+    case "lock.square":                       return "🔒"
+    case "character.bubble.fill":             return "💬"
+    case "keyboard":                          return "⌨️"
+
     default:                                  return nil
     }
   }

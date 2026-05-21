@@ -81,6 +81,11 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// (cho in-app sub-window focus). EventHook callback đọc property
     /// này thay vì gọi `Focused.focusedAppBundleId()` đồng bộ.
     public private(set) var currentFocusedBundleId: String?
+    public private(set) var currentFocusedElementIsSearchOrCombo = false {
+        didSet {
+            inputProcessor.isSearchOrComboFocused = currentFocusedElementIsSearchOrCombo
+        }
+    }
     private let focusRefreshQueue = DispatchQueue(label: "dev.longht.vkey.focusRefresh", qos: .userInteractive)
 
     init() {
@@ -122,6 +127,7 @@ class AppState: ObservableObject, FileMonitorDelegate {
            bid != bundleId
         {
             currentFocusedBundleId = bid
+            refreshFocusedBundleIdAsync()
         }
             
         // Enable HUD notifications after a brief delay once startup is fully completed
@@ -187,6 +193,7 @@ class AppState: ObservableObject, FileMonitorDelegate {
             // 1.7.x: cập nhật cached focused bundle ID — push-based,
             // tránh AX query đồng bộ trong EventHook callback.
             currentFocusedBundleId = appName
+            refreshFocusedBundleIdAsync()
 
             // 1.7.0: ưu tiên đọc từ appSmartSwitchConfigs (3-state).
             // Fallback smartSwitchApps để backward-compat user chưa migrate.
@@ -243,8 +250,10 @@ class AppState: ObservableObject, FileMonitorDelegate {
     public func refreshFocusedBundleIdAsync() {
         focusRefreshQueue.async { [weak self] in
             let bid = Focused.focusedAppBundleId()
+            let isSearchOrCombo = Focused.isComboBoxOrSearchField()
             DispatchQueue.main.async {
                 self?.currentFocusedBundleId = bid
+                self?.currentFocusedElementIsSearchOrCombo = isSearchOrCombo
             }
         }
     }

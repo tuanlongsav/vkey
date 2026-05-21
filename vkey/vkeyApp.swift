@@ -241,9 +241,9 @@ struct MenuBarLabel: View {
 
   var body: some View {
     if !appDelegate.isTrusted {
-      Image(systemName: "gear.badge.questionmark")
+      ThemedSymbol(name: "gear.badge.questionmark")
     } else if appState.secureInputActive {
-      Image(systemName: "lock.square")
+      ThemedSymbol(name: "lock.square")
     } else {
       Image(appState.enabled ? "vn-flag" : "us-flag")
         .resizable()

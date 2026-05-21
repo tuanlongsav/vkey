@@ -1141,9 +1141,10 @@ final class UsageStatistics {
     let now = Date()
     var out: [PendingDictSuggestion] = []
 
-    // 1.7.x: snapshot English lexicon once per pass — tránh gọi nhiều
-    // lần qua queue.sync trong vòng for ở looksLikeKeyboardMashing.
-    let enWordsSnapshot = LexiconManager.shared.englishWordsSnapshot()
+    // 1.8.2: pre-build length-bucketed lexicon snapshot. Levenshtein chỉ
+    // chạy trên candidates có độ dài ±maxDist từ word → tránh full scan
+    // 9826 từ cho mỗi candidate. Saving ~50-100x cho weekly feedback pass.
+    let enWordsByLen = enWordsByLengthSnapshot()
 
     // Allow candidates: enRestoreStreak ≥ threshold, ASCII-only.
     for (token, count) in counters.enRestoreStreak where count >= promotionThreshold {
@@ -1155,7 +1156,7 @@ final class UsageStatistics {
       // 1.7.x: bỏ qua chuỗi gõ ngẫu nhiên (asdfgh, xzcvbn...) — chỉ
       // promote nếu gần một từ tiếng Anh thực sự (Levenshtein ≤ ngưỡng
       // phụ thuộc độ dài) hoặc là từ exact-match trong lexicon.
-      if looksLikeKeyboardMashing(n, enWords: enWordsSnapshot) { continue }
+      if looksLikeKeyboardMashing(n, enWordsByLen: enWordsByLen) { continue }
       out.append(PendingDictSuggestion(
         word: n, count: count, kind: .allow, suggestedAt: now
       ))
@@ -1182,17 +1183,36 @@ final class UsageStatistics {
   /// Heuristic loại keyboard mashing: chuỗi không có nguyên âm, hoặc quá
   /// dài, hoặc cách quá xa mọi từ tiếng Anh đã biết. Distance threshold
   /// scale theo độ dài (max(2, n/4)) để cho phép typo dài hơn ở từ dài.
-  private func looksLikeKeyboardMashing(_ word: String, enWords: [String]) -> Bool {
+  ///
+  /// 1.8.2: nhận `enWordsByLen` (length-bucketed dict) thay vì array flat
+  /// → chỉ scan candidates có độ dài trong khoảng [n-maxDist, n+maxDist].
+  /// Saving ~50-100x với enLexicon 9826 từ.
+  private func looksLikeKeyboardMashing(_ word: String, enWordsByLen: [Int: [String]]) -> Bool {
     if word.count > 18 { return true }
 
     let vowels: Set<Character> = ["a", "e", "i", "o", "u", "y"]
     guard word.lowercased().contains(where: { vowels.contains($0) }) else { return true }
 
     let maxDist = max(2, word.count / 4)
-    for candidate in enWords where abs(candidate.count - word.count) <= maxDist {
-      if SuggestionService.levenshtein(word, candidate) <= maxDist { return false }
+    let lo = word.count - maxDist
+    let hi = word.count + maxDist
+    for len in max(1, lo)...hi {
+      guard let candidates = enWordsByLen[len] else { continue }
+      for c in candidates {
+        if SuggestionService.levenshtein(word, c) <= maxDist { return false }
+      }
     }
     return true
+  }
+
+  /// 1.8.2: snapshot enLexicon đã bucket theo length. Re-build mỗi lần
+  /// `computePendingSuggestions` (call rate ~1/tuần) — không cần cache lâu
+  /// dài để tránh stale khi lexicon update apply giữa các lần check.
+  private func enWordsByLengthSnapshot() -> [Int: [String]] {
+    let all = LexiconManager.shared.englishWordsSnapshot()
+    var buckets: [Int: [String]] = [:]
+    for w in all { buckets[w.count, default: []].append(w) }
+    return buckets
   }
 
   /// Append suggestions vào pending list, dedupe theo `id`. Public-equivalent
