@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.9.6 — "HUD Manual Sizing &amp; Background Strength"</title>
+      <sparkle:version>19006</sparkle:version>
+      <sparkle:shortVersionString>1.9.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 20:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.9.6/vkey-1.9.6.dmg"
+        sparkle:edSignature="mGImivSxGaOi0C+/YVgHyMSdgai6EyQ+9qgWhV2/dNCtxCO/+vJ05l50rcUzSGp8nNhp1VEytVh9/1wFYEDNCA=="
+        length="7074458"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.9.6 — "HUD Manual Sizing &amp; Background Strength":</h2>
+        <p>Refactor HUD pipeline để fix căn cơ chuỗi vấn đề v1.9.0-1.9.5.</p>
+        <ul>
+          <li><strong>🎯 Manual sizing pipeline</strong>: tính HUD size thủ công qua NSString.boundingRect — không phụ thuộc SwiftUI fittingSize. Giữ sizingOptions=[] chống crash + size chính xác chống invisible.</li>
+          <li><strong>🎨 backgroundStrength thay opacity</strong>: tách opacity material background khỏi text/icon. Text luôn rõ 100%, chỉ kính nền trong suốt theo setting.</li>
+          <li><strong>🔧 Helpers nonisolated static</strong>: contentSize/clampedFontSize/clampedBackgroundStrength — testable + reusable.</li>
+          <li><strong>✅ +3 tests mới</strong>: content size measurement, font/background clamping.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.9.5 — "HUD Invisible Fix &amp; ToggleHUD Compact"</title>
       <sparkle:version>19005</sparkle:version>
       <sparkle:shortVersionString>1.9.5</sparkle:shortVersionString>

@@ -47,40 +47,37 @@ final class PredictionHUDWindow {
     // 1.9.1: đọc Defaults 1 lần ở show(), pass vào view qua init. Tránh
     // @Default trong View struct gây re-render → hosting view request
     // window resize → NSException crash (xảy ra ở v1.9.0).
-    let fontSize = max(10, min(20, Defaults[.predictionHUDFontSize]))
-    let opacityPct = max(50, min(100, Defaults[.hudOpacityPercent]))
+    let fontSize = Self.clampedFontSize(Defaults[.predictionHUDFontSize])
+    let backgroundStrength = Self.clampedBackgroundStrength(Defaults[.hudOpacityPercent])
+    let contentSize = Self.contentSize(for: text, fontSize: fontSize)
     let view = PredictionHUDView(
       text: text,
       fontSize: fontSize,
-      opacity: Double(opacityPct) / 100.0
+      backgroundStrength: backgroundStrength,
+      contentSize: contentSize
     )
     let panel = ensurePanel()
 
     // 1.9.3: tạo NSHostingController mới mỗi lần show (match ToggleHUD pattern).
-    // 1.9.5: bỏ sizingOptions = [] vì nó disable fittingSize computation
-    // → panel size 0 → text bị clip → HUD không hiển thị (user feedback).
-    // Dùng .preferredContentSize (default macOS 13+) để fittingSize compute
-    // đúng. ToggleHUD đã không set sizingOptions → fittingSize work.
+    // 1.9.6: giữ sizingOptions = [] để chặn SwiftUI tự propose resize window
+    // trong borderless NSPanel. Size HUD được tính thủ công bên dưới nên không
+    // phụ thuộc fittingSize và không còn bị invisible/size 0.
     let controller = NSHostingController(rootView: view)
     if #available(macOS 13.0, *) {
-      controller.sizingOptions = .preferredContentSize
+      controller.sizingOptions = []
     }
     hostingController = controller
     panel.contentViewController = controller
 
-    // Force layout subtree để fittingSize có giá trị correct trước khi
-    // setContentSize. Trước v1.9.5 fittingSize có thể return 0 nếu chưa layout.
-    controller.view.layoutSubtreeIfNeeded()
-    let fitSize = controller.view.fittingSize
-    panel.setContentSize(fitSize)
+    // Không đọc fittingSize ở đây: với sizingOptions=[] nó có thể trả 0/tiny,
+    // còn với preferredContentSize thì SwiftUI có thể tự đẩy resize lên window.
+    controller.view.setFrameSize(contentSize)
+    panel.setContentSize(contentSize)
+    panel.alphaValue = 1
 
     // Position panel — re-align top theo logic cũ (HUD ở TRÊN caret).
-    let originFrame = targetFrame(forText: text)
-    let actualOrigin = NSPoint(
-      x: originFrame.origin.x,
-      y: originFrame.origin.y + originFrame.height - fitSize.height
-    )
-    panel.setFrameOrigin(actualOrigin)
+    let originFrame = targetFrame(forContentSize: contentSize)
+    panel.setFrameOrigin(originFrame.origin)
     panel.orderFrontRegardless()
 
     // Auto-dismiss sau 3 giây.
@@ -96,6 +93,33 @@ final class PredictionHUDWindow {
   }
 
   // MARK: - Internal
+
+  nonisolated static func contentSize(for text: String, fontSize: Int) -> CGSize {
+    let clampedSize = CGFloat(clampedFontSize(fontSize))
+    let font = NSFont.systemFont(ofSize: clampedSize, weight: .semibold)
+    let attributes: [NSAttributedString.Key: Any] = [.font: font]
+    let measured = (text as NSString).boundingRect(
+      with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
+      options: [.usesLineFragmentOrigin, .usesFontLeading],
+      attributes: attributes
+    )
+
+    let horizontalPadding: CGFloat = 32
+    let verticalPadding: CGFloat = 20
+    let shadowAllowance: CGFloat = 16
+    return CGSize(
+      width: max(160, ceil(measured.width + horizontalPadding + shadowAllowance)),
+      height: max(36, ceil(measured.height + verticalPadding + shadowAllowance))
+    )
+  }
+
+  nonisolated private static func clampedFontSize(_ value: Int) -> Int {
+    max(12, min(24, value))
+  }
+
+  nonisolated private static func clampedBackgroundStrength(_ value: Int) -> Double {
+    Double(max(30, min(100, value))) / 100.0
+  }
 
   private func ensurePanel() -> NSPanel {
     if let p = panel { return p }
@@ -130,9 +154,9 @@ final class PredictionHUDWindow {
   /// ở dòng 5/10 nay đặt đúng dòng đó). Flip xuống dưới nếu HUD vượt top
   /// screen; tự detect screen chứa caret cho multi-display.
   /// Fallback: bottom-center của main screen.
-  private func targetFrame(forText text: String) -> NSRect {
-    let width = max(160, CGFloat(text.count) * 9 + 40)
-    let height: CGFloat = 36
+  private func targetFrame(forContentSize contentSize: CGSize) -> NSRect {
+    let width = contentSize.width
+    let height = contentSize.height
 
     if let caret = focusedElementCaretRect() {
       // Tìm screen chứa caret (multi-display). AX dùng global top-down,
@@ -208,7 +232,7 @@ final class PredictionHUDWindow {
       &focused
     )
     guard err == .success, let element = focused else { return nil }
-    // swiftlint:disable:next force_cast
+    guard CFGetTypeID(element) == AXUIElementGetTypeID() else { return nil }
     let axElement = element as! AXUIElement
 
     // 1.7.9: thử parametric API trước. App như TextEdit, VS Code, Safari
@@ -223,12 +247,9 @@ final class PredictionHUDWindow {
     var sizeValue: CFTypeRef?
     AXUIElementCopyAttributeValue(axElement, kAXPositionAttribute as CFString, &posValue)
     AXUIElementCopyAttributeValue(axElement, kAXSizeAttribute as CFString, &sizeValue)
-    guard let posValue = posValue, let sizeValue = sizeValue else { return nil }
-
-    var pos = CGPoint.zero
-    var size = CGSize.zero
-    AXValueGetValue(posValue as! AXValue, .cgPoint, &pos)
-    AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
+    guard let pos = cgPoint(from: posValue),
+          let size = cgSize(from: sizeValue)
+    else { return nil }
 
     return CGRect(origin: pos, size: size)
   }
@@ -248,8 +269,9 @@ final class PredictionHUDWindow {
     )
     guard rangeErr == .success, let rangeValue = rangeRef else { return nil }
 
-    var range = CFRange(location: 0, length: 0)
-    AXValueGetValue(rangeValue as! AXValue, .cfRange, &range)
+    guard var range = cfRange(from: rangeValue),
+          range.location >= 0
+    else { return nil }
     if range.length == 0 {
       range.length = 1  // ép lấy bounds của 1 char để parametric API trả về rect non-zero
     }
@@ -264,9 +286,44 @@ final class PredictionHUDWindow {
     )
     guard boundsErr == .success, let boundsValue = boundsRef else { return nil }
 
+    return cgRect(from: boundsValue)
+  }
+
+  private func axValue(_ value: CFTypeRef?, expectedType: AXValueType) -> AXValue? {
+    guard let value = value,
+          CFGetTypeID(value) == AXValueGetTypeID()
+    else { return nil }
+    let axValue = value as! AXValue
+    guard AXValueGetType(axValue) == expectedType else { return nil }
+    return axValue
+  }
+
+  private func cgPoint(from value: CFTypeRef?) -> CGPoint? {
+    guard let axValue = axValue(value, expectedType: .cgPoint) else { return nil }
+    var point = CGPoint.zero
+    guard AXValueGetValue(axValue, .cgPoint, &point) else { return nil }
+    return point
+  }
+
+  private func cgSize(from value: CFTypeRef?) -> CGSize? {
+    guard let axValue = axValue(value, expectedType: .cgSize) else { return nil }
+    var size = CGSize.zero
+    guard AXValueGetValue(axValue, .cgSize, &size) else { return nil }
+    return size
+  }
+
+  private func cgRect(from value: CFTypeRef?) -> CGRect? {
+    guard let axValue = axValue(value, expectedType: .cgRect) else { return nil }
     var rect = CGRect.zero
-    AXValueGetValue(boundsValue as! AXValue, .cgRect, &rect)
+    guard AXValueGetValue(axValue, .cgRect, &rect) else { return nil }
     return rect
+  }
+
+  private func cfRange(from value: CFTypeRef?) -> CFRange? {
+    guard let axValue = axValue(value, expectedType: .cfRange) else { return nil }
+    var range = CFRange(location: 0, length: 0)
+    guard AXValueGetValue(axValue, .cfRange, &range) else { return nil }
+    return range
   }
 }
 
@@ -275,7 +332,9 @@ struct PredictionHUDView: View {
   // 1.9.1: pass qua init thay vì @Default trong struct — tránh crash
   // NSHostingView khi Defaults change trigger re-render + animated resize.
   let fontSize: Int
-  let opacity: Double
+  let backgroundStrength: Double
+  let contentSize: CGSize
+  @Environment(\.colorScheme) private var colorScheme
 
   var body: some View {
     Text(text)
@@ -289,12 +348,26 @@ struct PredictionHUDView: View {
       .shadow(color: .black.opacity(0.15), radius: 0.5, x: 0, y: 0.5)
       .padding(.horizontal, 16)
       .padding(.vertical, 10)
+      .background(
+        Color.black.opacity(scrimOpacity),
+        in: RoundedRectangle(cornerRadius: 16)
+      )
       .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
       .overlay(
         RoundedRectangle(cornerRadius: 16)
-          .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.6)
+          .strokeBorder(Color.white.opacity(strokeOpacity), lineWidth: 0.6)
       )
       .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
-      .opacity(opacity)
+      .frame(width: contentSize.width, height: contentSize.height)
+  }
+
+  private var scrimOpacity: Double {
+    let base = colorScheme == .dark ? 0.10 : 0.03
+    let range = colorScheme == .dark ? 0.16 : 0.07
+    return base + range * backgroundStrength
+  }
+
+  private var strokeOpacity: Double {
+    colorScheme == .dark ? 0.18 : 0.28
   }
 }

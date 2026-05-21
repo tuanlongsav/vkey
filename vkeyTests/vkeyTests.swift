@@ -1638,6 +1638,39 @@ final class KeyboardUSTests: XCTestCase {
 }
 
 // MARK: - ===========================================
+// MARK: - Prediction HUD Layout Tests
+// MARK: - ===========================================
+
+final class PredictionHUDWindowTests: XCTestCase {
+
+  func testContentSizeHasMinimumDimensions() {
+    let size = PredictionHUDWindow.contentSize(for: "→ theo   ⇥ Tab", fontSize: 16)
+
+    XCTAssertGreaterThanOrEqual(size.width, 160)
+    XCTAssertGreaterThanOrEqual(size.height, 36)
+  }
+
+  func testContentSizeExpandsForLongText() {
+    let shortSize = PredictionHUDWindow.contentSize(for: "→ theo   ⇥ Tab", fontSize: 16)
+    let longSize = PredictionHUDWindow.contentSize(
+      for: "→ phương pháp   ⇥ Tab",
+      fontSize: 16
+    )
+
+    XCTAssertGreaterThan(longSize.width, shortSize.width)
+    XCTAssertEqual(longSize.height, shortSize.height)
+  }
+
+  func testContentSizeExpandsForLargerFont() {
+    let smallSize = PredictionHUDWindow.contentSize(for: "→ theo   ⇥ Tab", fontSize: 12)
+    let largeSize = PredictionHUDWindow.contentSize(for: "→ theo   ⇥ Tab", fontSize: 24)
+
+    XCTAssertGreaterThan(largeSize.width, smallSize.width)
+    XCTAssertGreaterThan(largeSize.height, smallSize.height)
+  }
+}
+
+// MARK: - ===========================================
 // MARK: - TiengVietValidator Rule Tests
 // MARK: - ===========================================
 

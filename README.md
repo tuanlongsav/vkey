@@ -5,7 +5,7 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 1.9.5 — "HUD Invisible Fix + ToggleHUD Compact"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 1.9.6 — "HUD Manual Sizing & Background Strength"** ([CHANGELOG](CHANGELOG.md))
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)

@@ -2,6 +2,55 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.9.6] - 2026-05-21 — "HUD Manual Sizing & Background Strength Refactor"
+
+Refactor HUD rendering pipeline để fix căn cơ: chữ rõ + nền clear + không crash + không invisible. Đây là tổng kết các vấn đề từ v1.9.0 đến v1.9.5.
+
+### 🎯 PredictionHUDWindow — manual sizing pipeline
+
+Trước v1.9.6, kích thước HUD đoán từ phụ thuộc `controller.view.fittingSize`:
+- v1.9.3 `sizingOptions = []` → fittingSize trả 0 → text invisible.
+- v1.9.4 quay lại heuristic char-count → bitmap bo góc sai.
+- v1.9.5 `sizingOptions = .preferredContentSize` → SwiftUI có thể tự propose resize window → còn rủi ro crash.
+
+**Giải pháp v1.9.6**: tính `contentSize` thủ công qua `NSString.boundingRect(...)` với `NSFont.systemFont(.semibold)` đúng font size user setting → biết chính xác text size. Cộng padding (32×20) + shadow allowance (16). KHÔNG đọc `fittingSize` nữa.
+
+Lợi ích:
+- Size deterministic, không phụ thuộc SwiftUI re-layout.
+- Giữ `controller.sizingOptions = []` để chặn SwiftUI propose resize window → không crash NSException.
+- `controller.view.setFrameSize(contentSize)` + `panel.setContentSize(contentSize)` đảm bảo SwiftUI render trong đúng vùng → không clip text.
+
+Helpers mới (nonisolated static):
+- `contentSize(for: text, fontSize:)` — measure text + padding.
+- `clampedFontSize(_:)` — bound 12-24.
+- `clampedBackgroundStrength(_:)` — bound 30-100 → Double 0.30-1.00.
+
+### 🎨 PredictionHUDView — backgroundStrength replace opacity
+
+Refactor: param `opacity: Double` → `backgroundStrength: Double`. Logic:
+- Trước: `.opacity(0.75)` applied vào TOÀN BỘ view (cả text + material) → text mờ.
+- Sau: `backgroundStrength` chỉ điều khiển opacity của material background layer, KHÔNG ảnh hưởng text/foreground.
+
+Kết quả: text/icon luôn rõ 100% bất kể user kéo opacity xuống 30%. Chỉ "kính" nền trong suốt.
+
+### 🎨 ToggleHUDView — backgroundStrength qua ViewModel
+
+- `viewModel.backgroundStrength: Double` (default 0.75).
+- `panel.alphaValue = 1` cố định cho fade animation, không dùng làm opacity user setting.
+- `backgroundStrength` reactive với Defaults (đọc lại mỗi `show()`).
+
+### Tests mới
+
++3 tests trong vkeyTests.swift (197 total, từ 194):
+- `testPredictionContentSizeMeasurement` — boundingRect cho text "→ word ⇥ Tab".
+- `testPredictionFontSizeClamping` — clamp 12-24.
+- `testBackgroundStrengthClamping` — clamp 30-100 → 0.30-1.00.
+
+### Verify
+
+- 197/197 tests pass.
+- Build clean.
+
 ## [1.9.5] - 2026-05-21 — "HUD Invisible Fix + ToggleHUD Compact"
 
 🚨 Hotfix v1.9.3-1.9.4: HUD đoán từ không hiển thị text.

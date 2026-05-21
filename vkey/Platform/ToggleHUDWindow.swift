@@ -47,6 +47,7 @@ final class ToggleHUDWindow {
         
         // Cập nhật dữ liệu ViewModel
         viewModel.isEnabled = isEnabled
+        viewModel.backgroundStrength = Self.clampedBackgroundStrength(Defaults[.hudOpacityPercent])
         
         // Tạo panel nếu chưa tồn tại
         if panel == nil {
@@ -74,10 +75,9 @@ final class ToggleHUDWindow {
         panel.alphaValue = 0
         panel.orderFrontRegardless()
 
-        // 1.9.1: opacity user-configurable từ Defaults — apply ở panel level
-        // qua alphaValue. Tránh dùng .opacity() modifier trong SwiftUI view
-        // (gây crash khi @Default trigger re-render → hosting view resize).
-        let targetAlpha = CGFloat(max(50, min(100, Defaults[.hudOpacityPercent]))) / 100.0
+        // 1.9.6: panel alpha chỉ dùng cho fade animation. Độ đậm HUD giờ
+        // điều khiển lớp nền trong SwiftUI, không làm mờ chữ/icon.
+        let targetAlpha: CGFloat = 1
 
         // Hiệu ứng mờ dần (Fade-in)
         NSAnimationContext.runAnimationGroup { context in
@@ -92,6 +92,10 @@ final class ToggleHUDWindow {
     }
     
     // MARK: - Private Helper
+
+    nonisolated private static func clampedBackgroundStrength(_ value: Int) -> Double {
+        Double(max(30, min(100, value))) / 100.0
+    }
     
     private func createPanel() {
         let hudView = ToggleHUDView(viewModel: viewModel)
@@ -140,6 +144,7 @@ final class ToggleHUDWindow {
 
 private class ToggleHUDViewModel: ObservableObject {
     @Published var isEnabled: Bool = true
+    @Published var backgroundStrength: Double = 0.75
 }
 
 // MARK: - SwiftUI HUD View
@@ -187,25 +192,28 @@ private struct ToggleHUDView: View {
         .frame(width: 130)
         .padding(.vertical, 14)
         .padding(.horizontal, 8)
-        // 1.9.5: nền CLEAR hẳn — bỏ material đậm, dùng nền semi-transparent
-        // đen mờ nhẹ để giữ contrast text + cảm giác "kính trong suốt".
+        // 1.9.6: nền vẫn trong suốt nhưng có scrim tối nhẹ để chữ/icon luôn
+        // rõ. Opacity setting chỉ tác động nền, không làm mờ toàn bộ panel.
         .background(
-            Color.black.opacity(colorScheme == .dark ? 0.35 : 0.08),
+            Color.black.opacity(scrimOpacity),
             in: RoundedRectangle(cornerRadius: 18)
         )
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
         .overlay(
             RoundedRectangle(cornerRadius: 18)
                 .strokeBorder(
-                    .white.opacity(colorScheme == .dark ? 0.10 : 0.25),
+                    .white.opacity(colorScheme == .dark ? 0.16 : 0.28),
                     lineWidth: 0.6
                 )
         )
         .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.10), radius: 10, x: 0, y: 3)
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
-        // 1.9.1: opacity moved to panel.alphaValue trong ToggleHUDWindow.show()
-        // — tránh `.opacity()` modifier ở đây vì Defaults[...] direct read trong
-        // body gây SwiftUI evaluate stale + hosting view crash.
+    }
+
+    private var scrimOpacity: Double {
+        let base = colorScheme == .dark ? 0.10 : 0.03
+        let range = colorScheme == .dark ? 0.16 : 0.07
+        return base + range * viewModel.backgroundStrength
     }
 }
 
