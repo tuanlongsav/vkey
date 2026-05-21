@@ -262,7 +262,7 @@ struct GeneralView: View {
             .scrollDisabled(false)
 
             // 1.8.3: tiếng Việt, không nghiêng. Date hardcode mỗi release.
-            // 1.9.2: cập nhật ngày phát hành.
+            // 1.9.3: cập nhật ngày phát hành.
             Text("Phiên bản \(appVersion) ngày 21/5/2026")
                 .font(.caption)
                 .multilineTextAlignment(.center)
@@ -333,9 +333,6 @@ struct SpellCheckView: View {
     @State private var lexiconEnVersion: Int = 0
     @State private var lexiconEnEntries: Int = 0
 
-    // 1.9.0: state cho section "Tra cứu từ điển".
-    @State private var lexiconSearchQuery: String = ""
-
     /// 1.9.1: mô tả ngắn của preset hiện tại để hiển thị dưới Picker.
     private var quickConfigDescription: String {
         switch QuickConfigPreset(rawValue: quickConfigPreset) ?? .custom {
@@ -391,36 +388,8 @@ struct SpellCheckView: View {
         }
     }
 
-    /// 1.9.0: tra cứu 1 từ trong toàn bộ lexicon — VN/EN/Keep + user lists.
-    /// Hiển thị markdown để bullet rõ ràng.
-    private var lexiconSearchResult: String {
-        let q = lexiconSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !q.isEmpty else { return "" }
-        let normalized = q.normalizedDictionaryToken
-        var lines: [String] = []
-        if LexiconManager.shared.isVietnameseWord(q) {
-            lines.append("✓ Từ điển Tiếng Việt chung")
-        }
-        if LexiconManager.shared.isEnglishWord(q) {
-            lines.append("✓ Từ điển Tiếng Anh chung")
-        }
-        if LexiconManager.shared.isInstantRestoreEnglish(q) {
-            lines.append("✓ Embedded English (instant-restore)")
-        }
-        if LexiconManager.shared.shouldKeepVietnamese(q) {
-            lines.append("✓ Danh sách Keep (giữ tiếng Việt)")
-        }
-        let userAllow = Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken })
-        if userAllow.contains(normalized) { lines.append("✓ Personal Dict — Allow (của bạn)") }
-        let userKeep = Set(Defaults[.userKeepWords].map { $0.normalizedDictionaryToken })
-        if userKeep.contains(normalized) { lines.append("✓ Personal Dict — Keep (của bạn)") }
-        let userDeny = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
-        if userDeny.contains(normalized) { lines.append("✓ Personal Dict — Deny (của bạn)") }
-        if lines.isEmpty {
-            return "✗ Không tìm thấy \"\(q)\" trong bất kỳ từ điển nào."
-        }
-        return lines.joined(separator: "\n")
-    }
+    // 1.9.3: Section "Tra cứu từ điển" + property `lexiconSearchResult`
+    // đã được xóa theo user feedback.
 
     var body: some View {
         VStack(spacing: 0) {
@@ -667,26 +636,8 @@ struct SpellCheckView: View {
                         Text("Từ điển từ GitHub")
                     }
 
-                    // 1.9.0: Section tra cứu từ điển — gõ 1 từ, hiển thị nó
-                    // thuộc lexicon nào (VN / EN / Keep / userAllow / userKeep
-                    // / userDeny / không có). Help user verify dictionary +
-                    // train Personal Dict effectively.
-                    Section {
-                        HStack {
-                            ThemedSymbol(name: "magnifyingglass")
-                                .foregroundStyle(.secondary)
-                            TextField("Gõ 1 từ để tra cứu", text: $lexiconSearchQuery)
-                                .textFieldStyle(.plain)
-                        }
-                        if !lexiconSearchQuery.isEmpty {
-                            Text(lexiconSearchResult)
-                                .font(.callout)
-                                .foregroundStyle(.primary)
-                                .padding(.top, 4)
-                        }
-                    } header: {
-                        Text("Tra cứu từ điển")
-                    }
+                    // 1.9.3: Section "Tra cứu từ điển" đã được xóa theo
+                    // user feedback (không cần thiết, gây phân tâm).
 
                     // v1.7.0: Section "Học hành vi từ Thống kê" đã được merge
                     // vào Section "Cấu hình kiểm tra chính tả" ở trên.

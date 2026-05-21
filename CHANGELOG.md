@@ -2,6 +2,53 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.9.3] - 2026-05-21 — "Critical HUD Crash Fix"
+
+Hotfix khẩn cấp: v1.9.0/1/2 vẫn crash dù 2 đợt fix trước. Root cause cuối cùng đã được xác định + sửa triệt để.
+
+### 🚨 Fix crash NSHostingView trong PredictionHUDWindow
+
+Crash log v1.9.2 cho thấy cùng pattern v1.9.0:
+```
+EXC_BREAKPOINT
+↳ NSHostingView.updateWindowContentSizeExtremaIfNecessary
+↳ NSHostingView.updateConstraints
+↳ NSWindow updateConstraintsIfNeeded
+↳ _postWindowNeedsUpdateConstraints → NSException
+```
+
+**Root cause cuối**: `PredictionHUDWindow` dùng **`NSHostingView`** (direct) làm `panel.contentView`. `NSHostingView` mặc định gửi window constraint update requests qua `updateWindowContentSizeExtrema` → trong `NSPanel` borderless không có constraint pipeline đầy đủ → NSException → SIGTRAP/SIGABRT.
+
+**ToggleHUDWindow đã dùng `NSHostingController`** (`panel.contentViewController = controller`) — không crash trên cùng setup. Khác biệt critical: `NSHostingController` không tự đẩy constraints lên window.
+
+v1.9.1 (bỏ @Default trong View) và v1.9.2 (fittingSize + background-in-shape) đều **không sửa root cause** — vẫn dùng `NSHostingView`.
+
+**Fix v1.9.3**:
+- [PredictionHUDWindow.swift](vkey/Platform/PredictionHUDWindow.swift): `NSHostingView` → `NSHostingController`.
+- Set `controller.sizingOptions = []` (macOS 13+) để disable automatic window size proposing hoàn toàn.
+- Thêm `.fullSizeContentView` style mask cho panel.
+- `panel.contentViewController = controller` thay `panel.contentView = hosting`.
+- Apply same pattern ToggleHUD đã verify ổn định.
+
+### 🧹 Bỏ "Tra cứu từ điển" tab Chính tả
+
+User feedback: section "Tra cứu từ điển" (thêm ở v1.9.0) gây phân tâm, không cần thiết.
+
+**Action**:
+- Xóa Section + UI (line ~670-689 SettingView.swift).
+- Xóa `@State lexiconSearchQuery` + computed `lexiconSearchResult` (~30 lines).
+
+### Verify
+
+- 194/194 tests pass.
+- Build clean.
+- Manual: bật prediction HUD + gõ liên tục → KHÔNG crash (trước v1.9.3 crash sau ~30s-2min).
+
+### Files
+
+- [vkey/Platform/PredictionHUDWindow.swift](vkey/Platform/PredictionHUDWindow.swift) — NSHostingView → NSHostingController.
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — bỏ section "Tra cứu từ điển" + helpers.
+
 ## [1.9.2] - 2026-05-21 — "HUD Visual Polish"
 
 3 fix UX HUD.

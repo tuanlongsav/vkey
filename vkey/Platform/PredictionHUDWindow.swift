@@ -22,7 +22,13 @@ final class PredictionHUDWindow {
   static let shared = PredictionHUDWindow()
 
   private var panel: NSPanel?
-  private var hostingView: NSHostingView<PredictionHUDView>?
+  // 1.9.3: chuyển từ NSHostingView sang NSHostingController. NSHostingView
+  // (direct) gửi window constraint update requests qua updateWindowContentSizeExtrema
+  // → trong NSPanel borderless không có constraint pipeline đầy đủ → NSException
+  // → SIGABRT/SIGTRAP. NSHostingController không tự đẩy constraints lên window,
+  // và macOS 13+ sizingOptions=[] disable automatic sizing hoàn toàn.
+  // Pattern match ToggleHUDWindow (đã ổn định không crash).
+  private var hostingController: NSHostingController<PredictionHUDView>?
   private var hideTimer: Timer?
 
   // 1.8.2: defensive cleanup — singleton thực chất không bao giờ release,
@@ -31,6 +37,7 @@ final class PredictionHUDWindow {
   deinit {
     hideTimer?.invalidate()
     hideTimer = nil
+    hostingController = nil
   }
 
   func show(prediction: String) {
@@ -49,29 +56,28 @@ final class PredictionHUDWindow {
     )
     let panel = ensurePanel()
 
-    // 1.9.1: recreate hosting view mỗi lần show — tránh in-place rootView
-    // update gây hosting view animated resize → crash.
-    hostingView?.removeFromSuperview()
-    let hosting = NSHostingView(rootView: view)
-    hostingView = hosting
-    panel.contentView = hosting
+    // 1.9.3: tạo NSHostingController mới mỗi lần show (match ToggleHUD pattern).
+    // sizingOptions = [] để controller KHÔNG tự propose window size → fix crash
+    // NSHostingView.updateWindowContentSizeExtremaIfNecessary trong borderless
+    // NSPanel.
+    let controller = NSHostingController(rootView: view)
+    if #available(macOS 13.0, *) {
+      controller.sizingOptions = []
+    }
+    hostingController = controller
+    panel.contentViewController = controller
 
-    // 1.9.2: dùng SwiftUI fittingSize cho panel content size thay vì
-    // heuristic char-count × 9. Tránh bug bitmap bo góc do panel rộng/hẹp
-    // hơn SwiftUI clipShape — frame ngoài clipped shape không có background
-    // → render artifact (default panel chrome vẽ vuông góc lên).
-    let fitSize = hosting.fittingSize
+    // Lấy fittingSize SAU khi controller attached vào panel.
+    let fitSize = controller.view.fittingSize
+    panel.setContentSize(fitSize)
+
+    // Position panel — re-align top theo logic cũ (HUD ở TRÊN caret).
     let originFrame = targetFrame(forText: text)
-    let actualFrame = NSRect(
+    let actualOrigin = NSPoint(
       x: originFrame.origin.x,
-      // Re-align: keep top edge — origin.y in NSScreen coord (bottom-up)
-      // → top = origin.y + height. New height fitSize.height → new origin.y
-      // = top - fitSize.height = originFrame.origin.y + originFrame.height - fitSize.height.
-      y: originFrame.origin.y + originFrame.height - fitSize.height,
-      width: fitSize.width,
-      height: fitSize.height
+      y: originFrame.origin.y + originFrame.height - fitSize.height
     )
-    panel.setFrame(actualFrame, display: true, animate: false)
+    panel.setFrameOrigin(actualOrigin)
     panel.orderFrontRegardless()
 
     // Auto-dismiss sau 3 giây.
@@ -90,9 +96,10 @@ final class PredictionHUDWindow {
 
   private func ensurePanel() -> NSPanel {
     if let p = panel { return p }
+    // 1.9.3: thêm `.fullSizeContentView` cho NSHostingController fill panel.
     let p = NSPanel(
       contentRect: NSRect(x: 0, y: 0, width: 200, height: 36),
-      styleMask: [.borderless, .nonactivatingPanel],
+      styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
       backing: .buffered,
       defer: false
     )

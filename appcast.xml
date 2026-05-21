@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.9.3 — "Critical HUD Crash Fix"</title>
+      <sparkle:version>19003</sparkle:version>
+      <sparkle:shortVersionString>1.9.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 17:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.9.3/vkey-1.9.3.dmg"
+        sparkle:edSignature="0aXB0iuNFdCniqs0O6JMseC6Kteq9l4W0xh6E2j2w7S05nUJzdUdmwMBVWExtAXqSlmyMS4dOaA+QUG6x/7jDg=="
+        length="7058867"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.9.3 — "Critical HUD Crash Fix":</h2>
+        <p>Hotfix khẩn: v1.9.0/1/2 vẫn crash dù 2 lần fix. Root cause cuối cùng đã sửa triệt để.</p>
+        <ul>
+          <li><strong>🚨 Fix crash NSHostingView trong PredictionHUDWindow</strong>: PredictionHUD dùng NSHostingView (direct) → tự đẩy constraints lên window → trong NSPanel borderless gây NSException. Fix: chuyển sang NSHostingController + sizingOptions=[] (match ToggleHUD pattern đã verify ổn định). Thêm .fullSizeContentView style mask.</li>
+          <li><strong>🧹 Bỏ "Tra cứu từ điển" tab Chính tả</strong>: section thêm ở v1.9.0 đã bị xóa theo user feedback.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.9.2 — "HUD Visual Polish"</title>
       <sparkle:version>19002</sparkle:version>
       <sparkle:shortVersionString>1.9.2</sparkle:shortVersionString>
