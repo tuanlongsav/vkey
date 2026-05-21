@@ -578,9 +578,10 @@ class InputProcessor {
   // MARK: - Private Event Handlers
 
   private func handleTaskKey(_ taskKey: TaskKey, event: CGEvent) -> Unmanaged<CGEvent>? {
-    // 1.6.1/1.7.7: Tab handling khi prediction enabled — SMART-DETECT buffer.
-    // - Buffer sạch (sau commit qua Space): chèn " prediction" (space + word).
-    //   User không cần gõ Space rồi mới Tab — Tab đã handle space leading.
+    // 1.6.1/1.7.7/1.8.1: Tab handling khi prediction enabled — SMART-DETECT buffer.
+    // - Buffer sạch (sau commit qua Space, caret đã ở sau 1 space): chèn THẲNG
+    //   prediction, KHÔNG leading space. Trước 1.8.1 chèn " prediction" → thừa
+    //   space ("đoán  từ" thay vì "đoán từ").
     // - Buffer có từ chưa commit: commit từ qua spell decision (emit space)
     //   rồi chèn prediction (không leading space — space đã được emit).
     //   User có thể gõ "viet" + Tab → "việt Nam" (commit + insert prediction).
@@ -592,9 +593,10 @@ class InputProcessor {
     {
       let prediction = activePrediction!
       if wordBuffer.wordState.isBlank {
-        // Buffer sạch: chèn " prediction" (leading space).
+        // 1.8.1: caret đã ở sau 1 space (từ commit trước đó qua Space).
+        // Chèn THẲNG prediction, không leading space.
         newWord(storePrevious: false)
-        let toInsert = " \(prediction)"
+        let toInsert = prediction
         let telemetry = EventSimulator.sendReplacement(
           backspaceCount: 0,
           diffChars: Array(toInsert),

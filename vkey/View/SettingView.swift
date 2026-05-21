@@ -175,6 +175,7 @@ struct GeneralView: View {
     @Default(.autoTypoCorrection) private var autoTypoCorrection
     @Default(.hudEnabled) private var hudEnabled
     @Default(.wordPredictionEnabled) private var wordPredictionEnabled
+    @Default(.predictionHUDLineOffset) private var predictionHUDLineOffset
 
     let appVersion = Bundle.main.appVersionLong
 
@@ -261,6 +262,21 @@ struct GeneralView: View {
 
                 if wordPredictionEnabled {
                     Text("Sau khi gõ xong 1 từ + dấu cách, vkey hiển thị HUD nhỏ cạnh cursor với từ đoán tiếp theo (vd \"tiếp\" → \"theo\"). Nhấn ⇥ Tab để chấp nhận; phím khác → bỏ qua. Ưu tiên gợi ý từ trong từ điển gốc + từ điển cá nhân.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, -8)
+
+                    // 1.8.1: Stepper khoảng cách HUD ↔ caret (đơn vị "dòng văn bản").
+                    Stepper(value: $predictionHUDLineOffset, in: 1...10) {
+                        HStack {
+                            Label("Khoảng cách HUD đến caret", themedSymbol: "arrow.up.and.down")
+                            Spacer()
+                            Text("\(predictionHUDLineOffset) dòng")
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                    }
+                    Text("HUD đặt phía trên (hoặc dưới nếu không đủ chỗ) caret line, cách xa khoảng N dòng văn bản để không che nội dung đang gõ.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, -8)

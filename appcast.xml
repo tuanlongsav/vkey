@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.8.1 — "Prediction UX Fix"</title>
+      <sparkle:version>18001</sparkle:version>
+      <sparkle:shortVersionString>1.8.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 08:15:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.8.1/vkey-1.8.1.dmg"
+        sparkle:edSignature="2vnZHkzevJePeDI4LuXuLEPdK3ZtRjUz13GWf11wbPYxoGqbIPU/T7xVZZl9HI+joLAQ+7bt6oMaUqjJygAnAA=="
+        length="6980128"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.8.1 — "Prediction UX Fix":</h2>
+        <p>3 fix UX cho tính năng Đoán từ tiếp theo.</p>
+        <ul>
+          <li><strong>🚨 Sửa bug thừa space khi Tab accept prediction</strong>: Trước đây gõ "đoán" + Space → HUD hiện "từ" → ấn Tab → ra "đoán  từ" (2 spaces). Giờ branch buffer-sạch chèn THẲNG prediction (caret đã ở sau space rồi). Buffer-dở (đang gõ) vẫn commit + chèn prediction sau emit space như cũ.</li>
+          <li><strong>🎯 HUD prediction cách caret N dòng</strong>: Trước HUD chỉ cách 4px, hay che dòng đang gõ. Giờ separation = lineHeight × N (N user-configurable 1-10 dòng, default 4). HUD vẫn auto flip-down nếu không đủ chỗ trên + clamp out-of-bounds.</li>
+          <li><strong>⚙️ Settings UI mới</strong>: Tab Chung → Stepper "Khoảng cách HUD đến caret" hiện ngay dưới mô tả "Đoán từ tiếp theo" (chỉ visible khi prediction ON).</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.8.0 — "Platform Plumbing: Event-Driven &amp; File-Backed N-grams"</title>
       <sparkle:version>18000</sparkle:version>
       <sparkle:shortVersionString>1.8.0</sparkle:shortVersionString>

@@ -14,6 +14,7 @@
 //
 
 import AppKit
+import Defaults
 import SwiftUI
 
 @MainActor
@@ -102,24 +103,30 @@ final class PredictionHUDWindow {
         return fallbackFrame(width: width, height: height)
       }
 
-      // Default: HUD trên caret line. axY = caret.minY là top của caret
-      // trong AX. Cocoa Y của top-of-HUD = mainHeight - axY - 4.
-      // → bottom-of-HUD = mainHeight - axY - 4. NSRect.y là bottom-y.
-      // Vì HUD nằm TRÊN caret: HUD top = AX caret top - margin.
+      // 1.8.1: offset = N dòng văn bản (user-configurable trong Settings).
+      // lineHeight ước lượng từ caret.height (AX parametric trả height của
+      // 1 character ≈ line height). Floor 16px nếu API trả 0/giá trị bất
+      // thường. Default N = 4 dòng.
+      let lineHeight = max(caret.height, 16)
+      let offsetLines = CGFloat(max(1, min(10, Defaults[.predictionHUDLineOffset])))
+      let separation = lineHeight * offsetLines
+
+      // Default: HUD trên caret line, cách `separation` px.
       let axTopY = caret.minY
-      var hudCocoaBottomY = mainHeight - axTopY + 4 - height
-      // → NSRect.y = hudCocoaBottomY (bottom-y of HUD).
-      // Wait — đơn giản hoá: NSRect.y là Cocoa y của bottom edge của HUD.
-      // Muốn HUD top edge ở mainHeight - axTopY + 4 (Cocoa) =>
-      //   bottomY = (mainHeight - axTopY + 4) - height.
+      var hudCocoaBottomY = mainHeight - axTopY + separation - height
 
       // Flip xuống dưới nếu HUD top edge vượt screen.maxY.
       let hudCocoaTopY = hudCocoaBottomY + height
-      if hudCocoaTopY > screen.frame.maxY {
-        // Đặt HUD dưới caret: HUD top = mainHeight - axBottomY - 4.
+      if hudCocoaTopY > screen.frame.maxY - 8 {
         let axBottomY = caret.maxY
-        hudCocoaBottomY = mainHeight - axBottomY - 4 - height
+        hudCocoaBottomY = mainHeight - axBottomY - separation - height
       }
+
+      // Clamp để HUD không out-of-bounds (vd offset lớn + caret cuối screen).
+      hudCocoaBottomY = max(
+        screen.frame.minY + 8,
+        min(hudCocoaBottomY, screen.frame.maxY - height - 8)
+      )
 
       let x = max(
         screen.frame.minX + 8,

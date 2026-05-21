@@ -2,6 +2,39 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.8.1] - 2026-05-21 — "Prediction UX Fix"
+
+3 fix UX cho tính năng Đoán từ tiếp theo (`wordPredictionEnabled`):
+
+### 🚨 Fix bug thừa space khi Tab accept prediction sau Space commit
+
+User gõ "đoán" + Space → vkey commit "đoán " (đã có trailing space) + show HUD "từ" → user ấn Tab → kết quả `"đoán  từ"` (2 spaces). Gốc rễ: branch `wordBuffer.wordState.isBlank == true` trong [InputProcessor.swift:597](vkey/App/InputProcessor.swift:597) chèn `" \(prediction)"` (leading space) — nhưng caret đã ở sau space rồi.
+
+**Fix**: branch buffer-sạch giờ chèn THẲNG prediction, không leading space. Branch buffer-dở (đang gõ chưa commit) giữ nguyên — `applySpellDecisionOnCommit` đã emit space khi commit nên chèn prediction sau đó đúng vị trí.
+
+| Scenario | Trước (1.8.0) | Sau (1.8.1) |
+|---|---|---|
+| Gõ "đoán" + Space + HUD "từ" + Tab | `"đoán  từ"` (2 spaces) | `"đoán từ"` ✓ |
+| Gõ "vi" + Tab (buffer dở) | `"việt"` | `"việt"` ✓ giữ nguyên |
+| Gõ "viet nam vi" + Tab | `"viet nam việt"` | `"viet nam việt"` ✓ giữ nguyên |
+
+### 🎯 HUD prediction cách caret N dòng (configurable)
+
+Trước 1.8.1: HUD chỉ cách caret 4px → quá gần, hay che dòng đang gõ. Giờ HUD cách caret **N dòng văn bản** (default 4, range 1-10) — user chỉnh trong Settings → tab Chung.
+
+Implementation: tính `lineHeight = max(caret.height, 16)` từ `kAXBoundsForRangeParameterizedAttribute`, separation = `lineHeight * N`. Logic flip-down giữ nguyên + thêm clamp out-of-bounds.
+
+### Settings UI mới
+
+Tab Chung → Stepper "Khoảng cách HUD đến caret" hiện ngay dưới mô tả "Đoán từ tiếp theo". Stepper chỉ visible khi toggle word prediction đang ON.
+
+### Files
+
+- [vkey/App/InputProcessor.swift:594-605](vkey/App/InputProcessor.swift:594) — bỏ leading space trong branch buffer-sạch.
+- [vkey/App/Setting.swift:301-304](vkey/App/Setting.swift:301) — Defaults key `predictionHUDLineOffset` (default 4).
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — Stepper UI 1-10.
+- [vkey/Platform/PredictionHUDWindow.swift:105-128](vkey/Platform/PredictionHUDWindow.swift:105) — separation theo `lineHeight * offsetLines` + clamp.
+
 ## [1.8.0] - 2026-05-21 — "Platform Plumbing: Event-Driven + File-Backed N-grams"
 
 4 cải tiến platform-layer: Smart Switch 3-trạng thái hoàn chỉnh trong overlay path, event tap callback nhẹ hơn (gỡ AX call đồng bộ), Personal Dict thông minh hơn (lọc keyboard mashing), bigram/trigram tách ra file-backed store thay vì UserDefaults plist.

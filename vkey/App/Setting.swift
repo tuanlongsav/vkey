@@ -298,6 +298,11 @@ extension Defaults.Keys {
   /// hiển thị HUD nổi gần cursor. Nhấn Tab để chấp nhận.
   static let wordPredictionEnabled = Key<Bool>("word-prediction-enabled", default: false)
 
+  /// 1.8.1: số dòng văn bản cách giữa HUD prediction và caret line.
+  /// Range 1-10. Default 4 (cân bằng giữa nhìn rõ và không che nội dung).
+  /// Trước 1.8.1 HUD chỉ cách caret 4px — quá gần, hay che dòng đang gõ.
+  static let predictionHUDLineOffset = Key<Int>("prediction-hud-line-offset", default: 4)
+
   // MARK: - 1.7.0 — Smart Switch 3-state per-app config
 
   /// Cấu hình Smart Switch per-app (1.7.0+) — thay list smartSwitchApps cũ.
