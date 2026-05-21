@@ -303,6 +303,15 @@ extension Defaults.Keys {
   /// Trước 1.8.1 HUD chỉ cách caret 4px — quá gần, hay che dòng đang gõ.
   static let predictionHUDLineOffset = Key<Int>("prediction-hud-line-offset", default: 4)
 
+  /// 1.9.0: font size cho text trong PredictionHUD. Range 10-20, default 13.
+  /// User feedback HUD đôi khi quá nhỏ/quá to so với font editor của họ.
+  static let predictionHUDFontSize = Key<Int>("prediction-hud-font-size", default: 13)
+
+  /// 1.9.0: opacity cho HUD (cả PredictionHUD và ToggleHUD). Range 50-100
+  /// (representing 0.50-1.00). Default 100 (đậm). User có thể giảm để HUD
+  /// trong suốt hơn, đỡ "tranh" với nội dung editor.
+  static let hudOpacityPercent = Key<Int>("hud-opacity-percent", default: 100)
+
   // MARK: - 1.7.0 — Smart Switch 3-state per-app config
 
   /// Cấu hình Smart Switch per-app (1.7.0+) — thay list smartSwitchApps cũ.
@@ -321,6 +330,13 @@ extension Defaults.Keys {
   /// 1.7.2+: gate auto-learn theo NGÀY thay TUẦN. Format ISO date "YYYY-MM-DD".
   /// Threshold mới: ≥1 ngày dataset, ≥5 commit/ngày, ratio ≥75% → daily check.
   static let lastSmartSwitchAutoLearnDate = Key<String>("last-smart-switch-auto-learn-date", default: "")
+
+  /// 1.9.0: Smart Switch auto-learn telemetry — đếm tổng số suggestions
+  /// đã sinh ra (mỗi lần user mở sheet "Tự học từ Thống kê") và tổng đã
+  /// áp dụng (qua "Áp dụng tất cả"). Hiển thị trong Smart Switch tab để
+  /// user verify auto-learn hoạt động.
+  static let smartSwitchSuggestionsTotal = Key<Int>("smart-switch-suggestions-total", default: 0)
+  static let smartSwitchSuggestionsAccepted = Key<Int>("smart-switch-suggestions-accepted", default: 0)
 
   /// Bigram counts: previous word → next word → count. Học từ history
   /// user gõ (1.6.0+).

@@ -187,6 +187,8 @@ private struct ToggleHUDView: View {
                 )
         )
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
+        // 1.9.0: opacity user-configurable từ Settings.
+        .opacity(Double(max(50, min(100, Defaults[.hudOpacityPercent]))) / 100.0)
     }
 }
 

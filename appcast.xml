@@ -6,6 +6,34 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 1.9.0 — "Deep Audit Patch &amp; UX Upgrades"</title>
+      <sparkle:version>19000</sparkle:version>
+      <sparkle:shortVersionString>1.9.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 21 May 2026 14:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v1.9.0/vkey-1.9.0.dmg"
+        sparkle:edSignature="1oTfNfVxY5pxDA+jvCY89IIcYb92URWmIfbo2WI/o5wwZxbVOCF6IOfjSLv5wLzd2sLfWM4juMnR6gVx8jHADw=="
+        length="7129842"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 1.9.0 — "Deep Audit Patch &amp; UX Upgrades":</h2>
+        <p>Sau khi rà soát toàn diện qua 3 audit agents: 1 bug fix HIGH, gỡ dead code, 4 upgrade nội bộ, 4 feature mới.</p>
+        <ul>
+          <li><strong>🚨 Fix bug HIGH — EnVnReference Trie memory leak</strong>: enPrefixTrie là `let` từ v1.5.0 → swap không xảy ra → cumulative entries qua mỗi lexicon update. Giờ convert `var` + swap đúng cách.</li>
+          <li><strong>🧹 Cleanup</strong>: gỡ `LexiconManager.hasEnglishPrefix` + cache 500KB chưa dùng từ v1.8.3.</li>
+          <li><strong>🔒 Privacy gate cho export</strong>: backup giờ tôn trọng `statisticsEnabled` — tắt stats → backup không chứa stats data.</li>
+          <li><strong>💾 Atomic clearAll + Backup retention</strong>: xóa stats files trước reset memory để tránh inconsistent state. Backup `~/Library/Application Support/vkey/backups/` auto-cleanup > 30 ngày (giữ ≥5 file).</li>
+          <li><strong>📊 Deterministic NGram pruning</strong>: secondary sort by key alphabetical — output stable giữa các flush.</li>
+          <li><strong>🎨 HUD customization</strong>: 2 Stepper mới Tab Chung — Cỡ chữ HUD đoán từ (10-20pt) và Độ đậm HUD (50-100%, áp dụng cả 2 HUD).</li>
+          <li><strong>📈 Smart Switch auto-learn telemetry</strong>: Tab Smart Switch hiển thị "đã gợi ý X lần, áp dụng Y" + nút đặt lại.</li>
+          <li><strong>⚡ AX query timeout 100ms</strong>: tránh AX hang khi target app không responsive (giảm risk macOS disable event tap).</li>
+          <li><strong>🔍 Tra cứu từ điển inline</strong>: Tab Chính tả → gõ 1 từ → hiển thị nó trong lexicon nào (VN/EN/Keep/Personal).</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.8.4 — "Settings Width &amp; Telex Restoration Fix"</title>
       <sparkle:version>18004</sparkle:version>
       <sparkle:shortVersionString>1.8.4</sparkle:shortVersionString>

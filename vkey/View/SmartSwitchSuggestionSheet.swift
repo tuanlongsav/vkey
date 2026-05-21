@@ -175,6 +175,8 @@ struct SmartSwitchAutoLearnSheet: View {
           currentConfig: configs[bundleId]
         )
       }
+    // 1.9.0: telemetry — increment total suggestions counter.
+    Defaults[.smartSwitchSuggestionsTotal] += suggestions.count
   }
 
   private func friendlyName(for bundleId: String) -> String {
@@ -205,6 +207,8 @@ struct SmartSwitchAutoLearnSheet: View {
       statusMessage = "Không có gợi ý nào để áp dụng (tất cả đã do bạn đặt thủ công)."
     } else {
       statusMessage = "Đã áp dụng \(applied) gợi ý. Đóng sheet để xem lại tab Smart Switch."
+      // 1.9.0: telemetry — increment accepted counter.
+      Defaults[.smartSwitchSuggestionsAccepted] += applied
       load()  // reload to refresh current state badges
     }
   }

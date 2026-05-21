@@ -2,6 +2,65 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [1.9.0] - 2026-05-21 — "Deep Audit Patch + UX Upgrades"
+
+Sau khi rà soát toàn diện qua 3 audit agents (Engine/Lexicon, Platform/UI, Stats/Data), v1.9.0 bao gồm: 1 bug fix HIGH, gỡ dead code, 4 upgrade nội bộ, và 4 feature mới.
+
+### 🚨 Fix bug HIGH — EnVnReference Trie memory leak
+
+[EnVnReference.swift:43](vkey/Lexicon/EnVnReference.swift:43) — `enPrefixTrie` là `let` từ v1.5.0 → swap-and-replace không thực sự xảy ra. `rebuildPrefixTrie()` chỉ insert thêm vào trie cũ → cumulative entries qua mỗi `load()` (lexicon update). Memory leak + stale prefix results.
+
+**Fix**: Convert `let` → `var`, swap fresh Trie trong `load()`, xóa method `rebuildPrefixTrie()`. Idempotent, memory cấp phát đúng.
+
+### Cleanup — gỡ dead code
+
+[LexiconManager.swift](vkey/Lexicon/LexiconManager.swift) — `hasEnglishPrefix(_:)` + `enWordPrefixes` cache (~500KB) thêm ở v1.8.3 nhưng chưa hook vào Engine. v1.8.4 đã có solution thay thế (select-and-replace). Gỡ ~30 lines + 500KB memory.
+
+### Upgrades
+
+- **B2: Privacy gate cho export** — [UserDataMigration.swift:328-331](vkey/App/UserDataMigration.swift:328) — `currentExport` giờ tôn trọng `Defaults[.statisticsEnabled]`. Trước v1.9: kể cả khi user tắt stats, backup vẫn chứa data → privacy gap.
+
+- **B3: Atomic clearAll** — [UsageStatistics.swift:638-654](vkey/Stats/UsageStatistics.swift:638) — xóa files TRƯỚC, reset counters SAU; cancel `pendingFlushItem`. Tránh inconsistent state khi crash giữa chừng.
+
+- **B4: Backup retention cleanup** — [UserDataMigration.swift:368-403](vkey/App/UserDataMigration.swift:368) + AppDelegate launch hook — silent cleanup `~/Library/Application Support/vkey/backups/`: giữ ≥5 file gần nhất, xóa file > 30 ngày khi vượt 5. Tránh tích lũy vô hạn.
+
+- **B5: Deterministic NGram pruning** — [NGramStore.swift](vkey/Stats/NGramStore.swift) — secondary sort by key alphabetical khi nhiều keys cùng max count. Output stable giữa các flush, dễ debug + test.
+
+### 🎨 Features mới
+
+- **C2: HUD customization** — Tab Chung → 2 Stepper mới:
+  - "Cỡ chữ HUD đoán từ" (10-20pt, default 13)
+  - "Độ đậm HUD" (50-100%, default 100%, áp dụng cả ToggleHUD và PredictionHUD)
+  - User có thể giảm độ đậm để HUD trong suốt hơn, đỡ "tranh" với editor.
+
+- **C4: Smart Switch auto-learn telemetry** — Tab Smart Switch hiển thị thêm 1 dòng: "Auto-learn: đã gợi ý X lần, áp dụng Y" + nút "Đặt lại số liệu". 2 Defaults counters mới (`smartSwitchSuggestionsTotal`, `smartSwitchSuggestionsAccepted`) increment trong SuggestionSheet.load() + applyAll().
+
+- **C6: AX query timeout** — [Focused.setupAXTimeout(0.1)](vkey/Platform/Focused.swift:11) gọi ở AppDelegate launch. Áp dụng `AXUIElementSetMessagingTimeout` cho system-wide element → cover tất cả AX query. Tránh AX hang khi target app không responsive (giảm risk macOS disable event tap). Default macOS 6000ms → giờ 100ms.
+
+- **C11: Tra cứu từ điển inline** — Tab Chính tả thêm Section "Tra cứu từ điển". User gõ 1 từ → realtime hiển thị từ đó thuộc lexicon nào: VN/EN/Embedded/Keep/Personal Allow/Keep/Deny. Useful để verify dictionary + train Personal Dict.
+
+### Files
+
+- [vkey/Lexicon/EnVnReference.swift](vkey/Lexicon/EnVnReference.swift) — bug fix Trie.
+- [vkey/Lexicon/LexiconManager.swift](vkey/Lexicon/LexiconManager.swift) — gỡ dead code.
+- [vkey/App/UserDataMigration.swift](vkey/App/UserDataMigration.swift) — privacy gate + backup retention.
+- [vkey/Stats/UsageStatistics.swift](vkey/Stats/UsageStatistics.swift) — atomic clearAll.
+- [vkey/Stats/NGramStore.swift](vkey/Stats/NGramStore.swift) — deterministic prune.
+- [vkey/App/Setting.swift](vkey/App/Setting.swift) — 4 Defaults keys mới (HUD font/opacity + SS counters).
+- [vkey/View/SettingView.swift](vkey/View/SettingView.swift) — Stepper HUD + section tra cứu.
+- [vkey/View/SmartSwitchView.swift](vkey/View/SmartSwitchView.swift) — telemetry row.
+- [vkey/View/SmartSwitchSuggestionSheet.swift](vkey/View/SmartSwitchSuggestionSheet.swift) — telemetry increments.
+- [vkey/Platform/PredictionHUDWindow.swift](vkey/Platform/PredictionHUDWindow.swift) — apply HUD settings.
+- [vkey/Platform/ToggleHUDWindow.swift](vkey/Platform/ToggleHUDWindow.swift) — apply HUD opacity.
+- [vkey/Platform/Focused.swift](vkey/Platform/Focused.swift) — setupAXTimeout.
+- [vkey/App/AppDelegate.swift](vkey/App/AppDelegate.swift) — backup cleanup + setupAXTimeout calls.
+
+### Verify
+
+- 194/194 tests pass.
+- Build clean.
+- Backward-compat: import file backup v1.7.x-1.8.x cũ vẫn hoạt động (Defaults keys mới có default values).
+
 ## [1.8.4] - 2026-05-21 — "Settings Width + Telex Restoration Fix"
 
 4 fix UX phát hiện qua dùng thực tế v1.8.3.

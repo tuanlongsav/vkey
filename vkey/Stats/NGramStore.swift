@@ -223,8 +223,15 @@ final class NGramStore {
       biTotalChanged = true
     }
     if bigrams.count > maxBigramKeys {
-      let keepers = bigrams.sorted { ($0.value.values.max() ?? 0) > ($1.value.values.max() ?? 0) }
-        .prefix(maxBigramKeys)
+      // 1.9.0: secondary sort by key alphabetical để output deterministic
+      // khi nhiều keys có cùng max count. Trước v1.9 order undefined → flush
+      // khác nhau mỗi lần → khó debug + test.
+      let keepers = bigrams.sorted { a, b in
+        let ma = a.value.values.max() ?? 0
+        let mb = b.value.values.max() ?? 0
+        if ma != mb { return ma > mb }
+        return a.key < b.key
+      }.prefix(maxBigramKeys)
       bigrams = Dictionary(uniqueKeysWithValues: keepers.map { ($0.key, $0.value) })
       biTotalChanged = true
     }
@@ -236,8 +243,12 @@ final class NGramStore {
       triTotalChanged = true
     }
     if trigrams.count > maxTrigramKeys {
-      let keepers = trigrams.sorted { ($0.value.values.max() ?? 0) > ($1.value.values.max() ?? 0) }
-        .prefix(maxTrigramKeys)
+      let keepers = trigrams.sorted { a, b in
+        let ma = a.value.values.max() ?? 0
+        let mb = b.value.values.max() ?? 0
+        if ma != mb { return ma > mb }
+        return a.key < b.key
+      }.prefix(maxTrigramKeys)
       trigrams = Dictionary(uniqueKeysWithValues: keepers.map { ($0.key, $0.value) })
       triTotalChanged = true
     }

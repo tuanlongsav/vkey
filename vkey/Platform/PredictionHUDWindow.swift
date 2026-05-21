@@ -233,10 +233,15 @@ final class PredictionHUDWindow {
 
 struct PredictionHUDView: View {
   let text: String
+  // 1.9.0: customizable font size + opacity từ Defaults.
+  @Default(.predictionHUDFontSize) private var fontSize
+  @Default(.hudOpacityPercent) private var opacityPercent
 
   var body: some View {
+    let clampedFont = max(10, min(20, fontSize))
+    let opacity = Double(max(50, min(100, opacityPercent))) / 100.0
     Text(text)
-      .font(.system(size: 13, weight: .medium, design: .rounded))
+      .font(.system(size: CGFloat(clampedFont), weight: .medium, design: .rounded))
       .foregroundStyle(.primary)
       .padding(.horizontal, 14)
       .padding(.vertical, 8)
@@ -247,5 +252,6 @@ struct PredictionHUDView: View {
           .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
       )
       .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+      .opacity(opacity)
   }
 }

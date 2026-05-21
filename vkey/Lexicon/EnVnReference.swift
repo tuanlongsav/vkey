@@ -40,7 +40,10 @@ final class EnVnReference {
   /// "starts-with" check (e.g. to suppress Vietnamese diacritic application
   /// while the user is typing what looks like a translatable English word).
   /// Case-insensitive because the input we feed in may be mixed case.
-  private let enPrefixTrie = Trie(caseInsensitive: true)
+  /// 1.9.0: `var` để swap fresh instance trong `load()` — trước v1.9.0 là
+  /// `let` nên `rebuildPrefixTrie()` chỉ insert thêm vào trie cũ → cumulative
+  /// entries + memory leak qua mỗi lexicon update.
+  private var enPrefixTrie = Trie(caseInsensitive: true)
 
   /// Singleton instance shared with `LexiconManager`.
   static let shared = EnVnReference()
@@ -59,19 +62,14 @@ final class EnVnReference {
       guard !key.isEmpty else { return }
       acc[key] = pair.value
     }
-    // Rebuild the prefix trie. The Trie has no batch-clear API yet, so we
-    // construct a new one and swap. Bound to ~5k entries in practice
-    // (frequency-capped during data build) — rebuild is sub-millisecond.
+    // 1.9.0: build fresh Trie và swap. Trước v1.9.0 enPrefixTrie là `let`
+    // và rebuildPrefixTrie() chỉ insert thêm → cumulative + stale results
+    // qua mỗi lexicon load. Giờ swap thật sự.
     let fresh = Trie(caseInsensitive: true)
     for english in enToVn.keys {
       fresh.insert(english)
     }
-    // Swap. We assign a fresh Trie to the let-ivar via `withUnsafePointer`
-    // dance, but `enPrefixTrie` is `let` so we can't reassign. Instead,
-    // expose a `prefixContains` API that consults a struct we *can*
-    // replace. Keeping the trie as a property of the class would require
-    // breaking the `let` — so for now we just clear the dict and reuse.
-    rebuildPrefixTrie()
+    enPrefixTrie = fresh
   }
 
   /// English word → Vietnamese candidates, or nil if not present.
@@ -98,13 +96,4 @@ final class EnVnReference {
     (enToVn.count, vnToEn.count)
   }
 
-  // MARK: - Internal
-
-  /// `Trie` doesn't expose a "clear" yet — we just reinsert. The prior set
-  /// of keys lives in the GC-able old map until the next reload completes.
-  private func rebuildPrefixTrie() {
-    for english in enToVn.keys {
-      enPrefixTrie.insert(english)
-    }
-  }
 }

@@ -9,6 +9,9 @@ import AppKit
 struct SmartSwitchView: View {
     @Default(.appSmartSwitchConfigs) private var configs
     @Default(.smartSwitchEnabled) private var smartSwitchEnabled
+    // 1.9.0: telemetry counters cho Smart Switch auto-learn.
+    @Default(.smartSwitchSuggestionsTotal) private var ssSuggestionsTotal
+    @Default(.smartSwitchSuggestionsAccepted) private var ssSuggestionsAccepted
 
     @State private var newBundleId: String = ""
     @State private var showingAutoLearnSheet = false
@@ -89,6 +92,27 @@ struct SmartSwitchView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
+
+                    // 1.9.0: telemetry row — hiển thị số liệu auto-learn tích lũy.
+                    if ssSuggestionsTotal > 0 {
+                        HStack(spacing: 6) {
+                            ThemedSymbol(name: "chart.bar.fill")
+                                .foregroundStyle(.tertiary)
+                            Text("Auto-learn: đã gợi ý \(ssSuggestionsTotal) lần, áp dụng \(ssSuggestionsAccepted)")
+                                .monospacedDigit()
+                            Spacer()
+                            Button("Đặt lại số liệu") {
+                                ssSuggestionsTotal = 0
+                                ssSuggestionsAccepted = 0
+                            }
+                            .controlSize(.small)
+                            .buttonStyle(.link)
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 6)
+                    }
 
                     Divider()
 

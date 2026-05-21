@@ -174,6 +174,9 @@ struct GeneralView: View {
     @Default(.newStyleTonePlacement) private var newStyleTonePlacement
     @Default(.autoTypoCorrection) private var autoTypoCorrection
     @Default(.hudEnabled) private var hudEnabled
+    // 1.9.0: HUD customization
+    @Default(.predictionHUDFontSize) private var predictionHUDFontSize
+    @Default(.hudOpacityPercent) private var hudOpacityPercent
 
     let appVersion = Bundle.main.appVersionLong
 
@@ -252,12 +255,37 @@ struct GeneralView: View {
                     Label("Phím tắt", themedSymbol: "command")
                 }
 
+                // 1.9.0: HUD customization — fontSize + opacity. Áp dụng cho
+                // cả ToggleHUD (báo Vi/En) và PredictionHUD (đoán từ).
+                Stepper(value: $predictionHUDFontSize, in: 10...20) {
+                    HStack {
+                        Label("Cỡ chữ HUD đoán từ", themedSymbol: "textformat.size")
+                        Spacer()
+                        Text("\(predictionHUDFontSize) pt")
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
+                }
+                Stepper(value: $hudOpacityPercent, in: 50...100, step: 5) {
+                    HStack {
+                        Label("Độ đậm HUD", themedSymbol: "circle.lefthalf.filled")
+                        Spacer()
+                        Text("\(hudOpacityPercent)%")
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
+                }
+                Text("Áp dụng cho cả HUD báo Vi/En và HUD đoán từ. Giảm độ đậm để HUD trong suốt hơn, đỡ \"tranh\" với nội dung editor.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, -8)
+
             }
             .formStyle(.grouped)
             .scrollDisabled(false)
 
             // 1.8.3: tiếng Việt, không nghiêng. Date hardcode mỗi release.
-            // 1.8.4: cập nhật ngày phát hành.
+            // 1.9.0: cập nhật ngày phát hành.
             Text("Phiên bản \(appVersion) ngày 21/5/2026")
                 .font(.caption)
                 .multilineTextAlignment(.center)
@@ -311,6 +339,40 @@ struct SpellCheckView: View {
     // 1.7.10: expose số từ Anh trong bộ nhớ + version.
     @State private var lexiconEnVersion: Int = 0
     @State private var lexiconEnEntries: Int = 0
+
+    // 1.9.0: state cho section "Tra cứu từ điển".
+    @State private var lexiconSearchQuery: String = ""
+
+    /// 1.9.0: tra cứu 1 từ trong toàn bộ lexicon — VN/EN/Keep + user lists.
+    /// Hiển thị markdown để bullet rõ ràng.
+    private var lexiconSearchResult: String {
+        let q = lexiconSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return "" }
+        let normalized = q.normalizedDictionaryToken
+        var lines: [String] = []
+        if LexiconManager.shared.isVietnameseWord(q) {
+            lines.append("✓ Từ điển Tiếng Việt chung")
+        }
+        if LexiconManager.shared.isEnglishWord(q) {
+            lines.append("✓ Từ điển Tiếng Anh chung")
+        }
+        if LexiconManager.shared.isInstantRestoreEnglish(q) {
+            lines.append("✓ Embedded English (instant-restore)")
+        }
+        if LexiconManager.shared.shouldKeepVietnamese(q) {
+            lines.append("✓ Danh sách Keep (giữ tiếng Việt)")
+        }
+        let userAllow = Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken })
+        if userAllow.contains(normalized) { lines.append("✓ Personal Dict — Allow (của bạn)") }
+        let userKeep = Set(Defaults[.userKeepWords].map { $0.normalizedDictionaryToken })
+        if userKeep.contains(normalized) { lines.append("✓ Personal Dict — Keep (của bạn)") }
+        let userDeny = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
+        if userDeny.contains(normalized) { lines.append("✓ Personal Dict — Deny (của bạn)") }
+        if lines.isEmpty {
+            return "✗ Không tìm thấy \"\(q)\" trong bất kỳ từ điển nào."
+        }
+        return lines.joined(separator: "\n")
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -536,6 +598,27 @@ struct SpellCheckView: View {
                             .padding(.top, 4)
                     } header: {
                         Text("Từ điển từ GitHub")
+                    }
+
+                    // 1.9.0: Section tra cứu từ điển — gõ 1 từ, hiển thị nó
+                    // thuộc lexicon nào (VN / EN / Keep / userAllow / userKeep
+                    // / userDeny / không có). Help user verify dictionary +
+                    // train Personal Dict effectively.
+                    Section {
+                        HStack {
+                            ThemedSymbol(name: "magnifyingglass")
+                                .foregroundStyle(.secondary)
+                            TextField("Gõ 1 từ để tra cứu", text: $lexiconSearchQuery)
+                                .textFieldStyle(.plain)
+                        }
+                        if !lexiconSearchQuery.isEmpty {
+                            Text(lexiconSearchResult)
+                                .font(.callout)
+                                .foregroundStyle(.primary)
+                                .padding(.top, 4)
+                        }
+                    } header: {
+                        Text("Tra cứu từ điển")
                     }
 
                     // v1.7.0: Section "Học hành vi từ Thống kê" đã được merge

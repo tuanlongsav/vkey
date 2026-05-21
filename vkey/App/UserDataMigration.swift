@@ -325,7 +325,11 @@ enum UserDataMigration {
       statisticsEnabled: Defaults[.statisticsEnabled],
       autoBackupOnUpgrade: Defaults[.autoBackupOnUpgrade],
 
-      statistics: includeStatistics ? UsageStatistics.shared.allWeekBucketsForExport() : nil
+      // 1.9.0: tôn trọng `statisticsEnabled` — không export stats data nếu
+      // user đã tắt. Trước v1.9 export anyway → user gặp privacy gap khi
+      // chia sẻ backup file (stats vẫn còn dù user nghĩ đã tắt).
+      statistics: (includeStatistics && Defaults[.statisticsEnabled])
+        ? UsageStatistics.shared.allWeekBucketsForExport() : nil
     )
   }
 
@@ -360,6 +364,44 @@ enum UserDataMigration {
     let stamp = formatter.string(from: Date())
     let name = "vkey-backup-\(Bundle.main.appVersionLong)-\(stamp).json"
     return dir.appendingPathComponent(name)
+  }
+
+  /// 1.9.0: dọn dẹp backup cũ. Giữ ≥5 file gần nhất; xóa file > 30 ngày
+  /// nếu vượt 5 file giữ. Gọi từ AppDelegate.applicationDidFinishLaunching
+  /// (silent, không cản trở user). Tránh ~/Library/Application Support/vkey/
+  /// backups/ tích lũy vô hạn theo thời gian.
+  @discardableResult
+  static func cleanupOldBackups() -> Int {
+    let appSupport = FileManager.default.urls(
+      for: .applicationSupportDirectory, in: .userDomainMask
+    ).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
+    let dir = appSupport.appendingPathComponent("vkey/backups", isDirectory: true)
+
+    guard let urls = try? FileManager.default.contentsOfDirectory(
+      at: dir,
+      includingPropertiesForKeys: [.contentModificationDateKey],
+      options: [.skipsHiddenFiles]
+    ).filter({ $0.pathExtension == "json" }) else { return 0 }
+
+    // Sắp xếp theo mod date desc (mới nhất trước).
+    let sorted = urls.sorted { a, b in
+      let da = (try? a.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+      let db = (try? b.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+      return da > db
+    }
+
+    // Giữ 5 file đầu (mới nhất). Trong số còn lại, xóa nếu > 30 ngày.
+    let keepMinCount = 5
+    let cutoff = Date().addingTimeInterval(-30 * 24 * 3600)
+    var deleted = 0
+    for (index, url) in sorted.enumerated() where index >= keepMinCount {
+      let modDate = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+      if modDate < cutoff {
+        try? FileManager.default.removeItem(at: url)
+        deleted += 1
+      }
+    }
+    return deleted
   }
 
   // MARK: Import

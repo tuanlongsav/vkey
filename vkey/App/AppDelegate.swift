@@ -2,6 +2,7 @@ import Cocoa
 import Combine
 import Defaults
 import Foundation
+import os.log
 import SwiftUI
 import UserNotifications
 
@@ -49,6 +50,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // chạy migration từ Defaults[.userBigrams]/[.userTrigrams] sang file
     // store ngay khi launch — tránh delay tới lần commit từ đầu tiên.
     _ = NGramStore.shared
+
+    // 1.9.0: set AX messaging timeout 100ms (default macOS 6000ms). Tránh
+    // AX query block quá lâu khi target app không responsive — giảm risk
+    // macOS disable event tap do callback chậm.
+    Focused.setupAXTimeout(0.1)
+
+    // 1.9.0: backup retention cleanup — chạy silent ở background, giữ ≥5
+    // file gần nhất + xóa > 30 ngày khi vượt 5 file. Tránh ~/Library/
+    // Application Support/vkey/backups/ tích lũy vô hạn.
+    DispatchQueue.global(qos: .background).async {
+      let deleted = UserDataMigration.cleanupOldBackups()
+      if deleted > 0 {
+        os_log("AppDelegate: cleaned %{public}d old backup files", log: .default, type: .info, deleted)
+      }
+    }
 
     // 1.7.0: chạy auto-learn Smart Switch nếu chưa chạy tuần này.
     runSmartSwitchAutoLearnIfDue()

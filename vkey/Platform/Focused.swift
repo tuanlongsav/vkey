@@ -8,6 +8,15 @@ import ApplicationServices
 import Foundation
 
 public struct Focused {
+  /// 1.9.0: timeout cho AX queries (giây). Gọi 1 lần lúc app launch để
+  /// áp dụng global. Tránh AX call block quá lâu khi target app không
+  /// responsive (vd app hang) → giảm risk macOS disable event tap.
+  /// Áp dụng cho system-wide element nên cover tất cả AX query subsequent.
+  public static func setupAXTimeout(_ timeoutSeconds: Float = 0.1) {
+    let systemWide = AXUIElementCreateSystemWide()
+    AXUIElementSetMessagingTimeout(systemWide, timeoutSeconds)
+  }
+
   public static func focusedAppBundleId() -> String? {
     guard let focusedElement = Focused.element() else { return nil }
     var pid: pid_t = 0

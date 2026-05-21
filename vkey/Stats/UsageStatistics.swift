@@ -635,15 +635,24 @@ final class UsageStatistics {
   }
 
   /// Clear *all* stats (current week + history). Triggered from Settings.
+  /// 1.9.0: xóa files TRƯỚC, reset counters SAU. Nếu crash giữa chừng,
+  /// counters in-memory vẫn match disk state (cả 2 đều có data cũ hoặc đã
+  /// xóa). Trước v1.9 reset counters trước → crash mid-loop → memory empty
+  /// nhưng disk còn files → inconsistent next launch.
+  /// Pending flush task cancel để tránh ghi lại current.json sau clear.
   func clearAll() {
     queue.sync {
-      counters = WeekBucket(weekId: counters.weekId, weekEnd: counters.weekEnd)
+      pendingFlushItem?.cancel()
+      pendingFlushItem = nil
       let urls = (try? FileManager.default.contentsOfDirectory(
         at: storageDir, includingPropertiesForKeys: nil
       )) ?? []
       for url in urls {
         try? FileManager.default.removeItem(at: url)
       }
+      counters = WeekBucket(weekId: counters.weekId, weekEnd: counters.weekEnd)
+      recentVnQueue.removeAll()
+      recentEnQueue.removeAll()
     }
   }
 
