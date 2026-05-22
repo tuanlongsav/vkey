@@ -354,46 +354,95 @@ struct PredictionHUDView: View {
   var body: some View {
     Group {
       switch uiTheme {
-      case .tonal:   tonalBody
-      case .sonMai:  sonMaiBody
-      case .classic: classicBody
+      case .tonal:        tonalBody
+      case .liquidGlass:  liquidGlassBody
+      case .classic:      classicBody
       }
     }
     .frame(width: contentSize.width, height: contentSize.height)
   }
 
-  // MARK: - Sơn Mài (v2.2.1)
+  // MARK: - Liquid Glass (v2.2.2)
 
-  private var sonMaiBody: some View {
-    HStack(spacing: 6) {
+  private var liquidGlassBody: some View {
+    let radius: CGFloat = 14
+
+    return HStack(spacing: 6) {
       Text("→")
-        .font(.system(size: CGFloat(fontSize), weight: .bold, design: .serif))
-        .foregroundStyle(VKeyDesign.sonMaiGold300)
+        .font(.system(size: CGFloat(fontSize), weight: .heavy, design: .rounded))
+        .foregroundStyle(LinearGradient(
+          colors: [Color.white, VKeyDesign.red300],
+          startPoint: .top, endPoint: .bottom
+        ))
+        .shadow(color: VKeyDesign.red500.opacity(0.35), radius: 3, x: 0, y: 1)
       Text(prediction)
-        .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .serif))
-        .foregroundStyle(VKeyDesign.sonMaiPaper50)
+        .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .monospaced))
+        .foregroundStyle(Color(hex: 0xF2EFE8))
+        .shadow(color: .black.opacity(0.30), radius: 0.5, x: 0, y: 0.5)
       Text("⇥ Tab")
         .font(.system(size: CGFloat(fontSize) * 0.78, weight: .medium, design: .monospaced))
-        .foregroundStyle(VKeyDesign.sonMaiPaper50.opacity(0.62))
+        .foregroundStyle(Color.white.opacity(0.55))
         .padding(.leading, 4)
     }
-    .shadow(color: .black.opacity(0.24), radius: 0.5, x: 0, y: 0.5)
-    .padding(.horizontal, 13)
-    .padding(.vertical, 8)
+    .padding(.horizontal, 14)
+    .padding(.vertical, 9)
     .background(
-      VKeyDesign.sonMaiInk500.opacity(sonMaiScrimOpacity),
-      in: RoundedRectangle(cornerRadius: 8)
+      // Refractive bottom-left red tint + top-right blue tint
+      ZStack {
+        RadialGradient(
+          colors: [VKeyDesign.red500.opacity(0.16), .clear],
+          center: .bottomLeading, startRadius: 0, endRadius: 80
+        )
+        RadialGradient(
+          colors: [VKeyDesign.lgBlueTint.opacity(0.08), .clear],
+          center: .topTrailing, startRadius: 0, endRadius: 80
+        )
+      }
+      .blendMode(.softLight)
+      .clipShape(RoundedRectangle(cornerRadius: radius))
     )
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+    .background(
+      ZStack {
+        LinearGradient(
+          colors: [
+            Color.white.opacity(0.16),
+            Color.white.opacity(0.02),
+            Color.black.opacity(0.14),
+          ],
+          startPoint: .top, endPoint: .bottom
+        )
+        RadialGradient(
+          colors: [Color.white.opacity(0.22), .clear],
+          center: .top, startRadius: 0, endRadius: 100
+        )
+      }
+      .clipShape(RoundedRectangle(cornerRadius: radius))
+    )
+    .background(
+      VKeyDesign.lgGlass1Color.opacity(liquidGlassScrimOpacity),
+      in: RoundedRectangle(cornerRadius: radius)
+    )
+    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius))
     .overlay(
-      RoundedRectangle(cornerRadius: 8)
-        .strokeBorder(VKeyDesign.sonMaiGold500.opacity(0.22), lineWidth: 0.8)
+      RoundedRectangle(cornerRadius: radius)
+        .strokeBorder(
+          LinearGradient(
+            colors: [
+              Color.white.opacity(0.50),
+              Color.white.opacity(0.14),
+              Color.white.opacity(0.04),
+            ],
+            startPoint: .top, endPoint: .bottom
+          ),
+          lineWidth: 1
+        )
     )
-    .shadow(color: .black.opacity(0.36), radius: 10, x: 0, y: 4)
+    .shadow(color: .black.opacity(0.42), radius: 14, x: 0, y: 6)
+    .shadow(color: .black.opacity(0.28), radius: 4, x: 0, y: 2)
   }
 
-  private var sonMaiScrimOpacity: Double {
-    0.36 + 0.32 * backgroundStrength
+  private var liquidGlassScrimOpacity: Double {
+    0.30 + 0.32 * backgroundStrength
   }
 
   // MARK: - Classic (v2.0.2 look)

@@ -29,31 +29,21 @@ enum VKeyDesign {
     /// Convenience alias for `red500`.
     static var brand: Color { red500 }
 
-    // -- Sơn Mài palette (v2.2.1): sơn son thếp vàng — Vietnamese lacquer ---
-    /// Sơn Mài lacquer red (`#B5302A`) — sâu hơn Tonal, anchor accent.
-    static let sonMaiRed500   = Color(hex: 0xB5302A)
-    /// Sơn Mài lacquer red light (`#DD7867`) — for VI badge on dark scrim.
-    static let sonMaiRed300   = Color(hex: 0xDD7867)
-    /// Sơn Mài lacquer red dark (`#7E1C16`).
-    static let sonMaiRed700   = Color(hex: 0x7E1C16)
-    /// Sơn Mài gold leaf (`#A07C32`) — thếp vàng, used sparingly.
-    static let sonMaiGold500  = Color(hex: 0xA07C32)
-    /// Sơn Mài gold leaf light (`#E0BC5E`) — for highlights, badges.
-    static let sonMaiGold300  = Color(hex: 0xE0BC5E)
-    /// Sơn Mài eggshell paper canvas (`#F4EFE3`).
-    static let sonMaiPaper100 = Color(hex: 0xF4EFE3)
-    /// Sơn Mài eggshell paper light (`#FAF6EC`).
-    static let sonMaiPaper50  = Color(hex: 0xFAF6EC)
-    /// Sơn Mài paper border tone (`#EAE3D2`).
-    static let sonMaiPaper200 = Color(hex: 0xEAE3D2)
-    /// Sơn Mài warm ink (`#131110`) — lacquer base.
-    static let sonMaiInk500   = Color(hex: 0x131110)
-    /// Sơn Mài warm ink slightly lighter (`#1A1612`).
-    static let sonMaiInk400   = Color(hex: 0x1A1612)
-    /// Sơn Mài jade (`#0E7A5F`) — for success states.
-    static let sonMaiJade500  = Color(hex: 0x0E7A5F)
-    /// Sơn Mài indigo (`#1F4F7A`) — for info states.
-    static let sonMaiIndigo500 = Color(hex: 0x1F4F7A)
+    // -- Liquid Glass palette (v2.2.2): refractive glass, macOS Tahoe vibe --
+    /// Liquid Glass primary panel scrim (`rgba(28,30,38,0.55)`).
+    /// Mỗi giá trị 0...1 trên kênh = round(value * 255). Hex sRGB =
+    /// `0x1C1E26` (28, 30, 38) — opacity adjustable.
+    static let lgGlass1Color = Color(hex: 0x1C1E26)
+    /// Liquid Glass elevated row (`rgba(38,40,50,0.55)`).
+    static let lgGlass2Color = Color(hex: 0x262832)
+    /// Liquid Glass sunken (`rgba(14,15,20,0.55)`).
+    static let lgSunkenColor = Color(hex: 0x0E0F14)
+    /// Edge-top spec highlight color (white) — used at opacity 0.40-0.55.
+    static let lgEdgeTop     = Color.white
+    /// Refractive corner tint accent (vkey blue) for soft-light glow.
+    static let lgBlueTint    = Color(hex: 0x2D89E5)
+    /// Liquid Glass amber (used for ⇥ Tab chip warmer alternate).
+    static let lgAmber       = Color(hex: 0xF0A23C)
 
     // -- Saigon gold (sparingly: VN flag star, "new" badges, highlights) ----
     static let gold300 = Color(hex: 0xFAD37A)
@@ -147,23 +137,23 @@ extension UITheme {
     /// → user's system accent, blue on a fresh macOS install).
     var accentColor: Color {
         switch self {
-        case .classic: return .accentColor
-        case .tonal:   return VKeyDesign.red500
-        case .sonMai:  return VKeyDesign.sonMaiRed500
+        case .classic:     return .accentColor
+        case .tonal:       return VKeyDesign.red500
+        case .liquidGlass: return VKeyDesign.red500  // share brand red
         }
     }
 
     /// Imageset name used for the Settings header icon. Classic shows the
-    /// v2.0.2 cup-of-coffee mark; Tonal/Sơn Mài show the new vkey app icon.
+    /// v2.0.2 cup-of-coffee mark; Tonal/Liquid Glass show the new vkey app icon.
     var headerImageName: String {
         switch self {
-        case .classic:           return "CficonClassic"
-        case .tonal, .sonMai:    return "Cficon"
+        case .classic:                  return "CficonClassic"
+        case .tonal, .liquidGlass:      return "Cficon"
         }
     }
 
     /// Whether the Settings header shows the "vkey" wordmark + tagline.
-    /// Classic uses the bare icon centred like 2.0.2; Tonal/Sơn Mài show wordmark.
+    /// Classic uses the bare icon centred like 2.0.2; Tonal/Liquid Glass show wordmark.
     var showsHeroWordmark: Bool {
         self != .classic
     }

@@ -1,0 +1,365 @@
+/* ============================================================
+   vkey 3D — "Liquid Glass" theme
+   Refractive, glossy, semi-transparent material inspired by
+   macOS Tahoe / visionOS. Anchored by vkey red #E04434.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+:root {
+  /* Brand */
+  --vk-red-50:  #FEF1EE;
+  --vk-red-100: #FCDED7;
+  --vk-red-200: #F8B6A6;
+  --vk-red-300: #F18A74;
+  --vk-red-400: #EB6249;
+  --vk-red-500: #E04434;
+  --vk-red-600: #C8341F;
+  --vk-red-700: #A52817;
+
+  --vk-gold-400: #F5C645;
+  --vk-blue:     #2D89E5;
+  --vk-green:    #2BB673;
+  --vk-amber:    #F0A23C;
+
+  /* Glass surfaces (dark) */
+  --glass-1: rgba(28, 30, 38, 0.55);   /* primary panel */
+  --glass-2: rgba(38, 40, 50, 0.55);   /* elevated row */
+  --glass-3: rgba(58, 60, 70, 0.45);   /* hover */
+  --glass-press: rgba(22, 24, 32, 0.65);
+  --glass-sunken: rgba(14, 15, 20, 0.55);
+
+  /* Edge & specular highlights */
+  --edge-top:    rgba(255,255,255,0.55);
+  --edge-bottom: rgba(255,255,255,0.06);
+  --edge-rim:    rgba(255,255,255,0.18);
+  --inner-shadow: inset 0 1px 0 var(--edge-top), inset 0 -1px 0 var(--edge-bottom), inset 0 0 0 1px var(--edge-rim);
+
+  /* Text */
+  --fg-1: #F2EFE8;
+  --fg-2: #C7C3B7;
+  --fg-3: #9B978B;
+  --fg-muted: rgba(255,255,255,0.42);
+  --fg-accent: var(--vk-red-300);
+
+  /* Radii */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-2xl: 36px;
+  --r-pill: 999px;
+
+  /* Spacing */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+
+  /* Shadow language */
+  --sh-float-sm: 0 6px 14px rgba(0,0,0,0.32), 0 1px 2px rgba(0,0,0,0.4);
+  --sh-float-md: 0 14px 30px rgba(0,0,0,0.45), 0 4px 8px rgba(0,0,0,0.32);
+  --sh-float-lg: 0 30px 80px rgba(0,0,0,0.55), 0 10px 22px rgba(0,0,0,0.38);
+  --sh-window:   0 40px 120px rgba(0,0,0,0.65), 0 16px 40px rgba(0,0,0,0.45), 0 0 0 0.5px rgba(255,255,255,0.10);
+  --sh-glass-inner: inset 0 1px 0 rgba(255,255,255,0.40), inset 0 -1px 0 rgba(255,255,255,0.05), inset 0 0 0 1px rgba(255,255,255,0.12);
+
+  /* Type */
+  --font-sans: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  --font-display: "Noto Sans Display", "Be Vietnam Pro", system-ui, sans-serif;
+}
+
+@font-face {
+  font-family: "Noto Sans Display";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 62.5% 100%;
+  font-display: swap;
+  src: url("../fonts/NotoSansDisplay-Variable.ttf") format("truetype-variations");
+}
+
+/* Light-mode glass (optional, via [data-theme="light"]) */
+[data-theme="light"] {
+  --glass-1: rgba(255, 255, 255, 0.62);
+  --glass-2: rgba(255, 255, 255, 0.74);
+  --glass-3: rgba(255, 255, 255, 0.45);
+  --glass-press: rgba(255, 255, 255, 0.85);
+  --glass-sunken: rgba(245, 244, 240, 0.55);
+  --edge-top: rgba(255,255,255,0.95);
+  --edge-bottom: rgba(0,0,0,0.04);
+  --edge-rim: rgba(255,255,255,0.65);
+  --fg-1: #14161D;
+  --fg-2: #3C3F49;
+  --fg-3: #6A6D78;
+  --fg-muted: rgba(20,22,30,0.50);
+  --fg-accent: var(--vk-red-600);
+  --sh-glass-inner: inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(0,0,0,0.04), inset 0 0 0 1px rgba(255,255,255,0.6);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   Liquid Glass primitives
+   ============================================================ */
+
+.lg {
+  /* base liquid-glass surface */
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02) 40%, rgba(0,0,0,0.10)),
+    var(--glass-1);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  box-shadow: var(--sh-glass-inner);
+  border-radius: var(--r-md);
+  color: var(--fg-1);
+}
+
+.lg-elev {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.02) 60%),
+    var(--glass-2);
+  backdrop-filter: blur(50px) saturate(200%);
+  -webkit-backdrop-filter: blur(50px) saturate(200%);
+  box-shadow: var(--sh-glass-inner), var(--sh-float-md);
+  border-radius: var(--r-lg);
+}
+
+.lg-window {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0) 35%, rgba(0,0,0,0.18)),
+    var(--glass-1);
+  backdrop-filter: blur(60px) saturate(180%);
+  -webkit-backdrop-filter: blur(60px) saturate(180%);
+  border-radius: 22px;
+  box-shadow: var(--sh-window);
+  overflow: hidden;
+  position: relative;
+}
+
+/* edge-light: top arc highlight you see on macOS Tahoe glass */
+.lg-window::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(255,255,255,0.20), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,0.10), transparent 30%);
+  mix-blend-mode: screen;
+  opacity: 0.9;
+  z-index: 1;
+}
+.lg-window > * { position: relative; z-index: 2; }
+
+/* refractive bottom-left tint that gives glass its color */
+.lg-window::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(80% 80% at 0% 100%, color-mix(in srgb, var(--vk-red-500) 18%, transparent), transparent 60%),
+    radial-gradient(80% 80% at 100% 0%, color-mix(in srgb, var(--vk-blue) 10%, transparent), transparent 65%);
+  mix-blend-mode: soft-light;
+  z-index: 0;
+}
+
+/* Inputs / rows */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.row:last-child { border-bottom: 0; }
+.row .label {
+  flex: 1;
+  font: 500 14px/1.3 var(--font-sans);
+  color: var(--fg-1);
+}
+.row .sub {
+  font: 400 12px/1.4 var(--font-sans);
+  color: var(--fg-2);
+  margin-top: 3px;
+}
+
+/* Glass toggle */
+.toggle {
+  width: 44px;
+  height: 26px;
+  border-radius: var(--r-pill);
+  position: relative;
+  cursor: pointer;
+  transition: all .25s var(--ease-out, cubic-bezier(.4,.0,.2,1));
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.15)),
+    rgba(60, 62, 72, 0.55);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.05);
+  flex: none;
+}
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff, #d8d8db);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.08);
+  transition: transform .28s cubic-bezier(.34,1.56,.64,1);
+}
+.toggle.on {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(0,0,0,0.05)),
+    var(--vk-red-500);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 4px 14px color-mix(in srgb, var(--vk-red-500) 50%, transparent), inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.18);
+}
+.toggle.on::after { transform: translateX(18px); }
+
+/* Segmented control */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.30), rgba(0,0,0,0.10)),
+    rgba(40, 42, 52, 0.55);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.segmented .seg {
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  font: 500 13px/1 var(--font-sans);
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.segmented .seg.active {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0)),
+    var(--vk-red-500);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.50), inset 0 -1px 0 rgba(0,0,0,0.16), 0 0 0 0.5px rgba(255,255,255,0.18);
+}
+
+/* Buttons */
+.btn {
+  font: 600 13px/1 var(--font-sans);
+  padding: 9px 16px;
+  border-radius: var(--r-sm);
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.btn:active { transform: translateY(1px); }
+.btn--glass {
+  color: var(--fg-1);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.02)),
+    rgba(50, 52, 62, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -1px 0 rgba(0,0,0,0.20), inset 0 0 0 1px rgba(255,255,255,0.10), 0 2px 6px rgba(0,0,0,0.3);
+}
+.btn--primary {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)),
+    var(--vk-red-500);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.20), 0 4px 14px color-mix(in srgb, var(--vk-red-500) 55%, transparent), 0 0 0 0.5px rgba(255,255,255,0.18);
+}
+.btn--danger {
+  color: #fff;
+  background: linear-gradient(180deg, #ff7468, #d9344a);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 4px 14px rgba(217, 52, 74, 0.45);
+}
+
+/* Glass keycap */
+.keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02)),
+    rgba(60, 62, 72, 0.6);
+  backdrop-filter: blur(20px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.40), inset 0 -2px 0 rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.08), 0 2px 4px rgba(0,0,0,0.35);
+  font: 600 12px/1 var(--font-sans);
+  color: var(--fg-1);
+}
+
+/* Glass icon tile */
+.tile {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  isolation: isolate;
+}
+.tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(160deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.08) 40%, rgba(0,0,0,0.15) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+.tile::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 6px; right: 6px;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0));
+  border-radius: 50% 50% 30% 30% / 100% 100% 0% 0%;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.7;
+}
+.tile > svg {
+  width: 22px;
+  height: 22px;
+  z-index: 1;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.5)) drop-shadow(0 -1px 1px rgba(0,0,0,0.4));
+}
+.tile--red    { background: linear-gradient(160deg, #ff7468 0%, var(--vk-red-500) 50%, #8a1f12 100%); }
+.tile--gold   { background: linear-gradient(160deg, #ffe079 0%, #f0a23c 50%, #6e4a0b 100%); }
+.tile--blue   { background: linear-gradient(160deg, #6fb5ff 0%, #2d89e5 50%, #143f74 100%); }
+.tile--green  { background: linear-gradient(160deg, #7cdcaf 0%, #2bb673 50%, #114d31 100%); }
+.tile--purple { background: linear-gradient(160deg, #c79bff 0%, #8b5cf6 50%, #3b1c7a 100%); }
+.tile--gray   { background: linear-gradient(160deg, #c2c5cf 0%, #6a6d78 50%, #1d1f25 100%); }
+.tile--ink    { background: linear-gradient(160deg, #4b4f58 0%, #24272e 50%, #08090b 100%); }
+
+.tile--sm { width: 28px; height: 28px; border-radius: 8px; }
+.tile--sm > svg { width: 16px; height: 16px; }
+.tile--lg { width: 56px; height: 56px; border-radius: 16px; }
+.tile--lg > svg { width: 30px; height: 30px; }

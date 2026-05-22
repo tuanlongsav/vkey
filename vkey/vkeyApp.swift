@@ -193,21 +193,14 @@ struct MainMenuView: View {
       )
     }
 
-    // v2.2.0: theme picker hợp nhất 5 lựa chọn — 3 icon styles (giữ
-    // backwards compat từ 1.5.6: Mặc định / 3D / Emoji) + 2 design
-    // systems (Tonal / Mực) mới. Mỗi option set CẢ `appTheme` (icon
-    // style) lẫn `uiTheme` (HUD/Settings header/accent color).
+    // v2.2.2: 4 themes — xoá "3D bóng bẩy" (icon style threeD) và "Sơn Mài"
+    // theo user request. Thêm "Liquid Glass" (refractive glass macOS Tahoe).
+    // Mỗi option set CẢ `appTheme` (icon style) lẫn `uiTheme`.
     Menu {
       Button { setAppearance(ui: .classic, icon: .default) } label: {
         Label(
           isAppearance(.classic, .default) ? "Mặc định ✓" : "Mặc định",
           themedSymbol: "circle"
-        )
-      }
-      Button { setAppearance(ui: .classic, icon: .threeD) } label: {
-        Label(
-          isAppearance(.classic, .threeD) ? "3D bóng bẩy ✓" : "3D bóng bẩy",
-          themedSymbol: "cube"
         )
       }
       Button { setAppearance(ui: .classic, icon: .emoji) } label: {
@@ -223,10 +216,10 @@ struct MainMenuView: View {
           themedSymbol: "paintpalette"
         )
       }
-      Button { setAppearance(ui: .sonMai, icon: .default) } label: {
+      Button { setAppearance(ui: .liquidGlass, icon: .default) } label: {
         Label(
-          isAppearance(.sonMai, .default) ? "Sơn Mài ✓" : "Sơn Mài",
-          themedSymbol: "paintbrush.pointed"
+          isAppearance(.liquidGlass, .default) ? "Liquid Glass ✓" : "Liquid Glass",
+          themedSymbol: "drop.halffull"
         )
       }
     } label: {

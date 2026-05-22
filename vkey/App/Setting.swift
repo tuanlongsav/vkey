@@ -167,19 +167,19 @@ enum AppTheme: String, CaseIterable, Defaults.Serializable {
 }
 
 /// v2.1.1+: UI theme — diện mạo toàn cục cho app.
-/// v2.2.1: Mực đã thay bằng Sơn Mài (sơn son thếp vàng — lacquer Vietnamese
-/// art aesthetic: deeper lacquer red, gold leaf accent, eggshell paper,
-/// warm ink, Fraunces serif). Default `.tonal`.
+/// v2.2.2: thay Sơn Mài bằng Liquid Glass (refractive, glossy macOS Tahoe
+/// aesthetic — glass multi-layer + edge highlights + refractive tints).
+/// Default `.tonal`.
 enum UITheme: String, CaseIterable, Defaults.Serializable {
-  case classic   // v2.0.2 — accent system blue, HUD đơn giản
-  case tonal     // v2.1.0+ — brand red Saigon, glass tối deep-ink, wordmark
-  case sonMai    // v2.2.1 — sơn son thếp vàng: lacquer red + gold leaf, serif
+  case classic       // v2.0.2 — accent system blue, HUD đơn giản
+  case tonal         // v2.1.0+ — brand red Saigon, glass tối deep-ink, wordmark
+  case liquidGlass   // v2.2.2 — refractive glass (Tahoe/visionOS), brand red
 
   var displayName: String {
     switch self {
-    case .classic: return "Classic"
-    case .tonal:   return "Tonal"
-    case .sonMai:  return "Sơn Mài"
+    case .classic:     return "Classic"
+    case .tonal:       return "Tonal"
+    case .liquidGlass: return "Liquid Glass"
     }
   }
 
@@ -189,8 +189,8 @@ enum UITheme: String, CaseIterable, Defaults.Serializable {
       return "Diện mạo gốc của vkey 2.0.2: accent system blue, HUD đơn giản, biểu tượng macOS native."
     case .tonal:
       return "Design system Tonal: accent đỏ Saigon, HUD glass tối deep-ink, wordmark vkey."
-    case .sonMai:
-      return "Sơn son thếp vàng — đỏ son #B5302A + thếp vàng #A07C32 + giấy trứng, font serif Fraunces."
+    case .liquidGlass:
+      return "Liquid Glass — refractive, glossy multi-layer (macOS Tahoe / visionOS), brand red #E04434 + glass edge highlights."
     }
   }
 }

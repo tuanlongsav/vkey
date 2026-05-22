@@ -204,36 +204,45 @@ struct GeneralView: View {
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(.secondary)
             }
-        case .sonMai:
-            // v2.2.1: sơn son thếp vàng — lacquer red wordmark + gold leaf
-            // hairline rule. Serif Fraunces feel via .serif design.
-            VStack(spacing: 8) {
+        case .liquidGlass:
+            // v2.2.2: refractive Liquid Glass — multi-layer gradient pill
+            // wordmark, blue+red refractive corner tints, edge highlights.
+            VStack(spacing: 10) {
                 Image(uiTheme.headerImageName)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 80, height: 80)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .shadow(color: VKeyDesign.sonMaiRed500.opacity(0.22), radius: 12, x: 0, y: 5)
-                    .shadow(color: .black.opacity(0.10), radius: 3, x: 0, y: 1)
+                    .frame(width: 88, height: 88)
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.55),
+                                        Color.white.opacity(0.10),
+                                    ],
+                                    startPoint: .top, endPoint: .bottom
+                                ),
+                                lineWidth: 1.2
+                            )
+                    )
+                    .shadow(color: VKeyDesign.red500.opacity(0.45), radius: 22, x: 0, y: 10)
+                    .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 3)
+
+                // Wordmark "vkey" — glass-glossy red gradient
                 Text("vkey")
-                    .font(.system(size: 30, weight: .bold, design: .serif))
-                    .foregroundStyle(VKeyDesign.sonMaiRed500)
-                    .tracking(-0.4)
-                // Gold leaf hairline rule
-                Rectangle()
-                    .fill(LinearGradient(
-                        colors: [
-                            VKeyDesign.sonMaiGold500.opacity(0.0),
-                            VKeyDesign.sonMaiGold500.opacity(0.85),
-                            VKeyDesign.sonMaiGold500.opacity(0.0)
-                        ],
-                        startPoint: .leading, endPoint: .trailing
+                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color.white, VKeyDesign.red300, VKeyDesign.red500],
+                        startPoint: .top, endPoint: .bottom
                     ))
-                    .frame(width: 72, height: 1.5)
-                Text("Bộ gõ tiếng Việt — sơn son thếp vàng")
-                    .font(.system(size: 11.5, weight: .regular, design: .serif))
+                    .tracking(-0.8)
+                    .shadow(color: VKeyDesign.red500.opacity(0.50), radius: 12, x: 0, y: 4)
+                    .shadow(color: .white.opacity(0.30), radius: 0.5, x: 0, y: -0.5)
+
+                Text("Bộ gõ tiếng Việt — Liquid Glass")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
-                    .italic()
             }
         case .classic:
             Image(uiTheme.headerImageName)

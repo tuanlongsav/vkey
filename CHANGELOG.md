@@ -2,6 +2,89 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.2.2] - 2026-05-22 — "Liquid Glass"
+
+**Xoá "3D bóng bẩy" và "Sơn Mài". Thêm "Liquid Glass" — refractive multi-layer glass theo phong cách macOS Tahoe / visionOS. Tổng 4 giao diện.** README rà soát ✓
+
+### 🪟 Liquid Glass — refractive material
+
+Theme thứ 4 đại diện cho design language của macOS Tahoe / visionOS — kính khúc xạ, multi-layer gradient, edge specular highlights.
+
+#### Palette + treatment
+
+- **Anchor đỏ** `#E04434` (cùng brand red với Tonal — Liquid Glass apply glass technique LÊN brand color).
+- **Multi-layer glass surfaces**: `rgba(28,30,38,0.55)` primary scrim + linear gradient top white 0.18 → base black 0.18 + radial spec arc center-top.
+- **Backdrop filter**: `.ultraThinMaterial` (≈ blur 40-60 + saturate 200%) — match macOS Tahoe glass vibe.
+- **Edge highlights triple-layer**: gradient stroke top white `0.55` → middle `0.18` → bottom `0.06`.
+- **Refractive corner tints**: red 18% bottom-left + blue 10% top-right, blend `.softLight` — gợi ánh sáng khúc xạ qua kính.
+- **Radii lớn**: HUD VI/EN 22px, prediction 14px, Settings header icon 22px.
+
+#### Surface render
+
+- **HUD VI/EN**:
+  - Icon gradient `[Color.white, red300, red500]` top-to-bottom + halo đỏ `0.45` radius 6 + white inner glow.
+  - Label "Tiếng Việt"/"English" trắng warm `#F2EFE8` font rounded bold + shadow đen `0.45`.
+  - Capsule pill VI/EN: gloss top white `0.30` overlay trên red-500 (VI) hoặc white `0.05` (EN), stroke white `0.45`, halo đỏ `0.55` cho VI.
+  - 4-layer background stack: refractive tints → linear+radial top arc → scrim red → ultraThinMaterial.
+
+- **HUD prediction**:
+  - Arrow `→` gradient white→red300 + halo đỏ `0.35`.
+  - Từ gợi ý mono semibold trắng warm + shadow đen `0.30`.
+  - "⇥ Tab" mono mờ `0.55`.
+  - 3-layer multi-shadow depth (14+4px).
+
+- **Settings header**:
+  - App icon 88px clip RoundedRectangle 22px + overlay glass gradient stroke + đỏ glow `0.45` radius 22px.
+  - Wordmark "vkey" 30pt heavy rounded với 3-stop gradient white→red300→red500 + halo đỏ `0.50` radius 12px + white highlight rim 0.30 (subtle wet shine).
+  - Tagline "Bộ gõ tiếng Việt — Liquid Glass" 12pt medium rounded secondary.
+
+### 🗑 Xoá 2 themes
+
+| Theme | Lý do | Migration |
+|-------|-------|-----------|
+| **3D bóng bẩy** (AppTheme.threeD) | Liquid Glass thay thế — kỹ thuật 3D gradient SF Symbols cũ không còn phù hợp | `AppDelegate.applicationDidFinishLaunching` reset `Defaults[.appTheme] == .threeD` → `.default` idempotent. ThemedSymbol case `.threeD` giữ trong enum (dead code) cho backward compat. |
+| **Sơn Mài** (UITheme.sonMai) | User explicitly request remove | rawValue `.sonMai` không decode được vào UITheme mới → Defaults tự fallback về `.tonal` (default). |
+
+### 📋 4 themes hiện tại
+
+1. **Mặc định** — SF Symbols + accent system blue (Classic UI)
+2. **Emoji vui tươi** — Emoji icons + accent system blue (Classic UI)
+3. **Tonal** — Brand red Saigon `#E04434`, glass tối deep-ink, wordmark
+4. **Liquid Glass** (mới) — Refractive multi-layer glass macOS Tahoe/visionOS, brand red
+
+### 🛠 Architecture changes
+
+- **`UITheme` enum**: `.sonMai` → `.liquidGlass`. Display name "Sơn Mài" → "Liquid Glass". Caption mô tả refractive glass macOS Tahoe.
+- **`VKeyDesign.swift`**: 13 token Sơn Mài xoá; 6 token Liquid Glass thêm:
+  - `lgGlass1Color` (`#1C1E26`) — primary panel scrim
+  - `lgGlass2Color` (`#262832`) — elevated row
+  - `lgSunkenColor` (`#0E0F14`) — sunken
+  - `lgEdgeTop` (white) — spec highlight
+  - `lgBlueTint` (`#2D89E5`) — refractive corner tint
+  - `lgAmber` (`#F0A23C`) — warm alternate
+- **`UITheme` extension**: `accentColor / headerImageName / showsHeroWordmark` branches `.sonMai` → `.liquidGlass`. Accent share brand red với Tonal.
+- **HUD views**: `sonMaiBody / sonMaiScrimOpacity` xoá; `liquidGlassBody / liquidGlassScrimOpacity` thêm với multi-layer ZStack rendering (refractive tints + linear/radial highlights + scrim + material).
+- **`SettingView.settingsHeader`**: case `.sonMai` xoá; case `.liquidGlass` thêm với glass-glossy wordmark gradient + red glow shadow.
+- **`vkeyApp.MainMenuView`**: 5 entries → 4 entries. "3D bóng bẩy" + "Sơn Mài" xoá; "Liquid Glass" thêm với SF Symbol `drop.halffull`.
+- **`AppIconSwitcher.apply`**: switch case `.sonMai` → `.liquidGlass`.
+- **`AppDelegate`**: thêm migration `Defaults[.appTheme] == .threeD → .default` ở `applicationDidFinishLaunching`. Idempotent.
+- **`Design4/`** commit Liquid Glass source files: `glass.css` + `surfaces*.css` + JSX preview scenes + images + fonts.
+- **`Design3/`** (Sơn Mài) xoá.
+
+### 🛡 Không thay đổi
+
+- Engine gõ Telex/VNI/Simple, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi behavior. 213/213 test pass.
+- User Defaults non-theme giữ nguyên.
+- Sparkle update flow, codesign, hardened runtime — không thay đổi.
+- Build target macOS 14+, universal arm64 + x86_64.
+
+### 📦 Release artifacts
+
+- `vkey-2.2.2.dmg` — universal binary, ~7.3 MB. Ad-hoc codesign + hardened runtime.
+- Sparkle signature: `OXZSzEFkAZ3hXb3Qyj84qsS9+fQXVDt6ePQYXyzvMjGCl2kMGKxRomHrLVwr32uEZOYMMHydlk7Y4h0jYhjLBA==` (length 7642650).
+
+---
+
 ## [2.2.1] - 2026-05-22 — "Sơn Mài"
 
 **Thay theme Mực bằng Sơn Mài — sơn son thếp vàng, lacquer Vietnamese art aesthetic.** Tổng vẫn 5 giao diện. README rà soát ✓

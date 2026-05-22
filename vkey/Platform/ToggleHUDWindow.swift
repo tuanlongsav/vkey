@@ -157,65 +157,147 @@ private struct ToggleHUDView: View {
     var body: some View {
         Group {
             switch uiTheme {
-            case .tonal:   tonalBody
-            case .sonMai:  sonMaiBody
-            case .classic: classicBody
+            case .tonal:        tonalBody
+            case .liquidGlass:  liquidGlassBody
+            case .classic:      classicBody
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
     }
 
-    // MARK: - Sơn Mài (v2.2.1) — lacquer red + gold leaf, warm ink, Fraunces serif
+    // MARK: - Liquid Glass (v2.2.2) — macOS Tahoe / visionOS refractive glass
 
-    private var sonMaiBody: some View {
-        VStack(spacing: 6) {
+    private var liquidGlassBody: some View {
+        let radius: CGFloat = 22
+
+        return VStack(spacing: 6) {
             ThemedSymbol(name: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
-                .font(.system(size: 38, weight: .semibold))
+                .font(.system(size: 40, weight: .semibold))
                 .foregroundStyle(
                     viewModel.isEnabled
-                    ? AnyShapeStyle(VKeyDesign.sonMaiRed300.gradient)
-                    : AnyShapeStyle(VKeyDesign.sonMaiPaper200.gradient)
+                    ? AnyShapeStyle(LinearGradient(
+                        colors: [Color.white, VKeyDesign.red300, VKeyDesign.red500],
+                        startPoint: .top, endPoint: .bottom
+                    ))
+                    : AnyShapeStyle(LinearGradient(
+                        colors: [Color.white.opacity(0.95), Color.white.opacity(0.55)],
+                        startPoint: .top, endPoint: .bottom
+                    ))
                 )
-                .frame(width: 46, height: 46)
+                .shadow(color: viewModel.isEnabled
+                    ? VKeyDesign.red500.opacity(0.45)
+                    : Color.black.opacity(0.25),
+                    radius: 6, x: 0, y: 2)
+                .shadow(color: .white.opacity(0.30), radius: 0.5, x: 0, y: -0.5)
+                .frame(width: 48, height: 48)
                 .vkeySymbolReplacementTransition()
 
             Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                .font(.system(size: 15.5, weight: .semibold, design: .serif))
-                .foregroundStyle(VKeyDesign.sonMaiPaper50)
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(hex: 0xF2EFE8))
+                .shadow(color: .black.opacity(0.45), radius: 0.5, x: 0, y: 0.5)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
 
+            // Glass pill VI/EN — multi-layer gradient + inner highlight
             Text(viewModel.isEnabled ? "VI" : "EN")
-                .font(.system(size: 10.5, weight: .bold, design: .serif))
-                .tracking(0.8)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 2)
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .tracking(0.6)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 3)
                 .background(
-                    viewModel.isEnabled
-                    ? VKeyDesign.sonMaiGold500.opacity(0.30)
-                    : Color.white.opacity(0.12)
+                    ZStack {
+                        if viewModel.isEnabled {
+                            // Glossy red pill
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.30), Color.white.opacity(0.02)],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                            VKeyDesign.red500.opacity(0.95)
+                        } else {
+                            // Glass-neutral pill
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.22), Color.white.opacity(0.04)],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                            Color.white.opacity(0.05)
+                        }
+                    }
                 )
-                .foregroundStyle(viewModel.isEnabled ? VKeyDesign.sonMaiGold300 : Color.white.opacity(0.78))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .foregroundStyle(Color.white)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .strokeBorder(Color.white.opacity(0.45), lineWidth: 0.6)
+                )
+                .shadow(color: viewModel.isEnabled
+                    ? VKeyDesign.red500.opacity(0.55)
+                    : .clear,
+                    radius: 6, x: 0, y: 2)
         }
-        .frame(width: 128)
-        .padding(.vertical, 13)
-        .padding(.horizontal, 8)
+        .frame(width: 138)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 10)
         .background(
-            VKeyDesign.sonMaiInk500.opacity(sonMaiScrimOpacity),
-            in: RoundedRectangle(cornerRadius: 14)
+            // Refractive corner tints (red bottom-left + blue top-right)
+            ZStack {
+                RadialGradient(
+                    colors: [VKeyDesign.red500.opacity(0.18), .clear],
+                    center: .bottomLeading, startRadius: 0, endRadius: 120
+                )
+                RadialGradient(
+                    colors: [VKeyDesign.lgBlueTint.opacity(0.10), .clear],
+                    center: .topTrailing, startRadius: 0, endRadius: 120
+                )
+            }
+            .blendMode(.softLight)
+            .clipShape(RoundedRectangle(cornerRadius: radius))
         )
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .background(
+            // Top spec arc + base shading
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.18),
+                        Color.white.opacity(0.02),
+                        Color.black.opacity(0.18),
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
+                RadialGradient(
+                    colors: [Color.white.opacity(0.28), .clear],
+                    center: .top, startRadius: 0, endRadius: 180
+                )
+            }
+            .clipShape(RoundedRectangle(cornerRadius: radius))
+        )
+        .background(
+            VKeyDesign.lgGlass1Color.opacity(liquidGlassScrimOpacity),
+            in: RoundedRectangle(cornerRadius: radius)
+        )
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius))
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(VKeyDesign.sonMaiGold500.opacity(0.22), lineWidth: 0.8)
+            // Triple inner edge: top white highlight, bottom black, rim white
+            RoundedRectangle(cornerRadius: radius)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.55),
+                            Color.white.opacity(0.18),
+                            Color.white.opacity(0.06),
+                        ],
+                        startPoint: .top, endPoint: .bottom
+                    ),
+                    lineWidth: 1.2
+                )
         )
-        .shadow(color: Color.black.opacity(0.50), radius: 22, x: 0, y: 10)
+        .shadow(color: Color.black.opacity(0.55), radius: 30, x: 0, y: 12)
+        .shadow(color: Color.black.opacity(0.35), radius: 10, x: 0, y: 4)
     }
 
-    private var sonMaiScrimOpacity: Double {
-        // Warm-ink glass — `--glass-dark` rgba(20,16,12,0.68) baseline.
-        0.36 + 0.32 * viewModel.backgroundStrength
+    private var liquidGlassScrimOpacity: Double {
+        // Multi-layer glass — primary scrim baseline 0.55, scale with opacity setting.
+        0.30 + 0.32 * viewModel.backgroundStrength
     }
 
     // MARK: - Classic (v2.0.2 look)

@@ -6,6 +6,58 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.2.2 — "Liquid Glass"</title>
+      <sparkle:version>20202</sparkle:version>
+      <sparkle:shortVersionString>2.2.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 22 May 2026 23:15:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.2.2/vkey-2.2.2.dmg"
+        sparkle:edSignature="OXZSzEFkAZ3hXb3Qyj84qsS9+fQXVDt6ePQYXyzvMjGCl2kMGKxRomHrLVwr32uEZOYMMHydlk7Y4h0jYhjLBA=="
+        length="7642650"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.2.2 — "Liquid Glass":</h2>
+        <p><em>Xoá <strong>"3D bóng bẩy"</strong> và <strong>"Sơn Mài"</strong>. Thêm <strong>Liquid Glass</strong> — refractive multi-layer glass theo phong cách macOS Tahoe / visionOS. Tổng 4 giao diện.</em></p>
+
+        <h3>🪟 Liquid Glass — refractive material</h3>
+        <ul>
+          <li><strong>Anchor đỏ</strong>: <code>#E04434</code> (cùng brand red như Tonal).</li>
+          <li><strong>Multi-layer glass surfaces</strong>: <code>rgba(28,30,38,0.55)</code> primary panel + linear gradient top white 0.18 + base black 0.18 + radial spec arc top-center.</li>
+          <li><strong>Backdrop filter</strong>: blur 40-60px + saturate 200% — match macOS Tahoe vibe.</li>
+          <li><strong>Edge highlights triple-layer</strong>: top white 0.55 → middle 0.18 → bottom 0.06 (vertical gradient stroke). Inner inset highlight + bottom drop shadow.</li>
+          <li><strong>Refractive corner tints</strong>: red 18% bottom-left + blue 10% top-right, soft-light blend mode — gợi ánh sáng khúc xạ qua kính.</li>
+          <li><strong>Radii lớn hơn</strong>: HUD VI/EN 22px, prediction 14px (so với Tonal 20/10).</li>
+          <li><strong>HUD VI/EN</strong>: icon gradient white→red300→red500 + halo đỏ 0.45, label trắng warm <code>#F2EFE8</code> + shadow đen 0.45, capsule pill VI/EN có gloss top white 0.30 + stroke white 0.45.</li>
+          <li><strong>HUD prediction</strong>: arrow gradient white→red300, từ gợi ý mono semibold trắng warm, "⇥ Tab" mono mờ 0.55, multi-shadow 14+4px depth.</li>
+          <li><strong>Settings header</strong>: app icon 88px + viền glass gradient + đỏ glow 22px. Wordmark "vkey" 30pt heavy rounded với 3-stop gradient white→red300→red500 + halo đỏ 0.50 + white highlight rim.</li>
+        </ul>
+
+        <h3>🗑 Xoá 2 themes</h3>
+        <ul>
+          <li><strong>3D bóng bẩy</strong> (SF Symbols 3D gradient + hierarchical) — bị Liquid Glass thay thế. User đang dùng tự reset về Mặc định qua migration trong AppDelegate.</li>
+          <li><strong>Sơn Mài</strong> (v2.2.1 lacquer red + gold leaf) — fallback về Tonal default cho user đang dùng.</li>
+        </ul>
+
+        <h3>📋 4 themes hiện tại</h3>
+        <ol>
+          <li><strong>Mặc định</strong> — SF Symbols + accent system blue</li>
+          <li><strong>Emoji vui tươi</strong> — Emoji icons + accent system blue</li>
+          <li><strong>Tonal</strong> — Brand red Saigon, glass tối deep-ink</li>
+          <li><strong>Liquid Glass</strong> (NEW) — Refractive glass macOS Tahoe, brand red</li>
+        </ol>
+
+        <h3>🛠 Bên trong</h3>
+        <ul>
+          <li><code>UITheme.sonMai</code> → <code>.liquidGlass</code>. Palette Sơn Mài (13 token) xoá; palette Liquid Glass thêm (6 token: lgGlass1Color, lgGlass2Color, lgSunkenColor, lgEdgeTop, lgBlueTint, lgAmber).</li>
+          <li>HUD ZStack 4 layer: refractive corner tints + linear/radial top arc + scrim + ultraThinMaterial. Triple-stop edge stroke.</li>
+          <li>Menu bar: 5 entries → 4 entries. Helper migration <code>AppDelegate.applicationDidFinishLaunching</code> reset <code>appTheme = .threeD</code> → <code>.default</code> idempotent.</li>
+          <li><code>Design4/</code> commit Liquid Glass source files: glass.css, surfaces*.css, JSX preview scenes.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.2.1 — "Sơn Mài"</title>
       <sparkle:version>20201</sparkle:version>
       <sparkle:shortVersionString>2.2.1</sparkle:shortVersionString>
