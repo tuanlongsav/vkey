@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<title>vkey · UI mockup toàn diện — Sơn Mài</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="theme.css" />
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    background:
+      radial-gradient(circle at 20% 10%, color-mix(in srgb, var(--red-500) 6%, transparent), transparent 50%),
+      radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--gold-500) 8%, transparent), transparent 55%),
+      var(--paper-200);
+    color: var(--fg-1);
+  }
+  [data-theme="dark"] body {
+    background:
+      radial-gradient(circle at 20% 10%, color-mix(in srgb, var(--red-500) 12%, transparent), transparent 50%),
+      radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--gold-500) 10%, transparent), transparent 55%),
+      var(--ink-500);
+  }
+  #root { min-height: 100vh; }
+
+  /* design canvas container should fill viewport */
+  design-canvas { display: block; min-height: 100vh; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Component scripts -->
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="app-icons.jsx"></script>
+<script type="text/babel" src="menubar.jsx"></script>
+<script type="text/babel" src="settings.jsx"></script>
+<script type="text/babel" src="huds.jsx"></script>
+<script type="text/babel" src="specimens.jsx"></script>
+
+<script type="text/babel">
+function App() {
+  // ── Tweaks ───────────────────────────────────────────────
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "theme": "light",
+    "accent": "lacquer",
+    "showSecondary": true
+  }/*EDITMODE-END*/;
+
+  const { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakToggle } = window;
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', t.theme);
+    const accentMap = {
+      lacquer: undefined, jade: 'jade', indigo: 'indigo', gold: 'gold',
+    };
+    if (accentMap[t.accent]) {
+      document.documentElement.setAttribute('data-accent', accentMap[t.accent]);
+    } else {
+      document.documentElement.removeAttribute('data-accent');
+    }
+  }, [t.theme, t.accent]);
+
+  // ── Sections ─────────────────────────────────────────────
+  const { DesignCanvas, DCSection, DCArtboard } = window;
+  return (
+    <>
+      <DesignCanvas>
+        {/* ──── Brand ──── */}
+        <DCSection id="brand" title="Bộ nhận diện · Brand" subtitle="App icon, palette, typography, icon set">
+          <DCArtboard id="hero" label="Hero · giới thiệu" width={1080} height={560}>
+            <HeroArtboard />
+          </DCArtboard>
+
+          <DCArtboard id="app-icons" label="App icons · 5 biến thể" width={1080} height={700}>
+            <AppIconGridArtboard />
+          </DCArtboard>
+
+          <DCArtboard id="palette" label="Bảng màu Sơn Mài" width={1080} height={780}>
+            <PaletteArtboard />
+          </DCArtboard>
+
+          <DCArtboard id="type" label="Typography" width={1080} height={900}>
+            <TypeArtboard />
+          </DCArtboard>
+
+          <DCArtboard id="icons" label="Bộ icon · 42 glyphs" width={1080} height={900}>
+            <IconArtboard />
+          </DCArtboard>
+        </DCSection>
+
+        {/* ──── Menubar + HUDs ──── */}
+        <DCSection id="overlays" title="Menu bar & HUD" subtitle="Overlay surfaces">
+          <DCArtboard id="menubar" label="Menu bar dropdown" width={720} height={640}>
+            <MenubarArtboard />
+          </DCArtboard>
+
+          <DCArtboard id="hud" label="HUDs · Toggle / Prediction / Dictionary" width={1080} height={480}>
+            <HUDArtboard />
+          </DCArtboard>
+        </DCSection>
+
+        {/* ──── Settings ──── */}
+        <DCSection id="settings" title="Cửa sổ Cài đặt · 5 tab" subtitle="Chung · Smart Switch · Macro · Chính tả · Thống kê">
+          <DCArtboard id="t-chung" label="Chung" width={580} height={720}>
+            <SettingsArtboard tab="chung" />
+          </DCArtboard>
+          <DCArtboard id="t-smart" label="Smart Switch" width={580} height={720}>
+            <SettingsArtboard tab="smart" />
+          </DCArtboard>
+          <DCArtboard id="t-macro" label="Macro" width={580} height={720}>
+            <SettingsArtboard tab="macro" />
+          </DCArtboard>
+          <DCArtboard id="t-chinh" label="Chính tả" width={580} height={720}>
+            <SettingsArtboard tab="chinh" />
+          </DCArtboard>
+          <DCArtboard id="t-thong" label="Thống kê & Sao lưu" width={580} height={720}>
+            <SettingsArtboard tab="thong" />
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      <TweaksPanel>
+        <TweakSection title="Diện mạo">
+          <TweakRadio
+            label="Chế độ"
+            value={t.theme}
+            options={[{value:'light',label:'Sáng'},{value:'dark',label:'Tối'}]}
+            onChange={v => setTweak('theme', v)}
+          />
+          <TweakRadio
+            label="Tông màu chủ"
+            value={t.accent}
+            options={[
+              {value:'lacquer', label:'Lacquer'},
+              {value:'jade',    label:'Jade'},
+              {value:'indigo',  label:'Chàm'},
+              {value:'gold',    label:'Vàng'},
+            ]}
+            onChange={v => setTweak('accent', v)}
+          />
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
+// Hero (intro card) — written here because it pulls all components
+// ──────────────────────────────────────────────────────────
+function HeroArtboard() {
+  return (
+    <div style={{
+      width: 1080, height: 560,
+      borderRadius: 16, overflow: 'hidden',
+      background:
+        'radial-gradient(circle at 75% 30%, color-mix(in srgb, var(--gold-500) 24%, transparent), transparent 50%), ' +
+        'linear-gradient(135deg, var(--paper-50) 0%, var(--paper-150) 100%)',
+      padding: 56,
+      position: 'relative',
+      display: 'grid',
+      gridTemplateColumns: '1fr auto',
+      gap: 56,
+      alignItems: 'center',
+      color: 'var(--ink-500)',
+    }}>
+      {/* faint diacritics watermark */}
+      <div style={{
+        position:'absolute', top:24, right:48,
+        fontFamily:'var(--font-display)', fontStyle:'italic',
+        fontSize: 320, lineHeight: 1, color:'color-mix(in srgb, var(--red-500) 6%, transparent)',
+        pointerEvents:'none', userSelect:'none', fontWeight:700,
+      }}>ậ</div>
+
+      <div style={{position:'relative'}}>
+        <div style={{
+          display:'inline-flex', alignItems:'center', gap:8,
+          padding:'4px 10px',
+          background:'color-mix(in srgb, var(--red-500) 12%, transparent)',
+          color:'var(--red-700)',
+          borderRadius: 999,
+          fontSize: 11.5, fontWeight: 600, letterSpacing: '0.10em', textTransform: 'uppercase',
+        }}>
+          <span style={{width:6, height:6, borderRadius:'50%', background:'var(--red-500)'}}/>
+          vkey · v2.2.0 redesign
+        </div>
+        <h1 style={{
+          font:'700 76px/0.98 var(--font-display)', fontStyle:'italic',
+          letterSpacing:'-0.03em', margin: '20px 0 0',
+        }}>
+          Sơn Mài.
+        </h1>
+        <p style={{
+          fontSize: 18, lineHeight: 1.55, color:'var(--fg-2)',
+          maxWidth: 520, margin: '20px 0 0',
+        }}>
+          UI mockup toàn diện cho bộ gõ <em style={{fontFamily:'var(--font-display)', fontWeight:700}}>vkey</em> — bảng màu sơn mài, vàng thếp, vỏ trứng và mực ấm. App icon mới · 42 icon · 5 settings tab · HUD glass refreshed.
+        </p>
+        <div style={{display:'flex', gap:10, marginTop:24, flexWrap:'wrap'}}>
+          <span className="badge badge--brand">Lacquer Red</span>
+          <span className="badge badge--gold">Gold Leaf</span>
+          <span className="badge badge--success">Jade</span>
+          <span className="badge badge--info">Chàm</span>
+          <span className="badge">Be Vietnam Pro · Fraunces</span>
+        </div>
+
+        {/* Mini stats */}
+        <div style={{display:'flex', gap:32, marginTop:36, paddingTop:24, borderTop:'1px solid var(--border-1)'}}>
+          {[
+            ['5','App icon biến thể'],
+            ['42','Icon set'],
+            ['5','Settings tab'],
+            ['3','HUD overlay'],
+            ['4','Accent themes'],
+          ].map(([n,l]) => (
+            <div key={l}>
+              <div style={{font:'700 30px/1 var(--font-display)', fontStyle:'italic', color:'var(--red-700)'}}>{n}</div>
+              <div style={{fontSize:11.5, color:'var(--fg-muted)', marginTop:4, letterSpacing:'0.04em'}}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{position:'relative', display:'flex', flexDirection:'column', alignItems:'center', gap:18}}>
+        <AppIconLacquer size={240} />
+        <div style={{
+          display:'flex', gap:8, padding: '8px 14px',
+          background: 'var(--bg-card)', borderRadius: 999,
+          border: '1px solid var(--border-1)',
+          boxShadow: 'var(--shadow-sm)',
+        }}>
+          <span className="kbd">⌃</span>
+          <span className="kbd">⇧</span>
+          <span style={{
+            fontSize: 12, color: 'var(--fg-muted)',
+            display: 'flex', alignItems: 'center',
+            paddingLeft: 4,
+          }}>toggle VN / EN</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
