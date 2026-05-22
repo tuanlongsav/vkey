@@ -556,6 +556,85 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "food"), "food")
   }
 
+  // MARK: - 2.0.2 (J2): Regression cho bug class "toools"
+  //
+  // Trước 2.0.2 có bug: gõ "text tools" + Space → ra "toools" (thừa 1 'o')
+  // do logic `transformed.count == lastTransformedForStep.count` trong
+  // InputProcessor.swift (3 sites) append raw 'o' khi engine vừa apply
+  // combining diacritic (cùng grapheme count nhưng NFD scalar count tăng).
+  // Fix: dùng `WordBuffer.shouldAppendRawKey(...)` so sánh NFD scalars.
+
+  /// Test bug "tools" — verify NO EXTRA char appended.
+  /// Trước fix: "tools" (5 chars) → "toools" (6 chars, thừa 'o').
+  /// Sau fix: output có ≤5 graphemes (có thể là "tools" raw English, hoặc
+  /// "tols", hoặc VN transform — quan trọng là KHÔNG dài hơn input).
+  /// "tools" cụ thể nằm trong English lexicon → ra "tools".
+  func testTelex_J2_oo_class_no_extra_char() throws {
+    // Cases có trong English lexicon → restore raw English:
+    XCTAssertEqual(transform_text_telex(for: "tools"), "tools")
+    // Cases khác — verify count: input.count chars in, output count ≤ input
+    // (không thừa ký tự do bug oo). Output có thể là VN transform.
+    for input in ["boot", "boost", "bloom", "shoot", "loop", "stoop", "goose"] {
+      let output = transform_text_telex(for: input)
+      XCTAssertLessThanOrEqual(
+        output.count, input.count,
+        "Bug J2 regression: '\(input)' → '\(output)' (thừa ký tự!). Output should be ≤ \(input.count) graphemes."
+      )
+    }
+  }
+
+  /// Test bug class "aa" trigger: KHÔNG thừa ký tự.
+  func testTelex_J2_aa_class_no_extra_char() throws {
+    for input in ["baa", "naan", "saari"] {
+      let output = transform_text_telex(for: input)
+      XCTAssertLessThanOrEqual(output.count, input.count, "Bug J2 aa: '\(input)' → '\(output)'")
+    }
+  }
+
+  /// Test bug class "ee" trigger: KHÔNG thừa ký tự.
+  func testTelex_J2_ee_class_no_extra_char() throws {
+    // "see", "fee", "bee" có thể có trong lexicon — verify count không tăng.
+    for input in ["bee", "see", "fee", "wee"] {
+      let output = transform_text_telex(for: input)
+      XCTAssertLessThanOrEqual(output.count, input.count, "Bug J2 ee: '\(input)' → '\(output)'")
+    }
+  }
+
+  /// Test path replay (J2 site 2): từ tiếng Anh có 'oo' qua replay path.
+  func testTelex_J2_replay_path_no_extra_char() throws {
+    XCTAssertEqual(transform_text_telex(for: "footer"), "footer")
+    for input in ["tooth", "smooth", "bloom"] {
+      let output = transform_text_telex(for: input)
+      XCTAssertLessThanOrEqual(output.count, input.count, "Bug J2 replay: '\(input)' → '\(output)'")
+    }
+  }
+
+  /// Test VNI bug class — toggle digit cancel VẪN cho ký tự thô '1','6','8','9'.
+  /// Đây là path tốt cho `shouldAppendRawKey` cần TRẢ TRUE (NFD giảm).
+  func testVNI_J2_digit_toggle_preserved() throws {
+    XCTAssertEqual(transform_text_vni(for: "a11"), "a1")  // tone sac cancel
+    XCTAssertEqual(transform_text_vni(for: "a66"), "a6")  // circumflex cancel
+    XCTAssertEqual(transform_text_vni(for: "a88"), "a8")  // breve cancel
+    XCTAssertEqual(transform_text_vni(for: "d99"), "d9")  // d stroked cancel
+  }
+
+  /// Test Telex triple-toggle vẫn đúng (không bị over-fix).
+  func testTelex_J2_triple_toggle_preserved() throws {
+    XCTAssertEqual(transform_text_telex(for: "aaa"), "aa")  // â cancel
+    XCTAssertEqual(transform_text_telex(for: "ooo"), "oo")  // ô cancel
+    XCTAssertEqual(transform_text_telex(for: "eee"), "ee")  // ê cancel
+    XCTAssertEqual(transform_text_telex(for: "aww"), "aw")  // ơ→aw cancel
+    XCTAssertEqual(transform_text_telex(for: "uww"), "uw")  // ư→uw cancel
+  }
+
+  /// Test Vietnamese đúng cách (không break engine Telex chuẩn).
+  func testTelex_J2_vietnamese_typing_preserved() throws {
+    XCTAssertEqual(transform_text_telex(for: "tieengs"), "tiếng")
+    XCTAssertEqual(transform_text_telex(for: "ddoongf"), "đồng")
+    XCTAssertEqual(transform_text_telex(for: "khoer"), "khoẻ")
+    XCTAssertEqual(transform_text_telex(for: "vieejt"), "việt")
+  }
+
   /// Test v1.4.6 bug fixes: English word restoration replay, uo horn handling, and common words
   func testV146BugFixes() throws {
     // English word restoration replay fixes

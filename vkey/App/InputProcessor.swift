@@ -294,7 +294,16 @@ struct WordBuffer {
 
       if engine.shouldStopProcessing(keyStr: keysStr) {
         stopProcessing = true
-        if transformed.count == lastTransformedForStep.count {
+        // 2.0.2 bug-fix (J2): không append nếu engine vừa THÊM combining
+        // diacritic (vd Telex `to`+`o` → `tô` — grapheme count vẫn 2 nhưng
+        // NFD scalar count tăng từ 2 → 3). Trước đây chỉ check
+        // `count ==` → bug "tools" → "toools". Vẫn cho append khi
+        // engine BỎ diacritic (vd VNI a11 toggle: NFD giảm 2 → 1) để
+        // user thấy ký tự command thô như '1', '6'…
+        if WordBuffer.shouldAppendRawKey(
+          newTransformed: transformed,
+          oldTransformed: lastTransformedForStep
+        ) {
           transformed.append(k)
           wordState = wordState.push(k)
         }
@@ -400,7 +409,11 @@ struct WordBuffer {
         // Check shouldStopProcessing for the replayed keys
         if engine.shouldStopProcessing(keyStr: String(keys)) {
           stopProcessing = true
-          if transformed.count == lastTransformed.count {
+          // 2.0.2 bug-fix (J2): xem chú thích trong reconstructState.
+          if WordBuffer.shouldAppendRawKey(
+            newTransformed: transformed,
+            oldTransformed: lastTransformed
+          ) {
             transformed.append(char)
             wordState = wordState.push(char)
           }
@@ -502,11 +515,37 @@ struct WordBuffer {
 
     if engine.shouldStopProcessing(keyStr: String(keys)) {
       stopProcessing = true
-      if transformed.count == lastTransformed.count {
+      // 2.0.2 bug-fix (J2): xem chú thích trong reconstructState.
+      // Đây là path main push.
+      if WordBuffer.shouldAppendRawKey(
+        newTransformed: transformed,
+        oldTransformed: lastTransformed
+      ) {
         transformed.append(char)
         wordState = wordState.push(char)
       }
     }
+  }
+
+  /// 2.0.2 (J2): quyết định có append raw key vào `transformed` không sau
+  /// khi `engine.shouldStopProcessing(...)` return true. Logic:
+  /// - Nếu engine vừa THÊM combining diacritic (vd Telex 'to'+'o' → 'tô'):
+  ///   grapheme count giữ nguyên, NFD scalar count tăng → engine đã consume
+  ///   keystroke vào diacritic → KHÔNG append (tránh bug "tools" → "toools").
+  /// - Nếu engine vừa BỎ diacritic (vd VNI a11 toggle "á" → "a"):
+  ///   grapheme count giữ nguyên, NFD scalar count GIẢM → user thực sự gõ
+  ///   command key thứ 2 → cần emit raw ký tự (vd '1') để user thấy.
+  /// - Nếu count thay đổi (vd Telex 'aaa' cancel "â" → "aa"): engine đã tự
+  ///   bù vào transformed → KHÔNG append.
+  /// - Nếu count + NFD giống nhau (engine no-op trên character này):
+  ///   APPEND raw key.
+  static func shouldAppendRawKey(newTransformed: String, oldTransformed: String) -> Bool {
+    // Khác grapheme count → engine đã tự reflect keystroke vào output.
+    guard newTransformed.count == oldTransformed.count else { return false }
+    let nfdNew = newTransformed.decomposedStringWithCanonicalMapping.unicodeScalars.count
+    let nfdOld = oldTransformed.decomposedStringWithCanonicalMapping.unicodeScalars.count
+    // NFD tăng = combining diacritic vừa thêm → engine consumed → KHÔNG append.
+    return nfdNew <= nfdOld
   }
 }
 
@@ -641,9 +680,8 @@ class InputProcessor {
   private var prev1Committed: String? = nil
   private var prev2Committed: String? = nil
   private var activePrediction: String? = nil
-  /// 2.0 (A2): toàn bộ candidates đang hiển thị trong HUD (top-N).
-  /// Nhấn 1/2/3 để chọn theo index, hoặc Tab để accept top-1.
-  private var activePredictionCandidates: [String] = []
+  // 2.0.2 (J1): xoá `activePredictionCandidates: [String]` — predict về top-1
+  // only, không cần lưu danh sách candidates.
 
   // 2.0 (A5): auto-capitalize state machine — tracking khi user gõ
   // sentence-ending punctuation (. ! ?) hoặc Enter, để uppercase chữ cái
@@ -830,22 +868,8 @@ class InputProcessor {
   private func handleTextChar(_ incomingChar: Character, event: CGEvent) -> Unmanaged<CGEvent>? {
     var newChar = incomingChar
 
-    // 2.0 (A2): digit-selection cho top-N prediction. Chỉ intercept khi:
-    // - HUD đang hiển thị nhiều hơn 1 candidate
-    // - word buffer đang TRỐNG (vừa commit từ + space)
-    // - digit nằm trong range hợp lệ
-    // Tránh nhiễu khi user gõ số trong câu thường ("3 con mèo" — bằng cách
-    // require buffer blank + có candidates list multi-item).
-    if Defaults[.wordPredictionEnabled],
-       activePredictionCandidates.count > 1,
-       wordBuffer.wordState.isBlank,
-       wordBuffer.keys.isEmpty,
-       let digit = incomingChar.wholeNumberValue,
-       digit >= 1, digit <= activePredictionCandidates.count {
-      let chosen = activePredictionCandidates[digit - 1]
-      injectAcceptedPrediction(chosen)
-      return nil
-    }
+    // 2.0.2 (J1): digit-selection 1/2/3 đã bị xoá vì dễ nhầm với gõ số
+    // trong văn bản. Prediction về đơn giản: chỉ top-1, Tab accept.
 
     // Check if this is a word-ending character (punctuation, etc.) BEFORE processing
     if let _ = InputProcessor.NewWordKeys.firstIndex(of: newChar) {
@@ -964,7 +988,6 @@ class InputProcessor {
       prev1Committed = recomputed.lowercased()
     }
     activePrediction = nil
-    activePredictionCandidates = []
     DispatchQueue.main.async {
       PredictionHUDWindow.shared.hide()
     }
@@ -1090,31 +1113,24 @@ class InputProcessor {
 
     // 2.0 (B1): Window Title Rule có thể force tắt prediction cho context này.
     if Defaults[.wordPredictionEnabled], !ruleOverrides.disablePrediction {
-      // 2.0 (A2): top-N candidates (default 3). Backward-compat: nếu user
-      // chỉnh predictionTopN = 1, hành vi y hệt 1.x.
-      let topN = max(1, min(3, Defaults[.predictionTopN]))
-      let candidates = PredictionEngine.shared.topNPredictions(
+      // 2.0.2 (J1): chỉ top-1 prediction. Multi-candidate UI đã được xoá
+      // (digit 1/2/3 dễ nhầm với gõ số trong văn bản).
+      if let prediction = PredictionEngine.shared.topPrediction(
         prev2: prev2Committed,
-        prev1: prev1Committed ?? "",
-        n: topN
-      )
-      if let first = candidates.first {
-        activePrediction = first
-        activePredictionCandidates = candidates
-        let snapshot = candidates
+        prev1: prev1Committed ?? ""
+      ) {
+        activePrediction = prediction
         DispatchQueue.main.async {
-          PredictionHUDWindow.shared.showCandidates(snapshot)
+          PredictionHUDWindow.shared.show(prediction: prediction)
         }
       } else {
         activePrediction = nil
-        activePredictionCandidates = []
         DispatchQueue.main.async {
           PredictionHUDWindow.shared.hide()
         }
       }
     } else {
       activePrediction = nil
-      activePredictionCandidates = []
       DispatchQueue.main.async {
         PredictionHUDWindow.shared.hide()
       }

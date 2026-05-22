@@ -279,13 +279,18 @@ struct GeneralView: View {
                         .padding(.top, -8)
                 }
 
+                // 2.0.2 (J3): đổi label "Phím tắt" → "Phím tắt chuyển đổi VI/EN".
+                // Default modifier-only: ⇧⌥ (Shift+Option) — set qua
+                // `Defaults.Keys.modifierOnlyToggleHotkey`. User vẫn có thể
+                // gán key+modifier qua FlexibleShortcutRecorder bên dưới.
                 LabeledContent {
                     FlexibleShortcutRecorder(name: .toggleInputMode)
                 } label: {
-                    Label("Phím tắt", themedSymbol: "command")
+                    Label("Phím tắt chuyển đổi VI/EN", themedSymbol: "command")
                 }
 
-                // 2.0 (B4): hotkey cho Text Conversion menu
+                // 2.0 (B4) + 2.0.2 (J3): hotkey Text Tools.
+                // Default modifier-only ⌃⇧ qua `modifierOnlyTextToolsHotkey`.
                 LabeledContent {
                     FlexibleShortcutRecorder(name: .openTextConversionMenu)
                 } label: {
@@ -351,8 +356,7 @@ struct SpellCheckView: View {
     @Default(.pendingDictSuggestions) private var pendingSuggestions
     // 1.8.3: chuyển từ Tab Chung sang đây — prediction thuộc chức năng spell-checking.
     @Default(.wordPredictionEnabled) private var wordPredictionEnabled
-    // 2.0 (A2): hiển thị bao nhiêu candidate trong HUD (1-3).
-    @Default(.predictionTopN) private var predictionTopN
+    // 2.0.2 (J1): xoá `predictionTopN` — prediction về top-1 only.
     @Default(.predictionHUDLineOffset) private var predictionHUDLineOffset
     // 1.9.2: HUD customization chuyển từ Tab Chung sang đây — chỉ visible
     // khi `wordPredictionEnabled = true`. Gom cùng nhóm cài đặt prediction.
@@ -536,20 +540,8 @@ struct SpellCheckView: View {
                                 .foregroundStyle(.secondary)
                                 .padding(.top, -8)
 
-                            // 2.0 (A2): top-N candidates
-                            Stepper(value: $predictionTopN, in: 1...3) {
-                                HStack {
-                                    Label("Số gợi ý hiển thị", themedSymbol: "list.number")
-                                    Spacer()
-                                    Text("\(predictionTopN)")
-                                        .foregroundStyle(.secondary)
-                                        .monospacedDigit()
-                                }
-                            }
-                            Text("Hiển thị nhiều gợi ý cùng lúc. Khi >1, chọn bằng phím số 1/2/3 (chỉ khi vừa commit, chưa gõ tiếp); ⇥ Tab vẫn nhận gợi ý đầu tiên.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .padding(.top, -8)
+                            // 2.0.2 (J1): xoá Stepper "Số gợi ý hiển thị". Prediction
+                            // về top-1 only — digit 1/2/3 dễ nhầm với gõ số.
 
                             Stepper(value: $predictionHUDLineOffset, in: 1...10) {
                                 HStack {

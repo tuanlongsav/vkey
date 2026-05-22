@@ -40,14 +40,10 @@ final class PredictionHUDWindow {
     hostingController = nil
   }
 
+  /// 2.0.2 (J1): chỉ hiển thị top-1 prediction. Multi-candidate UI đã bị
+  /// xoá do digit selection (1/2/3) dễ nhầm với gõ số trong văn bản.
   func show(prediction: String) {
-    showCandidates([prediction])
-  }
-
-  /// 2.0 (A2): hiển thị top-N candidates. n=1 giữ behavior cũ; n>1 hiển thị
-  /// các candidates theo dòng với chỉ số 1/2/3 ở đầu để user chọn nhanh.
-  func showCandidates(_ candidates: [String]) {
-    guard !candidates.isEmpty else { hide(); return }
+    guard !prediction.isEmpty else { hide(); return }
     hideTimer?.invalidate()
 
     // 1.9.1: đọc Defaults 1 lần ở show(), pass vào view qua init. Tránh
@@ -55,9 +51,9 @@ final class PredictionHUDWindow {
     // window resize → NSException crash (xảy ra ở v1.9.0).
     let fontSize = Self.clampedFontSize(Defaults[.predictionHUDFontSize])
     let backgroundStrength = Self.clampedBackgroundStrength(Defaults[.hudOpacityPercent])
-    let contentSize = Self.candidatesContentSize(candidates: candidates, fontSize: fontSize)
+    let contentSize = Self.contentSize(for: "→ \(prediction)   ⇥ Tab", fontSize: fontSize)
     let view = PredictionHUDView(
-      candidates: candidates,
+      prediction: prediction,
       fontSize: fontSize,
       backgroundStrength: backgroundStrength,
       contentSize: contentSize
@@ -119,50 +115,8 @@ final class PredictionHUDWindow {
     )
   }
 
-  /// 2.0 (A2): tính size cho multi-candidate HUD. 1 candidate giữ size cũ.
-  /// Nhiều candidate → mỗi dòng "1 word", phần dưới hint "1/2/3 hoặc Tab".
-  nonisolated static func candidatesContentSize(candidates: [String], fontSize: Int) -> CGSize {
-    if candidates.count <= 1 {
-      let text = "→ \(candidates.first ?? "")   ⇥ Tab"
-      return contentSize(for: text, fontSize: fontSize)
-    }
-    let clampedSize = CGFloat(clampedFontSize(fontSize))
-    let font = NSFont.systemFont(ofSize: clampedSize, weight: .semibold)
-    let hintFont = NSFont.systemFont(ofSize: max(10, clampedSize - 4), weight: .regular)
-    let attrs: [NSAttributedString.Key: Any] = [.font: font]
-    let hintAttrs: [NSAttributedString.Key: Any] = [.font: hintFont]
-
-    let huge = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-    var maxLineWidth: CGFloat = 0
-    for (i, c) in candidates.enumerated() {
-      let line = "\(i + 1)  \(c)"
-      let bounds = (line as NSString).boundingRect(
-        with: huge,
-        options: [.usesLineFragmentOrigin, .usesFontLeading],
-        attributes: attrs
-      )
-      maxLineWidth = max(maxLineWidth, bounds.width)
-    }
-    let hint = "1–\(candidates.count) hoặc ⇥ Tab"
-    let hintBounds = (hint as NSString).boundingRect(
-      with: huge,
-      options: [.usesLineFragmentOrigin, .usesFontLeading],
-      attributes: hintAttrs
-    )
-
-    let lineHeight = ceil(font.ascender - font.descender + font.leading) + 4
-    let hintHeight = ceil(hintFont.ascender - hintFont.descender + hintFont.leading) + 6
-    let horizontalPadding: CGFloat = 32
-    let verticalPadding: CGFloat = 16
-    let shadowAllowance: CGFloat = 16
-
-    let contentWidth = max(maxLineWidth, hintBounds.width)
-    let totalWidth: CGFloat = ceil(contentWidth + horizontalPadding + shadowAllowance)
-    let bodyHeight = lineHeight * CGFloat(candidates.count) + hintHeight
-    let totalHeight: CGFloat = ceil(bodyHeight + verticalPadding + shadowAllowance)
-
-    return CGSize(width: max(180, totalWidth), height: totalHeight)
-  }
+  // 2.0.2 (J1): xoá `candidatesContentSize(candidates:fontSize:)`. Multi-
+  // candidate UI bỏ; chỉ dùng `contentSize(for:fontSize:)` cho top-1.
 
   nonisolated private static func clampedFontSize(_ value: Int) -> Int {
     max(12, min(24, value))
@@ -379,7 +333,8 @@ final class PredictionHUDWindow {
 }
 
 struct PredictionHUDView: View {
-  let candidates: [String]
+  /// 2.0.2 (J1): chỉ 1 prediction. Multi-candidate UI đã xoá.
+  let prediction: String
   // 1.9.1: pass qua init thay vì @Default trong struct — tránh crash
   // NSHostingView khi Defaults change trigger re-render + animated resize.
   let fontSize: Int
@@ -387,74 +342,34 @@ struct PredictionHUDView: View {
   let contentSize: CGSize
   @Environment(\.colorScheme) private var colorScheme
 
-  // Backward-compat init cho callers cũ truyền `text:` string đơn lẻ.
-  init(text: String, fontSize: Int, backgroundStrength: Double, contentSize: CGSize) {
-    self.candidates = [text]
-    self.fontSize = fontSize
-    self.backgroundStrength = backgroundStrength
-    self.contentSize = contentSize
-  }
-
-  init(candidates: [String], fontSize: Int, backgroundStrength: Double, contentSize: CGSize) {
-    self.candidates = candidates
+  init(prediction: String, fontSize: Int, backgroundStrength: Double, contentSize: CGSize) {
+    self.prediction = prediction
     self.fontSize = fontSize
     self.backgroundStrength = backgroundStrength
     self.contentSize = contentSize
   }
 
   var body: some View {
-    Group {
-      if candidates.count <= 1 {
-        singleCandidateView
-      } else {
-        multiCandidateView
-      }
-    }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 10)
-    .background(
-      Color.black.opacity(scrimOpacity),
-      in: RoundedRectangle(cornerRadius: 16)
-    )
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-    .overlay(
-      RoundedRectangle(cornerRadius: 16)
-        .strokeBorder(Color.white.opacity(strokeOpacity), lineWidth: 0.6)
-    )
-    .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
-    .frame(width: contentSize.width, height: contentSize.height)
-  }
-
-  @ViewBuilder
-  private var singleCandidateView: some View {
-    let text = "→ \(candidates.first ?? "")   ⇥ Tab"
+    let text = "→ \(prediction)   ⇥ Tab"
     Text(text)
       // 1.9.4: font weight medium → semibold để chữ đậm rõ trên material
       // background. Default size 16 (thay 13).
       .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .rounded))
       .foregroundStyle(.primary)
       .shadow(color: .black.opacity(0.15), radius: 0.5, x: 0, y: 0.5)
-  }
-
-  @ViewBuilder
-  private var multiCandidateView: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      ForEach(Array(candidates.enumerated()), id: \.offset) { index, word in
-        HStack(spacing: 8) {
-          Text("\(index + 1)")
-            .font(.system(size: CGFloat(fontSize) - 2, weight: .bold, design: .rounded))
-            .foregroundStyle(.secondary)
-            .frame(width: 18, alignment: .leading)
-          Text(word)
-            .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .rounded))
-            .foregroundStyle(index == 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.primary.opacity(0.85)))
-        }
-      }
-      Text("1–\(candidates.count) hoặc ⇥ Tab")
-        .font(.system(size: max(10, CGFloat(fontSize) - 4), weight: .regular))
-        .foregroundStyle(.secondary)
-        .padding(.top, 2)
-    }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 10)
+      .background(
+        Color.black.opacity(scrimOpacity),
+        in: RoundedRectangle(cornerRadius: 16)
+      )
+      .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+      .overlay(
+        RoundedRectangle(cornerRadius: 16)
+          .strokeBorder(Color.white.opacity(strokeOpacity), lineWidth: 0.6)
+      )
+      .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+      .frame(width: contentSize.width, height: contentSize.height)
   }
 
   private var scrimOpacity: Double {

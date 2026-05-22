@@ -2,6 +2,65 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.0.2] - 2026-05-22 — "Bug Hunt"
+
+**Patch fix bug class lớn + UX hotkey/prediction**. Không thêm tính năng mới. README rà soát ✓
+
+### 🐛 J2 — Bug class "toools" (3 fix sites + 7 regression tests)
+
+**Trước 2.0.2**: gõ "text tools" + Space → ra "**toools**" (thừa 1 chữ 'o'). Bug class lớn ảnh hưởng tới mọi từ tiếng Anh có cụm "oo"/"aa"/"ee" trước consonant: `tools, boot, boost, bloom, shoot, loop, stoop, goose, foot, food, mood, moon, noon, pool, room, root, baa, naan, bee, see, fee, ...` Trên VNI tương tự với `to6o`, `ddo9`.
+
+**Root cause**: Logic `transformed.count == lastTransformedForStep.count` trong `InputProcessor.swift` (3 sites — `reconstructState` line ~297, `push` replay path line ~403, `push` main path line ~505) coi "engine không thay đổi" → append raw key. Khi engine apply combining diacritic (vd Telex `to`+`o` → `tô` — grapheme count vẫn 2 nhưng NFD scalar count tăng 2 → 3), code vẫn append raw `o` thừa → "tôo".
+
+**Fix**: Helper `WordBuffer.shouldAppendRawKey(newTransformed:oldTransformed:)` so sánh **NFD scalar count** thay vì grapheme count. Logic:
+- NFD scalar count TĂNG → engine vừa thêm combining diacritic → KHÔNG append raw key.
+- NFD scalar count GIỮ NGUYÊN → engine no-op → append (vẫn cần raw key).
+- NFD scalar count GIẢM → engine vừa bỏ diacritic (toggle off) → append raw command key (vd '1', '6' để user thấy).
+- Grapheme count THAY ĐỔI → engine đã tự reflect keystroke vào output → KHÔNG append.
+
+**Preserve behavior**: Tất cả test toggle hiện có vẫn pass:
+- VNI: `a11` → "a1", `a66` → "a6", `a88` → "a8", `d99` → "d9".
+- Telex triple-toggle: `aaa` → "aa", `ooo` → "oo", `eee` → "ee", `aww` → "aw", `uww` → "uw".
+
+**Test coverage**: 7 regression test mới (`testTelex_J2_oo_class_no_extra_char`, `_aa_class`, `_ee_class`, `_replay_path`, `_triple_toggle_preserved`, `_vietnamese_typing_preserved`, `testVNI_J2_digit_toggle_preserved`). Tổng test: 205 → 212, 0 failures.
+
+### ✨ J1 — Prediction về top-1 only (bỏ digit selection)
+
+**Trước**: PredictionHUD hiển thị top-3 candidates, user nhấn 1/2/3 để chọn. Vấn đề: gõ văn bản có số (vd "3 con mèo") → vô tình nhấn '3' khi đang có prediction → chọn nhầm.
+
+**Sau**: chỉ hiển thị top-1, Tab accept. UI đơn giản, không xung đột với gõ số.
+
+**Xoá**:
+- `InputProcessor.swift`: digit handler block (line ~872-887), field `activePredictionCandidates: [String]`.
+- `PredictionHUDWindow.swift`: API `showCandidates([String])`, `multiCandidateView`, helper `candidatesContentSize`.
+- `Setting.swift`: Defaults key `predictionTopN`.
+- `SettingView.swift`: Stepper "Số gợi ý hiển thị" trong tab Chính tả.
+
+### ⌨️ J3 — Default hotkey + label rename
+
+- **VI/EN toggle default**: ⌃⇧ (Control+Shift) → **⇧⌥ (Shift+Option)** — ít xung đột hơn với system shortcuts. User existing 2.0.1 không bị thay đổi (Defaults default chỉ apply lần đầu).
+- **Label** trong tab Chung: "Phím tắt" → "**Phím tắt chuyển đổi VI/EN**" cho rõ.
+- **Text Tools default**: thêm modifier-only **⌃⇧ (Control+Shift)** để mở Text Tools menu. Trước đó không có default — user phải gán thủ công qua KeyboardShortcuts Recorder.
+
+**Implementation**:
+- `Setting.swift`: `kDefaultModifierOnlyMask` đổi sang Shift+Option; thêm `kDefaultTextToolsMask` (Control+Shift) + `Defaults.Keys.modifierOnlyTextToolsHotkey`.
+- `EventHook.swift`: refactor `handleModifierOnlyHotkey` → `processModifierTargets(targets:)` support nhiều modifier-only target song song. Khi user thả combo, return mask của target khớp → caller route tới handler tương ứng (toggle VI/EN hoặc Text Tools menu).
+- `SettingView.swift`: label mới + chú thích kèm theo.
+
+### Migration
+
+- User 2.0.1 → 2.0.2 hotkey ⌃⇧ (đã save) vẫn hoạt động cho VI/EN. User mới install (hoặc reset Defaults) sẽ thấy ⇧⌥.
+- Text Tools default ⌃⇧ chỉ apply cho user new — user đã có shortcut khác giữ nguyên.
+- Bug class "toools" tự động fix sau update.
+- Không breaking change cho engine/parser/macros/dictionary.
+
+### Thông tin build
+
+- macOS 14+ (Sonoma), Xcode 26.5+, Swift 5.10+, Rust 1.95+ (chỉ khi rebuild rust-core).
+- DMG: vkey-2.0.2.dmg, 7,475,300 bytes (giảm 12 KB so với 2.0.1).
+- Sparkle signature: `QwKK/Hr5kGaOaVhCPdSSDbEyh22igBRNWaFxXR5VYCGhOJjSJbVEkIVMDCMMLEtj7tCCYlDRMoiO9g75MTdVBQ==`
+- Tests: 212/212 pass (gồm 7 regression test mới cho J2).
+
 ## [2.0.1] - 2026-05-22 — "Symphony Polish"
 
 **Patch dọn dẹp sau khi user dùng thử 2.0**. Không thêm tính năng mới — 4 thay đổi để gọn UI + gọn code. README rà soát ✓

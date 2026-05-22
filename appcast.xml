@@ -6,6 +6,55 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.0.2 — "Bug Hunt"</title>
+      <sparkle:version>20002</sparkle:version>
+      <sparkle:shortVersionString>2.0.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 22 May 2026 18:55:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.0.2/vkey-2.0.2.dmg"
+        sparkle:edSignature="QwKK/Hr5kGaOaVhCPdSSDbEyh22igBRNWaFxXR5VYCGhOJjSJbVEkIVMDCMMLEtj7tCCYlDRMoiO9g75MTdVBQ=="
+        length="7475300"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.0.2 — "Bug Hunt":</h2>
+        <p><em>Patch fix bug class lớn + UX hotkey/prediction. Không thêm tính năng mới.</em></p>
+
+        <h3>🐛 Bug fix lớn (J2): "toools" và 8+ từ tiếng Anh khác</h3>
+        <p>Trước 2.0.2, gõ "text tools" + Space ra "<strong>toools</strong>" (thừa 1 chữ <code>o</code>). Đây là bug class lớn ảnh hưởng tới mọi từ tiếng Anh có cụm "oo"/"aa"/"ee" trước một consonant: <code>tools, boot, boost, bloom, shoot, loop, stoop, goose, foot, food, mood, moon, noon, pool, room, root, baa, naan, bee, see, fee, ...</code></p>
+        <p><strong>Root cause</strong>: Logic <code>transformed.count == lastTransformedForStep.count</code> trong InputProcessor.swift (3 sites) coi "engine không thay đổi" → append raw key. Nhưng khi engine apply combining diacritic (vd Telex <code>to</code>+<code>o</code> → <code>tô</code> — grapheme count vẫn 2 nhưng NFD scalar count tăng từ 2 → 3), code vẫn append raw <code>o</code> thừa.</p>
+        <p><strong>Fix</strong>: Helper <code>WordBuffer.shouldAppendRawKey(...)</code> so sánh NFD scalar count thay vì grapheme count. Chỉ append khi NFD scalar count KHÔNG TĂNG. Preserve toggle behavior cho VNI <code>a11</code>, <code>a66</code>, <code>d99</code> + Telex triple-toggle <code>aaa</code>, <code>aww</code>.</p>
+        <p><strong>Test coverage</strong>: 7 regression test mới (testTelex_J2_*) phủ toàn bộ bug class. Tổng test: 205 → 212.</p>
+
+        <h3>✨ J1: Prediction về top-1 only (bỏ digit selection)</h3>
+        <ul>
+          <li>Trước 2.0.2: PredictionHUD hiển thị top-3 candidates, user nhấn 1/2/3 để chọn. Vấn đề: gõ văn bản có số (vd "3 con mèo") gây nhầm — vô tình nhấn '3' khi đang có prediction → chọn nhầm.</li>
+          <li>Sau 2.0.2: chỉ hiển thị top-1, Tab accept. UI đơn giản, không xung đột số.</li>
+          <li>Xoá: digit handler trong handleTextChar, `activePredictionCandidates` array, multiCandidateView UI, Defaults key `predictionTopN`, Stepper "Số gợi ý hiển thị" trong Settings.</li>
+        </ul>
+
+        <h3>⌨️ J3: Default hotkey + label rename</h3>
+        <ul>
+          <li><strong>VI/EN toggle default</strong>: ⌃⇧ (Control+Shift) → <strong>⇧⌥ (Shift+Option)</strong>. Ít xung đột hơn với system shortcuts. User existing không bị thay đổi (Defaults default chỉ apply lần đầu).</li>
+          <li><strong>Label</strong>: "Phím tắt" → "<strong>Phím tắt chuyển đổi VI/EN</strong>" cho rõ.</li>
+          <li><strong>Text Tools default</strong>: thêm modifier-only ⌃⇧ (Control+Shift) để mở Text Tools menu. EventHook refactor để support nhiều modifier-only target song song (qua <code>processModifierTargets</code>).</li>
+        </ul>
+
+        <h3>🔧 Code changes</h3>
+        <ul>
+          <li>InputProcessor.swift: 3 fix sites + helper <code>shouldAppendRawKey</code>; xoá digit handler + multi-candidate path.</li>
+          <li>PredictionHUDWindow.swift: đơn giản hoá `show(prediction:)`, xoá `showCandidates` + `multiCandidateView`.</li>
+          <li>PredictionEngine.swift: giữ cả `topPrediction` + `topNPredictions` (caller chỉ dùng top).</li>
+          <li>Setting.swift: thêm `kDefaultTextToolsMask` + `Defaults.Keys.modifierOnlyTextToolsHotkey`; xoá `predictionTopN`.</li>
+          <li>EventHook.swift: <code>processModifierTargets(...)</code> đa target.</li>
+          <li>vkeyTests/vkeyTests.swift: +7 regression tests J2.</li>
+        </ul>
+
+        <p><strong>Tests</strong>: 212/212 pass. <strong>DMG</strong>: 7.13 MB (giảm 12 KB so với 2.0.1).</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.0.1 — "Symphony Polish"</title>
       <sparkle:version>20001</sparkle:version>
       <sparkle:shortVersionString>2.0.1</sparkle:shortVersionString>

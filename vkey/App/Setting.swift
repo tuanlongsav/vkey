@@ -38,10 +38,20 @@ extension KeyboardShortcuts.Name {
   // 2.0.1: `toggleFloatingToolbar` đã bị xoá cùng với Floating Toolbar.
 }
 
-/// Default modifier-only hotkey: Control + Shift.
+/// Default modifier-only hotkey cho VI/EN toggle: **Shift + Option** (⇧⌥).
+/// 2.0.2 đổi từ Control+Shift (⌃⇧) sang Shift+Option theo user feedback —
+/// ⇧⌥ ít xung đột hơn với system shortcuts.
+///
 /// The bit layout matches both `NSEvent.ModifierFlags` and `CGEventFlags` on
 /// macOS, so the same Int value is compared on either side of the event tap.
 private let kDefaultModifierOnlyMask: Int =
+  Int(NSEvent.ModifierFlags.shift.rawValue) | Int(NSEvent.ModifierFlags.option.rawValue)
+
+/// Default modifier-only hotkey cho Text Tools (B4): **Control + Shift** (⌃⇧).
+/// 2.0.2 thêm — mirror cấu trúc của VI/EN toggle. EventHook check thêm mask
+/// này để trigger `TextConversionService.shared.openMenu()` khi user nhấn
+/// + thả ⌃⇧ không kèm letter key.
+private let kDefaultTextToolsMask: Int =
   Int(NSEvent.ModifierFlags.control.rawValue) | Int(NSEvent.ModifierFlags.shift.rawValue)
 
 /// A text-expansion macro: when the user types `from` as a standalone word, vkey replaces
@@ -186,12 +196,23 @@ extension Defaults.Keys {
   /// - 2 = 14 office + 8 emoji + 12 symbols (1.5.5+)
   /// Migration trong `AppDelegate.seedDefaultMacrosIfNeeded()` idempotent.
   static let defaultMacrosVersion = Key<Int>("default-macros-version", default: 0)
-  /// Tổ hợp modifier-only (vd Shift+Control) dùng để chuyển đổi vi/en.
-  /// 0 = không dùng. Bit layout giống NSEvent.ModifierFlags (.shift=0x20000, .control=0x40000…).
-  /// Mặc định: ⌃⇧ (Control+Shift).
+  /// Tổ hợp modifier-only (vd Shift+Option, Control+Shift) dùng để chuyển
+  /// đổi VI/EN. 0 = không dùng. Bit layout giống NSEvent.ModifierFlags
+  /// (.shift=0x20000, .control=0x40000, .option=0x80000…).
+  /// Default 2.0.2: ⇧⌥ (Shift+Option). Trước đó (1.x–2.0.1): ⌃⇧.
   static let modifierOnlyToggleHotkey = Key<Int>(
     "modifier-only-toggle-hotkey",
     default: kDefaultModifierOnlyMask
+  )
+
+  /// 2.0.2 (J3): tổ hợp modifier-only dùng để mở Text Tools menu (B4).
+  /// 0 = tắt. Default: ⌃⇧ (Control+Shift). EventHook check trên cùng path
+  /// với `modifierOnlyToggleHotkey` — trigger khi user nhấn + thả mask này
+  /// không kèm letter/punct key. Nếu mask trùng với toggle hotkey, toggle
+  /// thắng (check trước trong event handler).
+  static let modifierOnlyTextToolsHotkey = Key<Int>(
+    "modifier-only-text-tools-hotkey",
+    default: kDefaultTextToolsMask
   )
   
   /// Tuỳ chọn kiểu đặt dấu: false = Kiểu cũ (hòa, khỏe), true = Kiểu mới (hoà, khoẻ).
@@ -401,9 +422,7 @@ extension Defaults.Keys {
   // HUDThemeSection chưa wire vào HUD thực — gây nhầm lẫn user. Dùng
   // `hudOpacityPercent` (1.9.0) cho điều chỉnh HUD đang hoạt động.
 
-  /// A2 (2.0): số gợi ý hiển thị trong PredictionHUD. 1 = legacy behavior,
-  /// 2-3 = popup nhiều dòng, chọn bằng số phím hoặc Tab+arrow.
-  static let predictionTopN = Key<Int>("prediction-top-n", default: 3)
+  // 2.0.2 (J1): xoá `predictionTopN` — multi-candidate UI bị bỏ.
 
   /// B1 (2.0): danh sách rules theo bundle ID + window title regex để
   /// override hành vi vkey per-context (vd Google Docs delay 50ms,

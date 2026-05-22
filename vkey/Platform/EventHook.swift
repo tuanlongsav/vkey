@@ -50,41 +50,59 @@ class EventHook {
     currentMods: UInt64,
     modifierTarget: UInt64
   ) -> Bool {
-    guard modifierTarget != 0 else { return false }
+    return processModifierTargets(type: type, currentMods: currentMods, targets: [modifierTarget])
+      == modifierTarget
+  }
+
+  /// 2.0.2 (J3): support nhiều modifier-only targets cùng lúc (vd VI/EN
+  /// + Text Tools). Logic: armed theo target khớp currentMods. Khi release
+  /// (currentMods == 0) trả về target đã armed (nếu key chưa được dùng).
+  /// Return 0 = không trigger; non-zero = mask của target vừa fire.
+  @discardableResult
+  func processModifierTargets(
+    type: CGEventType,
+    currentMods: UInt64,
+    targets: [UInt64]
+  ) -> UInt64 {
+    // Bỏ targets = 0 và duplicate.
+    let validTargets = Array(Set(targets.filter { $0 != 0 }))
+    guard !validTargets.isEmpty else { return 0 }
 
     if type == .flagsChanged {
-      if currentMods == modifierTarget && modifierArmedMask == 0 {
-        modifierArmedMask = modifierTarget
-        modifierKeyUsedDuringArm = false
-        return false
+      // Khi chưa armed, check xem currentMods có match target nào không.
+      if modifierArmedMask == 0 {
+        if validTargets.contains(currentMods) {
+          modifierArmedMask = currentMods
+          modifierKeyUsedDuringArm = false
+        }
+        return 0
       }
 
-      guard modifierArmedMask != 0 else { return false }
-
-      let hasExtraModifier = (currentMods & ~modifierTarget) != 0
+      // Đang armed. Check extra modifier ngoài armedMask → cancel.
+      let armedMask = modifierArmedMask
+      let hasExtraModifier = (currentMods & ~armedMask) != 0
       if hasExtraModifier {
         modifierArmedMask = 0
         modifierKeyUsedDuringArm = false
-        return false
+        return 0
       }
 
       if currentMods == 0 {
         let fire = !modifierKeyUsedDuringArm
         modifierArmedMask = 0
         modifierKeyUsedDuringArm = false
-        return fire
+        return fire ? armedMask : 0
       }
 
-      // The user released part of the target combo. Keep waiting until all
-      // target modifiers are up so a normal one-by-one release still toggles.
-      return false
+      // Một phần của combo được thả — đợi tất cả modifiers up.
+      return 0
     }
 
     if type == .keyDown && modifierArmedMask != 0 {
       modifierKeyUsedDuringArm = true
     }
 
-    return false
+    return 0
   }
 
   func setEnabled(_ value: Bool) {
@@ -217,21 +235,29 @@ func eventTapCallback(
   }
 
   // ── Modifier-only hotkey detection ────────────────────────────────────────
-  // The user can configure a pure-modifier combo (e.g. ⌃⇧) to toggle Vi/En.
-  // Carbon's RegisterEventHotKey can't bind to modifiers alone, so we watch
-  // .flagsChanged events directly and trigger on press→release without an
-  // intervening keyDown.
-  let modifierTarget = UInt64(Defaults[.modifierOnlyToggleHotkey])
-  if modifierTarget != 0 {
+  // The user can configure pure-modifier combos (e.g. ⇧⌥ for Vi/En toggle,
+  // ⌃⇧ for Text Tools menu). Carbon's RegisterEventHotKey can't bind to
+  // modifiers alone, so we watch .flagsChanged events directly and trigger
+  // on press→release without an intervening keyDown.
+  // 2.0.2 (J3): support 2 modifier-only targets song song.
+  let toggleTarget = UInt64(Defaults[.modifierOnlyToggleHotkey])
+  let textToolsTarget = UInt64(Defaults[.modifierOnlyTextToolsHotkey])
+  if toggleTarget != 0 || textToolsTarget != 0 {
     let currentMods = event.flags.rawValue & kModifierMask
-    let shouldToggle = eventHook.handleModifierOnlyHotkey(
+    let firedMask = eventHook.processModifierTargets(
       type: type,
       currentMods: currentMods,
-      modifierTarget: modifierTarget
+      targets: [toggleTarget, textToolsTarget]
     )
-    if shouldToggle, let appState = eventHook.appState {
-      DispatchQueue.main.async {
-        appState.setEnabled(set: !appState.enabled)
+    if firedMask != 0 {
+      if firedMask == toggleTarget, let appState = eventHook.appState {
+        DispatchQueue.main.async {
+          appState.setEnabled(set: !appState.enabled)
+        }
+      } else if firedMask == textToolsTarget {
+        DispatchQueue.main.async {
+          TextConversionService.shared.openMenu(near: nil)
+        }
       }
     }
   }
