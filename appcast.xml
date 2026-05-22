@@ -6,6 +6,50 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.1.1 — "Theme System"</title>
+      <sparkle:version>20101</sparkle:version>
+      <sparkle:shortVersionString>2.1.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 22 May 2026 22:12:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.1.1/vkey-2.1.1.dmg"
+        sparkle:edSignature="+GMBqnWfkXeViTt7WhVGXfkD+HDLnp0wrUP5V6wXaerZ66kM47N07n2tOTdgLfmrOejkYfSyI9QF7D/kI5ZFDg=="
+        length="7568068"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.1.1 — "Theme System":</h2>
+        <p><em>Tách Tonal redesign thành <strong>theme</strong> tùy chọn. User có thể switch giữa Classic (v2.0.2 look) và Tonal (v2.1.0 design) trong Settings. Mặc định = Tonal.</em></p>
+
+        <h3>🎨 Hệ thống Theme — switch live, không cần restart</h3>
+        <ul>
+          <li><strong>Tab Chung → Picker "Giao diện"</strong>: chọn Classic hoặc Tonal. Switch tức thì.</li>
+          <li><strong>Classic</strong>: diện mạo gốc v2.0.2 — accent system blue, HUD đơn giản, icon coffee cup, không wordmark.</li>
+          <li><strong>Tonal</strong> (mặc định): design system mới — accent đỏ brand <code>#E04434</code>, HUD glass tối deep-ink, app icon đỏ, wordmark "vkey".</li>
+          <li>Theme apply cho: accent color toàn app, HUD VI/EN, HUD prediction, Settings header, app icon trên notification.</li>
+        </ul>
+
+        <h3>🛠 Kiến trúc theme</h3>
+        <ul>
+          <li><code>UITheme</code> enum + <code>Defaults.Keys.uiTheme</code> (mặc định <code>.tonal</code>) — persistent qua session.</li>
+          <li><code>ThemeManager</code> <code>ObservableObject</code> — observe Defaults change, re-render qua <code>@StateObject</code> ở app root.</li>
+          <li><code>.tint(themeManager.current.accentColor)</code> ở Settings TabView + MenuBarExtra root → toàn bộ Toggle/Picker/focus ring đổi màu khi switch theme.</li>
+          <li><code>AppIconSwitcher</code>: <code>NSApplication.shared.applicationIconImage</code> swap khi theme đổi.</li>
+          <li>HUD windows: rẽ nhánh <code>if uiTheme == .tonal</code> trong SwiftUI body — Classic giữ nguyên 100% logic v2.0.2.</li>
+        </ul>
+
+        <h3>📁 Asset</h3>
+        <ul>
+          <li><code>AppIconClassic.appiconset</code> — restore icon v2.0.2 từ git history (46 PNG đầy đủ).</li>
+          <li><code>CficonClassic.imageset</code> — header icon Classic (coffee cup) cho Settings.</li>
+          <li>Bundle giờ chứa cả 2 bộ icon song song.</li>
+        </ul>
+
+        <h3>🛡 Không thay đổi</h3>
+        <p>Engine gõ, từ điển, spell-check, prediction, Smart Switch, Macro — toàn bộ giữ nguyên. 212 test pass nguyên trạng.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.1.0 — "Tonal Redesign"</title>
       <sparkle:version>20100</sparkle:version>
       <sparkle:shortVersionString>2.1.0</sparkle:shortVersionString>

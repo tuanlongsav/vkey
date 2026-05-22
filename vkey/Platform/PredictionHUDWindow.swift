@@ -349,9 +349,53 @@ struct PredictionHUDView: View {
     self.contentSize = contentSize
   }
 
+  @Default(.uiTheme) private var uiTheme
+
   var body: some View {
-    // v2.1.0: Tonal `hud--prediction` style. Brand-red arrow, mono font, deep
-    // ink glass scrim, 10px radius (--r-md). Matches design-system token set.
+    Group {
+      if uiTheme == .tonal {
+        tonalBody
+      } else {
+        classicBody
+      }
+    }
+    .frame(width: contentSize.width, height: contentSize.height)
+  }
+
+  // MARK: - Classic (v2.0.2 look)
+
+  private var classicBody: some View {
+    Text("→ \(prediction)   ⇥ Tab")
+      .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .rounded))
+      .foregroundStyle(.primary)
+      .shadow(color: .black.opacity(0.15), radius: 0.5, x: 0, y: 0.5)
+      .padding(.horizontal, 16)
+      .padding(.vertical, 10)
+      .background(
+        Color.black.opacity(classicScrimOpacity),
+        in: RoundedRectangle(cornerRadius: 16)
+      )
+      .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+      .overlay(
+        RoundedRectangle(cornerRadius: 16)
+          .strokeBorder(Color.white.opacity(classicStrokeOpacity), lineWidth: 0.6)
+      )
+      .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+  }
+
+  private var classicScrimOpacity: Double {
+    let base = colorScheme == .dark ? 0.10 : 0.03
+    let range = colorScheme == .dark ? 0.16 : 0.07
+    return base + range * backgroundStrength
+  }
+
+  private var classicStrokeOpacity: Double {
+    colorScheme == .dark ? 0.18 : 0.28
+  }
+
+  // MARK: - Tonal (v2.1.0+)
+
+  private var tonalBody: some View {
     HStack(spacing: 6) {
       Text("→")
         .font(.system(size: CGFloat(fontSize), weight: .heavy, design: .rounded))
@@ -368,7 +412,7 @@ struct PredictionHUDView: View {
     .padding(.horizontal, 14)
     .padding(.vertical, 8)
     .background(
-      VKeyDesign.ink500.opacity(scrimOpacity),
+      VKeyDesign.ink500.opacity(tonalScrimOpacity),
       in: RoundedRectangle(cornerRadius: 10)
     )
     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
@@ -377,10 +421,9 @@ struct PredictionHUDView: View {
         .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
     )
     .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 4)
-    .frame(width: contentSize.width, height: contentSize.height)
   }
 
-  private var scrimOpacity: Double {
+  private var tonalScrimOpacity: Double {
     0.32 + 0.30 * backgroundStrength
   }
 }

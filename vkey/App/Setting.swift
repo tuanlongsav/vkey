@@ -166,7 +166,36 @@ enum AppTheme: String, CaseIterable, Defaults.Serializable {
   case emoji
 }
 
+/// v2.1.1: UI theme — chọn diện mạo toàn cục cho app. Áp dụng cho accent
+/// color, HUD VI/EN, HUD prediction, Settings header, app icon. Theme là
+/// dynamic — switch không cần restart. Default = `.tonal` (design mới);
+/// `.classic` rollback về diện mạo v2.0.2.
+enum UITheme: String, CaseIterable, Defaults.Serializable {
+  case classic   // v2.0.2 — accent system blue, HUD simple, no wordmark header
+  case tonal     // v2.1.0+ — brand red, deep-ink glass HUD, vkey wordmark
+
+  var displayName: String {
+    switch self {
+    case .classic: return "Classic"
+    case .tonal:   return "Tonal"
+    }
+  }
+
+  var caption: String {
+    switch self {
+    case .classic:
+      return "Diện mạo gốc của vkey 2.0.2: accent system blue, HUD đơn giản, biểu tượng macOS native."
+    case .tonal:
+      return "Design system mới: accent đỏ Saigon, HUD glass tối deep-ink, wordmark vkey, typography tiếng Việt."
+    }
+  }
+}
+
 extension Defaults.Keys {
+  /// v2.1.1: UI theme toàn cục. Switch không cần restart — HUD/Settings/icon
+  /// đều đọc qua `Defaults.observe(.uiTheme)`.
+  static let uiTheme = Key<UITheme>("ui-theme", default: .tonal)
+
   static let currentVersion = Key<String>("current-version", default: "0.1")
   static let typingMethod = Key<TypingMethods>("typing-method", default: .Telex)
   static let allowedZWJF = Key<Bool>("allowed-zwjf", default: true)

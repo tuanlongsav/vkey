@@ -2,6 +2,65 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.1.1] - 2026-05-22 — "Theme System"
+
+**Tách Tonal redesign thành theme tùy chọn. Switch giữa Classic (v2.0.2 look) và Tonal (v2.1.0 design) qua Settings.** Mặc định = Tonal. Không thay đổi engine gõ. README rà soát ✓
+
+### 🎨 Theme System — switch giao diện live
+
+**Bối cảnh**: v2.1.0 áp dụng design system Tonal làm default duy nhất → user mất diện mạo cũ. v2.1.1 cấu trúc lại thành **theme**: user có thể chọn giữa Classic (v2.0.2) và Tonal (v2.1.0+), switch tức thì không cần restart, và để mở đường cho theme thứ 3+ trong tương lai.
+
+#### Cách dùng
+
+Mở **vkey → Settings → tab Chung** → ngay đầu tab có Picker "Giao diện" segmented:
+- **Classic**: diện mạo gốc v2.0.2 — accent system blue, HUD đơn giản, icon coffee cup, không wordmark.
+- **Tonal** (mặc định): design mới — accent đỏ brand `#E04434`, HUD glass tối deep-ink, app icon đỏ, wordmark "vkey".
+
+Theme apply cho 5 surface chính:
+1. **Accent color** toàn app (Toggle, Picker, focus ring, button tint) qua `.tint()` ở root.
+2. **HUD VI/EN** (`ToggleHUDWindow`) — Classic dùng material light + accent secondary; Tonal dùng glass tối + red.
+3. **HUD prediction** (`PredictionHUDWindow`) — Classic dùng rounded font + radius 16; Tonal dùng mono + radius 10 + red arrow.
+4. **Settings header** — Classic dùng icon 96px centered (no wordmark); Tonal dùng icon 84px + "vkey" 28pt heavy red + tagline.
+5. **App icon** (notification banner / alert dialog) — `AppIconSwitcher` swap `applicationIconImage` qua AppKit.
+
+#### Bên trong
+
+- **`UITheme`** enum (`.classic` / `.tonal`) + **`Defaults.Keys.uiTheme`** key (default `.tonal`) trong `Setting.swift`. Persistent qua launches.
+- **`ThemeManager`** `ObservableObject` trong `VKeyDesign.swift` — `Defaults.observe(.uiTheme)` → publish change. `@StateObject` ở `vkeyApp`.
+- **`.tint(themeManager.current.accentColor)`** apply ở Settings `TabView` và MenuBarExtra menu root.
+- **HUD views** rẽ nhánh body qua `if uiTheme == .tonal { tonalBody } else { classicBody }` — Classic preserve 100% logic + style v2.0.2.
+- **`AppIconSwitcher.apply(theme:)`** — `NSApplication.shared.applicationIconImage = NSImage(named:)`. Wire trong `AppDelegate.applicationDidFinishLaunching` + Settings picker `onChange`.
+
+#### Asset
+
+- **`AppIconClassic.appiconset`** — restore icon v2.0.2 từ git commit `f1a0296` (46 PNG đầy đủ macOS/iOS/watchOS sizes).
+- **`CficonClassic.imageset`** — header icon Classic (coffee cup) cho Settings header.
+- **`AccentColor.colorset`** — reset về universal empty (system accent). Tonal override qua `.tint()` không qua asset.
+- Bundle chứa cả 2 bộ icon song song — switch runtime không cần tải lại.
+
+### 🛡 Không thay đổi
+
+- Engine gõ Telex/VNI/Simple, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi behavior. 212 test pass.
+- User Defaults / personal dictionary / macro store / statistics giữ nguyên.
+- Sparkle update flow, codesign, hardened runtime, entitlements — không thay đổi.
+- Build target macOS 14+, universal arm64 + x86_64.
+
+### 📦 Release artifacts
+
+- `vkey-2.1.1.dmg` — universal binary, ~7.2 MB. Ad-hoc codesign + hardened runtime (`flags=0x10002 adhoc,runtime`, `Identifier=dev.longht.vkey`, sealed resources v2 files=60).
+- Sparkle signature: `+GMBqnWfkXeViTt7WhVGXfkD+HDLnp0wrUP5V6wXaerZ66kM47N07n2tOTdgLfmrOejkYfSyI9QF7D/kI5ZFDg==` (length 7568068).
+
+### Roadmap themes (Future)
+
+Kiến trúc `UITheme` mở rộng dễ dàng. User dự kiến thêm theme khác:
+- High-contrast (a11y)
+- "Phở vàng" (gold-only palette dựa trên Saigon gold token)
+- Themed cho từng dịp lễ (Tết, 30/4, v.v.)
+
+Thêm 1 theme mới chỉ cần: thêm case vào `UITheme`, expose `accentColor` + `headerImageName` + `showsHeroWordmark`, render branch trong HUD/Settings, thêm imageset.
+
+---
+
 ## [2.1.0] - 2026-05-22 — "Tonal Redesign"
 
 **Áp dụng vkey Design System "Tonal" — refresh diện mạo macOS-native với typography tiếng Việt + bảng màu thương hiệu nhất quán.** Không thay đổi engine gõ. README rà soát ✓

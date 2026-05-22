@@ -29,6 +29,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // Hide dock icon since we use MenuBarExtra
     NSApp.setActivationPolicy(.accessory)
 
+    // v2.1.1: apply icon for the currently saved theme. This sets the
+    // notification-banner / alert-dialog icon to match the active theme.
+    AppIconSwitcher.apply(theme: Defaults[.uiTheme])
+
     // 1.6.0: setup UN center delegate + xin permission cho update banner.
     UNUserNotificationCenter.current().delegate = self
     UNUserNotificationCenter.current().requestAuthorization(

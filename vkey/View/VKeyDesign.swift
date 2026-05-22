@@ -110,3 +110,57 @@ extension Color {
         self = Color(red: r, green: g, blue: b, opacity: opacity)
     }
 }
+
+// MARK: - Theme accessors
+
+import Defaults
+
+extension UITheme {
+    /// Accent color used at the app root via `.tint()`. Classic returns the
+    /// system default (`Color.accentColor` from the empty AccentColor asset
+    /// → user's system accent, blue on a fresh macOS install).
+    var accentColor: Color {
+        switch self {
+        case .classic: return .accentColor
+        case .tonal:   return VKeyDesign.red500
+        }
+    }
+
+    /// Imageset name used for the Settings header icon. Classic shows the
+    /// v2.0.2 cup-of-coffee mark; Tonal shows the new vkey app icon.
+    var headerImageName: String {
+        switch self {
+        case .classic: return "CficonClassic"
+        case .tonal:   return "Cficon"
+        }
+    }
+
+    /// Whether the Settings header shows the "vkey" wordmark + tagline
+    /// (Tonal only — Classic uses the bare icon centred like 2.0.2).
+    var showsHeroWordmark: Bool {
+        self == .tonal
+    }
+}
+
+/// Reactive theme container — observe `current` to re-render on switch.
+/// Use as `@StateObject` / `@EnvironmentObject` at a SwiftUI window root.
+@MainActor
+final class ThemeManager: ObservableObject {
+    static let shared = ThemeManager()
+
+    @Published var current: UITheme = Defaults[.uiTheme]
+
+    private var observation: Defaults.Observation?
+
+    init() {
+        observation = Defaults.observe(.uiTheme) { [weak self] change in
+            Task { @MainActor in
+                self?.current = change.newValue
+            }
+        }
+    }
+
+    deinit {
+        observation?.invalidate()
+    }
+}

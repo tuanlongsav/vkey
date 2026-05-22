@@ -180,18 +180,15 @@ struct GeneralView: View {
     @Default(.nonLatinIMEAutoDisable) private var nonLatinIMEAutoDisable
     // 2.0 (A6): free mark mode
     @Default(.freeMarkModeEnabled) private var freeMarkModeEnabled
-    // 1.9.0: HUD customization
-    // 1.9.2: 2 vars dưới chuyển sang SpellCheckView (cùng block prediction).
+    // v2.1.1: theme picker
+    @Default(.uiTheme) private var uiTheme
 
-    let appVersion = Bundle.main.appVersionLong
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // v2.1.0: header dùng Tonal design — app icon + wordmark "vkey"
-            // (Be Vietnam Pro 800, brand-red accent) + tagline. Shadow đậm
-            // hơn (brand red glow) cho cảm giác sản phẩm.
+    /// v2.1.1: settings header rẽ nhánh theo theme.
+    @ViewBuilder
+    private var settingsHeader: some View {
+        if uiTheme == .tonal {
             VStack(spacing: 10) {
-                Image("Cficon")
+                Image(uiTheme.headerImageName)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 84, height: 84)
@@ -206,13 +203,52 @@ struct GeneralView: View {
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(.secondary)
             }
-            .padding(.top, 18)
-            .padding(.bottom, 16)
-            .frame(maxWidth: .infinity)
+        } else {
+            Image(uiTheme.headerImageName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 96, height: 96)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+        }
+    }
+    // 1.9.0: HUD customization
+    // 1.9.2: 2 vars dưới chuyển sang SpellCheckView (cùng block prediction).
+
+    let appVersion = Bundle.main.appVersionLong
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // v2.1.1: header rẽ nhánh theo theme.
+            //   .tonal   → app icon 84px + wordmark "vkey" + tagline + glow
+            //   .classic → icon 96px centered, no wordmark (v2.0.2 look)
+            settingsHeader
+                .padding(.top, 16)
+                .padding(.bottom, 14)
+                .frame(maxWidth: .infinity)
 
             // Form gives native macOS label-right / control-left layout and
             // centers the whole block horizontally inside its container.
             Form {
+                // v2.1.1: Theme picker. Switch live — không cần restart.
+                // HUD, Settings header, accent color đều react qua
+                // `@Default(.uiTheme)` / `ThemeManager.shared.current`.
+                Picker(selection: $uiTheme) {
+                    ForEach(UITheme.allCases, id: \.self) { theme in
+                        Text(theme.displayName).tag(theme)
+                    }
+                } label: {
+                    Label("Giao diện", themedSymbol: "paintpalette")
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: uiTheme) { _, newValue in
+                    AppIconSwitcher.apply(theme: newValue)
+                }
+                Text(uiTheme.caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, -8)
+
                 Toggle(isOn: $appState.enabled) {
                     Label("Bật / Tắt gõ TV", themedSymbol: "keyboard")
                 }
@@ -318,7 +354,7 @@ struct GeneralView: View {
             .formStyle(.grouped)
             .scrollDisabled(false)
 
-            // v2.1.0 "Tonal Redesign" — apply new design system.
+            // v2.1.1 "Theme System" — switch giữa Classic (v2.0.2) và Tonal.
             Text("Phiên bản \(appVersion) ngày 22/5/2026")
                 .font(.caption)
                 .multilineTextAlignment(.center)

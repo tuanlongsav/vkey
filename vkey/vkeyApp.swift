@@ -4,10 +4,14 @@ import SwiftUI
 @main
 struct vkeyApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+  // v2.1.1: theme reactive container — drives `.tint()` overrides on
+  // Settings + MenuBar so accent color tracks the user's theme choice.
+  @StateObject private var themeManager = ThemeManager.shared
 
   var body: some Scene {
     MenuBarExtra {
       MenuContentView(appDelegate: appDelegate)
+        .tint(themeManager.current.accentColor)
     } label: {
       MenuBarLabel(appDelegate: appDelegate, appState: appDelegate.appState)
     }
@@ -55,6 +59,10 @@ struct vkeyApp: App {
               .font(.system(size: 10))
           }
       }
+      // v2.1.1: tint the whole Settings TabView with the active theme's
+      // accent color so Toggles, Pickers, focus rings, and SwiftUI control
+      // chrome all match. Classic → system blue; Tonal → brand red.
+      .tint(themeManager.current.accentColor)
     }
     // 1.7.6: cho phép user resize Settings window qua góc/cạnh. Default
     // .automatic enforces non-resizable + sized-to-content trong macOS 13+
@@ -66,6 +74,10 @@ struct vkeyApp: App {
     // 1.8.4: width 432→540 — fit nút "Chạy compute đề xuất ngay" (text VN
     // dài) trong tab Thống kê. Height giữ nguyên.
     .defaultSize(width: 540, height: 648)
+    // v2.1.1: theme override for Settings — switches accent at the scene
+    // root so all child Toggle/Picker/focus rings track the active theme
+    // without per-view boilerplate.
+    .environmentObject(themeManager)
   }
 }
 
