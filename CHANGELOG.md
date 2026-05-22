@@ -2,6 +2,68 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.2.0] - 2026-05-22 — "Theme Library"
+
+**Thêm Mực theme (high-contrast editorial). Theme picker chuyển từ Settings → menu bar. Tổng 5 giao diện. Fix bug Telex "theme" → "thêm". Mở rộng range HUD line offset lên 20 dòng.** README rà soát ✓
+
+### 🎨 5 themes trong menu bar (Giao diện ứng dụng)
+
+User mở **menu bar vkey → Giao diện ứng dụng** → chọn 1 trong 5:
+
+| # | Theme | Icon style | Design system | Accent |
+|---|-------|-----------|---------------|--------|
+| 1 | Mặc định | SF Symbols | Classic (2.0.2) | System blue |
+| 2 | 3D bóng bẩy | SF Symbols 3D | Classic | System blue |
+| 3 | Emoji vui tươi | Emoji | Classic | System blue |
+| 4 | **Tonal** (mặc định) | SF Symbols | Tonal | Brand red `#E04434` |
+| 5 | **Mực** (mới) | SF Symbols | Mực | Lacquer red `#9F2E1C` |
+
+**Mực theme** đặc trưng:
+- Lacquer red `#9F2E1C` — deeper, single vermilion accent (no gold).
+- High-contrast editorial: bone paper `#F7F5EF` / near-black ink `#0B0C0F`.
+- Sharp radii (2/4/6/10/14 thay vì 4/6/10/14/20/28).
+- Bóng mỏng print-like, không glow.
+- Serif display font (rounded → serif transition cho heading).
+- HUD VI/EN dùng serif "VI"/"EN" badges, padding chặt hơn.
+- Settings header có editorial "rule" thin+thick dưới wordmark.
+
+### 🐛 Fix bug Telex "theme" → "thêm"
+
+**Trước 2.2.0**: gõ "theme" (English word) trong Telex mode → engine sai áp dụng luật mũ 'e..e' khi 'e' thứ 2 đến SAU final consonant 'm' → output "thêm" thay vì "theme". Bug class với "scheme", "scene", "phone", "tone", "stone", "type", "make", "code", "size", "rise", "vote", "note", "save", "wave", "here", "where"…
+
+**Root cause**: trong `Telex.swift` line 128, luật mũ `case "a","o","e"` chỉ check `nguyenAmChua(char)` — không phân biệt giữa "ee" (vowel cluster, nên áp dụng mũ → ê) và "e..e" (e + cons + e, không nên áp dụng vì syllable đã đóng bởi cons giữa).
+
+**Fix**: thêm 80+ English words pattern V-C-V vào `EmbeddedLexiconData.englishWords` narrow list. Khi user gõ "theme", `isInstantRestoreEnglish("theme")` returns true tại `InputProcessor.swift:471` → restore raw English, không áp dụng mũ. Approach pragmatic (lexicon-driven) thay vì engine-rule change để KHÔNG break Vietnamese typing chuẩn (vd "boutos" → "buốt" — 'o' sau final 't' để thêm mũ — vẫn hoạt động đúng).
+
+**Regression test**: `testTelex_2_2_0_theme_no_extra_char` — verify "theme"/"scheme"/"scene"/"phone"/"type" → length ≤ input. 213/213 test pass.
+
+### 📏 HUD line offset 1...20
+
+**Trước**: Stepper "Khoảng cách HUD đến caret" trong tab Chính tả giới hạn `1...10` dòng. **Sau**: mở rộng → `1...20`. Phù hợp với màn hình lớn / editor multi-line.
+
+### 🛠 Architecture
+
+- **`UITheme` enum mở rộng**: `.classic / .tonal / .muc`.
+- **`VKeyDesign.swift`**: thêm Mực palette — `mucRed500`, `mucRed300`, `mucRed700`, `mucInk500`, `mucPaper50`, `mucPaper200`.
+- **`UITheme` extension**: `accentColor`, `headerImageName`, `showsHeroWordmark` — switch theo theme.
+- **HUD views**: `ToggleHUDWindow.tonalBody / mucBody / classicBody`, `PredictionHUDWindow.tonalBody / mucBody / classicBody`.
+- **`SettingView.settingsHeader`**: switch theo theme — Tonal rounded wordmark + glow đỏ, Mực serif wordmark + editorial rule, Classic icon centered.
+- **`vkeyApp.MainMenuView`**: helper `setAppearance(ui:icon:)` + `isAppearance(_:_:)` write cả `uiTheme` lẫn `appTheme` nguyên tử.
+- **Theme picker xóa khỏi `SettingView` tab Chung** — menu bar là single source of truth.
+
+### 🛡 Không thay đổi
+
+- Engine gõ Telex/VNI/Simple, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi behavior.
+- User Defaults / personal dictionary / macro store / statistics giữ nguyên.
+- Sparkle update flow, codesign, hardened runtime, entitlements — không thay đổi.
+
+### 📦 Release artifacts
+
+- `vkey-2.2.0.dmg` — universal binary, ~7.2 MB. Ad-hoc codesign + hardened runtime.
+- Sparkle signature: `pqrloFcppyEgG53t9YKo0WzB2Y0yHX38Pp4e4XCfhXVMm+6v7XWk92RYhKyi9B87NUGEmUfmHVkrxM8QD+U6DQ==` (length 7589747).
+
+---
+
 ## [2.1.1] - 2026-05-22 — "Theme System"
 
 **Tách Tonal redesign thành theme tùy chọn. Switch giữa Classic (v2.0.2 look) và Tonal (v2.1.0 design) qua Settings.** Mặc định = Tonal. Không thay đổi engine gõ. README rà soát ✓

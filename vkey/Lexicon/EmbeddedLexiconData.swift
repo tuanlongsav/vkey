@@ -7227,6 +7227,31 @@ bửa
     "nurses", "horses", "house", "metric", "off", "class", "pass", "staff",
     "ass", "aff", "arr", "axx", "ajj",
     "they", "them", "their", "then", "there", "these", "this", "that", "those", "than",
+    // v2.2.0: vowel-consonant-vowel English words misfiring Telex mũ rule.
+    // Pattern: 'e..e', 'a..a', 'o..o' where the second vowel triggers mũ
+    // application even though syllable already closed by final consonant.
+    "theme", "themes", "scheme", "schemes", "scene", "scenes",
+    "phone", "phones", "tone", "tones", "stone", "stones", "throne", "thrones",
+    "type", "types", "hype", "ripe", "pipe", "wipe", "wine", "vine", "line", "lines",
+    "mine", "fine", "dine", "nine", "prime", "time", "times", "lime", "dime",
+    "gate", "late", "mate", "rate", "date", "fate", "hate", "plate", "state",
+    "page", "rage", "cage", "wage", "age", "stage", "image",
+    "code", "node", "mode", "rode", "make", "take", "lake", "fake", "wake", "stake",
+    "size", "rise", "wise", "prize", "price", "nice", "rice", "spice", "mice",
+    "more", "store", "core", "score", "shore", "before", "score",
+    "side", "ride", "hide", "wide", "guide", "slide",
+    "bite", "site", "kite", "white", "write", "quite",
+    "vote", "note", "wrote", "remote", "quote",
+    "rude", "dude", "code", "mood", "good", "food", "wood",
+    "rope", "hope", "scope", "scope", "slope",
+    "cake", "bake", "snake", "shake", "brake",
+    "save", "wave", "have", "behave", "brave", "gave",
+    // E-mid words: 'e' + cons + 'e'
+    "here", "where", "there",
+    // O-mid words: 'o' + cons + 'o'
+    "bono",
+    // 'a' + cons + 'a' (rare but possible)
+    "data", "java", "lava",
   ])
 
   /// 1.9.7: từ EN thông dụng có "ow"/"aw"/"ew" mid-word — Telex skip mark

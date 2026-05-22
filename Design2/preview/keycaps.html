@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="vi" class="theme-muc">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="../themes/muc.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--paper-50); color: var(--ink-500); }
+  body { width: 700px; height: 230px; padding: 0; box-sizing: border-box; overflow: hidden; font-family: var(--font-sans); }
+  .sheet { width: 100%; height: 100%; background: var(--paper-0); border: 1px solid var(--ink-500); padding: 16px 22px 18px; box-sizing: border-box; display: grid; grid-template-columns: 90px 1fr; gap: 0 22px; align-content: start; }
+  .stamp { border-right: 1px solid var(--ink-500); padding-right: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .stamp .num { font: 600 11px/1 var(--font-sans); letter-spacing: .14em; text-transform: uppercase; color: var(--vkey-red-500); }
+  .stamp .name { font: 600 18px/1.1 var(--font-display); color: var(--ink-500); letter-spacing: -0.01em; }
+  .stamp .meta { font: italic 400 11.5px/1.3 var(--font-display); color: var(--paper-500); margin-top: 4px; }
+  .body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .footer { margin-top: auto; padding-top: 6px; border-top: 1px solid var(--paper-300); display: flex; gap: 16px; align-items: baseline; }
+  .footer .quote { font: italic 400 12px/1.3 var(--font-display); color: var(--paper-500); }
+  .footer .spec { margin-left: auto; font: 500 10px/1 var(--font-mono); color: var(--paper-500); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+  .row-label { font: 600 9.5px/1 var(--font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--paper-500); display: flex; align-items: center; gap: 8px; }
+  .row-label::after { content: ""; flex: 1; height: 1px; background: var(--paper-300); }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="stamp"><div class="num">M·07</div><div class="name">Keycaps.</div><div class="meta">Square caps · for shortcut display in body text</div></div>
+    <div class="body">
+    <div>
+      <div class="row-label">Inline shortcut</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:8px;font:400 14px/1 var(--font-sans);">
+        <span class="keycap" style="border-radius:0;border:1px solid var(--ink-500);background:var(--paper-0);"><img src="../assets/icons/command.svg" width="13" height="13"></span>
+        <span class="keycap" style="border-radius:0;border:1px solid var(--ink-500);background:var(--paper-0);"><img src="../assets/icons/shift-key.svg" width="13" height="13"></span>
+        <span class="keycap" style="border-radius:0;border:1px solid var(--ink-500);background:var(--paper-0);">V</span>
+        <span style="color: var(--paper-500); font:italic 14px var(--font-display); margin-left:6px;">— commit Tiếng Việt / English</span>
+      </div>
+    </div>
+    <div>
+      <div class="row-label">Action keys</div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:8px;font:400 14px/1 var(--font-sans);flex-wrap:wrap;">
+        <span class="keycap keycap--lg" style="border-radius:0;border:1px solid var(--ink-500);background:var(--paper-0);"><img src="../assets/icons/tab-key.svg" width="18" height="18"></span>
+        <span style="color: var(--ink-200);">accept next-word prediction</span>
+        <span class="keycap keycap--lg" style="margin-left:14px;border-radius:0;border:1px solid var(--ink-500);background:var(--paper-0);"><img src="../assets/icons/escape-key.svg" width="18" height="18"></span>
+        <span style="color: var(--ink-200);">revert buffer</span>
+      </div>
+    </div><div class="footer"><span class="quote">"A keycap is a square. Always."</span><span class="spec">INLINE 24PX · ACTION 36PX · BORDER-BOTTOM 2PX</span></div></div>
+  </div>
+</body>
+</html>

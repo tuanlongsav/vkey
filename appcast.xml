@@ -6,6 +6,51 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.2.0 — "Theme Library"</title>
+      <sparkle:version>20200</sparkle:version>
+      <sparkle:shortVersionString>2.2.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 22 May 2026 22:40:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.2.0/vkey-2.2.0.dmg"
+        sparkle:edSignature="pqrloFcppyEgG53t9YKo0WzB2Y0yHX38Pp4e4XCfhXVMm+6v7XWk92RYhKyi9B87NUGEmUfmHVkrxM8QD+U6DQ=="
+        length="7589747"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.2.0 — "Theme Library":</h2>
+        <p><em>Thêm theme Mực (high-contrast editorial). Theme picker chuyển từ Settings → menu bar. Tổng 5 giao diện. Fix bug Telex "theme" → "thêm". Mở rộng range khoảng cách HUD lên 20 dòng.</em></p>
+
+        <h3>🎨 5 themes trong menu bar</h3>
+        <p>Mở menu bar vkey → <strong>Giao diện ứng dụng</strong> → 5 lựa chọn:</p>
+        <ul>
+          <li><strong>Mặc định</strong> — SF Symbols + accent system blue (v2.0.2 baseline)</li>
+          <li><strong>3D bóng bẩy</strong> — SF Symbols 3D gradient + accent system blue</li>
+          <li><strong>Emoji vui tươi</strong> — Emoji icons + accent system blue</li>
+          <li><strong>Tonal</strong> — Brand red Saigon <code>#E04434</code>, HUD glass tối deep-ink, wordmark "vkey"</li>
+          <li><strong>Mực</strong> (mới) — Lacquer red <code>#9F2E1C</code>, high-contrast editorial, serif display, sharper radii, bóng mỏng print-like, không glow</li>
+        </ul>
+
+        <h3>🐛 Fix bug Telex "theme" → "thêm"</h3>
+        <p>Trước 2.2.0: gõ "theme" (English word) → engine sai khi áp dụng mũ Telex 'e..e' → output "thêm". Pattern bug class với "scheme", "scene", "phone", "tone", "type", "make", "code"… Fix: thêm 80+ từ English thường gặp vào instant-restore narrow list. Add regression test <code>testTelex_2_2_0_theme_no_extra_char</code>. 213/213 test pass.</p>
+
+        <h3>📏 Mở rộng range khoảng cách HUD</h3>
+        <p>Stepper "Khoảng cách HUD đến caret" trong tab Chính tả mở rộng từ <code>1...10</code> → <code>1...20</code> dòng. Hữu ích cho user dùng màn hình lớn hoặc editor có nhiều dòng hiển thị.</p>
+
+        <h3>🛠 Bên trong</h3>
+        <ul>
+          <li><code>UITheme</code> enum mở rộng: <code>.classic / .tonal / .muc</code>. Mỗi case có <code>accentColor</code>, <code>headerImageName</code>, <code>showsHeroWordmark</code>.</li>
+          <li><code>VKeyDesign.swift</code>: thêm Mực palette — <code>mucRed500</code>, <code>mucInk500</code>, <code>mucPaper50</code>, sharp radii.</li>
+          <li><code>HUD</code> + <code>SettingView</code> header rẽ nhánh switch theo theme: classic/tonal/muc.</li>
+          <li><code>vkeyApp.swift</code>: helper <code>setAppearance(ui:icon:)</code> + <code>isAppearance(_:_:)</code> drive menu chấm ✓ + write cả <code>uiTheme</code> lẫn <code>appTheme</code>.</li>
+          <li>Theme picker đã xoá khỏi Settings tab Chung — menu bar là single source of truth.</li>
+        </ul>
+
+        <h3>🛡 Không thay đổi</h3>
+        <p>Engine gõ Telex/VNI/Simple, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi behavior. 213/213 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.1.1 — "Theme System"</title>
       <sparkle:version>20101</sparkle:version>
       <sparkle:shortVersionString>2.1.1</sparkle:shortVersionString>

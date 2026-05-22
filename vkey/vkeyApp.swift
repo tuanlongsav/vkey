@@ -107,6 +107,20 @@ struct MainMenuView: View {
   @Default(.spellCheckEnabled) private var spellCheckEnabled
   @Default(.macroEnabled) private var macroEnabled
   @Default(.appTheme) private var appTheme
+  // v2.2.0: unified theme menu — đọc cả 2 axes.
+  @Default(.uiTheme) private var uiTheme
+
+  /// v2.2.0: helper hiển thị ✓ — check cả 2 axes đều khớp.
+  private func isAppearance(_ ui: UITheme, _ icon: AppTheme) -> Bool {
+    uiTheme == ui && appTheme == icon
+  }
+
+  /// v2.2.0: set cả 2 axes nguyên tử + apply icon switch ngay.
+  private func setAppearance(ui: UITheme, icon: AppTheme) {
+    appTheme = icon
+    uiTheme = ui
+    AppIconSwitcher.apply(theme: ui)
+  }
 
   var body: some View {
     // MenuBarExtra (`.menu` style) renders SwiftUI Buttons as NSMenuItem.
@@ -179,24 +193,40 @@ struct MainMenuView: View {
       )
     }
 
-    // 1.5.6: theme picker mở lại với 3 lựa chọn (Mặc định / 3D / Emoji).
+    // v2.2.0: theme picker hợp nhất 5 lựa chọn — 3 icon styles (giữ
+    // backwards compat từ 1.5.6: Mặc định / 3D / Emoji) + 2 design
+    // systems (Tonal / Mực) mới. Mỗi option set CẢ `appTheme` (icon
+    // style) lẫn `uiTheme` (HUD/Settings header/accent color).
     Menu {
-      Button { appTheme = .default } label: {
+      Button { setAppearance(ui: .classic, icon: .default) } label: {
         Label(
-          appTheme == .default ? "Mặc định ✓" : "Mặc định",
+          isAppearance(.classic, .default) ? "Mặc định ✓" : "Mặc định",
           themedSymbol: "circle"
         )
       }
-      Button { appTheme = .threeD } label: {
+      Button { setAppearance(ui: .classic, icon: .threeD) } label: {
         Label(
-          appTheme == .threeD ? "3D bóng bẩy ✓" : "3D bóng bẩy",
+          isAppearance(.classic, .threeD) ? "3D bóng bẩy ✓" : "3D bóng bẩy",
           themedSymbol: "cube"
         )
       }
-      Button { appTheme = .emoji } label: {
+      Button { setAppearance(ui: .classic, icon: .emoji) } label: {
         Label(
-          appTheme == .emoji ? "Emoji vui tươi ✓" : "Emoji vui tươi",
+          isAppearance(.classic, .emoji) ? "Emoji vui tươi ✓" : "Emoji vui tươi",
           themedSymbol: "sparkles"
+        )
+      }
+      Divider()
+      Button { setAppearance(ui: .tonal, icon: .default) } label: {
+        Label(
+          isAppearance(.tonal, .default) ? "Tonal ✓" : "Tonal",
+          themedSymbol: "paintpalette"
+        )
+      }
+      Button { setAppearance(ui: .muc, icon: .default) } label: {
+        Label(
+          isAppearance(.muc, .default) ? "Mực ✓" : "Mực",
+          themedSymbol: "drop"
         )
       }
     } label: {

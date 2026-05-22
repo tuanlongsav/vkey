@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="vi" class="theme-muc">
+<head>
+  <meta charset="utf-8">
+  <title>vkey — Comprehensive UI Mockup · Mực</title>
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <link rel="stylesheet" href="../../components.css">
+  <link rel="stylesheet" href="../../themes/muc.css">
+  <link rel="stylesheet" href="macos.css">
+  <style>
+    html, body { margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(at 18% 14%, rgba(159, 46, 28, 0.18) 0%, transparent 38%),
+        radial-gradient(at 82% 78%, rgba(159, 46, 28, 0.06) 0%, transparent 42%),
+        linear-gradient(180deg, #14111a 0%, #07080a 100%);
+      color: var(--paper-50);
+      font-family: var(--font-sans);
+      padding: 0 0 80px;
+      overflow-x: hidden;
+    }
+    .page-shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 40px 32px;
+    }
+    .scene-header {
+      display: flex; align-items: center; gap: 22px;
+      margin-bottom: 38px;
+      color: #fff;
+    }
+    .scene-header img { width: 72px; height: 72px; border-radius: 18px; box-shadow: var(--shadow-lg); }
+    .scene-header .title { font: 600 38px/1.05 var(--font-display); letter-spacing: -0.015em; color: var(--paper-50); }
+    .scene-header .sub { font: 500 14px/1.4 var(--font-sans); color: rgba(255,255,255,0.6); margin-top: 4px; max-width: 540px; }
+    .scene-header .meta {
+      margin-left: auto;
+      display: flex; gap: 8px; align-items: center;
+      padding: 8px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+      font: var(--t-mono-sm);
+      color: rgba(255,255,255,0.7);
+    }
+    .scene-header .meta .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+    .scene-label {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px;
+      color: rgba(255,255,255,0.7);
+    }
+    .scene-label .num {
+      width: 24px; height: 24px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      font: 600 11px var(--font-mono);
+    }
+    .scene-label .name { font: 600 13px var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: rgba(255,255,255,0.8); }
+    .scene-label .hint { font: var(--t-small); color: rgba(255,255,255,0.4); margin-left: 4px; }
+
+    .scene { margin-bottom: 56px; }
+
+    /* ============= Scene 1 (menu bar + dropdown + HUD on desktop) ============= */
+    .desktop-stage {
+      position: relative;
+      height: 560px;
+      border-radius: 18px;
+      overflow: hidden;
+      background:
+        radial-gradient(at 25% 35%, rgba(224, 68, 52, 0.40) 0%, transparent 45%),
+        radial-gradient(at 75% 65%, rgba(245, 198, 69, 0.25) 0%, transparent 45%),
+        linear-gradient(135deg, #3a2027 0%, #1c1820 50%, #0e1015 100%);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .desktop-stage .macos-statusbar { position: absolute; top: 0; left: 0; right: 0; }
+    .desktop-stage .menu-anchor {
+      position: absolute; top: 36px; right: 130px;
+      animation: menuPop 600ms var(--ease-spring) backwards;
+    }
+    @keyframes menuPop {
+      from { opacity: 0; transform: translateY(-8px) scale(.96); }
+    }
+    .desktop-stage .hud-anchor {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex; flex-direction: column; gap: 14px;
+      align-items: flex-end;
+    }
+    .desktop-stage .editor-mock {
+      position: absolute; bottom: 60px; left: 60px; right: 60px;
+      padding: 24px 28px 28px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      backdrop-filter: blur(14px);
+      color: rgba(255,255,255,0.95);
+      font: 17px/1.6 var(--font-sans);
+    }
+    .desktop-stage .editor-mock .filebar {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+      font: var(--t-mono-sm); color: rgba(255,255,255,0.5);
+    }
+    .desktop-stage .editor-mock .filebar span.tag {
+      padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.06);
+    }
+    .desktop-stage .editor-mock .caret {
+      display: inline-block; width: 2px; height: 1.15em; vertical-align: text-bottom;
+      background: var(--gold-400); margin: 0 1px;
+      animation: blink 1s infinite step-end;
+    }
+    @keyframes blink { 50% { background: transparent; } }
+    .desktop-stage .editor-mock .pred {
+      position: relative; display: inline-block; vertical-align: text-bottom;
+    }
+    .desktop-stage .editor-mock .pred .tip {
+      position: absolute;
+      bottom: calc(100% + 12px); left: -4px;
+      padding: 7px 12px;
+      background: rgba(15,17,22,0.85);
+      backdrop-filter: blur(30px);
+      border-radius: 8px;
+      color: #fff;
+      font: 500 13px/1 var(--font-mono);
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+    .desktop-stage .editor-mock .pred .tip .accept {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-left: 8px; padding: 1px 6px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 4px;
+      font: 500 11px var(--font-mono);
+    }
+    .desktop-stage .editor-mock .pred .tip::after {
+      content: ""; position: absolute; left: 14px; bottom: -5px;
+      width: 10px; height: 10px;
+      background: rgba(15,17,22,0.85);
+      transform: rotate(45deg);
+      box-shadow: 1px 1px 0 rgba(255,255,255,0.06);
+    }
+    .desktop-stage .editor-mock .raw { color: var(--gold-300); font-family: var(--font-mono); font-size: 14px; }
+
+    /* ============= Scene 2 (settings window) ============= */
+    .scene-settings {
+      display: grid;
+      grid-template-columns: minmax(880px, 1fr);
+      gap: 24px;
+      justify-content: center;
+    }
+    .panel { display: none; }
+    .panel.is-active { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Side-by-side mini scenes */
+    .scene-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .mini-stage {
+      position: relative;
+      border-radius: 18px;
+      padding: 28px;
+      height: 380px;
+      overflow: hidden;
+      background:
+        radial-gradient(at 30% 30%, rgba(224,68,52,0.22) 0%, transparent 55%),
+        linear-gradient(135deg, #251a20 0%, #11131a 100%);
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: var(--shadow-lg);
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+    }
+    .mini-stage--light {
+      background:
+        radial-gradient(at 30% 30%, rgba(255,255,255,0.6) 0%, transparent 60%),
+        linear-gradient(180deg, #F2EFE8 0%, #E6E1D6 100%);
+    }
+    .mini-caption {
+      position: absolute; top: 14px; left: 18px;
+      font: 600 11px/1 var(--font-sans);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+    }
+    .mini-stage--light .mini-caption { color: rgba(20,22,28,0.5); }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+
+    <header class="scene-header" data-screen-label="01 Hero">
+      <img src="../../assets/logo/vkey-app-icon.svg" alt="vkey">
+      <div>
+        <div class="title">vkey · UI mockup toàn diện</div>
+        <div class="sub">Theme "Tonal" mới — đỏ vkey + gold Saigon trên nền giấy warm / mực ink. Iconography custom, Noto Sans Display cho tiếng Việt.</div>
+      </div>
+      <div class="meta"><span class="dot"></span>v2.0.2 · Bug Hunt</div>
+    </header>
+
+    <!-- ============ SCENE 1 · Desktop / menu / HUD ============ -->
+    <section class="scene" data-screen-label="02 Desktop · menu bar · HUD">
+      <div class="scene-label">
+        <span class="num">01</span><span class="name">Desktop scene</span>
+        <span class="hint">— menu bar dropdown + glassmorphic HUD + inline next-word prediction</span>
+      </div>
+
+      <div class="desktop-stage">
+        <!-- top bar -->
+        <div class="macos-statusbar">
+          <span class="apple"></span>
+          <span style="font-weight:600">Notes</span>
+          <span style="opacity:.85">File</span>
+          <span style="opacity:.85">Edit</span>
+          <span style="opacity:.85">Format</span>
+          <span style="opacity:.85">View</span>
+          <span style="opacity:.85">Window</span>
+          <span style="opacity:.85">Help</span>
+          <div class="right">
+            <img src="../../assets/icons/search.svg" alt="">
+            <img src="../../assets/icons/info-circle.svg" alt="">
+            <span class="vkey-chip" title="vkey · Tiếng Việt">
+              <img src="../../assets/icons/flag-vn.svg" alt=""><span>VI</span>
+            </span>
+            <span style="opacity:.85">Thứ Sáu 18:24</span>
+          </div>
+        </div>
+
+        <!-- menu dropdown -->
+        <div class="menu-anchor">
+          <div class="macmenu" role="menu">
+            <div class="heading">vkey · v2.0.2</div>
+            <div class="item check" role="menuitem">
+              <span class="ic"><img src="../../assets/icons/flag-vn.svg" class="flag"></span>
+              <span class="label">Chuyển đổi 🇻🇳 / 🇺🇸</span>
+              <span class="right">⌃⇧</span>
+            </div>
+            <div class="sep"></div>
+            <div class="heading">Kiểu gõ</div>
+            <div class="item check"><span class="ic"></span><span class="label">Telex</span></div>
+            <div class="item"><span class="ic"></span><span class="label">VNI</span></div>
+            <div class="sep"></div>
+            <div class="item check">
+              <span class="ic"><img src="../../assets/icons/shuffle.svg"></span>
+              <span class="label">Smart Switch</span>
+            </div>
+            <div class="item check">
+              <span class="ic"><img src="../../assets/icons/check-circle.svg"></span>
+              <span class="label">Sửa lỗi chính tả</span>
+            </div>
+            <div class="item check">
+              <span class="ic"><img src="../../assets/icons/sparkles.svg"></span>
+              <span class="label">Macro</span>
+            </div>
+            <div class="sep"></div>
+            <div class="item">
+              <span class="ic"><img src="../../assets/icons/gear.svg"></span>
+              <span class="label">Cài đặt…</span>
+              <span class="right">⌘,</span>
+            </div>
+            <div class="item">
+              <span class="ic"><img src="../../assets/icons/refresh.svg"></span>
+              <span class="label">Kiểm tra cập nhật</span>
+            </div>
+            <div class="sep"></div>
+            <div class="item">
+              <span class="ic"><img src="../../assets/icons/x-circle.svg"></span>
+              <span class="label">Thoát vkey</span>
+              <span class="right">⌘Q</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- HUD (centered toggle confirmation) -->
+        <div class="hud-anchor">
+          <div class="hud"><img src="../../assets/icons/flag-vn.svg" alt="">Tiếng Việt</div>
+        </div>
+
+        <!-- Editor mock with next-word prediction -->
+        <div class="editor-mock">
+          <div class="filebar">
+            <span class="tag">📝 Notes — Báo cáo tuần</span>
+            <span style="margin-left:auto">macOS · TextEdit</span>
+          </div>
+          <div>
+            Kính gửi anh Long,<br><br>
+            Em xin báo cáo công việc tuần 21 năm 2026 của Phòng Tổng hợp — đã hoàn
+            <span class="pred">
+              <span class="tip">trường <span class="accept">⇥ Tab</span></span>
+              thành 4/5 task chính, còn lại 1 task chuyển sang tuần sau. Cảm ơn anh đã quan tâm.<span class="caret"></span>
+            </span>
+          </div>
+          <div style="margin-top:14px; font: var(--t-mono-sm); color: rgba(255,255,255,0.45);">
+            Auto-correct: <span class="raw">veeitj</span> → việt &nbsp;·&nbsp; <span class="raw">phuowgn</span> → phương &nbsp;·&nbsp; macro <span class="raw">kga </span> → "Kính gửi anh "
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCENE 2 · Settings window (tabbed) ============ -->
+    <section class="scene" data-screen-label="03 Settings window">
+      <div class="scene-label">
+        <span class="num">02</span><span class="name">Settings window</span>
+        <span class="hint">— click các tab để chuyển. 5 panels: Chung · Smart Switch · Macro · Chính tả · Thống kê</span>
+      </div>
+      <div id="settings-mount"></div>
+    </section>
+
+    <!-- ============ SCENE 3 · Onboarding + Light vs Dark ============ -->
+    <section class="scene" data-screen-label="04 Onboarding + theme">
+      <div class="scene-label">
+        <span class="num">03</span><span class="name">Onboarding + theme</span>
+        <span class="hint">— quyền Accessibility, welcome screen, light vs dark mode</span>
+      </div>
+      <div class="scene-row" id="onboarding-mount"></div>
+    </section>
+
+  </div>
+
+  <script type="application/json" id="apps-data">
+  [
+    {"name":"Claude","bundle":"com.anthropic.claudefordesktop","color":"#E04434","letter":"C","src":"user","lang":"vn"},
+    {"name":"Google Chrome","bundle":"com.google.Chrome","color":"linear-gradient(135deg,#4285F4,#34A853 35%,#FBBC05 65%,#EA4335)","letter":"G","src":"auto","lang":"us"},
+    {"name":"Raycast","bundle":"com.raycast.macos","color":"#FF453A","letter":"R","src":"user","lang":"us"},
+    {"name":"Zalo","bundle":"com.vng.zalo","color":"#0084FF","letter":"Z","src":"auto","lang":"vn"},
+    {"name":"Visual Studio Code","bundle":"com.microsoft.VSCode","color":"#0078D4","letter":"V","src":"user","lang":"us"},
+    {"name":"Notion","bundle":"notion.id","color":"#1A1A1A","letter":"N","src":"user","lang":"vn"},
+    {"name":"Spotlight","bundle":"com.apple.Spotlight","color":"#5E5CE6","letter":"⌕","src":"user","lang":"us"}
+  ]
+  </script>
+
+  <script src="settings-panel.js"></script>
+  <script src="onboarding-scene.js"></script>
+</body>
+</html>

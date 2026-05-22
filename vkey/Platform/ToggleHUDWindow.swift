@@ -156,13 +156,65 @@ private struct ToggleHUDView: View {
 
     var body: some View {
         Group {
-            if uiTheme == .tonal {
-                tonalBody
-            } else {
-                classicBody
+            switch uiTheme {
+            case .tonal:   tonalBody
+            case .muc:     mucBody
+            case .classic: classicBody
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
+    }
+
+    // MARK: - Mực (v2.2.0) — high-contrast editorial, lacquer red, sharper radii
+
+    private var mucBody: some View {
+        VStack(spacing: 4) {
+            ThemedSymbol(name: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
+                .font(.system(size: 36, weight: .semibold))
+                .foregroundStyle(
+                    viewModel.isEnabled
+                    ? AnyShapeStyle(VKeyDesign.mucRed500)
+                    : AnyShapeStyle(VKeyDesign.mucPaper200)
+                )
+                .frame(width: 44, height: 44)
+                .vkeySymbolReplacementTransition()
+
+            Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
+                .font(.system(size: 15, weight: .semibold, design: .serif))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Text(viewModel.isEnabled ? "VI" : "EN")
+                .font(.system(size: 10, weight: .heavy, design: .serif))
+                .tracking(1.2)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    viewModel.isEnabled
+                    ? VKeyDesign.mucRed500.opacity(0.32)
+                    : Color.white.opacity(0.10)
+                )
+                .foregroundStyle(viewModel.isEnabled ? VKeyDesign.mucRed300 : Color.white.opacity(0.75))
+                .clipShape(RoundedRectangle(cornerRadius: 2))
+        }
+        .frame(width: 126)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 6)
+        .background(
+            VKeyDesign.mucInk500.opacity(mucScrimOpacity),
+            in: RoundedRectangle(cornerRadius: 6)
+        )
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.45), radius: 18, x: 0, y: 6)
+    }
+
+    private var mucScrimOpacity: Double {
+        0.36 + 0.30 * viewModel.backgroundStrength
     }
 
     // MARK: - Classic (v2.0.2 look)

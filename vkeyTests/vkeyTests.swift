@@ -564,6 +564,22 @@ final class vkeyTests: XCTestCase {
   // combining diacritic (cùng grapheme count nhưng NFD scalar count tăng).
   // Fix: dùng `WordBuffer.shouldAppendRawKey(...)` so sánh NFD scalars.
 
+  /// v2.2.0: bug "theme" → "themee".
+  /// Đầu vào "theme" gõ Telex (English word) → output phải = "theme",
+  /// KHÔNG thừa ký tự. Cùng pattern với "tools" → "toools" — engine
+  /// có thể leak raw key khi `isInstantRestoreEnglish` hit ở mid-word.
+  func testTelex_2_2_0_theme_no_extra_char() throws {
+    XCTAssertEqual(transform_text_telex(for: "theme"), "theme")
+    // Sibling words có pattern e-vowel + consonant + e:
+    for input in ["theme", "scheme", "scene", "phone", "type"] {
+      let output = transform_text_telex(for: input)
+      XCTAssertLessThanOrEqual(
+        output.count, input.count,
+        "Bug v2.2.0 theme-class: '\(input)' → '\(output)' (thừa ký tự!)"
+      )
+    }
+  }
+
   /// Test bug "tools" — verify NO EXTRA char appended.
   /// Trước fix: "tools" (5 chars) → "toools" (6 chars, thừa 'o').
   /// Sau fix: output có ≤5 graphemes (có thể là "tools" raw English, hoặc

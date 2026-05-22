@@ -183,10 +183,11 @@ struct GeneralView: View {
     // v2.1.1: theme picker
     @Default(.uiTheme) private var uiTheme
 
-    /// v2.1.1: settings header rẽ nhánh theo theme.
+    /// v2.1.1+: settings header rẽ nhánh theo theme.
     @ViewBuilder
     private var settingsHeader: some View {
-        if uiTheme == .tonal {
+        switch uiTheme {
+        case .tonal:
             VStack(spacing: 10) {
                 Image(uiTheme.headerImageName)
                     .resizable()
@@ -203,7 +204,37 @@ struct GeneralView: View {
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(.secondary)
             }
-        } else {
+        case .muc:
+            // v2.2.0: editorial style — serif wordmark, sharp radii, no glow,
+            // editorial double-rule under wordmark.
+            VStack(spacing: 8) {
+                Image(uiTheme.headerImageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 78, height: 78)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+                Text("vkey")
+                    .font(.system(size: 30, weight: .semibold, design: .serif))
+                    .foregroundStyle(VKeyDesign.mucRed500)
+                    .tracking(-0.3)
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(VKeyDesign.mucInk500)
+                        .frame(height: 1)
+                    Spacer().frame(height: 2)
+                    Rectangle()
+                        .fill(VKeyDesign.mucInk500)
+                        .frame(height: 3)
+                }
+                .frame(width: 64)
+                .padding(.vertical, 2)
+                Text("Bộ gõ tiếng Việt cho macOS")
+                    .font(.system(size: 11.5, weight: .medium, design: .serif))
+                    .foregroundStyle(.secondary)
+                    .italic()
+            }
+        case .classic:
             Image(uiTheme.headerImageName)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
@@ -229,26 +260,10 @@ struct GeneralView: View {
 
             // Form gives native macOS label-right / control-left layout and
             // centers the whole block horizontally inside its container.
+            // v2.2.0: theme picker đã được di chuyển ra MenuBar dropdown
+            // (vkeyApp.swift), nhóm cùng với "Giao diện ứng dụng" để có
+            // tổng 5 lựa chọn (Mặc định / 3D / Emoji / Tonal / Mực).
             Form {
-                // v2.1.1: Theme picker. Switch live — không cần restart.
-                // HUD, Settings header, accent color đều react qua
-                // `@Default(.uiTheme)` / `ThemeManager.shared.current`.
-                Picker(selection: $uiTheme) {
-                    ForEach(UITheme.allCases, id: \.self) { theme in
-                        Text(theme.displayName).tag(theme)
-                    }
-                } label: {
-                    Label("Giao diện", themedSymbol: "paintpalette")
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: uiTheme) { _, newValue in
-                    AppIconSwitcher.apply(theme: newValue)
-                }
-                Text(uiTheme.caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, -8)
-
                 Toggle(isOn: $appState.enabled) {
                     Label("Bật / Tắt gõ TV", themedSymbol: "keyboard")
                 }
@@ -354,7 +369,8 @@ struct GeneralView: View {
             .formStyle(.grouped)
             .scrollDisabled(false)
 
-            // v2.1.1 "Theme System" — switch giữa Classic (v2.0.2) và Tonal.
+            // v2.2.0 "Theme Library" — 5 themes (Mặc định / 3D / Emoji / Tonal / Mực)
+            // chuyển ra MenuBar; thêm Mực; fix bug gõ "theme" → "thêm".
             Text("Phiên bản \(appVersion) ngày 22/5/2026")
                 .font(.caption)
                 .multilineTextAlignment(.center)
@@ -591,7 +607,8 @@ struct SpellCheckView: View {
                             // 2.0.2 (J1): xoá Stepper "Số gợi ý hiển thị". Prediction
                             // về top-1 only — digit 1/2/3 dễ nhầm với gõ số.
 
-                            Stepper(value: $predictionHUDLineOffset, in: 1...10) {
+                            // v2.2.0: range mở rộng 1...10 → 1...20 (theo user request).
+                            Stepper(value: $predictionHUDLineOffset, in: 1...20) {
                                 HStack {
                                     Label("Khoảng cách HUD đến caret", themedSymbol: "arrow.up.and.down")
                                     Spacer()

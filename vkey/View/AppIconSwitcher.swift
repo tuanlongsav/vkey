@@ -23,8 +23,8 @@ enum AppIconSwitcher {
         // an .appiconset), so NSImage(named:) is reliable.
         let imageName: String
         switch theme {
-        case .tonal:   imageName = "Cficon"
-        case .classic: imageName = "CficonClassic"
+        case .tonal, .muc: imageName = "Cficon"
+        case .classic:     imageName = "CficonClassic"
         }
         guard let img = NSImage(named: imageName) else { return }
         NSApplication.shared.applicationIconImage = img

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="vi" class="theme-muc">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="../themes/muc.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--paper-50); color: var(--ink-500); }
+  body { width: 700px; height: 210px; padding: 0; box-sizing: border-box; overflow: hidden; font-family: var(--font-sans); }
+  .sheet { width: 100%; height: 100%; background: var(--paper-0); border: 1px solid var(--ink-500); padding: 16px 22px 18px; box-sizing: border-box; display: grid; grid-template-columns: 90px 1fr; gap: 0 22px; align-content: start; }
+  .stamp { border-right: 1px solid var(--ink-500); padding-right: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .stamp .num { font: 600 11px/1 var(--font-sans); letter-spacing: .14em; text-transform: uppercase; color: var(--vkey-red-500); }
+  .stamp .name { font: 600 18px/1.1 var(--font-display); color: var(--ink-500); letter-spacing: -0.01em; }
+  .stamp .meta { font: italic 400 11.5px/1.3 var(--font-display); color: var(--paper-500); margin-top: 4px; }
+  .body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .footer { margin-top: auto; padding-top: 6px; border-top: 1px solid var(--paper-300); display: flex; gap: 16px; align-items: baseline; }
+  .footer .quote { font: italic 400 12px/1.3 var(--font-display); color: var(--paper-500); }
+  .footer .spec { margin-left: auto; font: 500 10px/1 var(--font-mono); color: var(--paper-500); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+  .row-label { font: 600 9.5px/1 var(--font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--paper-500); display: flex; align-items: center; gap: 8px; }
+  .row-label::after { content: ""; flex: 1; height: 1px; background: var(--paper-300); }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="stamp"><div class="num">M·03</div><div class="name">Toggles.</div><div class="meta">40×24 rocker · lacquer red on · paper grey off</div></div>
+    <div class="body">
+    <div style="display:flex;gap:28px;align-items:center;margin-top:6px;">
+      <label style="display:flex;align-items:center;gap:10px;font:400 13.5px var(--font-sans);"><input type="checkbox" class="toggle" checked>Bật / Tắt gõ TV</label>
+      <label style="display:flex;align-items:center;gap:10px;font:400 13.5px var(--font-sans);"><input type="checkbox" class="toggle">Smart Switch</label>
+      <label style="display:flex;align-items:center;gap:10px;font:400 13.5px var(--font-sans);"><input type="checkbox" class="toggle" checked>Macro</label>
+    </div>
+    <div style="display:flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 10px 0; border-top: 1px solid var(--paper-300); margin-top: 4px;">
+      <span style="font:500 10px var(--font-mono);color:var(--paper-500);letter-spacing:.08em;">STATES</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;font:var(--t-small);color:var(--paper-500);"><input type="checkbox" class="toggle" disabled>off</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;font:var(--t-small);color:var(--paper-500);"><input type="checkbox" class="toggle" checked disabled>on</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;font:var(--t-small);color:var(--paper-500);"><input type="checkbox" class="toggle" checked disabled style="opacity:.4">disabled</span>
+    </div><div class="footer"><span class="quote">"Toggle: pill. Everything else: square."</span><span class="spec">40×24 · LACQUER FILL · SPRING EASE</span></div></div>
+  </div>
+</body>
+</html>

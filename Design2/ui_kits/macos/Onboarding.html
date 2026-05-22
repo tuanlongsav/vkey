@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="vi"><head>
+<meta charset="utf-8">
+<title>vkey · Onboarding</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="../../components.css">
+<link rel="stylesheet" href="macos.css">
+<style>
+  html, body { height: 100%; margin: 0; background: #1a1d24; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    background:
+      radial-gradient(at 20% 20%, rgba(224, 68, 52, 0.12), transparent 50%),
+      radial-gradient(at 80% 80%, rgba(245, 198, 69, 0.06), transparent 40%),
+      #1a1d24;
+    overflow: hidden;
+  }
+  .ob-window {
+    width: 720px;
+    background: var(--ink-500);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-window);
+    color: var(--fg-1);
+    --bg: var(--ink-500); --bg-elevated: var(--ink-400); --bg-sunken: var(--ink-600);
+    --fg-1:#F2EFE8; --fg-2:#C7C3B7; --fg-3:#9B978B; --fg-muted:#7C7768;
+    --border-1: rgba(255,255,255,0.08); --border-2: rgba(255,255,255,0.14);
+  }
+  .ob-titlebar {
+    height: 38px; display: flex; align-items: center; padding: 0 14px;
+    background: var(--ink-400); border-bottom: 1px solid var(--border-1);
+  }
+  .ob-hero {
+    padding: 48px 56px 24px;
+    text-align: center;
+    background:
+      radial-gradient(ellipse at top, rgba(224,68,52,0.16), transparent 60%),
+      var(--ink-500);
+  }
+  .ob-hero .icon-large {
+    width: 100px; height: 100px; border-radius: 24px; margin: 0 auto 20px;
+    box-shadow: 0 30px 60px -20px rgba(224,68,52,0.5);
+  }
+  .ob-hero h1 {
+    font: 700 32px/1.15 var(--font-sans);
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+    color: var(--fg-1);
+  }
+  .ob-hero p {
+    font: 16px/1.55 var(--font-sans);
+    color: var(--fg-2);
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .ob-steps {
+    padding: 16px 32px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .ob-step {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 16px 18px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-1);
+    border-radius: 12px;
+  }
+  .ob-step .num {
+    flex: none;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--vkey-red-500) 18%, transparent);
+    color: var(--vkey-red-300);
+    display: flex; align-items: center; justify-content: center;
+    font: 700 14px var(--font-sans);
+  }
+  .ob-step.is-done .num { background: var(--success); color: #fff; }
+  .ob-step.is-done .num img { width: 16px; height: 16px; filter: invert(1); }
+  .ob-step .title { font: 600 15px/1.3 var(--font-sans); color: var(--fg-1); }
+  .ob-step .desc { font: var(--t-small); color: var(--fg-muted); margin-top: 4px; line-height: 1.5; }
+  .ob-step .actions { margin-top: 10px; display: flex; gap: 8px; }
+
+  .ob-footer {
+    padding: 16px 32px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid var(--border-1);
+    background: var(--ink-400);
+  }
+  .ob-footer .progress { flex: 1; display: flex; gap: 6px; }
+  .ob-footer .pip { flex: 1; height: 4px; background: var(--ink-200); border-radius: 2px; }
+  .ob-footer .pip.is-done { background: var(--success); }
+  .ob-footer .pip.is-active { background: var(--vkey-red-500); }
+</style>
+</head>
+<body>
+  <div class="ob-window" data-screen-label="vkey · First-run onboarding">
+    <div class="ob-titlebar">
+      <div class="mac-traffic"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+    </div>
+
+    <div class="ob-hero">
+      <img src="../../assets/logo/vkey-app-icon.svg" class="icon-large" alt="vkey">
+      <h1>Chào mừng đến với vkey</h1>
+      <p>Bộ gõ tiếng Việt nhẹ, native, cho macOS. Cài đặt nhanh 4 bước để bắt đầu gõ.</p>
+    </div>
+
+    <div class="ob-steps">
+      <div class="ob-step is-done">
+        <div class="num"><img src="../../assets/icons/check-circle.svg"></div>
+        <div style="flex:1">
+          <div class="title">Cài đặt</div>
+          <div class="desc">App đã được kéo vào thư mục Applications. Bạn có thể tiếp tục.</div>
+        </div>
+      </div>
+
+      <div class="ob-step">
+        <div class="num">2</div>
+        <div style="flex:1">
+          <div class="title">Cấp quyền Accessibility</div>
+          <div class="desc">vkey cần quyền này để nghe phím trên toàn hệ thống và chuyển ký tự sang tiếng Việt. Tất cả xử lý đều xảy ra cục bộ, không gửi đi đâu.</div>
+          <div class="actions">
+            <button class="btn btn--primary btn--sm">Mở System Settings</button>
+            <button class="btn btn--ghost btn--sm">Tìm hiểu thêm</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-step">
+        <div class="num">3</div>
+        <div style="flex:1">
+          <div class="title">Chọn kiểu gõ</div>
+          <div class="desc">Telex (mặc định) hay VNI? Có thể đổi sau trong Cài đặt → Chung.</div>
+          <div class="actions">
+            <div class="segmented"><button class="is-active">Telex</button><button>VNI</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-step">
+        <div class="num">4</div>
+        <div style="flex:1">
+          <div class="title">Phím tắt VI ↔ EN</div>
+          <div class="desc">Mặc định <span class="keycap" style="font-size:11px;height:18px"><img src="../../assets/icons/command.svg" width="11" height="11" style="opacity:.7"></span> <span class="keycap" style="font-size:11px;height:18px"><img src="../../assets/icons/shift-key.svg" width="11" height="11" style="opacity:.7"></span> để toggle. Bạn có thể thay đổi nếu xung đột với app khác.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ob-footer">
+      <div class="progress">
+        <div class="pip is-done"></div>
+        <div class="pip is-active"></div>
+        <div class="pip"></div>
+        <div class="pip"></div>
+      </div>
+      <button class="btn btn--ghost btn--sm">Bỏ qua</button>
+      <button class="btn btn--primary">Tiếp tục <img src="../../assets/icons/arrow-right.svg" style="filter:invert(1)"></button>
+    </div>
+  </div>
+</body>
+</html>

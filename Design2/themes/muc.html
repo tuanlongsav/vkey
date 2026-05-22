@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="vi" class="theme-muc">
+<head>
+  <meta charset="utf-8">
+  <title>vkey · Mực theme — editorial mockup</title>
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="../ui_kits/macos/macos.css">
+  <link rel="stylesheet" href="muc.css">
+  <style>
+    html, body { margin: 0; padding: 0; background: var(--paper-50); color: var(--ink-500); }
+    body { font-family: var(--font-sans); padding: 0 0 80px; }
+
+    .page-shell { max-width: 1240px; margin: 0 auto; padding: 56px 40px; }
+
+    /* Editorial masthead */
+    .masthead {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: end;
+      gap: 24px;
+      padding-bottom: 18px;
+      margin-bottom: 36px;
+      border-bottom: 3px solid var(--ink-500);
+    }
+    .masthead .vol {
+      font: 600 11px/1 var(--font-sans);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--paper-500);
+    }
+    .masthead .wordmark {
+      font: 700 56px/0.9 var(--font-display);
+      letter-spacing: -0.03em;
+      color: var(--ink-500);
+    }
+    .masthead .meta {
+      text-align: right;
+      font: var(--t-mono-sm);
+      color: var(--paper-500);
+      line-height: 1.5;
+    }
+    .masthead .strap {
+      grid-column: 1 / -1;
+      font: italic 500 18px/1.4 var(--font-display);
+      color: var(--ink-200);
+      max-width: 720px;
+    }
+
+    .scene { margin-top: 48px; }
+    .scene-head {
+      display: flex; align-items: baseline; gap: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--ink-500);
+      padding-bottom: 10px;
+    }
+    .scene-head .num {
+      font: 600 14px/1 var(--font-mono);
+      color: var(--vkey-red-500);
+      padding: 4px 8px;
+      border: 1px solid var(--vkey-red-500);
+      border-radius: 0;
+    }
+    .scene-head .name {
+      font: 600 22px/1.2 var(--font-display);
+      color: var(--ink-500);
+    }
+    .scene-head .desc {
+      margin-left: auto;
+      font: italic 400 14px/1.4 var(--font-display);
+      color: var(--paper-500);
+      max-width: 480px; text-align: right;
+    }
+
+    /* Big editorial card */
+    .editorial-card {
+      background: var(--paper-0);
+      border: 1px solid var(--ink-500);
+      padding: 40px;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .editorial-card h2 {
+      font: 600 48px/1.05 var(--font-display);
+      letter-spacing: -0.02em;
+      margin: 0 0 16px;
+    }
+    .editorial-card h2 em {
+      color: var(--vkey-red-500);
+      font-style: italic;
+    }
+    .editorial-card p {
+      font: 400 16px/1.6 var(--font-sans);
+      color: var(--ink-200);
+      margin: 0 0 12px;
+      max-width: 460px;
+    }
+    .editorial-card .kicker {
+      font: 600 11px/1 var(--font-sans);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--vkey-red-500);
+      margin-bottom: 18px;
+    }
+    .editorial-card .actions { display: flex; gap: 10px; margin-top: 24px; }
+
+    /* Stats stripe */
+    .stat-stripe {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 3px solid var(--ink-500);
+      border-bottom: 1px solid var(--ink-500);
+      margin: 32px 0;
+    }
+    .stat-stripe .col {
+      padding: 18px 22px;
+      border-right: 1px solid var(--ink-500);
+    }
+    .stat-stripe .col:last-child { border-right: 0; }
+    .stat-stripe .col .label {
+      font: 600 10.5px/1 var(--font-sans);
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--paper-500);
+    }
+    .stat-stripe .col .value {
+      font: 700 36px/1 var(--font-display);
+      margin-top: 8px;
+      letter-spacing: -0.02em;
+    }
+    .stat-stripe .col .sub {
+      font: var(--t-small); color: var(--paper-500);
+      margin-top: 4px;
+    }
+    .stat-stripe .col .value em {
+      font: 400 16px/1 var(--font-display);
+      color: var(--vkey-red-500);
+      font-style: italic;
+      margin-left: 6px;
+    }
+
+    /* Two-column layout */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 32px;
+    }
+
+    /* Newspaper-style desktop scene */
+    .desktop-stage {
+      position: relative;
+      height: 520px;
+      background:
+        radial-gradient(at 30% 25%, rgba(159, 46, 28, 0.35) 0%, transparent 45%),
+        linear-gradient(160deg, #1a161a 0%, #07080a 100%);
+      border: 1px solid var(--ink-500);
+      overflow: hidden;
+    }
+    .desktop-stage .macos-statusbar { position: absolute; top: 0; left: 0; right: 0; }
+    .desktop-stage .menu-anchor { position: absolute; top: 36px; right: 130px; }
+    .desktop-stage .hud-center { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); }
+    .desktop-stage .editor-mock {
+      position: absolute; bottom: 40px; left: 60px; right: 60px;
+      padding: 22px 26px;
+      background: rgba(247, 245, 239, 0.96);
+      border: 1px solid var(--ink-500);
+      color: var(--ink-500);
+      font: 17px/1.6 var(--font-sans);
+    }
+    .desktop-stage .editor-mock .head {
+      display: flex; align-items: center; gap: 8px;
+      font: var(--t-mono-sm); color: var(--paper-500);
+      padding-bottom: 8px; margin-bottom: 12px;
+      border-bottom: 1px solid var(--ink-500);
+    }
+    .desktop-stage .editor-mock .caret {
+      display: inline-block; width: 2px; height: 1.1em;
+      vertical-align: text-bottom; background: var(--vkey-red-500);
+      animation: blk 1s infinite step-end;
+    }
+    @keyframes blk { 50% { background: transparent; } }
+    .desktop-stage .editor-mock .pred {
+      position: relative; display: inline-block; vertical-align: text-bottom;
+    }
+    .desktop-stage .editor-mock .pred .tip {
+      position: absolute; bottom: calc(100% + 8px); left: -2px;
+      padding: 6px 12px;
+      background: var(--ink-500); color: var(--paper-50);
+      font: 500 12.5px/1 var(--font-mono);
+      white-space: nowrap;
+    }
+    .desktop-stage .editor-mock .pred .tip::after {
+      content: ""; position: absolute; left: 14px; bottom: -5px;
+      width: 10px; height: 10px;
+      background: var(--ink-500);
+      transform: rotate(45deg);
+    }
+    .desktop-stage .editor-mock .pred .tip span.k {
+      display: inline-flex; align-items: center; gap: 2px;
+      margin-left: 8px; padding: 1px 5px;
+      background: rgba(255,255,255,0.16);
+      font: 500 10.5px var(--font-mono);
+    }
+
+    /* Menu (white-ink editorial version) */
+    .macmenu-muc {
+      width: 280px;
+      background: var(--ink-500);
+      color: var(--paper-50);
+      padding: 6px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+      font: 13px/1 var(--font-sans);
+      border-radius: 4px;
+    }
+    .macmenu-muc .item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 10px; cursor: pointer;
+    }
+    .macmenu-muc .item .ic { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+    .macmenu-muc .item .ic img { width: 14px; height: 14px; filter: invert(1) brightness(1.1); }
+    .macmenu-muc .item .ic .flag { filter: none; width: 18px; height: 13px; border-radius: 1px; }
+    .macmenu-muc .item:hover { background: var(--vkey-red-500); }
+    .macmenu-muc .item .right { margin-left: auto; opacity: 0.5; font: var(--t-mono-sm); }
+    .macmenu-muc .sep { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
+    .macmenu-muc .heading {
+      font: 600 10px/1 var(--font-sans);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.4);
+      padding: 8px 10px 4px;
+    }
+
+    /* HUD in this theme — solid ink slab, no glass */
+    .hud-muc {
+      display: inline-flex; align-items: center; gap: 14px;
+      padding: 14px 22px;
+      background: var(--ink-500); color: var(--paper-50);
+      border-radius: 0;
+      font: 600 18px/1 var(--font-sans);
+      box-shadow: 6px 6px 0 0 var(--vkey-red-500);
+    }
+    .hud-muc img { width: 24px; height: 18px; border-radius: 1px; }
+
+    /* Settings window panel */
+    .mac-window {
+      background: var(--paper-50);
+      color: var(--ink-500);
+      border-radius: 4px;
+      border: 1px solid var(--ink-500);
+      box-shadow: var(--shadow-window);
+    }
+    .mac-titlebar {
+      background: var(--paper-100);
+      border-bottom: 1px solid var(--ink-500);
+    }
+    .mac-title { color: var(--ink-500); font-weight: 600; }
+    .tabbar { background: var(--paper-50); border-color: var(--ink-500); }
+    .tab[aria-selected="true"] {
+      background: var(--ink-500);
+      color: var(--paper-50);
+      border-radius: 2px;
+      box-shadow: none;
+    }
+    .tab[aria-selected="true"] img { filter: invert(1) brightness(1.1); }
+    .tab { color: var(--ink-200); }
+
+    .panel { display: none; }
+    .panel.is-active { display: flex; flex-direction: column; gap: 18px; }
+
+    .section-title {
+      font: 600 10.5px/1 var(--font-sans);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--paper-500);
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--paper-300);
+    }
+
+    .row-group {
+      border: 1px solid var(--ink-500);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .row {
+      background: var(--paper-0);
+      border-radius: 0;
+    }
+    .row + .row { border-top: 1px solid var(--paper-200); }
+
+    /* App items: stripped down */
+    .appitem .avatar {
+      border-radius: 2px;
+      box-shadow: none;
+      border: 1px solid var(--ink-500);
+    }
+    .src-chip {
+      background: transparent;
+      border: 1px solid var(--ink-500);
+      border-radius: 2px;
+      padding: 2px 6px;
+    }
+    .lang-pill {
+      background: transparent;
+      box-shadow: none;
+      border: 1px solid var(--ink-500);
+      border-radius: 2px;
+    }
+
+    .macro-table .short {
+      font: 500 13.5px var(--font-mono);
+      color: var(--vkey-red-500);
+    }
+
+    .kpi {
+      border: 1px solid var(--ink-500);
+      border-radius: 0;
+      background: var(--paper-0);
+    }
+    .kpi .label { color: var(--paper-500); }
+    .kpi .value { font-family: var(--font-display); font-weight: 700; }
+
+    .stat-row .bar > i {
+      background: var(--vkey-red-500);
+    }
+
+    .footer-rule {
+      display: flex; align-items: center; gap: 16px;
+      padding-top: 24px;
+      margin-top: 48px;
+      border-top: 3px solid var(--ink-500);
+      font: var(--t-mono-sm);
+      color: var(--paper-500);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+
+    <!-- ============ Masthead ============ -->
+    <header class="masthead" data-screen-label="01 Masthead">
+      <div>
+        <div class="vol">Theme № 02 · "Mực"</div>
+        <div class="wordmark">vkey<span style="color:var(--vkey-red-500)">.</span></div>
+      </div>
+      <div></div>
+      <div class="meta">
+        v2.0.2 · Bug Hunt<br>
+        18 / 05 / 2026 — TUẦN 21<br>
+        macOS 14 Sonoma+
+      </div>
+      <div class="strap">
+        “Một bộ gõ tiếng Việt cá nhân — đơn giản, nhanh, mã nguồn mở. Không telemetry, không thu thập, không gì cả.” — Tonal version 02, editorial cut.
+      </div>
+    </header>
+
+    <!-- ============ Editorial intro card ============ -->
+    <section class="scene" data-screen-label="02 Hero">
+      <div class="editorial-card">
+        <div>
+          <div class="kicker">Theme 02 — Mực · Ink + Bone</div>
+          <h2>Gõ <em>tiếng Việt</em>, không vướng bận.</h2>
+          <p>Một biến thể đối lập: serif Newsreader cho tiêu đề, mực đen trên giấy bone, một sắc đỏ lacquer duy nhất, viền và góc cạnh sắc. Tinh thần báo chí, ít trang trí, đậm chất biên tập.</p>
+          <p>Cùng hệ thống icon, cùng grid, cùng Components. Khác mọi token mềm: màu, bo góc, shadow, font display.</p>
+          <div class="actions">
+            <button class="btn btn--primary">Tải DMG · 7.59 MB</button>
+            <button class="btn btn--secondary">Xem CHANGELOG</button>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:center;">
+          <div style="position:relative;">
+            <img src="../assets/logo/vkey-app-icon.svg" width="220" height="220" style="border-radius:36px; box-shadow: var(--shadow-lg); border: 1px solid var(--ink-500);">
+            <div style="position:absolute; bottom: -16px; right: -16px; background: var(--vkey-red-500); color: var(--paper-50); padding: 10px 18px; font: 600 13px/1 var(--font-sans); letter-spacing: 0.1em; text-transform: uppercase;">v2.0.2</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-stripe">
+        <div class="col">
+          <div class="label">Syllables · VI</div>
+          <div class="value">8,960</div>
+          <div class="sub">curated · audit pass · NFC normalized</div>
+        </div>
+        <div class="col">
+          <div class="label">Từ · EN</div>
+          <div class="value">9,826</div>
+          <div class="sub">wordfreq top-10k · Wiktionary</div>
+        </div>
+        <div class="col">
+          <div class="label">Telex parse</div>
+          <div class="value">~12<em>ms</em></div>
+          <div class="sub">1,000× single char · M-series</div>
+        </div>
+        <div class="col">
+          <div class="label">Binary</div>
+          <div class="value">7.59<em>MB</em></div>
+          <div class="sub">universal arm64 + x86_64 · Rust core</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Desktop scene ============ -->
+    <section class="scene" data-screen-label="03 Desktop scene">
+      <div class="scene-head">
+        <span class="num">01</span>
+        <span class="name">Desktop · menu &amp; HUD</span>
+        <span class="desc">Menu bar dropdown đổi sang ink-on-white. HUD trở thành slab đặc, đổ bóng cứng màu đỏ lacquer.</span>
+      </div>
+
+      <div class="desktop-stage">
+        <div class="macos-statusbar">
+          <span class="apple"></span>
+          <span style="font-weight:600">Notes</span>
+          <span style="opacity:.8">File</span>
+          <span style="opacity:.8">Edit</span>
+          <span style="opacity:.8">Format</span>
+          <span style="opacity:.8">View</span>
+          <span style="opacity:.8">Help</span>
+          <div class="right">
+            <img src="../assets/icons/search.svg" alt="">
+            <span class="vkey-chip"><img src="../assets/icons/flag-vn.svg" alt=""><span>VI</span></span>
+            <span style="opacity:.85">Thứ Sáu 18:24</span>
+          </div>
+        </div>
+
+        <div class="menu-anchor">
+          <div class="macmenu-muc">
+            <div class="heading">vkey · v2.0.2</div>
+            <div class="item">
+              <span class="ic"><img src="../assets/icons/flag-vn.svg" class="flag"></span>
+              <span>Chuyển VI ↔ EN</span>
+              <span class="right">⌃⇧</span>
+            </div>
+            <div class="sep"></div>
+            <div class="heading">Kiểu gõ</div>
+            <div class="item"><span class="ic">✓</span><span>Telex</span></div>
+            <div class="item"><span class="ic"></span><span>VNI</span></div>
+            <div class="sep"></div>
+            <div class="item"><span class="ic"><img src="../assets/icons/shuffle.svg"></span><span>Smart Switch</span></div>
+            <div class="item"><span class="ic"><img src="../assets/icons/check-circle.svg"></span><span>Sửa lỗi chính tả</span></div>
+            <div class="item"><span class="ic"><img src="../assets/icons/sparkles.svg"></span><span>Macro</span></div>
+            <div class="sep"></div>
+            <div class="item"><span class="ic"><img src="../assets/icons/gear.svg"></span><span>Cài đặt…</span><span class="right">⌘,</span></div>
+            <div class="item"><span class="ic"><img src="../assets/icons/refresh.svg"></span><span>Kiểm tra cập nhật</span></div>
+            <div class="sep"></div>
+            <div class="item"><span class="ic"><img src="../assets/icons/x-circle.svg"></span><span>Thoát vkey</span><span class="right">⌘Q</span></div>
+          </div>
+        </div>
+
+        <div class="hud-center">
+          <div class="hud-muc"><img src="../assets/icons/flag-vn.svg" alt="">Tiếng Việt</div>
+        </div>
+
+        <div class="editor-mock">
+          <div class="head">
+            <span>📝 Notes — Báo cáo tuần 21</span>
+            <span style="margin-left:auto;">macOS · TextEdit</span>
+          </div>
+          <div>
+            Kính gửi anh Long,<br><br>
+            Em xin báo cáo công việc tuần 21 năm 2026 của Phòng Tổng hợp — đã hoàn
+            <span class="pred">
+              <span class="tip">trường <span class="k">⇥ Tab</span></span>
+              thành 4/5 task chính.<span class="caret"></span>
+            </span>
+          </div>
+          <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--paper-300); font: var(--t-mono-sm); color: var(--paper-500);">
+            Auto-correct: <span style="color:var(--vkey-red-500)">veeitj</span> → việt &nbsp;·&nbsp; <span style="color:var(--vkey-red-500)">phuowgn</span> → phương
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Settings window (only general tab inline) ============ -->
+    <section class="scene" data-screen-label="04 Settings window">
+      <div class="scene-head">
+        <span class="num">02</span>
+        <span class="name">Settings window</span>
+        <span class="desc">Tab bar đổi sang flat-active. Mọi row dùng đường viền sắc, không shadow. Nhấn vào tab để chuyển.</span>
+      </div>
+
+      <div class="mac-window" style="max-width: 920px; margin: 0 auto;">
+        <div class="mac-titlebar">
+          <div class="mac-traffic"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+          <div class="mac-title" id="muc-settings-title">Chung</div>
+        </div>
+        <div class="tabbar">
+          <button class="tab" data-muctab="general" aria-selected="true"><img src="../assets/icons/gear.svg" width="14" height="14">Chung</button>
+          <button class="tab" data-muctab="smart"><img src="../assets/icons/shuffle.svg" width="14" height="14">Smart Switch</button>
+          <button class="tab" data-muctab="macro"><img src="../assets/icons/sparkles.svg" width="14" height="14">Macro</button>
+          <button class="tab" data-muctab="spell"><img src="../assets/icons/check-circle.svg" width="14" height="14">Chính tả</button>
+          <button class="tab" data-muctab="stats"><img src="../assets/icons/chart-bar.svg" width="14" height="14">Thống kê</button>
+        </div>
+
+        <!-- General -->
+        <div class="panel is-active settings-body" data-mucpanel="general">
+          <div class="section-title">Nhập liệu</div>
+          <div class="row-group">
+            <div class="row">
+              <div class="row__icon icon-tile--brand"><img src="../assets/icons/keycap.svg" width="14" height="14"></div>
+              <div class="row__body"><div class="row__label">Bật / Tắt gõ Tiếng Việt</div></div>
+              <input type="checkbox" class="toggle" checked>
+            </div>
+            <div class="row">
+              <div class="row__icon"><img src="../assets/icons/abc.svg" width="14" height="14"></div>
+              <div class="row__body"><div class="row__label">Kiểu gõ</div></div>
+              <div class="segmented"><button class="is-active">Telex</button><button>VNI</button></div>
+            </div>
+            <div class="row">
+              <div class="row__icon"><img src="../assets/icons/tone-mark.svg" width="14" height="14"></div>
+              <div class="row__body"><div class="row__label">Kiểu đặt dấu</div><div class="row__hint">Kiểu mới: oà, uý, khoẻ, thuỷ</div></div>
+              <div class="segmented"><button>Kiểu cũ</button><button class="is-active">Kiểu mới</button></div>
+            </div>
+            <div class="row">
+              <div class="row__icon"><img src="../assets/icons/sparkles.svg" width="14" height="14"></div>
+              <div class="row__body">
+                <div class="row__label">Tự động sửa lỗi gõ nhầm</div>
+                <div class="row__hint"><span class="mono">thfi</span> → thì &nbsp;·&nbsp; <span class="mono">veeitj</span> → việt</div>
+              </div>
+              <input type="checkbox" class="toggle" checked>
+            </div>
+          </div>
+
+          <div class="section-title">Phím tắt</div>
+          <div class="row-group">
+            <div class="row">
+              <div class="row__icon"><img src="../assets/icons/command.svg" width="14" height="14"></div>
+              <div class="row__body"><div class="row__label">Chuyển VI ↔ EN</div></div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span class="keycap"><img src="../assets/icons/command.svg" width="11" height="11"></span>
+                <span class="keycap"><img src="../assets/icons/shift-key.svg" width="11" height="11"></span>
+                <button class="btn btn--ghost btn--sm">Thay đổi</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="row__icon"><img src="../assets/icons/magic-wand.svg" width="14" height="14"></div>
+              <div class="row__body"><div class="row__label">Đoán từ tiếp theo</div><div class="row__hint">HUD cạnh caret · <b>Tab</b> để chấp nhận</div></div>
+              <input type="checkbox" class="toggle" checked>
+            </div>
+          </div>
+        </div>
+
+        <!-- Smart Switch -->
+        <div class="panel settings-body" data-mucpanel="smart">
+          <div class="section-title">Smart Switch · 3-state per-app</div>
+          <div class="row-group">
+            <div class="appitem">
+              <div class="avatar" style="background:var(--vkey-red-500);color:#fff;">C</div>
+              <div class="meta"><div class="name">Claude</div><div class="bundle">com.anthropic.claudefordesktop</div></div>
+              <div class="actions">
+                <span class="src-chip"><img src="../assets/icons/user.svg" width="11" height="11">User</span>
+                <span class="lang-pill"><img src="../assets/icons/flag-vn.svg" width="22" height="16" alt=""></span>
+                <button class="btn btn--ghost btn--sm" style="padding:4px 6px;"><img src="../assets/icons/trash.svg" width="14" height="14"></button>
+              </div>
+            </div>
+            <div class="appitem">
+              <div class="avatar" style="background:#0F0F0E;color:#fff;">G</div>
+              <div class="meta"><div class="name">Google Chrome</div><div class="bundle">com.google.Chrome</div></div>
+              <div class="actions">
+                <span class="src-chip"><img src="../assets/icons/robot.svg" width="11" height="11">Auto</span>
+                <span class="lang-pill"><img src="../assets/icons/flag-us.svg" width="22" height="16" alt=""></span>
+                <button class="btn btn--ghost btn--sm" style="padding:4px 6px;"><img src="../assets/icons/trash.svg" width="14" height="14"></button>
+              </div>
+            </div>
+            <div class="appitem">
+              <div class="avatar" style="background:#0F0F0E;color:#fff;">R</div>
+              <div class="meta"><div class="name">Raycast</div><div class="bundle">com.raycast.macos</div></div>
+              <div class="actions">
+                <span class="src-chip"><img src="../assets/icons/user.svg" width="11" height="11">User</span>
+                <span class="lang-pill"><img src="../assets/icons/flag-us.svg" width="22" height="16" alt=""></span>
+                <button class="btn btn--ghost btn--sm" style="padding:4px 6px;"><img src="../assets/icons/trash.svg" width="14" height="14"></button>
+              </div>
+            </div>
+            <div class="appitem">
+              <div class="avatar" style="background:#0F0F0E;color:#fff;">Z</div>
+              <div class="meta"><div class="name">Zalo</div><div class="bundle">com.vng.zalo</div></div>
+              <div class="actions">
+                <span class="src-chip"><img src="../assets/icons/robot.svg" width="11" height="11">Auto</span>
+                <span class="lang-pill"><img src="../assets/icons/flag-vn.svg" width="22" height="16" alt=""></span>
+                <button class="btn btn--ghost btn--sm" style="padding:4px 6px;"><img src="../assets/icons/trash.svg" width="14" height="14"></button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input class="input" placeholder="com.example.app" style="flex:1;">
+            <button class="btn btn--primary">Thêm</button>
+            <button class="btn btn--secondary">Từ app đang chạy</button>
+          </div>
+        </div>
+
+        <!-- Macro -->
+        <div class="panel settings-body" data-mucpanel="macro">
+          <div class="section-title">Macro · Viết tắt → Cụm dài</div>
+          <div class="row-group">
+            <table class="macro-table">
+              <thead><tr><th style="width:32%">Viết tắt</th><th>Cụm dài</th><th style="width:60px"></th></tr></thead>
+              <tbody>
+                <tr><td class="short">vn</td><td>Việt Nam</td><td><img src="../assets/icons/ellipsis.svg" width="14" height="14" style="opacity:.5"></td></tr>
+                <tr><td class="short">hn</td><td>Hà Nội</td><td><img src="../assets/icons/ellipsis.svg" width="14" height="14" style="opacity:.5"></td></tr>
+                <tr><td class="short">tphcm</td><td>Thành phố Hồ Chí Minh</td><td><img src="../assets/icons/ellipsis.svg" width="14" height="14" style="opacity:.5"></td></tr>
+                <tr><td class="short">kga</td><td>Kính gửi anh</td><td><img src="../assets/icons/ellipsis.svg" width="14" height="14" style="opacity:.5"></td></tr>
+                <tr><td class="short">cty</td><td>Công ty</td><td><img src="../assets/icons/ellipsis.svg" width="14" height="14" style="opacity:.5"></td></tr>
+                <tr><td class="short">bcao</td><td>Báo cáo</td><td><img src="../assets/icons/ellipsis.svg" width="14" height="14" style="opacity:.5"></td></tr>
+                <tr><td class="short">qdinh</td><td>Quyết định</td><td><img src="../assets/icons/ellipsis.svg" width="14" height="14" style="opacity:.5"></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button class="btn btn--primary">Thêm macro</button>
+            <button class="btn btn--secondary">Xuất</button>
+            <button class="btn btn--secondary">Nhập</button>
+            <span style="margin-left:auto; color: var(--paper-500); font: var(--t-mono-sm);">34 macros</span>
+          </div>
+        </div>
+
+        <!-- Spell -->
+        <div class="panel settings-body" data-mucpanel="spell">
+          <div class="section-title">Cấu hình kiểm tra chính tả</div>
+          <div class="row-group">
+            <div class="row">
+              <div class="row__icon icon-tile--brand"><img src="../assets/icons/check-circle.svg" width="14" height="14"></div>
+              <div class="row__body"><div class="row__label">Kiểm tra chính tả 6 bước</div><div class="row__hint">Vowel Inclusion Pairs · kiểm tra trong câu</div></div>
+              <input type="checkbox" class="toggle" checked>
+            </div>
+            <div class="row">
+              <div class="row__icon"><img src="../assets/icons/lightbulb.svg" width="14" height="14"></div>
+              <div class="row__body"><div class="row__label">Gợi ý · auto-fix khi confidence ≥ 88%</div></div>
+              <input type="checkbox" class="toggle" checked>
+            </div>
+            <div class="row">
+              <div class="row__icon"><img src="../assets/icons/return-key.svg" width="14" height="14"></div>
+              <div class="row__body"><div class="row__label">Space Restore</div><div class="row__hint"><span class="mono">ò</span> → of · <span class="mono">sê</span> → see</div></div>
+              <input type="checkbox" class="toggle" checked>
+            </div>
+            <div class="row">
+              <div class="row__icon"><img src="../assets/icons/sliders.svg" width="14" height="14"></div>
+              <div class="row__body"><div class="row__label">Chính sách khôi phục</div></div>
+              <div class="segmented"><button>Ưu tiên VI</button><button class="is-active">Cân bằng</button><button>Ưu tiên EN</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="panel settings-body" data-mucpanel="stats">
+          <div class="section-title">Tuần 21 · 2026 · từ 18/05 đến 24/05</div>
+          <div class="kpi-grid">
+            <div class="kpi"><div class="label">Từ đã gõ</div><div class="value">12,847</div><div class="sub">+18% tuần trước</div></div>
+            <div class="kpi"><div class="label">Tiếng Việt</div><div class="value">78<span style="font-size:.6em">%</span></div><div class="sub">mode dominant</div></div>
+            <div class="kpi"><div class="label">Macro hit</div><div class="value">142</div><div class="sub">expansions</div></div>
+            <div class="kpi"><div class="label">Predictions</div><div class="value">89</div><div class="sub">Tab-accepted</div></div>
+          </div>
+
+          <div class="row-group">
+            <div style="padding:10px 14px; display:flex; align-items:center; gap:10px; border-bottom: 1px solid var(--ink-500); background: var(--ink-500); color: var(--paper-50);">
+              <img src="../assets/icons/chart-bar.svg" width="14" height="14" style="filter:invert(1)">
+              <div style="font: 600 12px var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase;">Top từ Tiếng Việt</div>
+            </div>
+            <div class="stat-row"><div class="rank">01</div><div><div class="word">của</div><div class="bar"><i style="width:100%"></i></div></div><div class="count">482</div></div>
+            <div class="stat-row"><div class="rank">02</div><div><div class="word">không</div><div class="bar"><i style="width:81%"></i></div></div><div class="count">391</div></div>
+            <div class="stat-row"><div class="rank">03</div><div><div class="word">được</div><div class="bar"><i style="width:73%"></i></div></div><div class="count">354</div></div>
+            <div class="stat-row"><div class="rank">04</div><div><div class="word">việt nam</div><div class="bar"><i style="width:62%"></i></div></div><div class="count">298</div></div>
+            <div class="stat-row"><div class="rank">05</div><div><div class="word">cảm ơn</div><div class="bar"><i style="width:44%"></i></div></div><div class="count">211</div></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ Components inventory ============ -->
+    <section class="scene" data-screen-label="05 Component inventory">
+      <div class="scene-head">
+        <span class="num">03</span>
+        <span class="name">Components inventory</span>
+        <span class="desc">Cùng API, thay token. Buttons, toggles, segmented, badges, keycaps, callouts.</span>
+      </div>
+
+      <div class="two-col">
+        <div style="background:var(--paper-0); border: 1px solid var(--ink-500); padding: 28px; display:flex;flex-direction:column;gap:22px;">
+          <div>
+            <div class="section-title">Buttons</div>
+            <div style="display:flex; gap:10px; flex-wrap: wrap; margin-top: 14px;">
+              <button class="btn btn--primary">Tải DMG</button>
+              <button class="btn btn--secondary"><img src="../assets/icons/download.svg" width="14" height="14">Cập nhật</button>
+              <button class="btn btn--ghost"><img src="../assets/icons/refresh.svg" width="14" height="14">Làm mới</button>
+            </div>
+          </div>
+          <div>
+            <div class="section-title">Toggle + segmented</div>
+            <div style="display:flex; gap:18px; align-items:center; margin-top: 14px;">
+              <input type="checkbox" class="toggle" checked>
+              <div class="segmented"><button class="is-active">Telex</button><button>VNI</button></div>
+              <div class="segmented"><button>VI</button><button class="is-active">Balanced</button><button>EN</button></div>
+            </div>
+          </div>
+          <div>
+            <div class="section-title">Badges</div>
+            <div style="display:flex; gap:6px; flex-wrap: wrap; margin-top: 14px;">
+              <span class="badge badge--brand">v2.0.2</span>
+              <span class="badge badge--success">Stable</span>
+              <span class="badge badge--info">Beta</span>
+              <span class="badge badge--warning">Preview</span>
+              <span class="badge">8,960 syllables</span>
+            </div>
+          </div>
+          <div>
+            <div class="section-title">Keycaps</div>
+            <div style="display:flex; gap:6px; align-items:center; margin-top: 14px;">
+              <span class="keycap"><img src="../assets/icons/command.svg" width="13" height="13"></span>
+              <span class="keycap"><img src="../assets/icons/shift-key.svg" width="13" height="13"></span>
+              <span class="keycap">V</span>
+              <span style="color: var(--paper-500); margin-left: 8px;">— toggle VI / EN</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:var(--paper-0); border: 1px solid var(--ink-500); padding: 28px; display:flex; flex-direction: column; gap: 18px;">
+          <div class="section-title">Iconography · monochrome, currentColor</div>
+          <div style="display:grid;grid-template-columns:repeat(8,1fr); gap: 14px; color: var(--ink-500);">
+            <img src="../assets/icons/gear.svg" width="22" height="22">
+            <img src="../assets/icons/sliders.svg" width="22" height="22">
+            <img src="../assets/icons/shuffle.svg" width="22" height="22">
+            <img src="../assets/icons/sparkles.svg" width="22" height="22">
+            <img src="../assets/icons/chart-bar.svg" width="22" height="22">
+            <img src="../assets/icons/dictionary.svg" width="22" height="22">
+            <img src="../assets/icons/magic-wand.svg" width="22" height="22">
+            <img src="../assets/icons/abc.svg" width="22" height="22">
+            <img src="../assets/icons/command.svg" width="22" height="22">
+            <img src="../assets/icons/shift-key.svg" width="22" height="22">
+            <img src="../assets/icons/tab-key.svg" width="22" height="22">
+            <img src="../assets/icons/escape-key.svg" width="22" height="22">
+            <img src="../assets/icons/return-key.svg" width="22" height="22">
+            <img src="../assets/icons/check-circle.svg" width="22" height="22">
+            <img src="../assets/icons/lightbulb.svg" width="22" height="22">
+            <img src="../assets/icons/robot.svg" width="22" height="22">
+          </div>
+
+          <div class="section-title" style="margin-top:8px;">Tokens · palette</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr); gap: 8px;">
+            <div><div style="height:48px;background:var(--ink-500);"></div><div style="font:var(--t-mono-sm);margin-top:4px;color:var(--paper-500)">Ink 500</div></div>
+            <div><div style="height:48px;background:var(--ink-300);"></div><div style="font:var(--t-mono-sm);margin-top:4px;color:var(--paper-500)">Ink 300</div></div>
+            <div><div style="height:48px;background:var(--paper-200);"></div><div style="font:var(--t-mono-sm);margin-top:4px;color:var(--paper-500)">Paper 200</div></div>
+            <div><div style="height:48px;background:var(--paper-50);border:1px solid var(--paper-300);"></div><div style="font:var(--t-mono-sm);margin-top:4px;color:var(--paper-500)">Bone 50</div></div>
+            <div><div style="height:48px;background:var(--vkey-red-500);"></div><div style="font:var(--t-mono-sm);margin-top:4px;color:var(--paper-500)">Lacquer</div></div>
+          </div>
+
+          <div class="section-title" style="margin-top:8px;">Display type — Newsreader serif</div>
+          <div style="font: 600 36px/1 var(--font-display); letter-spacing: -0.01em;">Gõ <em style="color: var(--vkey-red-500); font-style: italic;">tiếng Việt</em>.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer-rule">
+      <span>vkey · Design System</span>
+      <span style="margin-left:auto;">Theme 02 · "Mực" · serif editorial · ink + bone + single lacquer red</span>
+    </div>
+
+  </div>
+
+  <script>
+    // Mực theme: tab switching
+    (function () {
+      const tabs = document.querySelectorAll('[data-muctab]');
+      const panels = document.querySelectorAll('[data-mucpanel]');
+      const title = document.getElementById('muc-settings-title');
+      const labels = { general: 'Chung', smart: 'Smart Switch', macro: 'Macro', spell: 'Chính tả', stats: 'Thống kê & Sao lưu' };
+      tabs.forEach(t => t.addEventListener('click', () => {
+        tabs.forEach(x => x.setAttribute('aria-selected', 'false'));
+        panels.forEach(p => p.classList.remove('is-active'));
+        t.setAttribute('aria-selected', 'true');
+        const k = t.dataset.muctab;
+        document.querySelector(`[data-mucpanel="${k}"]`).classList.add('is-active');
+        if (title) title.textContent = labels[k];
+      }));
+    })();
+  </script>
+</body>
+</html>

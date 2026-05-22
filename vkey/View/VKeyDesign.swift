@@ -29,6 +29,20 @@ enum VKeyDesign {
     /// Convenience alias for `red500`.
     static var brand: Color { red500 }
 
+    // -- Mực palette (v2.2.0): high-contrast editorial, single vermilion --
+    /// Mực bone paper canvas (`#F7F5EF`).
+    static let mucPaper50  = Color(hex: 0xF7F5EF)
+    /// Mực near-black ink (`#0B0C0F`).
+    static let mucInk500   = Color(hex: 0x0B0C0F)
+    /// Mực lacquer red (`#9F2E1C`) — anchor accent.
+    static let mucRed500   = Color(hex: 0x9F2E1C)
+    /// Mực lacquer red light (`#D26F5C`).
+    static let mucRed300   = Color(hex: 0xD26F5C)
+    /// Mực lacquer red dark (`#6B1B0F`).
+    static let mucRed700   = Color(hex: 0x6B1B0F)
+    /// Mực paper200 — borders, dividers.
+    static let mucPaper200 = Color(hex: 0xDDD7C7)
+
     // -- Saigon gold (sparingly: VN flag star, "new" badges, highlights) ----
     static let gold300 = Color(hex: 0xFAD37A)
     static let gold400 = Color(hex: 0xF5C645)
@@ -123,22 +137,23 @@ extension UITheme {
         switch self {
         case .classic: return .accentColor
         case .tonal:   return VKeyDesign.red500
+        case .muc:     return VKeyDesign.mucRed500
         }
     }
 
     /// Imageset name used for the Settings header icon. Classic shows the
-    /// v2.0.2 cup-of-coffee mark; Tonal shows the new vkey app icon.
+    /// v2.0.2 cup-of-coffee mark; Tonal/Mực show the new vkey app icon.
     var headerImageName: String {
         switch self {
         case .classic: return "CficonClassic"
-        case .tonal:   return "Cficon"
+        case .tonal, .muc: return "Cficon"
         }
     }
 
-    /// Whether the Settings header shows the "vkey" wordmark + tagline
-    /// (Tonal only — Classic uses the bare icon centred like 2.0.2).
+    /// Whether the Settings header shows the "vkey" wordmark + tagline.
+    /// Classic uses the bare icon centred like 2.0.2; Tonal/Mực show wordmark.
     var showsHeroWordmark: Bool {
-        self == .tonal
+        self != .classic
     }
 }
 

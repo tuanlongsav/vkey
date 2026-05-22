@@ -166,18 +166,18 @@ enum AppTheme: String, CaseIterable, Defaults.Serializable {
   case emoji
 }
 
-/// v2.1.1: UI theme — chọn diện mạo toàn cục cho app. Áp dụng cho accent
-/// color, HUD VI/EN, HUD prediction, Settings header, app icon. Theme là
-/// dynamic — switch không cần restart. Default = `.tonal` (design mới);
-/// `.classic` rollback về diện mạo v2.0.2.
+/// v2.1.1+: UI theme — diện mạo toàn cục cho app.
+/// v2.2.0 mở rộng: 2 design system themes (Tonal, Mực). Default `.tonal`.
 enum UITheme: String, CaseIterable, Defaults.Serializable {
-  case classic   // v2.0.2 — accent system blue, HUD simple, no wordmark header
-  case tonal     // v2.1.0+ — brand red, deep-ink glass HUD, vkey wordmark
+  case classic   // v2.0.2 — accent system blue, HUD đơn giản
+  case tonal     // v2.1.0+ — brand red Saigon, glass tối deep-ink, wordmark
+  case muc       // v2.2.0 — high-contrast editorial, lacquer red, sharper radii
 
   var displayName: String {
     switch self {
     case .classic: return "Classic"
     case .tonal:   return "Tonal"
+    case .muc:     return "Mực"
     }
   }
 
@@ -186,7 +186,9 @@ enum UITheme: String, CaseIterable, Defaults.Serializable {
     case .classic:
       return "Diện mạo gốc của vkey 2.0.2: accent system blue, HUD đơn giản, biểu tượng macOS native."
     case .tonal:
-      return "Design system mới: accent đỏ Saigon, HUD glass tối deep-ink, wordmark vkey, typography tiếng Việt."
+      return "Design system Tonal: accent đỏ Saigon, HUD glass tối deep-ink, wordmark vkey."
+    case .muc:
+      return "Design system Mực: high-contrast editorial, đỏ lacquer #9F2E1C, bóng mỏng, radii sắc."
     }
   }
 }

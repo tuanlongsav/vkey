@@ -353,13 +353,47 @@ struct PredictionHUDView: View {
 
   var body: some View {
     Group {
-      if uiTheme == .tonal {
-        tonalBody
-      } else {
-        classicBody
+      switch uiTheme {
+      case .tonal:   tonalBody
+      case .muc:     mucBody
+      case .classic: classicBody
       }
     }
     .frame(width: contentSize.width, height: contentSize.height)
+  }
+
+  // MARK: - Mực (v2.2.0)
+
+  private var mucBody: some View {
+    HStack(spacing: 6) {
+      Text("→")
+        .font(.system(size: CGFloat(fontSize), weight: .bold, design: .serif))
+        .foregroundStyle(VKeyDesign.mucRed300)
+      Text(prediction)
+        .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .serif))
+        .foregroundStyle(.white)
+      Text("⇥ Tab")
+        .font(.system(size: CGFloat(fontSize) * 0.78, weight: .medium, design: .monospaced))
+        .foregroundStyle(.white.opacity(0.60))
+        .padding(.leading, 4)
+    }
+    .shadow(color: .black.opacity(0.22), radius: 0.5, x: 0, y: 0.5)
+    .padding(.horizontal, 12)
+    .padding(.vertical, 7)
+    .background(
+      VKeyDesign.mucInk500.opacity(mucScrimOpacity),
+      in: RoundedRectangle(cornerRadius: 4)
+    )
+    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 4))
+    .overlay(
+      RoundedRectangle(cornerRadius: 4)
+        .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+    )
+    .shadow(color: .black.opacity(0.32), radius: 8, x: 0, y: 3)
+  }
+
+  private var mucScrimOpacity: Double {
+    0.36 + 0.30 * backgroundStrength
   }
 
   // MARK: - Classic (v2.0.2 look)

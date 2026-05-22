@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi" class="theme-muc">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="../themes/muc.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--paper-50); color: var(--ink-500); }
+  body { width: 700px; height: 230px; padding: 0; box-sizing: border-box; overflow: hidden; font-family: var(--font-sans); }
+  .sheet { width: 100%; height: 100%; background: var(--paper-0); border: 1px solid var(--ink-500); padding: 16px 22px 18px; box-sizing: border-box; display: grid; grid-template-columns: 90px 1fr; gap: 0 22px; align-content: start; }
+  .stamp { border-right: 1px solid var(--ink-500); padding-right: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .stamp .num { font: 600 11px/1 var(--font-sans); letter-spacing: .14em; text-transform: uppercase; color: var(--vkey-red-500); }
+  .stamp .name { font: 600 18px/1.1 var(--font-display); color: var(--ink-500); letter-spacing: -0.01em; }
+  .stamp .meta { font: italic 400 11.5px/1.3 var(--font-display); color: var(--paper-500); margin-top: 4px; }
+  .body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .footer { margin-top: auto; padding-top: 6px; border-top: 1px solid var(--paper-300); display: flex; gap: 16px; align-items: baseline; }
+  .footer .quote { font: italic 400 12px/1.3 var(--font-display); color: var(--paper-500); }
+  .footer .spec { margin-left: auto; font: 500 10px/1 var(--font-mono); color: var(--paper-500); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+  .row-label { font: 600 9.5px/1 var(--font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--paper-500); display: flex; align-items: center; gap: 8px; }
+  .row-label::after { content: ""; flex: 1; height: 1px; background: var(--paper-300); }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="stamp">
+      <div class="num">M·B2</div>
+      <div class="name">App icon.</div>
+      <div class="meta">Squircle scaling · 18 → 160px · radius proportional</div>
+    </div>
+    <div class="body">
+      
+    <div style="display:flex;align-items:flex-end;justify-content:space-around;gap:14px;margin-top:6px;">
+      
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <img src="../assets/logo/vkey-app-icon.svg" width="160" height="160" style="border-radius:32px;">
+          <div style="font:500 10px var(--font-mono);color:var(--paper-500)">160px</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <img src="../assets/logo/vkey-app-icon.svg" width="96" height="96" style="border-radius:19.2px;">
+          <div style="font:500 10px var(--font-mono);color:var(--paper-500)">96px</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <img src="../assets/logo/vkey-app-icon.svg" width="64" height="64" style="border-radius:12.8px;">
+          <div style="font:500 10px var(--font-mono);color:var(--paper-500)">64px</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <img src="../assets/logo/vkey-app-icon.svg" width="40" height="40" style="border-radius:8px;">
+          <div style="font:500 10px var(--font-mono);color:var(--paper-500)">40px</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <img src="../assets/logo/vkey-app-icon.svg" width="28" height="28" style="border-radius:5.6px;">
+          <div style="font:500 10px var(--font-mono);color:var(--paper-500)">28px</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <img src="../assets/logo/vkey-app-icon.svg" width="18" height="18" style="border-radius:3.6px;">
+          <div style="font:500 10px var(--font-mono);color:var(--paper-500)">18px</div>
+        </div>
+    </div>
+      <div class="footer">
+        <span class="quote">"Same mark. Six legible sizes."</span>
+        <span class="spec">RADIUS = SIZE / 5 · MIN 2PX</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
