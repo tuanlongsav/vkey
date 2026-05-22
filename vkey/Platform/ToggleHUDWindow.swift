@@ -158,63 +158,64 @@ private struct ToggleHUDView: View {
         Group {
             switch uiTheme {
             case .tonal:   tonalBody
-            case .muc:     mucBody
+            case .sonMai:  sonMaiBody
             case .classic: classicBody
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
     }
 
-    // MARK: - Mực (v2.2.0) — high-contrast editorial, lacquer red, sharper radii
+    // MARK: - Sơn Mài (v2.2.1) — lacquer red + gold leaf, warm ink, Fraunces serif
 
-    private var mucBody: some View {
-        VStack(spacing: 4) {
+    private var sonMaiBody: some View {
+        VStack(spacing: 6) {
             ThemedSymbol(name: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
-                .font(.system(size: 36, weight: .semibold))
+                .font(.system(size: 38, weight: .semibold))
                 .foregroundStyle(
                     viewModel.isEnabled
-                    ? AnyShapeStyle(VKeyDesign.mucRed500)
-                    : AnyShapeStyle(VKeyDesign.mucPaper200)
+                    ? AnyShapeStyle(VKeyDesign.sonMaiRed300.gradient)
+                    : AnyShapeStyle(VKeyDesign.sonMaiPaper200.gradient)
                 )
-                .frame(width: 44, height: 44)
+                .frame(width: 46, height: 46)
                 .vkeySymbolReplacementTransition()
 
             Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                .font(.system(size: 15, weight: .semibold, design: .serif))
-                .foregroundStyle(.white)
+                .font(.system(size: 15.5, weight: .semibold, design: .serif))
+                .foregroundStyle(VKeyDesign.sonMaiPaper50)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
 
             Text(viewModel.isEnabled ? "VI" : "EN")
-                .font(.system(size: 10, weight: .heavy, design: .serif))
-                .tracking(1.2)
-                .padding(.horizontal, 6)
+                .font(.system(size: 10.5, weight: .bold, design: .serif))
+                .tracking(0.8)
+                .padding(.horizontal, 7)
                 .padding(.vertical, 2)
                 .background(
                     viewModel.isEnabled
-                    ? VKeyDesign.mucRed500.opacity(0.32)
-                    : Color.white.opacity(0.10)
+                    ? VKeyDesign.sonMaiGold500.opacity(0.30)
+                    : Color.white.opacity(0.12)
                 )
-                .foregroundStyle(viewModel.isEnabled ? VKeyDesign.mucRed300 : Color.white.opacity(0.75))
-                .clipShape(RoundedRectangle(cornerRadius: 2))
+                .foregroundStyle(viewModel.isEnabled ? VKeyDesign.sonMaiGold300 : Color.white.opacity(0.78))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
         }
-        .frame(width: 126)
-        .padding(.vertical, 12)
-        .padding(.horizontal, 6)
+        .frame(width: 128)
+        .padding(.vertical, 13)
+        .padding(.horizontal, 8)
         .background(
-            VKeyDesign.mucInk500.opacity(mucScrimOpacity),
-            in: RoundedRectangle(cornerRadius: 6)
+            VKeyDesign.sonMaiInk500.opacity(sonMaiScrimOpacity),
+            in: RoundedRectangle(cornerRadius: 14)
         )
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 6))
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
         .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(VKeyDesign.sonMaiGold500.opacity(0.22), lineWidth: 0.8)
         )
-        .shadow(color: Color.black.opacity(0.45), radius: 18, x: 0, y: 6)
+        .shadow(color: Color.black.opacity(0.50), radius: 22, x: 0, y: 10)
     }
 
-    private var mucScrimOpacity: Double {
-        0.36 + 0.30 * viewModel.backgroundStrength
+    private var sonMaiScrimOpacity: Double {
+        // Warm-ink glass — `--glass-dark` rgba(20,16,12,0.68) baseline.
+        0.36 + 0.32 * viewModel.backgroundStrength
     }
 
     // MARK: - Classic (v2.0.2 look)

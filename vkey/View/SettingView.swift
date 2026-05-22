@@ -204,33 +204,34 @@ struct GeneralView: View {
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(.secondary)
             }
-        case .muc:
-            // v2.2.0: editorial style — serif wordmark, sharp radii, no glow,
-            // editorial double-rule under wordmark.
+        case .sonMai:
+            // v2.2.1: sơn son thếp vàng — lacquer red wordmark + gold leaf
+            // hairline rule. Serif Fraunces feel via .serif design.
             VStack(spacing: 8) {
                 Image(uiTheme.headerImageName)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 78, height: 78)
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .shadow(color: VKeyDesign.sonMaiRed500.opacity(0.22), radius: 12, x: 0, y: 5)
+                    .shadow(color: .black.opacity(0.10), radius: 3, x: 0, y: 1)
                 Text("vkey")
-                    .font(.system(size: 30, weight: .semibold, design: .serif))
-                    .foregroundStyle(VKeyDesign.mucRed500)
-                    .tracking(-0.3)
-                VStack(spacing: 0) {
-                    Rectangle()
-                        .fill(VKeyDesign.mucInk500)
-                        .frame(height: 1)
-                    Spacer().frame(height: 2)
-                    Rectangle()
-                        .fill(VKeyDesign.mucInk500)
-                        .frame(height: 3)
-                }
-                .frame(width: 64)
-                .padding(.vertical, 2)
-                Text("Bộ gõ tiếng Việt cho macOS")
-                    .font(.system(size: 11.5, weight: .medium, design: .serif))
+                    .font(.system(size: 30, weight: .bold, design: .serif))
+                    .foregroundStyle(VKeyDesign.sonMaiRed500)
+                    .tracking(-0.4)
+                // Gold leaf hairline rule
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [
+                            VKeyDesign.sonMaiGold500.opacity(0.0),
+                            VKeyDesign.sonMaiGold500.opacity(0.85),
+                            VKeyDesign.sonMaiGold500.opacity(0.0)
+                        ],
+                        startPoint: .leading, endPoint: .trailing
+                    ))
+                    .frame(width: 72, height: 1.5)
+                Text("Bộ gõ tiếng Việt — sơn son thếp vàng")
+                    .font(.system(size: 11.5, weight: .regular, design: .serif))
                     .foregroundStyle(.secondary)
                     .italic()
             }

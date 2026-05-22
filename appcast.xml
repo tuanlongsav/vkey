@@ -6,6 +6,46 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.2.1 — "Sơn Mài"</title>
+      <sparkle:version>20201</sparkle:version>
+      <sparkle:shortVersionString>2.2.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 22 May 2026 22:50:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.2.1/vkey-2.2.1.dmg"
+        sparkle:edSignature="f3Wiv6uWq2Qve64FMrMqoqqpNCnI0TuYBs/NA8FPK7V9GJOMkj4dygjI5Bde69Rq5Yt438TujwXgnw9kTdP4DQ=="
+        length="7586567"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.2.1 — "Sơn Mài":</h2>
+        <p><em>Thay theme <strong>Mực</strong> bằng <strong>Sơn Mài</strong> — sơn son thếp vàng. Diện mạo Việt Nam truyền thống với đỏ lacquer + thếp vàng + giấy trứng + serif Fraunces. Tổng vẫn 5 giao diện.</em></p>
+
+        <h3>🎨 Sơn Mài — sơn son thếp vàng</h3>
+        <ul>
+          <li><strong>Đỏ son</strong>: <code>#B5302A</code> — sâu hơn Tonal <code>#E04434</code>, gợi sơn mài cổ truyền.</li>
+          <li><strong>Thếp vàng</strong>: <code>#A07C32</code> — accent vàng dùng tinh tế cho viền HUD, gold-leaf hairline rule trong Settings header, badge gold.</li>
+          <li><strong>Giấy trứng</strong>: <code>#F4EFE3</code> eggshell — cảm giác giấy dó / giấy gạo.</li>
+          <li><strong>Ấm ink</strong>: <code>#131110</code> — warm black thay vì pure black, gợi nền sơn mài.</li>
+          <li><strong>Font display Fraunces serif</strong>: editorial, classical — pair với Be Vietnam Pro body.</li>
+          <li><strong>HUD VI/EN</strong>: glass tối warm-ink + viền gold-leaf mảnh + accent đỏ son cho icon, badge VI/EN dùng gold.</li>
+          <li><strong>HUD prediction</strong>: mũi tên gold-leaf, từ gợi ý serif paper-50, chip "⇥ Tab" mờ.</li>
+          <li><strong>Settings header</strong>: app icon + "vkey" serif bold đỏ son + gold-leaf hairline gradient + tagline "Bộ gõ tiếng Việt — sơn son thếp vàng" italic serif.</li>
+        </ul>
+
+        <h3>🗑 Xoá theme Mực</h3>
+        <p>Mực (v2.2.0) thay bằng Sơn Mài — vẫn 5 giao diện trong menu bar: Mặc định / 3D bóng bẩy / Emoji vui tươi / Tonal / <strong>Sơn Mài</strong>.</p>
+
+        <h3>🛠 Bên trong</h3>
+        <ul>
+          <li><code>UITheme.muc</code> → <code>UITheme.sonMai</code>. Migration: user đang dùng <code>.muc</code> sẽ tự fallback về <code>.tonal</code> (default).</li>
+          <li><code>VKeyDesign.swift</code>: palette Mực xoá, palette Sơn Mài thêm (<code>sonMaiRed500</code>, <code>sonMaiGold500</code>, <code>sonMaiPaper50</code>, <code>sonMaiInk500</code>, <code>sonMaiJade500</code>, <code>sonMaiIndigo500</code>).</li>
+          <li>HUD + Settings header + AppIconSwitcher + MenuBar — đổi branch <code>.muc</code> → <code>.sonMai</code>.</li>
+          <li><code>Design3/</code>: commit toàn bộ Sơn Mài design files (theme.css, JSX previews) làm reference.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.2.0 — "Theme Library"</title>
       <sparkle:version>20200</sparkle:version>
       <sparkle:shortVersionString>2.2.0</sparkle:shortVersionString>

@@ -29,19 +29,31 @@ enum VKeyDesign {
     /// Convenience alias for `red500`.
     static var brand: Color { red500 }
 
-    // -- Mực palette (v2.2.0): high-contrast editorial, single vermilion --
-    /// Mực bone paper canvas (`#F7F5EF`).
-    static let mucPaper50  = Color(hex: 0xF7F5EF)
-    /// Mực near-black ink (`#0B0C0F`).
-    static let mucInk500   = Color(hex: 0x0B0C0F)
-    /// Mực lacquer red (`#9F2E1C`) — anchor accent.
-    static let mucRed500   = Color(hex: 0x9F2E1C)
-    /// Mực lacquer red light (`#D26F5C`).
-    static let mucRed300   = Color(hex: 0xD26F5C)
-    /// Mực lacquer red dark (`#6B1B0F`).
-    static let mucRed700   = Color(hex: 0x6B1B0F)
-    /// Mực paper200 — borders, dividers.
-    static let mucPaper200 = Color(hex: 0xDDD7C7)
+    // -- Sơn Mài palette (v2.2.1): sơn son thếp vàng — Vietnamese lacquer ---
+    /// Sơn Mài lacquer red (`#B5302A`) — sâu hơn Tonal, anchor accent.
+    static let sonMaiRed500   = Color(hex: 0xB5302A)
+    /// Sơn Mài lacquer red light (`#DD7867`) — for VI badge on dark scrim.
+    static let sonMaiRed300   = Color(hex: 0xDD7867)
+    /// Sơn Mài lacquer red dark (`#7E1C16`).
+    static let sonMaiRed700   = Color(hex: 0x7E1C16)
+    /// Sơn Mài gold leaf (`#A07C32`) — thếp vàng, used sparingly.
+    static let sonMaiGold500  = Color(hex: 0xA07C32)
+    /// Sơn Mài gold leaf light (`#E0BC5E`) — for highlights, badges.
+    static let sonMaiGold300  = Color(hex: 0xE0BC5E)
+    /// Sơn Mài eggshell paper canvas (`#F4EFE3`).
+    static let sonMaiPaper100 = Color(hex: 0xF4EFE3)
+    /// Sơn Mài eggshell paper light (`#FAF6EC`).
+    static let sonMaiPaper50  = Color(hex: 0xFAF6EC)
+    /// Sơn Mài paper border tone (`#EAE3D2`).
+    static let sonMaiPaper200 = Color(hex: 0xEAE3D2)
+    /// Sơn Mài warm ink (`#131110`) — lacquer base.
+    static let sonMaiInk500   = Color(hex: 0x131110)
+    /// Sơn Mài warm ink slightly lighter (`#1A1612`).
+    static let sonMaiInk400   = Color(hex: 0x1A1612)
+    /// Sơn Mài jade (`#0E7A5F`) — for success states.
+    static let sonMaiJade500  = Color(hex: 0x0E7A5F)
+    /// Sơn Mài indigo (`#1F4F7A`) — for info states.
+    static let sonMaiIndigo500 = Color(hex: 0x1F4F7A)
 
     // -- Saigon gold (sparingly: VN flag star, "new" badges, highlights) ----
     static let gold300 = Color(hex: 0xFAD37A)
@@ -137,21 +149,21 @@ extension UITheme {
         switch self {
         case .classic: return .accentColor
         case .tonal:   return VKeyDesign.red500
-        case .muc:     return VKeyDesign.mucRed500
+        case .sonMai:  return VKeyDesign.sonMaiRed500
         }
     }
 
     /// Imageset name used for the Settings header icon. Classic shows the
-    /// v2.0.2 cup-of-coffee mark; Tonal/Mực show the new vkey app icon.
+    /// v2.0.2 cup-of-coffee mark; Tonal/Sơn Mài show the new vkey app icon.
     var headerImageName: String {
         switch self {
-        case .classic: return "CficonClassic"
-        case .tonal, .muc: return "Cficon"
+        case .classic:           return "CficonClassic"
+        case .tonal, .sonMai:    return "Cficon"
         }
     }
 
     /// Whether the Settings header shows the "vkey" wordmark + tagline.
-    /// Classic uses the bare icon centred like 2.0.2; Tonal/Mực show wordmark.
+    /// Classic uses the bare icon centred like 2.0.2; Tonal/Sơn Mài show wordmark.
     var showsHeroWordmark: Bool {
         self != .classic
     }

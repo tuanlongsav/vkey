@@ -223,10 +223,10 @@ struct MainMenuView: View {
           themedSymbol: "paintpalette"
         )
       }
-      Button { setAppearance(ui: .muc, icon: .default) } label: {
+      Button { setAppearance(ui: .sonMai, icon: .default) } label: {
         Label(
-          isAppearance(.muc, .default) ? "Mực ✓" : "Mực",
-          themedSymbol: "drop"
+          isAppearance(.sonMai, .default) ? "Sơn Mài ✓" : "Sơn Mài",
+          themedSymbol: "paintbrush.pointed"
         )
       }
     } label: {

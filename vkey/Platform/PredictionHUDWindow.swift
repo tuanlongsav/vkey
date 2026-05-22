@@ -355,45 +355,45 @@ struct PredictionHUDView: View {
     Group {
       switch uiTheme {
       case .tonal:   tonalBody
-      case .muc:     mucBody
+      case .sonMai:  sonMaiBody
       case .classic: classicBody
       }
     }
     .frame(width: contentSize.width, height: contentSize.height)
   }
 
-  // MARK: - Mực (v2.2.0)
+  // MARK: - Sơn Mài (v2.2.1)
 
-  private var mucBody: some View {
+  private var sonMaiBody: some View {
     HStack(spacing: 6) {
       Text("→")
         .font(.system(size: CGFloat(fontSize), weight: .bold, design: .serif))
-        .foregroundStyle(VKeyDesign.mucRed300)
+        .foregroundStyle(VKeyDesign.sonMaiGold300)
       Text(prediction)
         .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .serif))
-        .foregroundStyle(.white)
+        .foregroundStyle(VKeyDesign.sonMaiPaper50)
       Text("⇥ Tab")
         .font(.system(size: CGFloat(fontSize) * 0.78, weight: .medium, design: .monospaced))
-        .foregroundStyle(.white.opacity(0.60))
+        .foregroundStyle(VKeyDesign.sonMaiPaper50.opacity(0.62))
         .padding(.leading, 4)
     }
-    .shadow(color: .black.opacity(0.22), radius: 0.5, x: 0, y: 0.5)
-    .padding(.horizontal, 12)
-    .padding(.vertical, 7)
+    .shadow(color: .black.opacity(0.24), radius: 0.5, x: 0, y: 0.5)
+    .padding(.horizontal, 13)
+    .padding(.vertical, 8)
     .background(
-      VKeyDesign.mucInk500.opacity(mucScrimOpacity),
-      in: RoundedRectangle(cornerRadius: 4)
+      VKeyDesign.sonMaiInk500.opacity(sonMaiScrimOpacity),
+      in: RoundedRectangle(cornerRadius: 8)
     )
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 4))
+    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
     .overlay(
-      RoundedRectangle(cornerRadius: 4)
-        .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+      RoundedRectangle(cornerRadius: 8)
+        .strokeBorder(VKeyDesign.sonMaiGold500.opacity(0.22), lineWidth: 0.8)
     )
-    .shadow(color: .black.opacity(0.32), radius: 8, x: 0, y: 3)
+    .shadow(color: .black.opacity(0.36), radius: 10, x: 0, y: 4)
   }
 
-  private var mucScrimOpacity: Double {
-    0.36 + 0.30 * backgroundStrength
+  private var sonMaiScrimOpacity: Double {
+    0.36 + 0.32 * backgroundStrength
   }
 
   // MARK: - Classic (v2.0.2 look)

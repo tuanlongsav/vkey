@@ -2,6 +2,71 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.2.1] - 2026-05-22 — "Sơn Mài"
+
+**Thay theme Mực bằng Sơn Mài — sơn son thếp vàng, lacquer Vietnamese art aesthetic.** Tổng vẫn 5 giao diện. README rà soát ✓
+
+### 🎨 Sơn Mài — sơn son thếp vàng
+
+Theme thứ 5 trong menu bar (thay vị trí cũ của Mực) — đại diện cho mỹ thuật sơn mài Việt Nam.
+
+#### Palette
+
+- **Đỏ son** (lacquer red) `#B5302A` — sâu hơn Tonal `#E04434`, gợi sơn mài cổ truyền.
+- **Thếp vàng** (gold leaf) `#A07C32` — accent vàng dùng tinh tế: viền HUD mảnh, gold-leaf hairline rule trong Settings header, badge VI/EN.
+- **Giấy trứng** (eggshell) `#F4EFE3` paper canvas — cảm giác giấy dó / giấy gạo.
+- **Ấm ink** (warm black) `#131110` — gợi nền sơn mài, không phải pure black.
+- **Ngọc bích** `#0E7A5F` (jade) + **Chàm** `#1F4F7A` (indigo) — secondary palette cho semantic states (success / info).
+
+#### Typography
+
+- **Display**: Fraunces serif — editorial, classical, pair với Be Vietnam Pro.
+- HUD VI/EN labels dùng `.serif` design (16/15pt semibold).
+- Settings header wordmark "vkey" serif bold 30pt.
+
+#### Visual treatment
+
+- **HUD VI/EN**: glass tối warm-ink (`sonMaiInk500@0.36→0.68`), viền gold-leaf opacity 0.22, accent đỏ son cho icon, badge VI/EN dùng gold-leaf `0.30` background + gold-300 text.
+- **HUD prediction**: mũi tên gold-leaf 300, từ gợi ý serif paper-50, chip "⇥ Tab" mono mờ 62%, viền gold.
+- **Settings header**: app icon 80px clip RoundedRectangle 14px + shadow đỏ son `0.22`; wordmark "vkey" 30pt bold serif đỏ son; **gold-leaf hairline rule** LinearGradient (0 → 0.85 → 0) width 72px; tagline "Bộ gõ tiếng Việt — sơn son thếp vàng" italic serif 11.5pt secondary.
+
+### 🗑 Xoá theme Mực
+
+Mực (v2.2.0) loại bỏ — palette + branch + display name. User đang dùng Mực sẽ tự fallback về Tonal (default) khi load Defaults vì rawValue `.muc` không decode được vào enum mới.
+
+5 themes trong menu bar không đổi count: Mặc định / 3D bóng bẩy / Emoji vui tươi / Tonal / **Sơn Mài**.
+
+### 🛠 Architecture changes
+
+- **`UITheme` enum**: `.muc` → `.sonMai`. Display name "Mực" → "Sơn Mài". Caption mô tả lacquer art.
+- **`VKeyDesign.swift`**: 6 token Mực xoá; 11 token Sơn Mài thêm:
+  - `sonMaiRed500/300/700` — lacquer red scale
+  - `sonMaiGold500/300` — thếp vàng accent
+  - `sonMaiPaper100/50/200` — eggshell paper canvas
+  - `sonMaiInk500/400` — warm ink (`#131110`/`#1A1612`)
+  - `sonMaiJade500` + `sonMaiIndigo500` — secondary palette
+- **`UITheme` extension**: `accentColor / headerImageName / showsHeroWordmark` branches `.muc` → `.sonMai`.
+- **HUD views**: `mucBody / mucScrimOpacity` xoá; `sonMaiBody / sonMaiScrimOpacity` thêm. Glass scrim ấm hơn (warm ink). Border gold-leaf opacity 0.22 thay vì white opacity 0.10.
+- **`SettingView.settingsHeader`**: case `.muc` xoá; case `.sonMai` thêm với gold-leaf hairline LinearGradient rule + sơn son shadow.
+- **`vkeyApp.MainMenuView`**: button "Mực" → "Sơn Mài", icon `drop` → `paintbrush.pointed`.
+- **`AppIconSwitcher.apply`**: switch case `.muc` → `.sonMai`.
+- **`Design3/`**: commit toàn bộ Sơn Mài design files (theme.css, JSX preview scenes) làm reference cho future variants.
+- **`Design2/themes/`** xoá — Mực reference không còn cần thiết.
+
+### 🛡 Không thay đổi
+
+- Engine gõ Telex/VNI/Simple, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi behavior. 213/213 test pass.
+- User Defaults non-theme giữ nguyên (theme có thể bị reset về Tonal nếu đang ở Mực).
+- Sparkle update flow, codesign, hardened runtime — không thay đổi.
+- Build target macOS 14+, universal arm64 + x86_64.
+
+### 📦 Release artifacts
+
+- `vkey-2.2.1.dmg` — universal binary, ~7.2 MB. Ad-hoc codesign + hardened runtime.
+- Sparkle signature: `f3Wiv6uWq2Qve64FMrMqoqqpNCnI0TuYBs/NA8FPK7V9GJOMkj4dygjI5Bde69Rq5Yt438TujwXgnw9kTdP4DQ==` (length 7586567).
+
+---
+
 ## [2.2.0] - 2026-05-22 — "Theme Library"
 
 **Thêm Mực theme (high-contrast editorial). Theme picker chuyển từ Settings → menu bar. Tổng 5 giao diện. Fix bug Telex "theme" → "thêm". Mở rộng range HUD line offset lên 20 dòng.** README rà soát ✓
