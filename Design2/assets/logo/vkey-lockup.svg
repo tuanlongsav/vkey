@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72">
-  <defs>
-    <linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EB5C45"></stop><stop offset="1" stop-color="#C8341F"></stop></linearGradient>
-  </defs>
-  <rect x="4" y="8" width="56" height="56" rx="14" fill="url(#lg)"></rect>
-  <path fill="#FFFFFF" d="M16 22h7l9 22 9-22h7l-12 30h-8L16 22Z"></path>
-  <circle cx="48" cy="20" r="4" fill="#F5C645"></circle>
-  <text x="80" y="50" font-family="Be Vietnam Pro, system-ui, sans-serif" font-weight="700" font-size="38" letter-spacing="-1" fill="currentColor">vkey</text>
-</svg>
