@@ -2,6 +2,50 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.1] - 2026-05-23 — "LG Differentiation + Hotkey Fix"
+
+**Fix 2 bug user feedback**: (1) cả 2 nút hotkey hiển thị cùng modifier mask của Toggle, (2) Liquid Glass và Tonal theme nhìn giống nhau quá ở Settings header.
+
+### 🐛 Fix bug hiển thị hotkey trùng nhau
+
+**Trước 2.3.1**: Settings tab Chung — cả 2 nút "Phím tắt chuyển đổi VI/EN" và "Phím tắt Text Tools" cùng hiển thị `⌥⇧ (chỉ modifier)` regardless of giá trị thực tế của Text Tools (Default = ⌃⇧).
+
+**Root cause**: `FlexibleShortcutButton.refresh()` ở `vkey/View/SettingView.swift:70` hardcode `let modifierOnly = Defaults[.modifierOnlyToggleHotkey]` cho TẤT CẢ instance — không quan tâm `name` được pass vào init.
+
+**Fix**:
+- Thêm helper `modifierOnlyKey(for name: KeyboardShortcuts.Name)` — map name → đúng Defaults key:
+  - `.toggleInputMode → .modifierOnlyToggleHotkey`
+  - `.openTextConversionMenu → .modifierOnlyTextToolsHotkey`
+- `FlexibleShortcutButton` lưu `modifierKey: Defaults.Key<Int>` tại init, dùng cho mọi read/write site (refresh, recording, escape clear, backspace clear, key+modifier write).
+- 2 button giờ hiển thị độc lập theo Defaults riêng.
+
+### 🎨 Liquid Glass — visual differentiation mạnh hơn vs Tonal
+
+**User feedback** (kèm screenshot): "rà soát lại vì các theme tonal với LG không khác nhau nhiều lắm, không giống như trong index.html". LG header v2.3.0 chỉ khác Tonal ở wordmark gradient + 1 border — không đủ để phân biệt.
+
+**Fix**: LG `settingsHeader` ZStack 5-layer:
+1. **Refractive corner tints (LG signature)**: blob đỏ `red500 @ 45%` bottom-left + blob xanh `#2D89E5 @ 32%` top-right — ambient color glow per design `.lg-window::after` (160×160 blur 14-16px).
+2. **Caustic halo**: 3-stop radial `red500: 55→18→0%` (148×148 blur 6) — icon "nổi" như sphere thay vì flat glow.
+3. **Icon** với `RoundedRectangle(22)` clip.
+4. **Top-arc specular gloss**: overlay LinearGradient white `42→8→0%` padding 48pt từ top + `.plusLighter` blend — mimic `.tile::after`.
+5. **Glass rim border** top-bright (0.65) → bottom-dim (0.12) per `.tile::before`.
+6. **Triple-layer shadow**: red500 ambient (r28) + red500 soft (r8) + black (r10) — floating depth.
+7. **Wordmark** thêm red glow shadow `red500 @ 35%` để pop.
+
+Tonal giữ nguyên — flat icon + single red halo + solid red wordmark — visually obvious khác biệt khi switch theme.
+
+### 📦 Release artifacts
+
+- `vkey-2.3.1.dmg` — universal binary, ~8.7 MB. Ad-hoc codesign + hardened runtime (`flags=0x10002 adhoc,runtime`, `Identifier=dev.longht.vkey`).
+- Sparkle signature: `XbIT3PHvVUMGlDidoCwariUlXGppKPHmLnsYljW4DJbJj9z8M2f12oqhDbpy9IdAa96DIJslTw4tHcY2iJXbBg==` (length 8691854).
+
+### 🛡 Không thay đổi
+
+- Engine gõ, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi. 213/213 test pass.
+- HUD (Toggle/Prediction) — đã có refractive corner tints + top arc highlight từ 2.3.0, không cần đổi.
+
+---
+
 ## [2.3.0] - 2026-05-23 — "Handoff Sync"
 
 **Đồng bộ code Swift với handoff bundle chính thức của Liquid Glass và Tonal. HUD layout chuyển ngang, font Noto Sans Display bundled, prediction format mới với keycap thật. 4 themes giữ nguyên.** README rà soát ✓

@@ -6,6 +6,41 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.1 — "LG Differentiation + Hotkey Fix"</title>
+      <sparkle:version>20301</sparkle:version>
+      <sparkle:shortVersionString>2.3.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sat, 23 May 2026 00:30:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.1/vkey-2.3.1.dmg"
+        sparkle:edSignature="XbIT3PHvVUMGlDidoCwariUlXGppKPHmLnsYljW4DJbJj9z8M2f12oqhDbpy9IdAa96DIJslTw4tHcY2iJXbBg=="
+        length="8691854"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.1 — "LG Differentiation + Hotkey Fix":</h2>
+
+        <h3>🐛 Fix bug hiển thị 2 hotkey trùng nhau</h3>
+        <p>Trước 2.3.1: Settings → tab Chung — cả 2 nút "Phím tắt chuyển đổi VI/EN" và "Phím tắt Text Tools" cùng hiển thị tổ hợp của <strong>Toggle VI/EN</strong> bất kể giá trị thực tế của Text Tools (cùng hiện ⌥⇧). Root cause: <code>FlexibleShortcutButton.refresh()</code> hardcode đọc <code>Defaults[.modifierOnlyToggleHotkey]</code> cho tất cả instance.</p>
+        <p>Fix: parameterize button theo <code>KeyboardShortcuts.Name</code> — map <code>.toggleInputMode → .modifierOnlyToggleHotkey</code>, <code>.openTextConversionMenu → .modifierOnlyTextToolsHotkey</code>. Mỗi recorder giờ đọc/ghi đúng key của nó. Default Text Tools = ⌃⇧, Toggle VI/EN = ⇧⌥ — hiển thị độc lập.</p>
+
+        <h3>🎨 Liquid Glass vs Tonal — visual differentiation mạnh hơn</h3>
+        <p>User feedback: 2 theme nhìn quá giống nhau, không match index.html design gốc. Sau 2.3.1 LG header có:</p>
+        <ul>
+          <li><strong>Refractive corner tints</strong> (LG signature): blob đỏ bottom-left + blob xanh top-right ambient color glow theo design <code>.lg-window::after</code>.</li>
+          <li><strong>Caustic halo</strong> 3-stop radial gradient lớn hơn — icon "nổi" như sphere thay vì flat glow.</li>
+          <li><strong>Top-arc specular gloss</strong> trên icon — half-ellipse white→clear gradient hugging top theo <code>.tile::after</code>.</li>
+          <li><strong>Glass rim border</strong> top-bright → bottom-dim per <code>.tile::before</code>.</li>
+          <li><strong>Triple-layer shadow</strong>: red ambient + red soft glow + black depth.</li>
+          <li>Wordmark có red glow shadow để pop trên dark bg.</li>
+        </ul>
+        <p>Tonal giữ flat icon + single halo — visually obvious khác biệt khi switch theme.</p>
+
+        <h3>🛡 Không thay đổi</h3>
+        <p>Engine gõ, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi. 213/213 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.0 — "Handoff Sync"</title>
       <sparkle:version>20300</sparkle:version>
       <sparkle:shortVersionString>2.3.0</sparkle:shortVersionString>

@@ -36,8 +36,20 @@ func formatModifierMask(_ raw: Int) -> String {
   return out
 }
 
+/// v2.3.1: mapping `KeyboardShortcuts.Name` → modifier-only Defaults key.
+/// Trước 2.3.1 hardcode `.modifierOnlyToggleHotkey` cho cả Toggle VI/EN
+/// lẫn Text Tools → 2 button hiển thị cùng 1 mask (bug). Sau khi parameterize,
+/// mỗi recorder đọc/ghi vào đúng key của nó.
+private func modifierOnlyKey(for name: KeyboardShortcuts.Name) -> Defaults.Key<Int> {
+  switch name {
+  case .openTextConversionMenu: return .modifierOnlyTextToolsHotkey
+  default:                      return .modifierOnlyToggleHotkey
+  }
+}
+
 final class FlexibleShortcutButton: NSButton {
   private let name: KeyboardShortcuts.Name
+  private let modifierKey: Defaults.Key<Int>
   private var isRecording = false
   private var monitor: Any?
 
@@ -49,6 +61,7 @@ final class FlexibleShortcutButton: NSButton {
 
   init(name: KeyboardShortcuts.Name) {
     self.name = name
+    self.modifierKey = modifierOnlyKey(for: name)
     super.init(frame: .zero)
     bezelStyle = .rounded
     target = self
@@ -67,7 +80,7 @@ final class FlexibleShortcutButton: NSButton {
       return
     }
 
-    let modifierOnly = Defaults[.modifierOnlyToggleHotkey]
+    let modifierOnly = Defaults[modifierKey]
     if modifierOnly != 0 {
       title = "\(formatModifierMask(modifierOnly)) (chỉ modifier)   ⌫ xoá"
       return
@@ -132,7 +145,7 @@ final class FlexibleShortcutButton: NSButton {
         // All modifiers released without ever pressing a letter key →
         // save this combination as a modifier-only hotkey, and clear any
         // previously set key+modifier shortcut.
-        Defaults[.modifierOnlyToggleHotkey] = pendingModifiers
+        Defaults[modifierKey] = pendingModifiers
         KeyboardShortcuts.reset(name)
         stopRecording()
         return true
@@ -153,7 +166,7 @@ final class FlexibleShortcutButton: NSButton {
     // Backspace / Forward-delete with no modifiers → clear BOTH shortcut types
     if (keyCode == 51 || keyCode == 117) && modifiers.isEmpty {
       KeyboardShortcuts.reset(name)
-      Defaults[.modifierOnlyToggleHotkey] = 0
+      Defaults[modifierKey] = 0
       stopRecording()
       return true
     }
@@ -163,7 +176,7 @@ final class FlexibleShortcutButton: NSButton {
     let key = KeyboardShortcuts.Key(rawValue: keyCode)
     let shortcut = KeyboardShortcuts.Shortcut(key, modifiers: modifiers)
     KeyboardShortcuts.setShortcut(shortcut, for: name)
-    Defaults[.modifierOnlyToggleHotkey] = 0
+    Defaults[modifierKey] = 0
     stopRecording()
     return true
   }
@@ -231,44 +244,105 @@ struct GeneralView: View {
             .padding(.vertical, 18)
 
         case .liquidGlass:
-            // v2.3.0: refractive Liquid Glass — horizontal layout, gradient
-            // wordmark `linear-gradient(180deg, #fff, #C7C3B7)`, halo đỏ
-            // radial `inset -16px` 40% opacity per design `.set-header-halo`.
+            // v2.3.1: refractive Liquid Glass — KEY differentiators vs Tonal:
+            // (1) Corner refractive tints: red blob bottom-left + blue blob
+            //     top-right giàu ambient color glow theo design
+            //     `.lg-window::after` (radial-gradient ... mix-blend-mode soft-light).
+            // (2) Spherical specular highlight on icon: top-arc white→clear
+            //     gloss inside RoundedRect — mimic `.tile::after`.
+            // (3) Caustic halo: 3-stop radial gradient lớn hơn để icon "nổi"
+            //     như sphere, không chỉ glow flat.
             HStack(alignment: .center, spacing: 18) {
-                // Icon + red halo glow (design `.set-header-halo`)
                 ZStack {
+                    // ─── Refractive corner tints (LG signature) ─────────────
+                    // Bottom-left red blob (per design `.lg-window::after`
+                    // `radial-gradient(80% 80% at 0% 100%, red 18%)`).
+                    RadialGradient(
+                        colors: [
+                            VKeyDesign.red500.opacity(0.45),
+                            VKeyDesign.red500.opacity(0.0),
+                        ],
+                        center: UnitPoint(x: 0.05, y: 0.95),
+                        startRadius: 4,
+                        endRadius: 100
+                    )
+                    .frame(width: 160, height: 160)
+                    .blur(radius: 14)
+                    // Top-right blue blob (per design
+                    // `radial-gradient(80% 80% at 100% 0%, blue 10%)`).
+                    RadialGradient(
+                        colors: [
+                            Color(hex: 0x2D89E5).opacity(0.32),
+                            Color(hex: 0x2D89E5).opacity(0.0),
+                        ],
+                        center: UnitPoint(x: 0.95, y: 0.05),
+                        startRadius: 4,
+                        endRadius: 96
+                    )
+                    .frame(width: 160, height: 160)
+                    .blur(radius: 16)
+
+                    // ─── Caustic halo (red glow underneath) ─────────────────
                     Circle()
                         .fill(RadialGradient(
                             colors: [
-                                VKeyDesign.red500.opacity(0.50),
+                                VKeyDesign.red500.opacity(0.55),
+                                VKeyDesign.red500.opacity(0.18),
                                 VKeyDesign.red500.opacity(0.0),
                             ],
                             center: .center,
-                            startRadius: 8,
-                            endRadius: 68
+                            startRadius: 4,
+                            endRadius: 78
                         ))
-                        .frame(width: 132, height: 132)
-                        .blur(radius: 4)
+                        .frame(width: 148, height: 148)
+                        .blur(radius: 6)
+
+                    // ─── Icon + spherical specular gloss ────────────────────
                     Image(uiTheme.headerImageName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 96, height: 96)
                         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                        // Top-arc specular gloss (design `.tile::after` —
+                        // half-ellipse white gradient hugging top of tile).
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.42),
+                                            Color.white.opacity(0.08),
+                                            Color.white.opacity(0.0),
+                                        ],
+                                        startPoint: .top, endPoint: .center
+                                    )
+                                )
+                                .frame(height: 48)
+                                .frame(maxHeight: .infinity, alignment: .top)
+                                .padding(.horizontal, 4)
+                                .padding(.top, 3)
+                                .blendMode(.plusLighter)
+                                .allowsHitTesting(false)
+                        )
+                        // Glass rim border (top bright, bottom dim per design
+                        // `.tile::before` linear-gradient(160deg)).
                         .overlay(
                             RoundedRectangle(cornerRadius: 22, style: .continuous)
                                 .strokeBorder(
                                     LinearGradient(
                                         colors: [
-                                            Color.white.opacity(0.55),
-                                            Color.white.opacity(0.10),
+                                            Color.white.opacity(0.65),
+                                            Color.white.opacity(0.12),
                                         ],
                                         startPoint: .top, endPoint: .bottom
                                     ),
                                     lineWidth: 1.2
                                 )
                         )
-                        .shadow(color: VKeyDesign.red500.opacity(0.45), radius: 24, x: 0, y: 12)
-                        .shadow(color: .black.opacity(0.5), radius: 8, x: 0, y: 4)
+                        // Floating multi-shadow (red ambient + black depth).
+                        .shadow(color: VKeyDesign.red500.opacity(0.55), radius: 28, x: 0, y: 14)
+                        .shadow(color: VKeyDesign.red500.opacity(0.30), radius: 8, x: 0, y: 4)
+                        .shadow(color: .black.opacity(0.55), radius: 10, x: 0, y: 6)
                 }
                 .frame(width: 96, height: 96)
 
@@ -282,6 +356,7 @@ struct GeneralView: View {
                             colors: [Color.white, VKeyDesign.lgTextWarm],
                             startPoint: .top, endPoint: .bottom
                         ))
+                        .shadow(color: VKeyDesign.red500.opacity(0.35), radius: 6, x: 0, y: 2)
                     Text("Bộ gõ tiếng Việt cho macOS")
                         .font(.system(size: 13, weight: .regular))
                         .foregroundStyle(VKeyDesign.lgTextWarm)
