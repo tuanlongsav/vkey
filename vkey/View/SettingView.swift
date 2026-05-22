@@ -174,6 +174,12 @@ struct GeneralView: View {
     @Default(.newStyleTonePlacement) private var newStyleTonePlacement
     @Default(.autoTypoCorrection) private var autoTypoCorrection
     @Default(.hudEnabled) private var hudEnabled
+    // 2.0 (A5): auto-capitalize đầu câu
+    @Default(.autoCapitalizeEnabled) private var autoCapitalizeEnabled
+    // 2.0 (B2): tự động disable khi đổi sang non-Latin IME
+    @Default(.nonLatinIMEAutoDisable) private var nonLatinIMEAutoDisable
+    // 2.0 (A6): free mark mode
+    @Default(.freeMarkModeEnabled) private var freeMarkModeEnabled
     // 1.9.0: HUD customization
     // 1.9.2: 2 vars dưới chuyển sang SpellCheckView (cùng block prediction).
 
@@ -222,7 +228,31 @@ struct GeneralView: View {
                     Label("Tự động sửa lỗi gõ nhầm", themedSymbol: "sparkles")
                 }
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                
+
+                // 2.0 (A5): viết hoa đầu câu sau . ! ? Enter
+                Toggle(isOn: $autoCapitalizeEnabled) {
+                    Label("Viết hoa đầu câu (sau . ! ? Enter)", themedSymbol: "textformat.size")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                // 2.0 (B2): tự động tắt khi đổi sang IME tiếng Nhật / Trung / Hàn
+                Toggle(isOn: $nonLatinIMEAutoDisable) {
+                    Label("Tự tắt khi đổi sang IME khác (Nhật/Trung/Hàn)", themedSymbol: "globe")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
+                // 2.0 (A6): free mark mode — đặt dấu tự do
+                Toggle(isOn: $freeMarkModeEnabled) {
+                    Label("Đặt dấu tự do (Free Mark)", themedSymbol: "wand.and.stars")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                if freeMarkModeEnabled {
+                    Text("Bỏ kiểm tra cấu trúc âm tiết — đặt dấu ở vị trí bất kỳ. Hữu ích cho tên riêng / tiếng dân tộc.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, -8)
+                }
+
                 Toggle(isOn: $hudEnabled) {
                     Label("Hiển thị thông báo khi chuyển VI/EN", themedSymbol: "macwindow.badge.plus")
                 }
@@ -254,6 +284,23 @@ struct GeneralView: View {
                     Label("Phím tắt", themedSymbol: "command")
                 }
 
+                // 2.0 (A1): hotkey cho Floating Toolbar
+                LabeledContent {
+                    FlexibleShortcutRecorder(name: .toggleFloatingToolbar)
+                } label: {
+                    Label("Phím tắt mở Floating Toolbar", themedSymbol: "menubar.rectangle")
+                }
+
+                // 2.0 (B4): hotkey cho Text Conversion menu
+                LabeledContent {
+                    FlexibleShortcutRecorder(name: .openTextConversionMenu)
+                } label: {
+                    Label("Phím tắt Text Tools", themedSymbol: "textformat")
+                }
+
+                // 2.0 (A3): HUD Theme & Glassmorphism
+                HUDThemeSection()
+
                 // 1.9.2: HUD customization Steppers chuyển sang block "Đoán từ
                 // tiếp theo" trong tab Chính tả (cùng với khoảng cách HUD).
 
@@ -273,6 +320,49 @@ struct GeneralView: View {
         }
         .frame(minWidth: 200, minHeight: 720)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// 2.0 (A3): Section trong tab General để cấu hình HUD theme.
+struct HUDThemeSection: View {
+    @Default(.hudThemeStyle) private var hudThemeStyle
+    @Default(.hudBlurIntensity) private var hudBlurIntensity
+    @Default(.hudAccentColorHex) private var hudAccentColorHex
+    @Default(.floatingToolbarEnabled) private var floatingToolbarEnabled
+
+    var body: some View {
+        Picker(selection: $hudThemeStyle) {
+            ForEach(HUDThemeStyle.allCases, id: \.self) { style in
+                Text(style.displayName).tag(style)
+            }
+        } label: {
+            Label("Giao diện HUD", themedSymbol: "paintbrush")
+        }
+        .pickerStyle(.menu)
+
+        Stepper(value: $hudBlurIntensity, in: 0...100, step: 5) {
+            HStack {
+                Label("Độ kính mờ HUD", themedSymbol: "drop.halffull")
+                Spacer()
+                Text("\(hudBlurIntensity)%")
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+
+        HStack {
+            Label("Màu nhấn (hex)", themedSymbol: "paintpalette")
+            Spacer()
+            TextField("#FF6600", text: $hudAccentColorHex)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 120)
+                .monospaced()
+        }
+
+        Toggle(isOn: $floatingToolbarEnabled) {
+            Label("Bật Floating Toolbar (cần phím tắt)", themedSymbol: "macwindow")
+        }
+        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
     }
 }
 
@@ -307,6 +397,8 @@ struct SpellCheckView: View {
     @Default(.pendingDictSuggestions) private var pendingSuggestions
     // 1.8.3: chuyển từ Tab Chung sang đây — prediction thuộc chức năng spell-checking.
     @Default(.wordPredictionEnabled) private var wordPredictionEnabled
+    // 2.0 (A2): hiển thị bao nhiêu candidate trong HUD (1-3).
+    @Default(.predictionTopN) private var predictionTopN
     @Default(.predictionHUDLineOffset) private var predictionHUDLineOffset
     // 1.9.2: HUD customization chuyển từ Tab Chung sang đây — chỉ visible
     // khi `wordPredictionEnabled = true`. Gom cùng nhóm cài đặt prediction.
@@ -486,6 +578,21 @@ struct SpellCheckView: View {
 
                         if wordPredictionEnabled {
                             Text("Sau khi gõ xong 1 từ + dấu cách, vkey hiển thị HUD nhỏ cạnh cursor với từ đoán tiếp theo (vd \"tiếp\" → \"theo\"). Nhấn ⇥ Tab để chấp nhận; phím khác → bỏ qua. Ưu tiên gợi ý từ trong từ điển gốc + từ điển cá nhân.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, -8)
+
+                            // 2.0 (A2): top-N candidates
+                            Stepper(value: $predictionTopN, in: 1...3) {
+                                HStack {
+                                    Label("Số gợi ý hiển thị", themedSymbol: "list.number")
+                                    Spacer()
+                                    Text("\(predictionTopN)")
+                                        .foregroundStyle(.secondary)
+                                        .monospacedDigit()
+                                }
+                            }
+                            Text("Hiển thị nhiều gợi ý cùng lúc. Khi >1, chọn bằng phím số 1/2/3 (chỉ khi vừa commit, chưa gõ tiếp); ⇥ Tab vẫn nhận gợi ý đầu tiên.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .padding(.top, -8)

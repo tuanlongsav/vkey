@@ -6,6 +6,54 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.0.0 — "Symphony"</title>
+      <sparkle:version>20000</sparkle:version>
+      <sparkle:shortVersionString>2.0.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 22 May 2026 12:35:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.0.0/vkey-2.0.0.dmg"
+        sparkle:edSignature="ynG51gnG5jIHqS4cAZ1djHx9MnpdPguk3OtCbLifcPd8AV88GT43PojJmbdDJ6/KhZLFc/qz+wGftNnfI8AWAA=="
+        length="7585103"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.0.0 — "Symphony":</h2>
+        <p><em>Bản phát hành lớn gộp 13 tính năng cùng lúc — lấy cảm hứng từ xkey (xmannv) + gonhanh.org (khaphanspace).</em></p>
+
+        <h3>🎨 UX (Trải nghiệm hiện đại)</h3>
+        <ul>
+          <li><strong>A1 Floating Toolbar tại cursor</strong>: thanh công cụ nổi với toggle VI/EN, kiểu gõ, Free Mark, Text Tools. Gán phím tắt trong Cài đặt → tab Chung.</li>
+          <li><strong>A2 Đoán từ Top-3</strong>: HUD hiển thị tối đa 3 ứng viên. Chọn bằng phím <code>1/2/3</code> (khi vừa commit) hoặc Tab (top-1).</li>
+          <li><strong>A3 Theme & Glassmorphism</strong>: 4 style (Tự động/Sáng/Tối/Kính mờ), điều chỉnh độ mờ + accent color hex.</li>
+          <li><strong>A5 Viết hoa đầu câu</strong>: tự động uppercase chữ cái đầu sau <code>.</code> <code>!</code> <code>?</code> Enter. Toggle trong tab Chung.</li>
+          <li><strong>A6 Free Mark mode</strong>: bỏ kiểm tra cấu trúc âm tiết — đặt dấu ở vị trí bất kỳ. Hữu ích cho tên riêng/tiếng dân tộc.</li>
+        </ul>
+
+        <h3>🔗 Tương thích & Ngữ cảnh</h3>
+        <ul>
+          <li><strong>B1 Window Title Rules</strong>: rule regex theo bundle ID + window title để override hành vi per-context (Google Docs delay 50ms, Notion tắt prediction…). Tab "Rules" mới.</li>
+          <li><strong>B2 Auto-respond input source</strong>: tự động disable vkey khi user chuyển sang IME non-Latin (Japanese/Chinese/Korean/Thai…). Restore khi quay về Latin.</li>
+          <li><strong>B3 Diacritic Style</strong>: toggle xoà/xóa đã có sẵn từ trước, được rà soát + làm rõ trong UI.</li>
+          <li><strong>B4 Text Conversion Tools</strong>: hotkey menu biến đổi selected text — đổi case (lower/UPPER/Title/Sentence), bỏ dấu, chuyển kiểu gõ raw Telex/VNI.</li>
+        </ul>
+
+        <h3>⚡ Performance & Ổn định</h3>
+        <ul>
+          <li><strong>C1 Performance benchmark công khai</strong>: 6 XCTest performance test mới. Trên M-series: Telex 1 ký tự ~12µs, full word ~13µs/ký tự, lexicon lookup ~1.4µs. Tất cả dưới ngưỡng — engine Swift đủ nhanh.</li>
+          <li><strong>C2 Rust Core Engine (foundation)</strong>: tách Engine layer sang Rust crate <code>vkey_core</code> qua C-ABI FFI. Universal binary (arm64+x86_64) tĩnh nhúng vào app — không thêm dependency runtime, không ảnh hưởng auto-update (DMG đã có toàn bộ code Rust bên trong). Phase 1 port (State + Parser data types). Phase 2/3/4 trong các release tiếp theo.</li>
+          <li><strong>C3 Pipeline 7-stage</strong>: tài liệu hoá rõ ràng trong <code>app-arch.md</code> — Capture → Normalize → Parse → Validate → Transform → Commit/Learn → Recover.</li>
+          <li><strong>C4 Race-condition hardening</strong>: re-entry counter + adaptive flush delay cho CGEvent injection (giải quyết stickiness Spotlight/Chrome/Arc). Cấu hình qua Window Title Rules per app hoặc default global.</li>
+        </ul>
+
+        <h3>🔧 Loại trừ khỏi 2.0</h3>
+        <p>Translation popup multi-provider, IMK mode song song với CGEvent, encoding TCVN3/VNI Windows, Quick Typing shortcuts (cc→ch), Simple Telex 1&2 — không có trong 2.0 (xem plan/roadmap).</p>
+
+        <h3>📦 Migration</h3>
+        <p>Mọi tính năng A/B đều có toggle bật/tắt trong Settings, mặc định bật ở chế độ an toàn cho user upgrade từ 1.9.7. Backup tự động (1.9+) sẽ chạy trước khi cập nhật.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 1.9.7 — "Anywhere DD Toggle"</title>
       <sparkle:version>19007</sparkle:version>
       <sparkle:shortVersionString>1.9.7</sparkle:shortVersionString>

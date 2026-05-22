@@ -575,6 +575,46 @@ func isTrusted(prompt: Bool = true) -> Bool {
 
 ---
 
+## 7-Stage Processing Pipeline (2.0)
+
+For every keystroke, vkey runs the input through a 7-stage pipeline. Each stage
+is a clear boundary in the code — useful as a mental model when debugging,
+extending the engine, or porting to Rust (see `C2` in the v2.0 plan).
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│  Keystroke ──▶ ① CAPTURE ──▶ ② NORMALIZE ──▶ ③ PARSE ──▶ ④ VALIDATE      │
+│                                                              │           │
+│                                                              ▼           │
+│             ⑦ RECOVER ◀── ⑥ COMMIT/LEARN ◀── ⑤ TRANSFORM                 │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+| # | Stage         | Responsibility                                              | Primary Code |
+|---|---------------|-------------------------------------------------------------|--------------|
+| 1 | **Capture**   | Intercept `CGEvent` via CGEventTap; map keycode→char        | `Platform/EventHook.swift`, `KeyLayout/Keys.swift` |
+| 2 | **Normalize** | Decode shift/option/cmd; classify as Text vs TaskKey; route Macro/Punctuation/Whitespace; 2.0 (A5) auto-capitalize entry, 2.0 (B2) input-source gate | `App/InputProcessor.swift` (`handleEvent`, `handleTextChar`, `handleTaskKey`) |
+| 3 | **Parse**     | Split keys into `phuAmDau` / `nguyenAm` / `phuAmCuoi`       | `Engine/TiengVietParser.swift` |
+| 4 | **Validate**  | Check Vowel Inclusion Pairs (8.960 âm tiết); accept/reject; 2.0 (A6) Free Mark bypasses this stage | `Engine/TiengVietValidator.swift` |
+| 5 | **Transform** | Apply tone marks, diacriticals (kiểu cũ/mới in B3)          | `Engine/TiengVietTransformer.swift`, `Telex.swift`, `VNI.swift` |
+| 6 | **Commit / Learn** | Spell decision, English-restore, macro expand; stats tracking, n-gram learning; emit replacement events | `App/InputProcessor.swift` (`applySpellDecisionOnCommit`), `Input/SpellDecisionEngine.swift`, `Lexicon/`, `Stats/`, `Input/PredictionEngine.swift` |
+| 7 | **Recover**   | If validate fails or English word matched, fall back to raw input; manage snapshot stack for Esc rollback | `App/InputProcessor.swift` (`WordBuffer.pop`, snapshots) |
+
+**Invariants:**
+- Stages 1–2 are platform-coupled (AppKit / CGEvent), 3–5 are pure functions of state, 6–7 are I/O + side effects.
+- Stage 5 always produces a `TiengVietState` (never throws); invalid syllables set `needsRecovery=true` which routes the next push to stage 7.
+- `Defaults` reads happen only in stages 2 and 6 — pure stages don't touch UserDefaults so they remain side-effect free and testable in isolation.
+
+**Why this matters for v2.0:**
+- **C2 (Rust core)**: stages 3–5 are pure functions — first targets to port to Rust. Stages 1–2 + 6–7 stay in Swift (need AppKit / I/O).
+- **C4 (race hardening)**: bug class lives in stage 1 (CGEventTap re-entry) and stage 6 (event injection ordering). Re-entry guards added in `EventHook.swift`, ordering hardening in `EventSimulator.swift`.
+- **B1 (Window Title Rules)**: rule evaluator hooks between stages 2 and 3 — can short-circuit pipeline (skip stages 3–6, pass through raw).
+- **A1 (Floating Toolbar)** and **A2 (Prediction top-3)**: presentation only — read stage 6 outputs.
+
+---
+
 ## Summary
 
 vkey's architecture demonstrates several key design principles:
@@ -585,3 +625,4 @@ vkey's architecture demonstrates several key design principles:
 4. **Minimal Intervention**: Only replace characters that actually changed
 5. **Graceful Degradation**: Invalid input falls back to raw text (recovery mode)
 6. **Performance-First**: Pre-compiled regex, cached parsing, app-specific tuning
+7. **Pipeline-Discipline (2.0)**: stages 3–5 are pure; side effects confined to stages 1–2 and 6–7 — enables Rust port (C2) and benchmark instrumentation (C1)

@@ -39,13 +39,20 @@ final class PredictionEngine {
   /// Filter mềm: candidate phải đạt ít nhất 1000 (có dict bonus) HOẶC 5
   /// (frequency cao). Tránh suggest từ thấp ngưỡng + không có cơ sở từ điển.
   func topPrediction(prev2: String?, prev1: String) -> String? {
+    return topNPredictions(prev2: prev2, prev1: prev1, n: 1).first
+  }
+
+  /// 2.0 (A2): trả về top-N candidates sắp theo score giảm dần.
+  /// N = 1 đảm bảo backward-compat với behavior cũ.
+  /// Caller (PredictionHUDWindow) thường gọi với N = Defaults[.predictionTopN].
+  func topNPredictions(prev2: String?, prev1: String, n: Int) -> [String] {
     let p1 = prev1.lowercased()
-    guard !p1.isEmpty else { return nil }
+    guard !p1.isEmpty, n > 0 else { return [] }
 
     let candidates = collectCandidates(prev2: prev2, prev1: p1)
     let keepSet = Set(Defaults[.userKeepWords].map { $0.lowercased() })
 
-    var best: (word: String, score: Int)? = nil
+    var scored: [(word: String, score: Int)] = []
     for (word, freq) in candidates {
       // Hard filter: không suggest từ trùng với prev1.
       if word == p1 { continue }
@@ -54,11 +61,10 @@ final class PredictionEngine {
       let score = dictBonus + personalBonus + freq
       // Soft floor: phải có dict bonus hoặc freq ≥ 5.
       guard score >= 1000 || freq >= 5 else { continue }
-      if best == nil || score > best!.score {
-        best = (word, score)
-      }
+      scored.append((word, score))
     }
-    return best?.word
+    scored.sort { $0.score > $1.score }
+    return Array(scored.prefix(n).map { $0.word })
   }
 
   /// Tập hợp toàn bộ candidates từ 3 layers cùng frequency tương đối.

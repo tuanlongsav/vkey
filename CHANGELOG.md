@@ -2,6 +2,80 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.0.0] - 2026-05-22 — "Symphony"
+
+**Bản phát hành lớn gộp 13 tính năng cùng lúc** — lấy cảm hứng từ **[xkey](https://github.com/xmannv/xkey)** (xmannv) + **[gonhanh.org](https://github.com/khaphanspace/gonhanh.org)** (khaphanspace). Plan đầy đủ tại `~/.claude/plans/`.
+
+### 🎨 UX (Trải nghiệm hiện đại)
+
+- **A1 Floating Toolbar tại cursor**: `NSPanel` nổi (không cướp focus) với toggle VI/EN, picker Telex/VNI, Free Mark, hotkey Text Tools, đóng. Gán phím tắt trong tab Chung. Mới: `Platform/FloatingToolbarWindow.swift`.
+- **A2 Đoán từ Top-3**: `PredictionEngine.topNPredictions` (default 3). HUD multi-candidate với index 1/2/3. Chọn bằng phím số (chỉ khi buffer trống — vừa commit) hoặc Tab (top-1). Backward-compat: `predictionTopN = 1` giữ behavior 1.x.
+- **A3 Theme & Glassmorphism tuỳ biến**: 4 style (Auto/Light/Dark/Glass), độ mờ 0-100%, accent color hex. `Platform/HUDTheme.swift` shared modifier — áp dụng cho HUD + Toolbar + Popup. Section mới trong tab Chung.
+- **A5 Viết hoa đầu câu**: state machine `pendingCapitalize` + `sentenceJustEnded` trong InputProcessor. Trigger sau `. ! ?` + Space hoặc sau Enter. Toggle `autoCapitalizeEnabled` (default ON).
+- **A6 Free Mark mode**: bypass `TiengVietValidator` qua check `freeMarkModeEnabled` trong `TiengVietState.needsRecovery`. Cho phép đặt dấu ở vị trí bất kỳ. Toggle (default OFF) trong tab Chung.
+
+### 🔗 Tương thích & Ngữ cảnh
+
+- **B1 Window Title Rules**: rule regex theo bundle ID prefix + window title. Override `state`, `disablePrediction`, `disableSpellCheck`, `flushDelayMs` per context. Tab "Rules" mới. `Platform/WindowTitleRuleEngine.swift` cache resolved overrides theo (bundle, title) — invalidate khi đổi app.
+- **B2 Auto-respond input source**: theo dõi `kTISNotifySelectedKeyboardInputSourceChanged`. Khi user chuyển sang non-Latin IME (JP/CN/KR/Thai/Arabic/Hebrew/Russian…) → tự động `setEnabledWithoutPersist(false)` + nhớ state. Khi quay về Latin → restore. Toggle `nonLatinIMEAutoDisable`.
+- **B3 Diacritic Style** (đã có sẵn `newStyleTonePlacement`): rà soát + làm rõ trong UI. Picker tab Chung kèm example.
+- **B4 Text Conversion Tools**: hotkey menu → clipboard round-trip (Cmd+C → transform → set clipboard → Cmd+V). Operations: lower/UPPER/Title/Sentence case, bỏ dấu (`applyingTransform(.stripDiacritics)` + đ/Đ), chuyển raw Telex/VNI (decompose table). `Platform/TextConversionService.swift`.
+
+### ⚡ Performance & Ổn định
+
+- **C1 Performance benchmark công khai**: 6 XCTest performance test mới trong `vkeyTests/vkeyTests.swift`. Đo M-series 2026-05:
+  - Telex parse 1 ký tự (1 000 ×): ~12 ms
+  - Telex `tieengs` → `tiếng` (1 000 ×): ~92 ms
+  - VNI full word (1 000 ×): ~100 ms
+  - 1 000 ký tự liên tục: ~14 ms
+  - Lexicon lookup (14 000 ×): ~19 ms (~1.4 µs/lookup)
+  - Pure parse (10 000 × 7 chars): ~276 ms — baseline cho Rust port
+  - **Tất cả dưới ngưỡng** — engine Swift đủ nhanh cho input method (<50µs/ký tự).
+- **C2 Rust Core Engine (foundation)**: tách Engine sang Rust crate `vkey_core` qua C-ABI FFI. Universal static library (arm64+x86_64) ~1MB nhúng vào binary. **Không ảnh hưởng auto-update**: DMG chứa toàn bộ code Rust statically linked. Phase 1 hoàn thành (State + Parser data types, 6 FFI symbols). Phase 2 (Validator), 3 (Transformer + Telex/VNI), 4 (retire Swift engine) trong các release tiếp theo. Bridge gated bằng `-D VKEY_CORE_RUST`.
+  - Build: `rust-core/build.sh` (universal binary + cbindgen header).
+  - Tích hợp Xcode: bridging header + HEADER_SEARCH_PATHS + LIBRARY_SEARCH_PATHS.
+- **C3 Pipeline 7-stage**: tài liệu hoá rõ ranh giới trong `app-arch.md`:
+  1. **Capture** (CGEventTap)
+  2. **Normalize** (handleEvent + auto-capitalize entry)
+  3. **Parse** (TiengVietParser)
+  4. **Validate** (TiengVietValidator, A6 bypass tại đây)
+  5. **Transform** (Transformer + Telex/VNI, B3 toggle)
+  6. **Commit / Learn** (SpellDecision, Lexicon, Stats, Prediction)
+  7. **Recover** (snapshot rollback, Esc)
+  Stages 3-5 thuần tuý — first targets cho Rust port (C2).
+- **C4 Race-condition hardening CGEvent**: `EventSimulator.withAdaptiveFlush` wrapper quanh mọi `simulationQueue.async` block. Re-entry counter + optional `usleep(flushDelayMs)` sau mỗi flush. Giải quyết bug-class "stickiness" trong Spotlight/Chrome address bar/Arc/Notion. Delay đọc từ Window Title Rule (B1) hoặc global default `cgEventFlushDelayMs`.
+
+### 🔧 Loại trừ theo plan v2.0
+
+Không có trong release này (lý do: scope/đánh đổi giá trị-chi phí):
+- Translation popup multi-provider
+- IMK mode song song CGEvent
+- Encoding TCVN3 / VNI Windows
+- Quick Typing shortcuts (cc→ch, gg→gi)
+- Simple Telex 1 & 2 variants
+- Cross-platform roadmap (Linux/Windows)
+- Dual UserDefaults storage
+- Debug Window cho developer
+
+### 📦 File mới (9) / Sửa (12)
+
+- **Mới**: `Platform/HUDTheme.swift`, `Platform/InputSourceMonitor.swift`, `Platform/FloatingToolbarWindow.swift`, `Platform/TextConversionService.swift`, `Platform/WindowTitleRuleEngine.swift`, `View/WindowRulesView.swift`, `Engine/RustEngineBridge.swift`, `vkey/vkey-Bridging-Header.h`, thư mục `rust-core/` (Cargo + src + cbindgen).
+- **Sửa**: `Setting.swift` (8 Defaults keys + types), `InputProcessor.swift`, `AppState.swift`, `TiengVietState.swift`, `PredictionEngine.swift`, `PredictionHUDWindow.swift`, `EventSimulator.swift`, `SettingView.swift`, `vkeyApp.swift`, `vkeyTests/vkeyTests.swift`, `app-arch.md`, `README.md`.
+
+### 🔐 Lưu ý auto-update với Rust core
+
+- Rust được **link tĩnh** (`libvkey_core.a`) vào binary. DMG chứa toàn bộ — không có dependency runtime ngoài app bundle.
+- Sparkle EdDSA + Apple code signing đều cover binary as-a-whole → cover luôn Rust code → **không cần thay đổi gì cho auto-update**.
+- User 1.9.7 update lên 2.0.0: tải DMG → Sparkle verify chữ ký → replace `vkey.app` → restart. Rust code mới có sẵn trong app, không cần cài Rust ở máy user.
+- Tăng size DMG nhẹ (+~450 KB): 7.13 MB → 7.59 MB. Universal binary (arm64+x86_64) ~18.9 MB executable.
+
+### Thông tin build
+
+- macOS 14+ (Sonoma), Xcode 26.5+, Swift 5.10+, Rust 1.95+ (chỉ khi rebuild rust-core).
+- DMG: vkey-2.0.0.dmg, 7 585 103 bytes.
+- Sparkle signature: `ynG51gnG5jIHqS4cAZ1djHx9MnpdPguk3OtCbLifcPd8AV88GT43PojJmbdDJ6/KhZLFc/qz+wGftNnfI8AWAA==`
+- Tests: 205/205 pass (đã bao gồm 6 benchmark mới).
+
 ## [1.9.7] - 2026-05-21 — "Anywhere DD Toggle"
 
 User feedback: gõ `vcdd` muốn ra `vcđ` (cho phép `dd` → `đ` ở mọi vị trí, không chỉ initial).

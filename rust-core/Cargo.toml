@@ -1,0 +1,23 @@
+[package]
+name = "vkey_core"
+version = "0.1.0"
+edition = "2021"
+description = "Pure Vietnamese typing engine (parse / validate / transform). Embedded in vkey for macOS."
+license = "GPL-3.0"
+
+[lib]
+name = "vkey_core"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+# No external runtime dependencies — keeps the static library small.
+
+[build-dependencies]
+cbindgen = "0.27"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

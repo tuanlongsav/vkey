@@ -42,6 +42,13 @@ struct vkeyApp: App {
               .font(.system(size: 10))
           }
 
+        // 2.0 (B1): Window Title Rules — override behavior per webapp.
+        WindowRulesView()
+          .tabItem {
+            Label("Rules", themedSymbol: "list.bullet.rectangle")
+              .font(.system(size: 10))
+          }
+
         // 1.5.0: Usage Statistics + personal-data backup/restore. Tab is the
         // single user-visible touchpoint for both features — keeping them
         // together emphasises that statistics never leave the machine.

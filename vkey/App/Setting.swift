@@ -31,6 +31,13 @@ extension KeyboardShortcuts.Name {
   // combo ⌃⇧ (configured via Defaults.Keys.modifierOnlyToggleHotkey below) so
   // the user can keep their letter keys free.
   static let toggleInputMode = Self("toggleInputMode")
+
+  /// 2.0 (A1): mở Floating Toolbar nổi tại cursor. Mặc định chưa gán phím —
+  /// user phải set thủ công để tránh xung đột.
+  static let toggleFloatingToolbar = Self("toggleFloatingToolbar")
+
+  /// 2.0 (B4): mở Text Conversion Tools menu cho selected text.
+  static let openTextConversionMenu = Self("openTextConversionMenu")
 }
 
 /// Default modifier-only hotkey: Control + Shift.
@@ -372,5 +379,127 @@ extension Defaults.Keys {
 
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value
+
+  // MARK: - 2.0 — Track 1: Foundation & Quick Wins
+
+  /// A5 (2.0): tự động viết hoa chữ cái đầu sau `.`, `!`, `?`, Enter/Return.
+  /// Áp dụng trong `InputProcessor.handleTextChar` trước khi push char vào
+  /// buffer — đơn giản, không can thiệp engine state machine.
+  static let autoCapitalizeEnabled = Key<Bool>("auto-capitalize-enabled", default: true)
+
+  /// B2 (2.0): tự động disable vkey khi user chuyển input source sang
+  /// non-Latin IME (Japanese / Chinese / Korean / Arabic …). Khi user
+  /// quay về Latin input source, restore state trước đó qua Smart Switch.
+  /// Theo dõi qua `kTISNotifySelectedKeyboardInputSourceChanged`.
+  static let nonLatinIMEAutoDisable = Key<Bool>(
+    "non-latin-ime-auto-disable",
+    default: true
+  )
+
+  // MARK: - 2.0 — Track 2: UX Modern Layer
+
+  /// A1 (2.0): hiển thị floating toolbar nổi tại cursor khi nhấn hotkey.
+  /// Chỉ điều khiển khả dụng — bản thân hotkey nằm trong
+  /// `KeyboardShortcuts.Name.toggleFloatingToolbar`.
+  static let floatingToolbarEnabled = Key<Bool>(
+    "floating-toolbar-enabled",
+    default: false
+  )
+
+  /// A2 (2.0): số gợi ý hiển thị trong PredictionHUD. 1 = legacy behavior,
+  /// 2-3 = popup nhiều dòng, chọn bằng số phím hoặc Tab+arrow.
+  static let predictionTopN = Key<Int>("prediction-top-n", default: 3)
+
+  /// A3 (2.0): theme cho HUD/Toolbar/Popup. Khác `appTheme` (icon style):
+  /// `.auto` = follow system (NSApp.effectiveAppearance), `.light`/`.dark`
+  /// force, `.glass` = explicit `.hudWindow` material với blur cao.
+  static let hudThemeStyle = Key<HUDThemeStyle>("hud-theme-style", default: .auto)
+
+  /// A3 (2.0): blur intensity 0–100 cho material background của HUD.
+  /// Map: 0 = `.popover` (nhẹ), 50 = `.hudWindow` (default), 100 = `.fullScreenUI`.
+  static let hudBlurIntensity = Key<Int>("hud-blur-intensity", default: 50)
+
+  /// A3 (2.0): accent color cho HUD UI (viền, text highlight). Lưu hex
+  /// string `#RRGGBB`. Default = nil (dùng accentColor mặc định macOS).
+  static let hudAccentColorHex = Key<String>("hud-accent-color-hex", default: "")
+
+  /// B1 (2.0): danh sách rules theo bundle ID + window title regex để
+  /// override hành vi vkey per-context (vd Google Docs delay 50ms,
+  /// Notion tắt prediction). Settings UI ở tab "Rules".
+  static let windowTitleRules = Key<[WindowTitleRule]>("window-title-rules", default: [])
+
+  // MARK: - 2.0 — Track 3: Compatibility & Stability
+
+  /// A6 (2.0): bypass syllable validator để đặt dấu ở vị trí bất kỳ.
+  /// Hữu ích cho linguist, tên riêng, tiếng dân tộc. Default off vì
+  /// thay đổi hành vi chuẩn xác cho user thông thường.
+  static let freeMarkModeEnabled = Key<Bool>("free-mark-mode-enabled", default: false)
+
+  /// C4 (2.0): bật race-condition hardening cho CGEvent tap. Re-entry
+  /// guards, pending-event queue khi đang flush. Default on — tăng độ
+  /// ổn định trong Spotlight/Chrome/Arc overlays.
+  static let cgEventRaceHardeningEnabled = Key<Bool>(
+    "cgevent-race-hardening-enabled",
+    default: true
+  )
+
+  /// C4 (2.0): adaptive delay (ms) khi flush event tới một số app
+  /// nhạy cảm. Map theo bundle ID trong Window Title Rules; key này
+  /// là default fallback.
+  static let cgEventFlushDelayMs = Key<Int>("cgevent-flush-delay-ms", default: 0)
+}
+
+// MARK: - 2.0 — HUD Theme + Window Title Rule types
+
+/// A3 (2.0): style cho HUD/Toolbar/Popup. Áp dụng cho ToggleHUDWindow,
+/// PredictionHUDWindow, FloatingToolbarWindow.
+enum HUDThemeStyle: String, CaseIterable, Defaults.Serializable {
+  case auto    // theo system appearance
+  case light   // force light
+  case dark    // force dark
+  case glass   // glassmorphism (heavy blur + transparency)
+
+  var displayName: String {
+    switch self {
+    case .auto: return "Tự động (theo hệ thống)"
+    case .light: return "Sáng"
+    case .dark: return "Tối"
+    case .glass: return "Kính mờ"
+    }
+  }
+}
+
+/// B1 (2.0): rule cho per-context behavior. Áp dụng theo bundle ID
+/// (prefix match) cộng window title regex. Nếu cả hai match → áp dụng
+/// các override trong rule.
+///
+/// Ranking: rule có cả `bundleIdPrefix` + `titleRegex` thắng rule chỉ có
+/// `bundleIdPrefix`. Rules được lưu theo thứ tự — rule đầu tiên match
+/// trước thắng (cho phép user override bằng cách kéo lên trên).
+struct WindowTitleRule: Codable, Hashable, Identifiable, Defaults.Serializable {
+  var id: UUID = UUID()
+  var name: String = ""
+
+  /// Bundle ID prefix (vd "com.google.Chrome"). Empty = match mọi app.
+  var bundleIdPrefix: String = ""
+
+  /// Regex matching window title. Empty = match mọi title.
+  var titleRegex: String = ""
+
+  /// Override Smart Switch state khi rule match. nil = không override.
+  var overrideState: AppSmartSwitchState? = nil
+
+  /// Force tắt word prediction trong context này.
+  var disablePrediction: Bool = false
+
+  /// Force tắt spell check trong context này.
+  var disableSpellCheck: Bool = false
+
+  /// Adaptive delay (ms) khi flush event (C4) — vd Google Docs cần 50ms.
+  /// 0 = dùng default (`cgEventFlushDelayMs`).
+  var flushDelayMs: Int = 0
+
+  /// Enable for user to disable rule temporarily without deleting.
+  var enabled: Bool = true
 }
 

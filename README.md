@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 1.9.7 — "Anywhere DD Toggle"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.0.0 — "Symphony"** ([CHANGELOG](CHANGELOG.md))
+
+> **Bản phát hành lớn 2.0** — gộp 13 tính năng mới (xem [CHANGELOG](CHANGELOG.md#200---2026-05-22--symphony)) lấy cảm hứng từ xkey + gonhanh.org: Floating Toolbar tại cursor, Đoán từ top-3, Theme tuỳ biến, Auto-capitalize, Free Mark mode, Window Title Rules, Auto-disable khi đổi IME, Text Conversion Tools, Pipeline 7-stage tường minh, Race-condition hardening, **Rust Core Engine foundation** (qua FFI).
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
@@ -23,6 +25,39 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 > Bộ từ điển hiện tại (v9 — v1.7.9+): **8,960 syllables tiếng Việt** + **9,826 từ tiếng Anh** (mở rộng từ 126 ở v1.7.8 → 9,826 ở v1.7.9 qua `wordfreq` top 10000). VN baseline rà soát qua [Tools/audit_lexicon.py](Tools/audit_lexicon.py) + [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py); EN qua [Tools/build_lexicon.py](Tools/build_lexicon.py). v1.7.1 inject lại 66 single-char VN diacritics (`à`, `á`, `ý`, `ô`, `ở`...) đã bị drop nhầm ở v7.
 
 ---
+
+## Kiến trúc Rust Core (v2.0+)
+
+Từ v2.0, phần lõi engine xử lý tiếng Việt được bắt đầu port sang Rust qua C-ABI FFI (xem `rust-core/`). Phase 1 hoàn thành: data types (State + Parser primitives) + 6 FFI symbols. Phase 2-4 (Validator, Transformer + Telex/VNI, retire Swift engine) trong các release tiếp theo.
+
+**Rust core có ảnh hưởng auto-update không?**
+
+> **Không.** Rust core được **link tĩnh** (`libvkey_core.a` universal arm64+x86_64) trực tiếp vào binary của `vkey.app`. Cụ thể:
+>
+> - DMG release chứa toàn bộ code Rust **đã compile** thành machine code → không có file `.dylib`/`.so` riêng, không cần Rust runtime trên máy user.
+> - Sparkle EdDSA signature + Apple code signing đều cover binary as-a-whole → cover luôn phần Rust → auto-update hoạt động y hệt 1.x.
+> - User 1.9.7 → 2.0.0: Sparkle download DMG → verify EdDSA → replace `vkey.app` → restart. Không cần action phụ.
+> - Cost: DMG tăng ~6% (7.13 MB → 7.59 MB), executable ~18.9 MB (universal).
+> - Tương lai (Phase 4): khi Swift engine được retire, kích thước binary có thể GIẢM lại do bỏ duplicate code.
+
+**Build từ source khi có thay đổi Rust**: chạy `rust-core/build.sh` trước `xcodebuild`. Xem [`rust-core/README.md`](rust-core/README.md) cho chi tiết.
+
+## Hiệu năng (v2.0+)
+
+**Mục tiêu** đo bằng XCTest performance baseline (xem `vkeyTests/vkeyTests.swift` → `test_benchmark_*`):
+
+| Phép đo                                                | Ngưỡng       | Đo được (M-series, 2026-05) | Ý nghĩa                                |
+|--------------------------------------------------------|--------------|------------------------------|----------------------------------------|
+| Telex parse 1 ký tự (1 000 ×)                          | ≤ 50 ms      | ~12 ms                       | Hot loop trong CGEvent tap callback    |
+| Telex full word `tieengs` → `tiếng` (7 keys × 1 000)   | ≤ 300 ms     | ~92 ms                       | End-to-end parse + transform + tone    |
+| VNI full word `tieng61s` (8 keys × 1 000)              | ≤ 300 ms     | ~100 ms                      | So sánh với Telex                      |
+| 1 000 ký tự Telex liên tục                              | ≤ 50 ms      | ~14 ms                       | Stress test buffer + state machine     |
+| Lexicon `isInstantRestoreEnglish` (14 từ × 1 000)      | ≤ 280 ms     | ~19 ms                       | Decision điểm cuối stage 6             |
+| Pure parse (10 000 ×) — chỉ stage 3–5                  | baseline     | ~276 ms                      | Compare khi port sang Rust (C2)        |
+
+Tất cả benchmark hiện tại **dưới ngưỡng** an toàn — engine Swift đủ nhanh cho input method (per-char latency < 0.05 ms).
+
+> Cách reproduce: mở `vkey.xcodeproj` → ⌘+U → Test Navigator → chọn các method bắt đầu `test_benchmark_`. Lần đầu set baseline (⌥-click trên kết quả → Set as Baseline). Xcode sẽ cảnh báo nếu regression > 10%.
 
 ## Chức năng
 

@@ -101,8 +101,13 @@ struct TiengVietState {
 
   /// Kiểm tra âm tiết có cần recovery không (không hợp lệ tiếng Việt)
   /// Khi true, nên dùng chuỗi gốc thay vì chuỗi đã biến đổi
+  ///
+  /// 2.0 (A6): nếu user bật Free Mark Mode (`freeMarkModeEnabled`), bỏ
+  /// qua validator — cho phép đặt dấu ở vị trí bất kỳ, không kiểm tra
+  /// cấu trúc âm tiết. Hữu ích cho linguist, tên riêng, tiếng dân tộc.
   var needsRecovery: Bool {
-    TiengVietValidator.needsRecovery(thanhPhanTieng, dauMu: dauMu)
+    if Defaults[.freeMarkModeEnabled] { return false }
+    return TiengVietValidator.needsRecovery(thanhPhanTieng, dauMu: dauMu)
   }
 
   /// Chuỗi gốc (dùng khi cần recovery)

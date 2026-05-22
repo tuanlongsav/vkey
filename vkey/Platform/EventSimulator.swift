@@ -6,6 +6,7 @@
 //
 
 import CoreGraphics
+import Defaults
 import Foundation
 
 /// Strategy for sending keyboard events to replace text.
@@ -44,6 +45,38 @@ class EventSimulator {
   /// which produced inconsistent semantics across strategies — the tap would
   /// occasionally be blocked long enough to trigger `tapDisabledByTimeout`.
   private static let simulationQueue = DispatchQueue(label: "dev.longht.vkey.eventSimulator", qos: .userInteractive)
+
+  /// 2.0 (C4): adaptive flush delay (ms) áp dụng SAU mỗi batch inject —
+  /// updated bởi `InputProcessor.changeActiveApp` từ Window Title Rule
+  /// `flushDelayMs`. 0 = no delay. Range hợp lệ: 0..500ms.
+  ///
+  /// Mục đích: tạo cushion giữa các batch injection để tránh race với
+  /// app's text engine (Google Docs composition, Chrome address-bar
+  /// autocomplete). Giải quyết bug-class "stickiness" mà gonhanh nổi tiếng.
+  nonisolated(unsafe) static var adaptiveFlushDelayMs: Int = 0
+
+  /// 2.0 (C4): re-entry counter cho post-flush serialization. Tăng khi
+  /// đang post events, giảm khi xong. Tất cả mutation chạy trên
+  /// `simulationQueue` (serial) nên không cần atomic.
+  nonisolated(unsafe) private static var inflightFlushCount: Int = 0
+
+  static var isFlushInProgress: Bool {
+    return inflightFlushCount > 0
+  }
+
+  /// 2.0 (C4): wrapper áp dụng adaptive delay sau khi block hoàn thành.
+  /// Chỉ áp dụng nếu `cgEventRaceHardeningEnabled` ON và delay > 0.
+  /// Gọi từ simulationQueue (serial) nên counter không race.
+  static func withAdaptiveFlush<T>(_ work: () -> T) -> T {
+    inflightFlushCount += 1
+    defer { inflightFlushCount -= 1 }
+    let result = work()
+    let delay = adaptiveFlushDelayMs
+    if delay > 0, Defaults[.cgEventRaceHardeningEnabled] {
+      usleep(UInt32(min(500, max(0, delay)) * 1000))
+    }
+    return result
+  }
 
   /// Hardcoded macOS virtual key codes used by the simulator. US-layout
   /// positions; these are physical-key codes so they work even on QWERTZ /
@@ -232,10 +265,13 @@ class EventSimulator {
       // callback never blocks. Ordering with the user's next keystroke is
       // preserved because simulationQueue is serial and the system queues
       // pending events behind our outgoing post() calls.
+      // 2.0 (C4): wrap với withAdaptiveFlush — counter + optional usleep.
       let source = CGEventSource(stateID: .privateState)
       simulationQueue.async {
-        sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
-        sendString(String(diffChars), source: source)
+        _ = withAdaptiveFlush {
+          sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
+          sendString(String(diffChars), source: source)
+        }
       }
       return EventSendTelemetry(
         attemptedTransform: true,
@@ -255,10 +291,12 @@ class EventSimulator {
       }
       // Dispatch to background queue to avoid blocking the event tap
       simulationQueue.async {
-        sendBackspace(backspaceCount, source: source, delayMicroseconds: 2000)
-        usleep(3000)
-        sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
-        usleep(3000)
+        _ = withAdaptiveFlush {
+          sendBackspace(backspaceCount, source: source, delayMicroseconds: 2000)
+          usleep(3000)
+          sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
+          usleep(3000)
+        }
       }
       return EventSendTelemetry(
         attemptedTransform: true,
@@ -278,8 +316,10 @@ class EventSimulator {
       }
       // Dispatch to background queue to avoid blocking the event tap
       simulationQueue.async {
-        sendBackspace(backspaceCount, source: source, delayMicroseconds: backspaceDelay)
-        sendString(String(diffChars), source: source)
+        _ = withAdaptiveFlush {
+          sendBackspace(backspaceCount, source: source, delayMicroseconds: backspaceDelay)
+          sendString(String(diffChars), source: source)
+        }
       }
       return EventSendTelemetry(
         attemptedTransform: true,
@@ -336,13 +376,16 @@ class EventSimulator {
 
     switch strategy {
     case .batch:
+      // 2.0 (C4): wrap với withAdaptiveFlush.
       let source = CGEventSource(stateID: .privateState)
       simulationQueue.async {
-        sendShiftLeft(selectLeftCount, source: source)
-        if !diffChars.isEmpty {
-          sendString(String(diffChars), source: source)
-        } else if selectLeftCount > 0 {
-          sendBackspace(1, source: source)
+        _ = withAdaptiveFlush {
+          sendShiftLeft(selectLeftCount, source: source)
+          if !diffChars.isEmpty {
+            sendString(String(diffChars), source: source)
+          } else if selectLeftCount > 0 {
+            sendBackspace(1, source: source)
+          }
         }
       }
       return EventSendTelemetry(
@@ -362,14 +405,16 @@ class EventSimulator {
         )
       }
       simulationQueue.async {
-        sendShiftLeft(selectLeftCount, source: source)
-        usleep(3000)
-        if !diffChars.isEmpty {
-          sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
-        } else if selectLeftCount > 0 {
-          sendBackspace(1, source: source)
+        _ = withAdaptiveFlush {
+          sendShiftLeft(selectLeftCount, source: source)
+          usleep(3000)
+          if !diffChars.isEmpty {
+            sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
+          } else if selectLeftCount > 0 {
+            sendBackspace(1, source: source)
+          }
+          usleep(3000)
         }
-        usleep(3000)
       }
       return EventSendTelemetry(
         attemptedTransform: true,
@@ -388,12 +433,14 @@ class EventSimulator {
         )
       }
       simulationQueue.async {
-        sendShiftLeft(selectLeftCount, source: source)
-        usleep(backspaceDelay)
-        if !diffChars.isEmpty {
-          sendString(String(diffChars), source: source)
-        } else if selectLeftCount > 0 {
-          sendBackspace(1, source: source)
+        _ = withAdaptiveFlush {
+          sendShiftLeft(selectLeftCount, source: source)
+          usleep(backspaceDelay)
+          if !diffChars.isEmpty {
+            sendString(String(diffChars), source: source)
+          } else if selectLeftCount > 0 {
+            sendBackspace(1, source: source)
+          }
         }
       }
       return EventSendTelemetry(

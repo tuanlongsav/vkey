@@ -620,6 +620,10 @@ class InputProcessor {
   public var isSearchOrComboFocused = false
   public private(set) var lastSuggestions: [SuggestionCandidate] = []
 
+  /// 2.0 (B1): cached Window Title Rule overrides cho activeApp.
+  /// AppState cập nhật giá trị này khi đổi app hoặc focus.
+  public var ruleOverrides: ResolvedRuleOverrides = .init()
+
   private let spellDecisionEngine = SpellDecisionEngine.shared
 
   /// Word buffer manages the current word state
@@ -637,6 +641,18 @@ class InputProcessor {
   private var prev1Committed: String? = nil
   private var prev2Committed: String? = nil
   private var activePrediction: String? = nil
+  /// 2.0 (A2): toàn bộ candidates đang hiển thị trong HUD (top-N).
+  /// Nhấn 1/2/3 để chọn theo index, hoặc Tab để accept top-1.
+  private var activePredictionCandidates: [String] = []
+
+  // 2.0 (A5): auto-capitalize state machine — tracking khi user gõ
+  // sentence-ending punctuation (. ! ?) hoặc Enter, để uppercase chữ cái
+  // đầu của từ kế tiếp.
+  // - `sentenceJustEnded`: punctuation . ! ? vừa được commit (chưa thấy space).
+  // - `pendingCapitalize`: đã ở vị trí "đầu câu" (sau Enter hoặc . ! ?+space)
+  //   — chữ cái text kế tiếp sẽ được uppercase.
+  private var sentenceJustEnded = false
+  private var pendingCapitalize = false
 
   // MARK: - Convenience accessors (preserve existing API for tests)
 
@@ -687,6 +703,13 @@ class InputProcessor {
   public func changeActiveApp(_ app: String) {
     activeApp = app
     strategyTracker.resetForApp(app)
+    // 2.0 (C4): cập nhật adaptive flush delay theo rule (nếu có) hoặc
+    // global default. Đọc ruleOverrides hiện tại — AppState gán trước
+    // khi gọi changeActiveApp khi đổi app.
+    let delay = ruleOverrides.flushDelayMs > 0
+      ? ruleOverrides.flushDelayMs
+      : Defaults[.cgEventFlushDelayMs]
+    EventSimulator.adaptiveFlushDelayMs = max(0, min(500, delay))
   }
 
   // MARK: - Word Operations (delegate to WordBuffer)
@@ -749,49 +772,17 @@ class InputProcessor {
     //   (legitimate form navigation / tab indent).
     if taskKey == .Tab,
        Defaults[.wordPredictionEnabled],
-       activePrediction != nil
+       let prediction = activePrediction
     {
-      let prediction = activePrediction!
-      if wordBuffer.wordState.isBlank {
-        // 1.8.1: caret đã ở sau 1 space (từ commit trước đó qua Space).
-        // Chèn THẲNG prediction, không leading space.
-        newWord(storePrevious: false)
-        let toInsert = prediction
-        let telemetry = EventSimulator.sendReplacement(
-          backspaceCount: 0,
-          diffChars: Array(toInsert),
-          strategy: strategyTracker.currentStrategy
-        )
-        observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
-        prev2Committed = prev1Committed
-        prev1Committed = prediction.lowercased()
-      } else {
-        // Buffer có từ chưa commit: commit qua space rồi chèn prediction.
-        applySpellDecisionOnCommit(endingChar: " ", swallowEndingChar: true)
-        newWord(storePrevious: true)
-        // Recompute prediction sau commit (prev1 đã đổi).
-        let newPrediction = PredictionEngine.shared.topPrediction(
-          prev2: prev2Committed,
-          prev1: prev1Committed ?? ""
-        ) ?? prediction
-        let telemetry = EventSimulator.sendReplacement(
-          backspaceCount: 0,
-          diffChars: Array(newPrediction),
-          strategy: strategyTracker.currentStrategy
-        )
-        observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
-        prev2Committed = prev1Committed
-        prev1Committed = newPrediction.lowercased()
-      }
-      // Clear state + hide HUD + swallow Tab.
-      activePrediction = nil
-      DispatchQueue.main.async {
-        PredictionHUDWindow.shared.hide()
-      }
+      injectAcceptedPrediction(prediction)
       return nil  // swallow Tab
     }
 
     if InputProcessor.NewWordTaskKeys.contains(taskKey) {
+      // 2.0 (A5): Enter ALWAYS đánh dấu đầu câu kế tiếp. Space chỉ propagate
+      // pendingCapitalize nếu sentence-ending punctuation vừa được commit.
+      updateCapitalizeStateForTaskKey(taskKey)
+
       // Only expand macros on Space — Tab/Enter often have form-submission semantics
       // we don't want to swallow.
       if taskKey == .Space, expandMacroIfMatch(endingChar: " ") {
@@ -836,9 +827,31 @@ class InputProcessor {
     return Unmanaged.passUnretained(event)
   }
 
-  private func handleTextChar(_ newChar: Character, event: CGEvent) -> Unmanaged<CGEvent>? {
+  private func handleTextChar(_ incomingChar: Character, event: CGEvent) -> Unmanaged<CGEvent>? {
+    var newChar = incomingChar
+
+    // 2.0 (A2): digit-selection cho top-N prediction. Chỉ intercept khi:
+    // - HUD đang hiển thị nhiều hơn 1 candidate
+    // - word buffer đang TRỐNG (vừa commit từ + space)
+    // - digit nằm trong range hợp lệ
+    // Tránh nhiễu khi user gõ số trong câu thường ("3 con mèo" — bằng cách
+    // require buffer blank + có candidates list multi-item).
+    if Defaults[.wordPredictionEnabled],
+       activePredictionCandidates.count > 1,
+       wordBuffer.wordState.isBlank,
+       wordBuffer.keys.isEmpty,
+       let digit = incomingChar.wholeNumberValue,
+       digit >= 1, digit <= activePredictionCandidates.count {
+      let chosen = activePredictionCandidates[digit - 1]
+      injectAcceptedPrediction(chosen)
+      return nil
+    }
+
     // Check if this is a word-ending character (punctuation, etc.) BEFORE processing
     if let _ = InputProcessor.NewWordKeys.firstIndex(of: newChar) {
+      // 2.0 (A5): cập nhật state đánh dấu sentence-ending punctuation.
+      updateCapitalizeStateForPunctuation(newChar)
+
       if expandMacroIfMatch(endingChar: newChar) {
         newWord(storePrevious: true)
         return nil
@@ -849,6 +862,25 @@ class InputProcessor {
       }
       newWord(storePrevious: true)
       return Unmanaged.passUnretained(event)
+    }
+
+    // 2.0 (A5): nếu đang pending capitalize và char là chữ cái lowercase,
+    // uppercase nó trước khi push vào buffer. Engine xử lý 'W' như 'w'
+    // (Telex case-insensitive cho phụ âm). Output sẽ có chữ hoa đầu câu.
+    if Defaults[.autoCapitalizeEnabled],
+       pendingCapitalize,
+       newChar.isLetter,
+       newChar.isLowercase {
+      let upperString = String(newChar).uppercased()
+      if let upperChar = upperString.first {
+        newChar = upperChar
+      }
+      pendingCapitalize = false
+      sentenceJustEnded = false
+    } else if !newChar.isWhitespace {
+      // Mọi char không phải whitespace → reset state (đã không còn ở đầu câu).
+      pendingCapitalize = false
+      sentenceJustEnded = false
     }
 
     push(char: newChar)
@@ -894,6 +926,93 @@ class InputProcessor {
 
   // MARK: - Helpers
 
+  // MARK: - 2.0 (A2): Prediction Acceptance
+
+  /// Chấp nhận một prediction (Tab hoặc digit 1/2/3) — inject vào caret,
+  /// cập nhật n-gram window, ẩn HUD. Re-fetches top-1 prediction nếu
+  /// buffer còn từ chưa commit (commit qua space trước rồi chèn dự đoán).
+  private func injectAcceptedPrediction(_ prediction: String) {
+    if wordBuffer.wordState.isBlank {
+      // Caret đã ở sau space của commit trước. Chèn thẳng, không leading space.
+      newWord(storePrevious: false)
+      let telemetry = EventSimulator.sendReplacement(
+        backspaceCount: 0,
+        diffChars: Array(prediction),
+        strategy: strategyTracker.currentStrategy
+      )
+      observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
+      prev2Committed = prev1Committed
+      prev1Committed = prediction.lowercased()
+    } else {
+      // Buffer có từ chưa commit: commit qua space rồi chèn prediction.
+      applySpellDecisionOnCommit(endingChar: " ", swallowEndingChar: true)
+      newWord(storePrevious: true)
+      // Recompute prediction sau commit (prev1 đã đổi). Nếu HUD lúc đó
+      // hiển thị candidate cho từ KHÁC, mới recompute; giữ user-chosen
+      // nếu họ explicitly chọn (digit-selection).
+      let recomputed = PredictionEngine.shared.topPrediction(
+        prev2: prev2Committed,
+        prev1: prev1Committed ?? ""
+      ) ?? prediction
+      let telemetry = EventSimulator.sendReplacement(
+        backspaceCount: 0,
+        diffChars: Array(recomputed),
+        strategy: strategyTracker.currentStrategy
+      )
+      observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
+      prev2Committed = prev1Committed
+      prev1Committed = recomputed.lowercased()
+    }
+    activePrediction = nil
+    activePredictionCandidates = []
+    DispatchQueue.main.async {
+      PredictionHUDWindow.shared.hide()
+    }
+  }
+
+  // MARK: - 2.0 (A5): Auto-Capitalize Helpers
+
+  /// Sentence-ending punctuation set — chỉ . ! ? trigger capitalize.
+  /// Các punctuation khác (,;: …) thuộc NewWordKeys nhưng KHÔNG phải
+  /// sentence boundary nên không trigger.
+  private static let sentenceEndingChars: Set<Character> = [".", "!", "?"]
+
+  /// Cập nhật `sentenceJustEnded` khi punctuation được commit qua
+  /// `handleTextChar` path. Chỉ . ! ? coi như kết thúc câu.
+  private func updateCapitalizeStateForPunctuation(_ char: Character) {
+    if Self.sentenceEndingChars.contains(char) {
+      sentenceJustEnded = true
+      pendingCapitalize = false  // chờ space để promote
+    } else {
+      // Punctuation khác (vd dấu phẩy) → reset, không phải đầu câu mới.
+      sentenceJustEnded = false
+      pendingCapitalize = false
+    }
+  }
+
+  /// Cập nhật capitalize state khi gặp TaskKey (Space/Enter/Tab).
+  /// - Enter: ALWAYS đánh dấu đầu câu kế tiếp.
+  /// - Space: promote `sentenceJustEnded` thành `pendingCapitalize`.
+  /// - Tab: bảo toàn state hiện tại (Tab thường dùng cho prediction
+  ///   accept, không thay đổi cảm nhận câu).
+  private func updateCapitalizeStateForTaskKey(_ taskKey: TaskKey) {
+    switch taskKey {
+    case .Enter:
+      pendingCapitalize = true
+      sentenceJustEnded = false
+    case .Space:
+      if sentenceJustEnded {
+        pendingCapitalize = true
+        sentenceJustEnded = false
+      } else {
+        // Space giữa các từ → reset pending nếu trước đó có lỡ set.
+        pendingCapitalize = false
+      }
+    default:
+      break
+    }
+  }
+
   private func observeTelemetry(_ telemetry: EventSendTelemetry, appLikelySensitive: Bool) {
     if strategyTracker.detectFailure(
       telemetry: telemetry,
@@ -932,7 +1051,8 @@ class InputProcessor {
     // v1.7.0: bỏ guard spellCheckInSentenceEnabled — sub-toggle UI đã gộp vào
     // master `spellCheckEnabled`. Khi master ON thì luôn check cả single word
     // và in-sentence. Key vẫn giữ trong Defaults cho backward-compat.
-    guard Defaults[.spellCheckEnabled] else {
+    // 2.0 (B1): Window Title Rule có thể force tắt spell-check cho context này.
+    guard Defaults[.spellCheckEnabled], !ruleOverrides.disableSpellCheck else {
       lastSuggestions = []
       return false
     }
@@ -968,17 +1088,33 @@ class InputProcessor {
     prev2Committed = prev1Committed
     prev1Committed = committedToken
 
-    if Defaults[.wordPredictionEnabled],
-       let prediction = PredictionEngine.shared.topPrediction(
-         prev2: prev2Committed, prev1: prev1Committed ?? ""
-       )
-    {
-      activePrediction = prediction
-      DispatchQueue.main.async {
-        PredictionHUDWindow.shared.show(prediction: prediction)
+    // 2.0 (B1): Window Title Rule có thể force tắt prediction cho context này.
+    if Defaults[.wordPredictionEnabled], !ruleOverrides.disablePrediction {
+      // 2.0 (A2): top-N candidates (default 3). Backward-compat: nếu user
+      // chỉnh predictionTopN = 1, hành vi y hệt 1.x.
+      let topN = max(1, min(3, Defaults[.predictionTopN]))
+      let candidates = PredictionEngine.shared.topNPredictions(
+        prev2: prev2Committed,
+        prev1: prev1Committed ?? "",
+        n: topN
+      )
+      if let first = candidates.first {
+        activePrediction = first
+        activePredictionCandidates = candidates
+        let snapshot = candidates
+        DispatchQueue.main.async {
+          PredictionHUDWindow.shared.showCandidates(snapshot)
+        }
+      } else {
+        activePrediction = nil
+        activePredictionCandidates = []
+        DispatchQueue.main.async {
+          PredictionHUDWindow.shared.hide()
+        }
       }
     } else {
       activePrediction = nil
+      activePredictionCandidates = []
       DispatchQueue.main.async {
         PredictionHUDWindow.shared.hide()
       }

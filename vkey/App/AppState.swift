@@ -35,6 +35,15 @@ class AppState: ObservableObject, FileMonitorDelegate {
     public var enabledBeforeSmartSwitch = false
     private var skipHUDNotification = true
 
+    // 2.0 (B2): theo dõi non-Latin IME để tự động disable vkey.
+    private let inputSourceMonitor = InputSourceMonitor()
+    public private(set) var nonLatinIMEActive = false
+    private var enabledBeforeNonLatinIME = false
+
+    // 2.0 (B1): cache resolved overrides cho focused context. Tránh
+    // gọi AX query mỗi keystroke.
+    public private(set) var activeRuleOverrides: ResolvedRuleOverrides = .init()
+
     @Published public var enabled = false {
         didSet {
             if !skipPersistAppMode {
@@ -114,6 +123,21 @@ class AppState: ObservableObject, FileMonitorDelegate {
             self.setEnabled(set: !self.enabled)
         }
 
+        // 2.0 (A1): mở/đóng Floating Toolbar tại cursor.
+        KeyboardShortcuts.onKeyUp(for: .toggleFloatingToolbar) { [weak self] in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                FloatingToolbarWindow.shared.toggle(appState: self)
+            }
+        }
+
+        // 2.0 (B4): mở Text Conversion menu cho selection.
+        KeyboardShortcuts.onKeyUp(for: .openTextConversionMenu) {
+            DispatchQueue.main.async {
+                TextConversionService.shared.openMenu(near: nil)
+            }
+        }
+
         // Register application change observer
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(activeApplicationDidChange),
@@ -133,6 +157,46 @@ class AppState: ObservableObject, FileMonitorDelegate {
         // Enable HUD notifications after a brief delay once startup is fully completed
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             self?.skipHUDNotification = false
+        }
+
+        // 2.0 (B2): theo dõi input source change.
+        inputSourceMonitor.onInputSourceChange = { [weak self] category in
+            self?.handleInputSourceCategoryChange(category)
+        }
+        inputSourceMonitor.start()
+    }
+
+    /// 2.0 (B2): xử lý khi user chuyển input source. Khi sang non-Latin IME
+    /// (Japanese / Chinese / Korean / Thai / Arabic …) — vkey tự động
+    /// disable và nhớ state trước đó. Khi quay về Latin — restore state.
+    /// Logic không chạm vào `appModes` để tránh ô nhiễm per-app memory.
+    private func handleInputSourceCategoryChange(_ category: InputSourceCategory) {
+        guard Defaults[.nonLatinIMEAutoDisable] else {
+            // Toggle off → nếu đang bị disable bởi non-Latin trước đó,
+            // restore state để không kẹt user.
+            if nonLatinIMEActive {
+                nonLatinIMEActive = false
+                setEnabledWithoutPersist(enabledBeforeNonLatinIME)
+            }
+            return
+        }
+
+        switch category {
+        case .nonLatin:
+            if !nonLatinIMEActive {
+                enabledBeforeNonLatinIME = enabled
+                nonLatinIMEActive = true
+                setEnabledWithoutPersist(false)
+                os_log("AppState: non-Latin IME active — vkey disabled",
+                       log: appLog, type: .info)
+            }
+        case .latin, .unknown:
+            if nonLatinIMEActive {
+                nonLatinIMEActive = false
+                setEnabledWithoutPersist(enabledBeforeNonLatinIME)
+                os_log("AppState: Latin input source restored — vkey re-enabled to %{public}@",
+                       log: appLog, type: .info, String(enabledBeforeNonLatinIME))
+            }
         }
     }
 
@@ -194,6 +258,11 @@ class AppState: ObservableObject, FileMonitorDelegate {
             // tránh AX query đồng bộ trong EventHook callback.
             currentFocusedBundleId = appName
             refreshFocusedBundleIdAsync()
+
+            // 2.0 (B1): invalidate + tái đánh giá Window Title Rules.
+            WindowTitleRuleEngine.shared.invalidateCache()
+            activeRuleOverrides = WindowTitleRuleEngine.shared.evaluate(bundleId: appName)
+            inputProcessor.ruleOverrides = activeRuleOverrides
 
             // 1.7.0: ưu tiên đọc từ appSmartSwitchConfigs (3-state).
             // Fallback smartSwitchApps để backward-compat user chưa migrate.

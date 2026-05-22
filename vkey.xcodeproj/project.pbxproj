@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		0FC9E2EEDDE9786C60941BBF /* Lexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0937E79B85F7643A7EC6A8 /* Lexicon.swift */; };
+		1C1E141EB16B027B173B8F1F /* WindowTitleRuleEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DE993E0CD7CE91EF6CAF208 /* WindowTitleRuleEngine.swift */; };
+		235017C3A2424AD3A971CD9C /* HUDTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868492E7D2A71D5577D303FF /* HUDTheme.swift */; };
 		28F11D31D04926F7FB4860B4 /* PredictionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9983D8DCAE1ACF9310738F1F /* PredictionEngine.swift */; };
 		3A1CEF871E6A885DD3916044 /* MacroSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */; };
 		3F2E85C92B9EDE7900A95282 /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2E85C82B9EDE7900A95282 /* Defaults */; };
@@ -49,22 +51,28 @@
 		3FDB83CD2BB468BA00AD6322 /* EventSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */; };
 		4045075CC083173E587560A9 /* SpellDecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01E0C61F7740281BEB6DB9C7 /* SpellDecisionEngine.swift */; };
 		40D7FB871260EEC2B9077795 /* MenuBarFooterRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */; };
+		4699B8022FF57C2A2CF17CEF /* FloatingToolbarWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6746A32384F096065A54DF18 /* FloatingToolbarWindow.swift */; };
 		5501620FAC63ADA15F6A37B4 /* SmartSwitchRunningAppsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88B0AD4B1E7237CEF175AEB8 /* SmartSwitchRunningAppsSheet.swift */; };
 		5A21D21AF4397FCB9C827912 /* DonateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */; };
+		5DD4FF34312D31DC078B0C18 /* WindowRulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7647621A1938143D8712D4B /* WindowRulesView.swift */; };
 		5DF6BF0E4EBC27745F7CA7AA /* DefaultMacros.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E12D557ABDC3D7864363DE /* DefaultMacros.swift */; };
 		6222920C197312B2360B6B43 /* UsageStatistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* NGramStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A2 /* NGramStore.swift */; };
 		7BEAE86A3D1B31E3C36D6645 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C15A8AB81A235FF54939DC /* Updater.swift */; };
 		7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */; };
+		964199382501358B452A147B /* TextConversionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */; };
 		9972B2786EB0E3A600C0FF4A /* EnVnReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0A79FB401501E597B689C9 /* EnVnReference.swift */; };
 		A085F9440573F6BC7380FAEE /* PersonalDictSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A620251BD70C5F36817A13 /* PersonalDictSuggestionSheet.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* NGramStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A2 /* NGramStore.swift */; };
+		A3D9716267048D287ABB43E8 /* RustEngineBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D8DA6881CD05014BEE9B779 /* RustEngineBridge.swift */; };
 		A577F31CCB6071AB62F71BD8 /* EmbeddedLexiconData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF27B5F4C4E372971F4466A7 /* EmbeddedLexiconData.swift */; };
 		B5120602CCC5EAE262D73C62 /* SmartSwitchSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */; };
+		B8922497E2121A6FA04CC2A3 /* libvkey_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 51E9B298F908693C818B948F /* libvkey_core.a */; };
 		CDD99ACF8126FA2BF147D861 /* SuggestionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FF73C92A71721E44ACDE39 /* SuggestionService.swift */; };
 		CE7ABBC5AC69A832A845CE31 /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92721E2546773FF5AAC7672C /* StatisticsView.swift */; };
 		D7BEBA3029B05306751A69B3 /* EmbeddedBigrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521F6BD0B4DB972BC0C580DE /* EmbeddedBigrams.swift */; };
 		E678805A2EF92EAE65B2E3FF /* LexiconManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FF852BE303C340328CB8C0 /* LexiconManager.swift */; };
 		EC46658134875A59BD2FCBC3 /* PredictionHUDWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */; };
+		F348AD6A8752A1C54FA5C347 /* InputSourceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C5E95C08CD53A70A0C43DF /* InputSourceMonitor.swift */; };
 		F5E5BFC82700BF11BAF4FBAF /* UserDataMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0316EE5AB4EBE700B533B62 /* UserDataMigration.swift */; };
 		F9AE8589EEC4C7E30D1FF8CF /* LexiconUpdatePackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372FB596601D5DAF3222D95E /* LexiconUpdatePackage.swift */; };
 /* End PBXBuildFile section */
@@ -89,6 +97,7 @@
 /* Begin PBXFileReference section */
 		01E0C61F7740281BEB6DB9C7 /* SpellDecisionEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpellDecisionEngine.swift; sourceTree = "<group>"; };
 		22C15A8AB81A235FF54939DC /* Updater.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
+		2D8DA6881CD05014BEE9B779 /* RustEngineBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RustEngineBridge.swift; sourceTree = "<group>"; };
 		372FB596601D5DAF3222D95E /* LexiconUpdatePackage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LexiconUpdatePackage.swift; sourceTree = "<group>"; };
 		3F2E2BDF2B87A85A00FE1C97 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		3F2E85CB2B9EDF2600A95282 /* Setting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Setting.swift; sourceTree = "<group>"; };
@@ -130,24 +139,32 @@
 		3FDB83CA2BB4682F00AD6322 /* Keys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keys.swift; sourceTree = "<group>"; };
 		3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSimulator.swift; sourceTree = "<group>"; };
 		3FDB83CE2BB468BA00AD6323 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		51E9B298F908693C818B948F /* libvkey_core.a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = archive.ar; name = libvkey_core.a; path = "rust-core/target/universal/libvkey_core.a"; sourceTree = "<group>"; };
 		521F6BD0B4DB972BC0C580DE /* EmbeddedBigrams.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedBigrams.swift; sourceTree = "<group>"; };
 		558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PredictionHUDWindow.swift; sourceTree = "<group>"; };
+		5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TextConversionService.swift; sourceTree = "<group>"; };
+		6746A32384F096065A54DF18 /* FloatingToolbarWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FloatingToolbarWindow.swift; sourceTree = "<group>"; };
 		69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThemedSymbol.swift; sourceTree = "<group>"; };
 		716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageStatistics.swift; sourceTree = "<group>"; };
-		B1C2D3E4F5A6B7C8D9E0F1A2 /* NGramStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NGramStore.swift; sourceTree = "<group>"; };
 		76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartSwitchSuggestionSheet.swift; sourceTree = "<group>"; };
 		82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacroSuggestionSheet.swift; sourceTree = "<group>"; };
+		868492E7D2A71D5577D303FF /* HUDTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HUDTheme.swift; sourceTree = "<group>"; };
 		88B0AD4B1E7237CEF175AEB8 /* SmartSwitchRunningAppsSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartSwitchRunningAppsSheet.swift; sourceTree = "<group>"; };
 		8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DonateView.swift; sourceTree = "<group>"; };
 		92721E2546773FF5AAC7672C /* StatisticsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
 		9983D8DCAE1ACF9310738F1F /* PredictionEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PredictionEngine.swift; sourceTree = "<group>"; };
+		99C5E95C08CD53A70A0C43DF /* InputSourceMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InputSourceMonitor.swift; sourceTree = "<group>"; };
+		9DE993E0CD7CE91EF6CAF208 /* WindowTitleRuleEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowTitleRuleEngine.swift; sourceTree = "<group>"; };
 		A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuBarFooterRow.swift; sourceTree = "<group>"; };
 		B0FF852BE303C340328CB8C0 /* LexiconManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LexiconManager.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A2 /* NGramStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NGramStore.swift; sourceTree = "<group>"; };
 		C5E12D557ABDC3D7864363DE /* DefaultMacros.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DefaultMacros.swift; sourceTree = "<group>"; };
 		D5A620251BD70C5F36817A13 /* PersonalDictSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonalDictSuggestionSheet.swift; sourceTree = "<group>"; };
+		D7647621A1938143D8712D4B /* WindowRulesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowRulesView.swift; sourceTree = "<group>"; };
 		E0316EE5AB4EBE700B533B62 /* UserDataMigration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDataMigration.swift; sourceTree = "<group>"; };
 		E7FF73C92A71721E44ACDE39 /* SuggestionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SuggestionService.swift; sourceTree = "<group>"; };
 		EA0937E79B85F7643A7EC6A8 /* Lexicon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Lexicon.swift; sourceTree = "<group>"; };
+		F3E422CB49C1C850FC80043D /* vkey-Bridging-Header.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "vkey-Bridging-Header.h"; sourceTree = "<group>"; };
 		FF0A79FB401501E597B689C9 /* EnVnReference.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnVnReference.swift; sourceTree = "<group>"; };
 		FF27B5F4C4E372971F4466A7 /* EmbeddedLexiconData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedLexiconData.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -162,6 +179,7 @@
 				3F2E85D22BA0B53F00A95282 /* KeyboardShortcuts in Frameworks */,
 				3F9FC6D82B9EB6A200659712 /* LaunchAtLogin in Frameworks */,
 				3F8A650F2B91CA9A009E2AF1 /* Settings in Frameworks */,
+				B8922497E2121A6FA04CC2A3 /* libvkey_core.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,6 +234,7 @@
 				3FAFBB972B84A86E0032A55E /* vkeyTests */,
 				3FAFBBA12B84A86E0032A55E /* vkeyUITests */,
 				3FAFBB822B84A86C0032A55E /* Products */,
+				68F4C810D280DCBD7029FE77 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -245,6 +264,7 @@
 				5FF63E69BB34FE155ED450E7 /* Lexicon */,
 				E832E39C064A0FFEAD964C5B /* Input */,
 				2C5DF9C9207C18B6E3F257BE /* Stats */,
+				F3E422CB49C1C850FC80043D /* vkey-Bridging-Header.h */,
 			);
 			path = vkey;
 			sourceTree = "<group>";
@@ -286,6 +306,7 @@
 				3F8A65052B8C69C9009E2AF1 /* Telex.swift */,
 				3F8A65072B8E370B009E2AF1 /* VNI.swift */,
 				3F8A65092B8E3BE8009E2AF1 /* TypingMethod.swift */,
+				2D8DA6881CD05014BEE9B779 /* RustEngineBridge.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -299,6 +320,11 @@
 				3F9FC6D42B9E14AF00659712 /* FileMonitor.swift */,
 				3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */,
 				558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */,
+				868492E7D2A71D5577D303FF /* HUDTheme.swift */,
+				99C5E95C08CD53A70A0C43DF /* InputSourceMonitor.swift */,
+				6746A32384F096065A54DF18 /* FloatingToolbarWindow.swift */,
+				5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */,
+				9DE993E0CD7CE91EF6CAF208 /* WindowTitleRuleEngine.swift */,
 			);
 			path = Platform;
 			sourceTree = "<group>";
@@ -329,6 +355,7 @@
 				76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */,
 				D5A620251BD70C5F36817A13 /* PersonalDictSuggestionSheet.swift */,
 				88B0AD4B1E7237CEF175AEB8 /* SmartSwitchRunningAppsSheet.swift */,
+				D7647621A1938143D8712D4B /* WindowRulesView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -346,6 +373,14 @@
 			);
 			name = Lexicon;
 			path = Lexicon;
+			sourceTree = "<group>";
+		};
+		68F4C810D280DCBD7029FE77 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				51E9B298F908693C818B948F /* libvkey_core.a */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		E832E39C064A0FFEAD964C5B /* Input */ = {
@@ -574,6 +609,13 @@
 				28F11D31D04926F7FB4860B4 /* PredictionEngine.swift in Sources */,
 				EC46658134875A59BD2FCBC3 /* PredictionHUDWindow.swift in Sources */,
 				5501620FAC63ADA15F6A37B4 /* SmartSwitchRunningAppsSheet.swift in Sources */,
+				235017C3A2424AD3A971CD9C /* HUDTheme.swift in Sources */,
+				F348AD6A8752A1C54FA5C347 /* InputSourceMonitor.swift in Sources */,
+				4699B8022FF57C2A2CF17CEF /* FloatingToolbarWindow.swift in Sources */,
+				964199382501358B452A147B /* TextConversionService.swift in Sources */,
+				1C1E141EB16B027B173B8F1F /* WindowTitleRuleEngine.swift in Sources */,
+				5DD4FF34312D31DC078B0C18 /* WindowRulesView.swift in Sources */,
+				A3D9716267048D287ABB43E8 /* RustEngineBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -739,12 +781,16 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 19007;
+				CURRENT_PROJECT_VERSION = 20000;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/rust-core/include",
+				);
 				INFOPLIST_FILE = vkey/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -753,11 +799,17 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/rust-core/target/universal",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.9.7;
+				MARKETING_VERSION = 2.0.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "vkey/vkey-Bridging-Header.h";
 				SWIFT_VERSION = 5.10;
 			};
 			name = Debug;
@@ -771,13 +823,17 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 19007;
+				CURRENT_PROJECT_VERSION = 20000;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/rust-core/include",
+				);
 				INFOPLIST_FILE = vkey/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -786,12 +842,18 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/rust-core/target/universal",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.9.7;
+				MARKETING_VERSION = 2.0.0;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "vkey/vkey-Bridging-Header.h";
 				SWIFT_VERSION = 5.10;
 			};
 			name = Release;
@@ -805,6 +867,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/rust-core/include",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.tests;
@@ -824,6 +890,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/rust-core/include",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.tests;
