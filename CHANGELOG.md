@@ -33,8 +33,8 @@
 
 ### 📦 Release artifacts
 
-- `vkey-2.1.0.dmg` — universal binary, ~7.1 MB.
-- Sparkle signature: `d0UAfi3Q+tQd/avZfGv0jzcjpAU5Stv2rYVKEDk8KljSjhukiCo4koshYBGCCd0qiXiVRdLJXZXjdyorvijZDQ==` (length 7479052).
+- `vkey-2.1.0.dmg` — universal binary, ~7.1 MB. Ad-hoc codesign + hardened runtime (`flags=0x10002 adhoc,runtime`, `Identifier=dev.longht.vkey`, sealed resources v2).
+- Sparkle signature: `gWb2bbEiOH1TDPs7Gvaruaivvmb6B4a5eYgscJ3q8Edr4BbcfHkeuE5DevhIfnUxXkCM93cEE7Tsqotae6/NCA==` (length 7481360).
 
 ---
 
