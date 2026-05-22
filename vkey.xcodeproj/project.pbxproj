@@ -56,6 +56,7 @@
 		6222920C197312B2360B6B43 /* UsageStatistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */; };
 		7BEAE86A3D1B31E3C36D6645 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C15A8AB81A235FF54939DC /* Updater.swift */; };
 		7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F3 /* VKeyDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A3 /* VKeyDesign.swift */; };
 		964199382501358B452A147B /* TextConversionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */; };
 		9972B2786EB0E3A600C0FF4A /* EnVnReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0A79FB401501E597B689C9 /* EnVnReference.swift */; };
 		A085F9440573F6BC7380FAEE /* PersonalDictSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A620251BD70C5F36817A13 /* PersonalDictSuggestionSheet.swift */; };
@@ -141,6 +142,7 @@
 		558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PredictionHUDWindow.swift; sourceTree = "<group>"; };
 		5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TextConversionService.swift; sourceTree = "<group>"; };
 		69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThemedSymbol.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A3 /* VKeyDesign.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VKeyDesign.swift; sourceTree = "<group>"; };
 		716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageStatistics.swift; sourceTree = "<group>"; };
 		76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartSwitchSuggestionSheet.swift; sourceTree = "<group>"; };
 		82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacroSuggestionSheet.swift; sourceTree = "<group>"; };
@@ -342,6 +344,7 @@
 				8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */,
 				92721E2546773FF5AAC7672C /* StatisticsView.swift */,
 				69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */,
+				B1C2D3E4F5A6B7C8D9E0F1A3 /* VKeyDesign.swift */,
 				A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */,
 				82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */,
 				76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */,
@@ -592,6 +595,7 @@
 				CE7ABBC5AC69A832A845CE31 /* StatisticsView.swift in Sources */,
 				5DF6BF0E4EBC27745F7CA7AA /* DefaultMacros.swift in Sources */,
 				7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1F3 /* VKeyDesign.swift in Sources */,
 				40D7FB871260EEC2B9077795 /* MenuBarFooterRow.swift in Sources */,
 				3A1CEF871E6A885DD3916044 /* MacroSuggestionSheet.swift in Sources */,
 				B5120602CCC5EAE262D73C62 /* SmartSwitchSuggestionSheet.swift in Sources */,
@@ -769,7 +773,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 20002;
+				CURRENT_PROJECT_VERSION = 20100;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -792,7 +796,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.0.2;
+				MARKETING_VERSION = 2.1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -811,7 +815,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 20002;
+				CURRENT_PROJECT_VERSION = 20100;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
@@ -835,7 +839,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.0.2;
+				MARKETING_VERSION = 2.1.0;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;

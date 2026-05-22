@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="vi"><head>
+<meta charset="utf-8">
+<title>vkey · Menu bar dropdown</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="../../components.css">
+<link rel="stylesheet" href="macos.css">
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #2a2f38;
+    background-image:
+      linear-gradient(180deg, rgba(0,0,0,0.5), transparent 30%),
+      radial-gradient(at 80% 30%, rgba(224, 68, 52, 0.15), transparent 50%),
+      url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%23223344"/><stop offset="1" stop-color="%23110a14"/></linearGradient></defs><rect width="800" height="600" fill="url(%23g)"/></svg>');
+    background-size: cover;
+    height: 100vh;
+    overflow: hidden;
+    color: #fff;
+    font-family: var(--font-sans);
+  }
+  .desktop {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+  }
+  .statusbar-stage {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 26px;
+    background: rgba(20,20,22,0.45);
+    backdrop-filter: blur(20px) saturate(180%);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 16px;
+    color: rgba(255,255,255,0.9);
+    font: 13px/1 var(--font-sans);
+    border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  }
+  .statusbar-stage .left { font: 600 13px var(--font-sans); }
+  .statusbar-stage .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .statusbar-stage .menulink { color: rgba(255,255,255,0.92); font-weight: 500; padding: 2px 8px; border-radius: 4px; }
+  .statusbar-stage .menulink.active { background: rgba(255,255,255,0.15); }
+  .vkey-icon { width: 18px; height: 13px; border-radius: 2px; cursor: pointer; box-shadow: 0 0 0 0.5px rgba(255,255,255,0.2); }
+  .clock { font-variant-numeric: tabular-nums; opacity: .9; }
+
+  .dropdown {
+    position: absolute;
+    top: 30px;
+    right: 80px;
+    width: 280px;
+    background: rgba(38, 38, 42, 0.92);
+    backdrop-filter: blur(50px) saturate(180%);
+    -webkit-backdrop-filter: blur(50px) saturate(180%);
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.14), inset 0 1px 0 rgba(255,255,255,0.08);
+    color: #fff;
+    font: 13px/1 var(--font-sans);
+  }
+  .dropdown::before {
+    content: "";
+    position: absolute;
+    top: -6px; right: 24px;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 7px solid rgba(38, 38, 42, 0.92);
+    filter: drop-shadow(0 -0.5px 0 rgba(255,255,255,0.14));
+  }
+  .item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.95);
+    font: 13px/1.2 var(--font-sans);
+  }
+  .item:hover { background: var(--vkey-red-500); }
+  .item img.icon { width: 16px; height: 16px; filter: brightness(0) invert(1); opacity: 0.85; flex: none; }
+  .item img.flag { width: 18px; height: 13px; border-radius: 2px; flex: none; }
+  .item .right-meta { margin-left: auto; opacity: 0.55; font: var(--t-mono-sm); }
+  .item .check { margin-left: auto; opacity: 0.75; }
+  .item .check img { width: 12px; height: 12px; filter: invert(1); }
+  .item .chev { margin-left: auto; opacity: 0.55; }
+  .item .chev img { width: 12px; height: 12px; filter: invert(1); }
+  .sep { height: 1px; background: rgba(255,255,255,0.10); margin: 4px 8px; }
+
+  .hud-stack {
+    position: absolute;
+    left: 50%;
+    bottom: 18%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+  }
+  .hud-toggle {
+    display: inline-flex; align-items: center; gap: 14px;
+    padding: 18px 30px;
+    background: rgba(28, 30, 36, 0.55);
+    backdrop-filter: blur(50px) saturate(180%);
+    color: #fff;
+    border-radius: 20px;
+    box-shadow: 0 30px 60px -16px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.08);
+    font: 700 28px var(--font-sans);
+  }
+  .hud-toggle img.flag { width: 36px; height: 26px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(255,255,255,0.1); }
+
+  .hud-pred {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: rgba(28,30,36, 0.75);
+    backdrop-filter: blur(40px) saturate(180%);
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08);
+    font: var(--t-mono-md);
+  }
+  .hud-pred .label { color: rgba(255,255,255,0.55); font: var(--t-mono-sm); }
+</style>
+</head>
+<body>
+  <div class="desktop" data-screen-label="vkey · Menu bar dropdown">
+    <!-- macOS status bar -->
+    <div class="statusbar-stage">
+      <img class="vkey-icon" src="../../assets/icons/flag-vn.svg">
+      <div class="left">vkey</div>
+      <a class="menulink active">File</a>
+      <a class="menulink">Edit</a>
+      <a class="menulink">View</a>
+      <a class="menulink">Window</a>
+      <a class="menulink">Help</a>
+      <div class="right">
+        <img src="../../assets/icons/search.svg" style="width:16px;height:16px;filter:invert(1)">
+        <span class="clock">Thứ Năm 22 thg 5 23:01</span>
+      </div>
+    </div>
+
+    <!-- Menu bar dropdown -->
+    <div class="dropdown">
+      <div class="item"><img class="icon" src="../../assets/icons/refresh.svg">Chuyển đổi ngôn ngữ
+        <span style="margin-left:auto;display:flex;gap:4px"><img src="../../assets/icons/flag-vn.svg" style="width:18px;height:13px;border-radius:2px"><span style="opacity:.4">|</span><img src="../../assets/icons/flag-us.svg" style="width:18px;height:13px;border-radius:2px"></span>
+      </div>
+      <div class="sep"></div>
+      <div class="item"><img class="icon" src="../../assets/icons/abc.svg">Kiểu Telex<span class="check"><img src="../../assets/icons/check-circle.svg"></span></div>
+      <div class="item"><img class="icon" src="../../assets/icons/abc.svg">Kiểu VNI</div>
+      <div class="sep"></div>
+      <div class="item"><img class="icon" src="../../assets/icons/gear.svg">Cài đặt<span class="right-meta">⌘,</span></div>
+      <div class="item"><img class="icon" src="../../assets/icons/shuffle.svg">Smart Switch<span class="check"><img src="../../assets/icons/check-circle.svg"></span></div>
+      <div class="item"><img class="icon" src="../../assets/icons/check-circle.svg">Sửa lỗi chính tả<span class="check"><img src="../../assets/icons/check-circle.svg"></span></div>
+      <div class="item"><img class="icon" src="../../assets/icons/sparkles.svg">Macro<span class="check"><img src="../../assets/icons/check-circle.svg"></span></div>
+      <div class="item"><img class="icon" src="../../assets/icons/layers.svg">Giao diện ứng dụng<span class="chev"><img src="../../assets/icons/chevron-right.svg"></span></div>
+      <div class="sep"></div>
+      <div class="item"><img class="icon" src="../../assets/icons/lightbulb.svg">Ủng hộ tác giả</div>
+      <div class="item"><img class="icon" src="../../assets/icons/info-circle.svg">Thông tin dự án</div>
+      <div class="item"><img class="icon" src="../../assets/icons/refresh.svg">Kiểm tra cập nhật</div>
+      <div class="sep"></div>
+      <div class="item"><img class="icon" src="../../assets/icons/x-circle.svg">Thoát<span class="right-meta">⌘Q</span></div>
+    </div>
+
+    <!-- HUDs floating on desktop -->
+    <div class="hud-stack">
+      <div class="hud-toggle"><img class="flag" src="../../assets/icons/flag-vn.svg">Tiếng Việt</div>
+      <div class="hud-pred">
+        <span class="label">→</span>
+        <span style="color:#fff;">tiếng <span style="color:var(--gold-400);">Việt</span></span>
+        <span class="label">·</span>
+        <span class="label">Tab to accept</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

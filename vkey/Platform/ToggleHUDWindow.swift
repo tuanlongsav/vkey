@@ -152,68 +152,63 @@ private class ToggleHUDViewModel: ObservableObject {
 private struct ToggleHUDView: View {
     @ObservedObject var viewModel: ToggleHUDViewModel
     @Environment(\.colorScheme) var colorScheme
-    
+
+    // v2.1.0: Tonal redesign — dark glass scrim (matches Design System
+    // `--glass-dark` rgba(15,17,22,0.62)), 20px radius (--r-xl), brand-red
+    // accent for VI state, paper-300 neutral for EN. Icon + label foreground
+    // is always white on the dark scrim so the HUD reads clearly over any
+    // desktop background (light or dark mode).
     var body: some View {
-        // 1.9.5: giảm kích thước theo user feedback. Icon 56→40, label 20→16,
-        // frame 170→130, padding 22→14, cornerRadius 24→18. Nền clear hơn —
-        // bỏ stroke border opacity cao + dùng .regularMaterial mỏng hơn.
         VStack(spacing: 6) {
-            // Icon trạng thái với hiệu ứng chuyển đổi mượt mà
             ThemedSymbol(name: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
                 .font(.system(size: 40, weight: .semibold))
                 .foregroundStyle(
                     viewModel.isEnabled
-                    ? AnyShapeStyle(Color.accentColor.gradient)
-                    : AnyShapeStyle(Color.secondary.gradient)
+                    ? AnyShapeStyle(VKeyDesign.red400.gradient)
+                    : AnyShapeStyle(VKeyDesign.paper200.gradient)
                 )
                 .frame(width: 48, height: 48)
                 .vkeySymbolReplacementTransition()
 
-            // Nhãn hiển thị ngôn ngữ
             Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
                 .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
 
-            // Ký hiệu viết tắt (VI / EN)
             Text(viewModel.isEnabled ? "VI" : "EN")
                 .font(.system(size: 11, weight: .black, design: .rounded))
+                .tracking(0.5)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
                 .background(
                     viewModel.isEnabled
-                    ? Color.accentColor.opacity(0.18)
-                    : Color.secondary.opacity(0.18)
+                    ? VKeyDesign.red500.opacity(0.28)
+                    : Color.white.opacity(0.14)
                 )
-                .foregroundStyle(viewModel.isEnabled ? Color.accentColor : Color.secondary)
+                .foregroundStyle(viewModel.isEnabled ? VKeyDesign.red200 : Color.white.opacity(0.82))
                 .clipShape(RoundedRectangle(cornerRadius: 5))
         }
         .frame(width: 130)
         .padding(.vertical, 14)
         .padding(.horizontal, 8)
-        // 1.9.6: nền vẫn trong suốt nhưng có scrim tối nhẹ để chữ/icon luôn
-        // rõ. Opacity setting chỉ tác động nền, không làm mờ toàn bộ panel.
         .background(
-            Color.black.opacity(scrimOpacity),
-            in: RoundedRectangle(cornerRadius: 18)
+            VKeyDesign.ink500.opacity(scrimOpacity),
+            in: RoundedRectangle(cornerRadius: 20)
         )
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
         .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .strokeBorder(
-                    .white.opacity(colorScheme == .dark ? 0.16 : 0.28),
-                    lineWidth: 0.6
-                )
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.10), radius: 10, x: 0, y: 3)
+        .shadow(color: Color.black.opacity(0.55), radius: 24, x: 0, y: 12)
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
     }
 
     private var scrimOpacity: Double {
-        let base = colorScheme == .dark ? 0.10 : 0.03
-        let range = colorScheme == .dark ? 0.16 : 0.07
-        return base + range * viewModel.backgroundStrength
+        // Dark glass — matches `--glass-dark` at full strength (0.62), scales
+        // down with user opacity setting.
+        0.32 + 0.30 * viewModel.backgroundStrength
     }
 }
 

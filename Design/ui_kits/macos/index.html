@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>vkey · Settings (redesign)</title>
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <link rel="stylesheet" href="../../components.css">
+  <link rel="stylesheet" href="macos.css">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #1a1d24;
+      background-image:
+        radial-gradient(at 20% 20%, rgba(224, 68, 52, 0.10) 0px, transparent 50%),
+        radial-gradient(at 80% 80%, rgba(245, 198, 69, 0.05) 0px, transparent 40%);
+      color: var(--fg-1);
+      font-family: var(--font-sans);
+      overflow: hidden;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+    .panel { display: none; flex-direction: column; gap: 14px; }
+    .panel.is-active { display: flex; }
+
+    /* Use dark theme for the settings window */
+    .mac-window { --bg: var(--ink-500); --bg-elevated: var(--ink-400); --bg-sunken: var(--ink-600); --fg-1:#F2EFE8; --fg-2:#C7C3B7; --fg-3:#9B978B; --fg-muted:#7C7768; --border-1: rgba(255,255,255,0.08); --border-2: rgba(255,255,255,0.14); }
+
+    .icon-tile { width: 28px; height: 28px; border-radius: 7px; background: var(--bg-sunken); display: inline-flex; align-items: center; justify-content: center; color: var(--fg-accent); }
+    .icon-tile img { width: 16px; height: 16px; }
+    .icon-tile--brand { background: color-mix(in srgb, var(--vkey-red-500) 18%, transparent); color: var(--vkey-red-300); }
+
+    .appitem {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; border-bottom: 1px solid var(--border-1);
+    }
+    .appitem:last-child { border-bottom: 0; }
+    .appitem .avatar { width: 36px; height: 36px; border-radius: 8px; background: var(--bg-sunken); display:flex; align-items:center; justify-content:center; color: var(--fg-3); font: 600 14px var(--font-sans); flex: none; }
+    .appitem .meta { flex: 1; min-width: 0; }
+    .appitem .name { font: 500 14px var(--font-sans); color: var(--fg-1); }
+    .appitem .bundle { font: var(--t-mono-sm); color: var(--fg-muted); margin-top: 2px; }
+    .appitem .actions { display: flex; align-items: center; gap: 8px; }
+    .src-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:999px; background:var(--bg-sunken); color:var(--fg-2); font:500 11px var(--font-sans); }
+    .src-chip img { width: 12px; height: 12px; }
+    .lang-pill { width: 28px; height: 20px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
+    .lang-pill img { width: 28px; height: 20px; object-fit: cover; }
+
+    /* Macro table */
+    .macro-table { width: 100%; border-collapse: collapse; font: var(--t-body); }
+    .macro-table thead th { text-align: left; font: 600 11px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-muted); padding: 8px 14px 10px; border-bottom: 1px solid var(--border-1); }
+    .macro-table td { padding: 9px 14px; border-bottom: 1px solid var(--border-1); }
+    .macro-table tr:hover td { background: var(--bg-hover); }
+    .macro-table .short { font: var(--t-mono-md); color: var(--fg-accent); }
+    .macro-table .long { color: var(--fg-1); }
+
+    /* Stat list */
+    .stat-row { display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 12px; padding: 8px 14px; border-bottom: 1px solid var(--border-1); }
+    .stat-row .rank { font: var(--t-mono-sm); color: var(--fg-muted); }
+    .stat-row .word { font: 500 14px var(--font-sans); }
+    .stat-row .bar { height: 4px; background: var(--bg-sunken); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+    .stat-row .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--vkey-red-500), var(--gold-400)); }
+    .stat-row .count { font: var(--t-mono-sm); color: var(--fg-2); }
+
+    /* Quick chrome lift */
+    .surface-dark { background: var(--bg-elevated); border: 1px solid var(--border-1); border-radius: var(--r-lg); overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div class="mac-window" data-screen-label="vkey Settings · redesigned">
+    <div class="mac-titlebar">
+      <div class="mac-traffic"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="mac-title" id="title">Chung</div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tabbar">
+      <button class="tab" data-tab="general" aria-selected="true"><img src="../../assets/icons/gear.svg">Chung</button>
+      <button class="tab" data-tab="smart"><img src="../../assets/icons/shuffle.svg">Smart Switch</button>
+      <button class="tab" data-tab="macro"><img src="../../assets/icons/sparkles.svg">Macro</button>
+      <button class="tab" data-tab="spell"><img src="../../assets/icons/check-circle.svg">Chính tả</button>
+      <button class="tab" data-tab="stats"><img src="../../assets/icons/chart-bar.svg">Thống kê</button>
+    </div>
+
+    <!-- ===================== GENERAL ===================== -->
+    <div class="panel is-active settings-body" data-panel="general">
+      <div style="display:flex; align-items:center; gap:14px; padding: 4px 4px 10px;">
+        <img src="../../assets/logo/vkey-app-icon.svg" width="56" height="56" style="border-radius:14px;">
+        <div>
+          <div style="font:700 18px/1.2 var(--font-sans);">vkey <span class="badge badge--brand" style="vertical-align:middle;margin-left:4px;">v2.0.2</span></div>
+          <div style="font: var(--t-small); color: var(--fg-muted); margin-top:2px;">Bộ gõ tiếng Việt cho macOS · Telex &amp; VNI</div>
+        </div>
+        <button class="btn btn--ghost btn--sm" style="margin-left:auto"><img src="../../assets/icons/refresh.svg">Kiểm tra cập nhật</button>
+      </div>
+
+      <div class="section-title">Nhập liệu</div>
+      <div class="row-group surface-dark">
+        <div class="row">
+          <div class="row__icon icon-tile--brand"><img src="../../assets/icons/keycap.svg"></div>
+          <div class="row__body"><div class="row__label">Bật / Tắt gõ TV</div><div class="row__hint">Toggle tổng — tắt để gõ thẳng tiếng Anh</div></div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/abc.svg"></div>
+          <div class="row__body"><div class="row__label">Kiểu gõ</div></div>
+          <div class="segmented"><button class="is-active">Telex</button><button>VNI</button></div>
+        </div>
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/tone-mark.svg"></div>
+          <div class="row__body"><div class="row__label">Kiểu đặt dấu</div><div class="row__hint">Ví dụ kiểu mới: oà, uý, khoẻ, thuỷ</div></div>
+          <div class="segmented"><button>Kiểu cũ</button><button class="is-active">Kiểu mới</button></div>
+        </div>
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/sparkles.svg"></div>
+          <div class="row__body"><div class="row__label">Tự động sửa lỗi gõ nhầm</div><div class="row__hint"><span class="mono">thfi</span> → thì &nbsp; · &nbsp; <span class="mono">veeitj</span> → việt &nbsp; · &nbsp; <span class="mono">phuowgn</span> → phương</div></div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/dictionary.svg"></div>
+          <div class="row__body"><div class="row__label">Phụ âm z, w, j, f</div></div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+      </div>
+
+      <div class="section-title">Phím tắt</div>
+      <div class="row-group surface-dark">
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/command.svg"></div>
+          <div class="row__body"><div class="row__label">Chuyển VI ↔ EN</div><div class="row__hint">Nhấn + nhả phím tắt để toggle. Hỗ trợ modifier-only.</div></div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span class="keycap"><img src="../../assets/icons/command.svg" width="13" height="13" style="opacity:.7"></span>
+            <span class="keycap"><img src="../../assets/icons/shift-key.svg" width="13" height="13" style="opacity:.7"></span>
+            <button class="btn btn--ghost btn--sm" style="margin-left:4px;color:var(--fg-muted)"><img src="../../assets/icons/edit.svg">Thay đổi</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/magic-wand.svg"></div>
+          <div class="row__body"><div class="row__label">Đoán từ tiếp theo</div><div class="row__hint">HUD cạnh caret — <span class="keycap" style="font-size:10px;height:18px">Tab</span> để chấp nhận</div></div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+      </div>
+
+      <div class="section-title">Hệ thống</div>
+      <div class="row-group surface-dark">
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/upload.svg"></div>
+          <div class="row__body"><div class="row__label">Tự khởi động cùng macOS</div></div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/info-circle.svg"></div>
+          <div class="row__body"><div class="row__label">Hiển thị thông báo khi chuyển VI/EN</div><div class="row__hint">HUD mờ kính ở giữa màn hình</div></div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== SMART SWITCH ===================== -->
+    <div class="panel settings-body" data-panel="smart">
+      <div class="surface-dark" style="padding: 16px; display: flex; align-items: center; gap: 14px;">
+        <div class="row__icon icon-tile--brand" style="width:42px;height:42px;border-radius:10px;"><img src="../../assets/icons/shuffle.svg" width="22" height="22"></div>
+        <div style="flex:1">
+          <div style="font: 600 15px var(--font-sans); display: flex; align-items: center; gap: 8px;">Smart Switch <span class="badge badge--brand">v2.0+</span></div>
+          <div style="font: var(--t-small); color: var(--fg-muted); margin-top:2px;">Tự động chọn chế độ gõ phù hợp cho từng ứng dụng — Tiếng Việt, Tiếng Anh, hoặc tắt vkey.</div>
+        </div>
+        <input type="checkbox" class="toggle" checked>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="src-chip"><img src="../../assets/icons/user.svg">Người dùng đặt</span>
+        <span class="src-chip"><img src="../../assets/icons/robot.svg">vkey tự học</span>
+        <button class="btn btn--secondary btn--sm" style="margin-left:auto"><img src="../../assets/icons/magic-wand.svg">Tự học từ Thống kê</button>
+      </div>
+
+      <div class="surface-dark">
+        <div class="appitem">
+          <div class="avatar" style="background:#E04434;color:#fff;font-weight:800">C</div>
+          <div class="meta"><div class="name">Claude</div><div class="bundle">com.anthropic.claudefordesktop</div></div>
+          <div class="actions">
+            <span class="src-chip"><img src="../../assets/icons/user.svg">User</span>
+            <span class="lang-pill"><img src="../../assets/icons/flag-vn.svg"></span>
+            <button class="btn btn--ghost btn--sm" title="Xoá"><img src="../../assets/icons/trash.svg" style="opacity:.6"></button>
+          </div>
+        </div>
+        <div class="appitem">
+          <div class="avatar" style="background:linear-gradient(135deg,#4285F4,#34A853,#FBBC05,#EA4335);color:#fff;font-weight:800">G</div>
+          <div class="meta"><div class="name">Google Chrome</div><div class="bundle">com.google.Chrome</div></div>
+          <div class="actions">
+            <span class="src-chip"><img src="../../assets/icons/robot.svg">Auto</span>
+            <span class="lang-pill"><img src="../../assets/icons/flag-us.svg"></span>
+            <button class="btn btn--ghost btn--sm"><img src="../../assets/icons/trash.svg" style="opacity:.6"></button>
+          </div>
+        </div>
+        <div class="appitem">
+          <div class="avatar" style="background:#FF453A;color:#fff">R</div>
+          <div class="meta"><div class="name">Raycast</div><div class="bundle">com.raycast.macos</div></div>
+          <div class="actions">
+            <span class="src-chip"><img src="../../assets/icons/user.svg">User</span>
+            <span class="lang-pill"><img src="../../assets/icons/flag-us.svg"></span>
+            <button class="btn btn--ghost btn--sm"><img src="../../assets/icons/trash.svg" style="opacity:.6"></button>
+          </div>
+        </div>
+        <div class="appitem">
+          <div class="avatar" style="background:#2196F3;color:#fff">L</div>
+          <div class="meta"><div class="name">LaunchBar</div><div class="bundle">com.obdev.LaunchBar</div></div>
+          <div class="actions">
+            <span class="src-chip"><img src="../../assets/icons/user.svg">User</span>
+            <span class="lang-pill"><img src="../../assets/icons/flag-us.svg"></span>
+            <button class="btn btn--ghost btn--sm"><img src="../../assets/icons/trash.svg" style="opacity:.6"></button>
+          </div>
+        </div>
+        <div class="appitem">
+          <div class="avatar" style="background:#0084FF;color:#fff">Z</div>
+          <div class="meta"><div class="name">Zalo</div><div class="bundle">com.vng.zalo</div></div>
+          <div class="actions">
+            <span class="src-chip"><img src="../../assets/icons/robot.svg">Auto</span>
+            <span class="lang-pill"><img src="../../assets/icons/flag-vn.svg"></span>
+            <button class="btn btn--ghost btn--sm"><img src="../../assets/icons/trash.svg" style="opacity:.6"></button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="input" placeholder="com.example.app" style="flex:1">
+        <button class="btn btn--primary"><img src="../../assets/icons/plus.svg" style="filter:invert(1)">Thêm</button>
+        <button class="btn btn--secondary"><img src="../../assets/icons/search.svg">Chọn từ app đang chạy</button>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:8px;color:var(--fg-muted);font:var(--t-small)"><img src="../../assets/icons/lightbulb.svg" width="14" height="14" style="margin-top:2px;flex:none">Nếu app không có trong list, paste Bundle ID. Lấy bằng <span class="mono">osascript -e 'id of app "Tên"'</span></div>
+    </div>
+
+    <!-- ===================== MACRO ===================== -->
+    <div class="panel settings-body" data-panel="macro">
+      <div class="surface-dark" style="padding: 16px; display: flex; align-items: center; gap: 14px;">
+        <div class="row__icon icon-tile--brand" style="width:42px;height:42px;border-radius:10px;"><img src="../../assets/icons/sparkles.svg" width="22" height="22"></div>
+        <div style="flex:1">
+          <div style="font: 600 15px var(--font-sans);">Macro — Viết tắt → Cụm dài</div>
+          <div style="font: var(--t-small); color: var(--fg-muted); margin-top:2px;">Gõ <span class="mono">vn </span> → ra <span class="mono">Việt Nam </span>. Nhấn cách hoặc dấu câu để kích hoạt.</div>
+        </div>
+        <input type="checkbox" class="toggle" checked>
+      </div>
+
+      <div class="surface-dark">
+        <table class="macro-table">
+          <thead><tr><th style="width:30%">Viết tắt</th><th>Cụm dài</th><th style="width:60px"></th></tr></thead>
+          <tbody>
+            <tr><td class="short">vn</td><td class="long">Việt Nam</td><td><img src="../../assets/icons/ellipsis.svg" width="16" height="16" style="opacity:.4;cursor:pointer"></td></tr>
+            <tr><td class="short">hn</td><td class="long">Hà Nội</td><td><img src="../../assets/icons/ellipsis.svg" width="16" height="16" style="opacity:.4"></td></tr>
+            <tr><td class="short">tphcm</td><td class="long">Thành phố Hồ Chí Minh</td><td><img src="../../assets/icons/ellipsis.svg" width="16" height="16" style="opacity:.4"></td></tr>
+            <tr><td class="short">kga</td><td class="long">Kính gửi anh</td><td><img src="../../assets/icons/ellipsis.svg" width="16" height="16" style="opacity:.4"></td></tr>
+            <tr><td class="short">cty</td><td class="long">Công ty</td><td><img src="../../assets/icons/ellipsis.svg" width="16" height="16" style="opacity:.4"></td></tr>
+            <tr><td class="short">sdt</td><td class="long">Số điện thoại</td><td><img src="../../assets/icons/ellipsis.svg" width="16" height="16" style="opacity:.4"></td></tr>
+            <tr><td class="short">qdinh</td><td class="long">Quyết định</td><td><img src="../../assets/icons/ellipsis.svg" width="16" height="16" style="opacity:.4"></td></tr>
+            <tr><td class="short">bcao</td><td class="long">Báo cáo</td><td><img src="../../assets/icons/ellipsis.svg" width="16" height="16" style="opacity:.4"></td></tr>
+            <tr><td class="short">gdoc</td><td class="long">Giám đốc</td><td><img src="../../assets/icons/ellipsis.svg" width="16" height="16" style="opacity:.4"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn--primary"><img src="../../assets/icons/plus.svg" style="filter:invert(1)">Thêm macro</button>
+        <button class="btn btn--secondary"><img src="../../assets/icons/upload.svg">Xuất</button>
+        <button class="btn btn--secondary"><img src="../../assets/icons/download.svg">Nhập</button>
+        <span style="margin-left:auto;color:var(--fg-muted);font:var(--t-small)">34 macros</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:8px;padding:12px 14px;background:rgba(245,198,69,0.08);border:1px solid rgba(245,198,69,0.18);border-radius:10px;color:var(--gold-300);font:var(--t-body);">
+        <img src="../../assets/icons/lightbulb.svg" width="18" height="18" style="margin-top:1px;flex:none">
+        <div style="flex:1">Có 5 từ bạn gõ ≥10 lần có thể đặt thành viết tắt.</div>
+        <button class="btn btn--ghost btn--sm" style="color:var(--gold-300)">Xem &amp; thêm <img src="../../assets/icons/chevron-right.svg" style="filter:none"></button>
+      </div>
+    </div>
+
+    <!-- ===================== SPELLCHECK ===================== -->
+    <div class="panel settings-body" data-panel="spell">
+      <div class="section-title">Phím tắt thông minh</div>
+      <div class="row-group surface-dark">
+        <div class="row">
+          <div class="row__icon icon-tile--brand"><img src="../../assets/icons/sparkles.svg"></div>
+          <div class="row__body"><div class="row__label">Kích hoạt nhanh tất cả tính năng mới</div><div class="row__hint">Master toggle — bật/tắt cùng lúc mọi tính năng chính tả</div></div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+      </div>
+
+      <div class="section-title">Cấu hình kiểm tra chính tả</div>
+      <div class="row-group surface-dark">
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/check-circle.svg"></div>
+          <div class="row__body"><div class="row__label">Kiểm tra chính tả 6 bước</div><div class="row__hint">Bao gồm Vowel Inclusion Pairs · kiểm tra trong câu</div></div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/lightbulb.svg"></div>
+          <div class="row__body"><div class="row__label">Gợi ý sửa lỗi · tự động sửa khi tin cậy cao</div><div class="row__hint">Áp dụng khi confidence ≥ 88%</div></div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/user.svg"></div>
+          <div class="row__body"><div class="row__label">Từ điển cá nhân</div></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn--ghost btn--sm"><img src="../../assets/icons/edit.svg">Sửa</button>
+            <button class="btn btn--ghost btn--sm"><img src="../../assets/icons/upload.svg">Gửi cho tác giả</button>
+            <input type="checkbox" class="toggle" checked>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Tự động khôi phục tiếng Anh</div>
+      <div class="row-group surface-dark">
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/return-key.svg"></div>
+          <div class="row__body"><div class="row__label">Space Restore</div><div class="row__hint"><span class="mono">ò</span>→of · <span class="mono">ì</span>→if · <span class="mono">sê</span>→see · <span class="mono">tê</span>→tee</div></div>
+          <input type="checkbox" class="toggle" checked>
+        </div>
+        <div class="row">
+          <div class="row__icon"><img src="../../assets/icons/sliders.svg"></div>
+          <div class="row__body"><div class="row__label">Chính sách khôi phục</div></div>
+          <div class="segmented"><button>Ưu tiên VI</button><button class="is-active">Cân bằng</button><button>Ưu tiên EN</button></div>
+        </div>
+      </div>
+
+      <div class="section-title">Từ điển từ GitHub</div>
+      <div class="surface-dark" style="padding:14px 16px;display:flex;align-items:center;gap:14px;">
+        <div class="row__icon"><img src="../../assets/icons/dictionary.svg"></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;font:var(--t-body)"><img src="../../assets/icons/flag-vn.svg" width="18" height="14"> Tiếng Việt &nbsp;<span class="badge badge--brand">v9</span>&nbsp; <span style="color:var(--fg-muted)">· 8,960 từ</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font:var(--t-body);margin-top:6px"><img src="../../assets/icons/flag-us.svg" width="18" height="14"> English &nbsp;<span class="badge badge--brand">v9</span>&nbsp; <span style="color:var(--fg-muted)">· 9,826 từ</span></div>
+        </div>
+        <button class="btn btn--secondary"><img src="../../assets/icons/refresh.svg">Cập nhật ngay</button>
+      </div>
+    </div>
+
+    <!-- ===================== STATISTICS ===================== -->
+    <div class="panel settings-body" data-panel="stats">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div>
+          <div style="font:600 15px var(--font-sans)">Tuần 21 năm 2026</div>
+          <div style="font:var(--t-small);color:var(--fg-muted);margin-top:2px">từ 18/05 đến 24/05/2026 · tracked locally, nothing sent.</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn--secondary btn--sm"><img src="../../assets/icons/upload.svg">Xuất sao lưu</button>
+          <button class="btn btn--secondary btn--sm"><img src="../../assets/icons/download.svg">Nhập</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns: repeat(4, 1fr); gap:10px;">
+        <div class="surface-dark" style="padding:12px 14px;">
+          <div style="font:var(--t-mono-sm);color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em">Từ đã gõ</div>
+          <div style="font:700 26px/1.1 var(--font-sans);color:var(--fg-1);margin-top:4px;">12,847</div>
+          <div style="font:var(--t-small);color:var(--fg-muted);margin-top:2px;">+18% so tuần trước</div>
+        </div>
+        <div class="surface-dark" style="padding:12px 14px;">
+          <div style="font:var(--t-mono-sm);color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em">Tiếng Việt</div>
+          <div style="font:700 26px/1.1 var(--font-sans);color:var(--fg-1);margin-top:4px;">78%</div>
+          <div style="font:var(--t-small);color:var(--fg-muted);margin-top:2px;">mode dominant</div>
+        </div>
+        <div class="surface-dark" style="padding:12px 14px;">
+          <div style="font:var(--t-mono-sm);color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em">Macro hit</div>
+          <div style="font:700 26px/1.1 var(--font-sans);color:var(--fg-1);margin-top:4px;">142</div>
+          <div style="font:var(--t-small);color:var(--fg-muted);margin-top:2px;">expansions</div>
+        </div>
+        <div class="surface-dark" style="padding:12px 14px;">
+          <div style="font:var(--t-mono-sm);color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em">Predictions</div>
+          <div style="font:700 26px/1.1 var(--font-sans);color:var(--fg-1);margin-top:4px;">89</div>
+          <div style="font:var(--t-small);color:var(--fg-muted);margin-top:2px;">accepted via Tab</div>
+        </div>
+      </div>
+
+      <div class="surface-dark">
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border-1)">
+          <img src="../../assets/icons/chart-bar.svg" width="18" height="18"><div style="font:600 13px var(--font-sans)">Top từ tiếng Việt — tuần này</div>
+        </div>
+        <div class="stat-row"><div class="rank">01</div><div><div class="word">của</div><div class="bar"><i style="width:100%"></i></div></div><div class="count">482</div></div>
+        <div class="stat-row"><div class="rank">02</div><div><div class="word">không</div><div class="bar"><i style="width:81%"></i></div></div><div class="count">391</div></div>
+        <div class="stat-row"><div class="rank">03</div><div><div class="word">được</div><div class="bar"><i style="width:73%"></i></div></div><div class="count">354</div></div>
+        <div class="stat-row"><div class="rank">04</div><div><div class="word">việt nam</div><div class="bar"><i style="width:62%"></i></div></div><div class="count">298</div></div>
+        <div class="stat-row"><div class="rank">05</div><div><div class="word">cảm ơn</div><div class="bar"><i style="width:44%"></i></div></div><div class="count">211</div></div>
+        <div class="stat-row"><div class="rank">06</div><div><div class="word">báo cáo</div><div class="bar"><i style="width:35%"></i></div></div><div class="count">167</div></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('[data-tab]');
+    const panels = document.querySelectorAll('[data-panel]');
+    const titleMap = { general: 'Chung', smart: 'Smart Switch', macro: 'Macro', spell: 'Chính tả', stats: 'Thống kê & Sao lưu' };
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.setAttribute('aria-selected', 'false'));
+      panels.forEach(p => p.classList.remove('is-active'));
+      t.setAttribute('aria-selected', 'true');
+      const key = t.dataset.tab;
+      document.querySelector(`[data-panel="${key}"]`).classList.add('is-active');
+      document.getElementById('title').textContent = titleMap[key];
+    }));
+  </script>
+</body>
+</html>

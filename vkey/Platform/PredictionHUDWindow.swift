@@ -350,35 +350,37 @@ struct PredictionHUDView: View {
   }
 
   var body: some View {
-    let text = "→ \(prediction)   ⇥ Tab"
-    Text(text)
-      // 1.9.4: font weight medium → semibold để chữ đậm rõ trên material
-      // background. Default size 16 (thay 13).
-      .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .rounded))
-      .foregroundStyle(.primary)
-      .shadow(color: .black.opacity(0.15), radius: 0.5, x: 0, y: 0.5)
-      .padding(.horizontal, 16)
-      .padding(.vertical, 10)
-      .background(
-        Color.black.opacity(scrimOpacity),
-        in: RoundedRectangle(cornerRadius: 16)
-      )
-      .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-      .overlay(
-        RoundedRectangle(cornerRadius: 16)
-          .strokeBorder(Color.white.opacity(strokeOpacity), lineWidth: 0.6)
-      )
-      .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
-      .frame(width: contentSize.width, height: contentSize.height)
+    // v2.1.0: Tonal `hud--prediction` style. Brand-red arrow, mono font, deep
+    // ink glass scrim, 10px radius (--r-md). Matches design-system token set.
+    HStack(spacing: 6) {
+      Text("→")
+        .font(.system(size: CGFloat(fontSize), weight: .heavy, design: .rounded))
+        .foregroundStyle(VKeyDesign.red300)
+      Text(prediction)
+        .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .monospaced))
+        .foregroundStyle(.white)
+      Text("⇥ Tab")
+        .font(.system(size: CGFloat(fontSize) * 0.78, weight: .medium, design: .monospaced))
+        .foregroundStyle(.white.opacity(0.62))
+        .padding(.leading, 4)
+    }
+    .shadow(color: .black.opacity(0.25), radius: 0.5, x: 0, y: 0.5)
+    .padding(.horizontal, 14)
+    .padding(.vertical, 8)
+    .background(
+      VKeyDesign.ink500.opacity(scrimOpacity),
+      in: RoundedRectangle(cornerRadius: 10)
+    )
+    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+    .overlay(
+      RoundedRectangle(cornerRadius: 10)
+        .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+    )
+    .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 4)
+    .frame(width: contentSize.width, height: contentSize.height)
   }
 
   private var scrimOpacity: Double {
-    let base = colorScheme == .dark ? 0.10 : 0.03
-    let range = colorScheme == .dark ? 0.16 : 0.07
-    return base + range * backgroundStrength
-  }
-
-  private var strokeOpacity: Double {
-    colorScheme == .dark ? 0.18 : 0.28
+    0.32 + 0.30 * backgroundStrength
   }
 }

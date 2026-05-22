@@ -6,6 +6,43 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.1.0 — "Tonal Redesign"</title>
+      <sparkle:version>20100</sparkle:version>
+      <sparkle:shortVersionString>2.1.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 22 May 2026 21:35:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.1.0/vkey-2.1.0.dmg"
+        sparkle:edSignature="d0UAfi3Q+tQd/avZfGv0jzcjpAU5Stv2rYVKEDk8KljSjhukiCo4koshYBGCCd0qiXiVRdLJXZXjdyorvijZDQ=="
+        length="7479052"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.1.0 — "Tonal Redesign":</h2>
+        <p><em>Áp dụng vkey Design System "Tonal" — refresh diện mạo macOS-native với typography tiếng Việt + bảng màu thương hiệu nhất quán.</em></p>
+
+        <h3>🎨 Design System Tonal — refresh toàn bộ diện mạo</h3>
+        <ul>
+          <li><strong>App icon mới</strong>: biểu tượng vkey thiết kế lại theo gam đỏ-vàng Saigon. Render lại đầy đủ cho macOS 16/32/64/128/256/512/1024 + iOS/watchOS.</li>
+          <li><strong>Accent color</strong>: chuyển từ system blue sang brand red <code>#E04434</code> (light) / <code>#F18A74</code> (dark). Toàn bộ Toggle / Picker / focus ring sẽ đậm chất vkey hơn.</li>
+          <li><strong>HUD VI/EN</strong>: glass tối (deep ink <code>#131519</code>) + viền sáng mảnh + accent đỏ cho VI, paper-neutral cho EN. Bóng đậm hơn để nổi trên mọi nền desktop, kể cả light wallpaper.</li>
+          <li><strong>HUD prediction</strong>: mũi tên brand red + chữ mono + chip nhỏ gọn (10px radius). Đọc rõ hơn ở các pt nhỏ.</li>
+          <li><strong>Settings header</strong>: app icon 84px + wordmark "vkey" 28pt heavy rounded brand red + tagline phụ. Shadow glow nhẹ tone đỏ cho cảm giác sản phẩm.</li>
+          <li><strong>Design tokens</strong>: thêm <code>VKeyDesign.swift</code> — single source of truth cho màu / radii / spacing / fonts (mirror <code>colors_and_type.css</code>). Mọi view mới dùng token thay vì hardcode.</li>
+        </ul>
+
+        <h3>📁 Repo asset</h3>
+        <p>Toàn bộ <strong>vkey Design System</strong> (CSS tokens, UI kit HTML, fonts, SVG icons, logo, screenshots reference) được commit vào thư mục <code>Design/</code> tại repo root — làm reference cho mọi thay đổi UI sau này.</p>
+
+        <h3>🛠 Bên trong</h3>
+        <ul>
+          <li>Không thay đổi engine gõ, từ điển, hay logic spell-check.</li>
+          <li>Không ảnh hưởng setting / user data — toàn bộ giá trị Defaults giữ nguyên.</li>
+          <li>Build target macOS 14+ (Sonoma trở lên), universal arm64 + x86_64.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.0.2 — "Bug Hunt"</title>
       <sparkle:version>20002</sparkle:version>
       <sparkle:shortVersionString>2.0.2</sparkle:shortVersionString>

@@ -187,15 +187,28 @@ struct GeneralView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Image("Cficon")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 96, height: 96)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
-                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
-                .padding(.top, 16)
-                .padding(.bottom, 14)
-                .frame(maxWidth: .infinity)
+            // v2.1.0: header dùng Tonal design — app icon + wordmark "vkey"
+            // (Be Vietnam Pro 800, brand-red accent) + tagline. Shadow đậm
+            // hơn (brand red glow) cho cảm giác sản phẩm.
+            VStack(spacing: 10) {
+                Image("Cficon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 84, height: 84)
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .shadow(color: VKeyDesign.red500.opacity(0.28), radius: 16, x: 0, y: 6)
+                    .shadow(color: .black.opacity(0.10), radius: 4, x: 0, y: 2)
+                Text("vkey")
+                    .font(.system(size: 28, weight: .heavy, design: .rounded))
+                    .foregroundStyle(VKeyDesign.red500)
+                    .tracking(-0.8)
+                Text("Bộ gõ tiếng Việt thông minh cho macOS")
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 18)
+            .padding(.bottom, 16)
+            .frame(maxWidth: .infinity)
 
             // Form gives native macOS label-right / control-left layout and
             // centers the whole block horizontally inside its container.
@@ -305,9 +318,8 @@ struct GeneralView: View {
             .formStyle(.grouped)
             .scrollDisabled(false)
 
-            // 1.8.3: tiếng Việt, không nghiêng. Date hardcode mỗi release.
-            // 1.9.7: cập nhật ngày phát hành.
-            Text("Phiên bản \(appVersion) ngày 21/5/2026")
+            // v2.1.0 "Tonal Redesign" — apply new design system.
+            Text("Phiên bản \(appVersion) ngày 22/5/2026")
                 .font(.caption)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)

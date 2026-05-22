@@ -2,6 +2,42 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.1.0] - 2026-05-22 — "Tonal Redesign"
+
+**Áp dụng vkey Design System "Tonal" — refresh diện mạo macOS-native với typography tiếng Việt + bảng màu thương hiệu nhất quán.** Không thay đổi engine gõ. README rà soát ✓
+
+### 🎨 Design System "Tonal" — refresh toàn bộ diện mạo
+
+**Bối cảnh**: Trước 2.1.0, vkey dùng accent color hệ thống (xanh blue mặc định macOS) và các surface dựa hoàn toàn vào SF Symbols + `accentColor`/`secondary`. UI nhất quán với macOS nhưng thiếu cá tính thương hiệu. Phiên bản này áp dụng [vkey Design System "Tonal"](Design/) — bảng màu Saigon đỏ-vàng + typography tiếng Việt + glass surfaces tối — qua một bộ design tokens Swift được centralize.
+
+#### Thay đổi visible
+
+- **App icon mới**: biểu tượng vkey thiết kế lại theo gam đỏ Saigon (`#E04434`). Render đầy đủ cho macOS 16/32/64/128/256/512/1024 + iOS/watchOS scales. `Cficon` (icon trong Settings header) cũng được thay.
+- **Accent color**: chuyển từ system blue sang brand red `#E04434` (light) / `#F18A74` (dark). Toàn bộ `Toggle` / `Picker` / focus ring tự động nhận tint mới qua `AccentColor.colorset`.
+- **HUD VI/EN** (`ToggleHUDWindow`): glass tối (deep ink `#131519`) với viền sáng mảnh (`white@0.08`), accent đỏ brand cho trạng thái VI, paper-neutral cho EN. Shadow đậm hơn (radius 24, y 12) để HUD nổi rõ trên mọi nền desktop. Corner radius 18→20 (`--r-xl`).
+- **HUD prediction** (`PredictionHUDWindow`): mũi tên `→` brand red 300, từ gợi ý font mono semibold trắng, chip "⇥ Tab" mờ 62%. Padding chặt hơn (14×8), corner radius 16→10 (`--r-md`). Glass scrim tối hơn cho contrast text mono rõ ràng.
+- **Settings header** (`SettingView`): app icon 84px (giảm từ 96px) + wordmark "vkey" 28pt heavy rounded brand red + tagline phụ "Bộ gõ tiếng Việt thông minh cho macOS". Shadow glow tone đỏ brand (`red500@0.28`, radius 16) thay vì shadow đen.
+
+#### Bên trong
+
+- **`VKeyDesign.swift`** (mới): single source of truth cho design tokens. Mirror trực tiếp `colors_and_type.css` của design system — brand red scale (`red50`…`red900`), Saigon gold, paper neutrals (light), deep ink neutrals (dark), semantic colors (success/warning/danger/info), radii (`radiusXS`→`radius2XL`), spacing (`s1`→`s8`), helper fonts. `Color(hex:)` initializer cho phép paste hex literal trực tiếp.
+- **`AccentColor.colorset`**: 2 variants — universal `#E04434`, dark-mode `#F18A74` (red300 — sáng hơn để contrast với ink-500 background của dark mode macOS).
+- **`Design/` directory**: toàn bộ vkey Design System được commit vào repo root làm reference: `colors_and_type.css`, `components.css`, font files (Be Vietnam Pro, Noto Sans Display, Carter One, JetBrains Mono), SVG icon set + logo, UI kit HTML (Settings / MenuBar / Onboarding), screenshot reference. Tổng ~17MB.
+
+### 🛡 Không thay đổi
+
+- Engine gõ (Telex/VNI/Simple), từ điển, spell-check, prediction, Smart Switch, Macro — không có thay đổi nào về behavior. Toàn bộ test suite (212 tests) pass nguyên trạng.
+- User data (Defaults, personal dictionary, macro store, statistics) giữ nguyên — không cần migration.
+- Sparkle update flow, codesign, hardened runtime, entitlements — không thay đổi.
+- Build target: macOS 14+ (Sonoma trở lên), universal arm64 + x86_64.
+
+### 📦 Release artifacts
+
+- `vkey-2.1.0.dmg` — universal binary, ~7.1 MB.
+- Sparkle signature: `d0UAfi3Q+tQd/avZfGv0jzcjpAU5Stv2rYVKEDk8KljSjhukiCo4koshYBGCCd0qiXiVRdLJXZXjdyorvijZDQ==` (length 7479052).
+
+---
+
 ## [2.0.2] - 2026-05-22 — "Bug Hunt"
 
 **Patch fix bug class lớn + UX hotkey/prediction**. Không thêm tính năng mới. README rà soát ✓

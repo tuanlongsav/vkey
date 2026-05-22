@@ -1,0 +1,97 @@
+/* macOS app preview — extra styles on top of components.css */
+
+.mac-window {
+  width: 900px;
+  background: var(--bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-window);
+  border: 1px solid rgba(255,255,255,0.06);
+  font: var(--t-body);
+  color: var(--fg-1);
+}
+
+.mac-titlebar {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent), var(--bg-elevated);
+  border-bottom: 1px solid var(--border-1);
+  position: relative;
+}
+.mac-traffic { display: flex; gap: 8px; }
+.mac-traffic span { width: 12px; height: 12px; border-radius: 50%; display: block; }
+.mac-traffic .r { background: #FF5F57; }
+.mac-traffic .y { background: #FEBC2E; }
+.mac-traffic .g { background: #28C840; }
+.mac-title { position: absolute; left: 50%; transform: translateX(-50%); font: 600 13px/1 var(--font-sans); color: var(--fg-2); }
+
+.tabbar {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-1);
+}
+.tabbar .tab img { width: 16px; height: 16px; }
+
+.settings-body {
+  padding: 18px 22px 24px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-title {
+  font: 600 12px/1 var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  padding: 0 4px 6px;
+}
+
+/* menubar dropdown */
+.menubar {
+  width: 320px;
+  background: rgba(28, 28, 30, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.12);
+  color: #fff;
+  font: 13px/1 var(--font-sans);
+}
+.menubar .item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.92);
+  position: relative;
+}
+.menubar .item:hover { background: var(--vkey-red-500); color: #fff; }
+.menubar .item img { width: 16px; height: 16px; filter: invert(1) brightness(1.2); flex: none; }
+.menubar .item .flag { filter: none; border-radius: 2px; }
+.menubar .item .right { margin-left: auto; opacity: 0.5; font: var(--t-mono-sm); }
+.menubar .item .check { margin-left: auto; opacity: 0.8; }
+.menubar .item .check img { filter: invert(1); width: 12px; height: 12px; }
+.menubar .sep { height: 1px; background: rgba(255,255,255,0.08); margin: 4px 6px; }
+
+/* statusbar */
+.macos-statusbar {
+  height: 26px;
+  background: rgba(20,20,22,0.6);
+  backdrop-filter: blur(20px);
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 0 14px;
+  gap: 14px;
+  color: #fff;
+  font: 12px/1 var(--font-sans);
+}
+.macos-statusbar img { width: 16px; height: 16px; filter: invert(1) brightness(.9); }
+.statusbar-flag { width: 22px; height: 16px; border-radius: 2px; cursor: pointer; box-shadow: 0 0 0 1px rgba(255,255,255,0.1); }
