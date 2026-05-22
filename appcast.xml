@@ -6,6 +6,72 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.0 — "Handoff Sync"</title>
+      <sparkle:version>20300</sparkle:version>
+      <sparkle:shortVersionString>2.3.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sat, 23 May 2026 00:08:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.0/vkey-2.3.0.dmg"
+        sparkle:edSignature="WuBtxofq1f80+g1pHUjf0bRNLfzyhQWVUtWt35n85YdrgBehTUh9CpB//qqKQxfOrm/WTAR5rk74Jr4dQYbJBQ=="
+        length="8655679"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.0 — "Handoff Sync":</h2>
+        <p><em>Đồng bộ code Swift với handoff bundle chính thức của Liquid Glass và Tonal. HUD layout chuyển ngang, font Noto Sans Display 800 bundled, prediction format mới với keycap thật.</em></p>
+
+        <h3>🔄 HUD VI/EN — layout ngang chuẩn handoff</h3>
+        <ul>
+          <li>Trước: VStack dọc (icon trên → label → pill VI/EN).</li>
+          <li>Sau: HStack ngang — <strong>flag image 48×36</strong> (vn-flag / us-flag) + label-stack (`Tiếng Việt` / `English` 17pt bold + sub-title `Telex · Kiểu mới` 12pt 70% opacity) + <strong>keycap row</strong> hiển thị shortcut hiện tại (vd ⇧⌥ default v2.0.2+).</li>
+          <li>Cả Liquid Glass và Tonal đều dùng layout này — LG dùng refractive glass background, Tonal dùng deep-ink scrim.</li>
+        </ul>
+
+        <h3>🔄 Prediction HUD — format mới `→ <từ> · Tab`</h3>
+        <ul>
+          <li>Trước: `→ <từ>   ⇥ Tab` (plain text Unicode tab glyph).</li>
+          <li>Sau: <strong>`→ <từ> · Tab(keycap)`</strong> — Tab là mini glass keycap pill thật, separator `·` muted, prediction text proportional (drop monospaced).</li>
+        </ul>
+
+        <h3>🔄 Settings header — layout ngang + Noto Sans Display 36pt</h3>
+        <ul>
+          <li>Trước: VStack centered icon 84/88px + wordmark 28-30pt heavy rounded.</li>
+          <li>Sau: HStack — <strong>icon 96px</strong> (radius 22, multi-shadow đỏ + glass overlay border cho LG) + <strong>red halo radial</strong> phía sau + title stack (wordmark "vkey" 36pt heavy + tagline).</li>
+          <li><strong>Liquid Glass</strong>: wordmark dùng `linear-gradient(white → #C7C3B7)` text — chuẩn design spec.</li>
+          <li><strong>Tonal</strong>: wordmark solid `#E04434` đỏ brand.</li>
+        </ul>
+
+        <h3>📦 Bundle 2 custom fonts</h3>
+        <ul>
+          <li><strong>Noto Sans Display Variable</strong> (1.54 MB) — variable wght 100-900, axes wdth + wght. Render wordmark "vkey" 36pt với squarish lowercase terminals đặc trưng.</li>
+          <li><strong>Carter One Regular</strong> (64 KB) — English-only brand display, reserved cho future marketing surfaces (chú thích thiết kế: KHÔNG dùng cho VN text vì không có diacritics).</li>
+          <li><strong>Registration</strong>: <code>FontRegistration.swift</code> đăng ký runtime qua <code>CTFontManagerRegisterFontsForURL(_, .process)</code>, idempotent (swallow <code>kCTFontManagerErrorAlreadyRegistered</code>). Gọi từ <code>AppDelegate.applicationDidFinishLaunching</code> line đầu.</li>
+          <li><strong>Fallback</strong>: <code>VKeyDesign.display(_:weight:)</code> check <code>NSFont(name: "NotoSansDisplay")</code> có nil không — nil thì fallback về <code>Font.system(.rounded)</code>. Không có tofu/missing-glyph nếu font load fail.</li>
+        </ul>
+
+        <h3>🏗 Abstractions mới</h3>
+        <ul>
+          <li><code>vkey/View/Components/HUDComponents.swift</code> — Keycap (md/sm) + HUDFlag + 2 background modifiers (<code>refractiveGlassBackground</code> 5-layer + <code>tonalScrimBackground</code> simple).</li>
+          <li><code>vkey/App/FontRegistration.swift</code> — runtime font register (2-tier defensive logic).</li>
+          <li><code>vkey/Resources/</code> — folder mới chứa 2 TTF, đã wire vào PBXResourcesBuildPhase.</li>
+        </ul>
+
+        <h3>🎨 Tokens điều chỉnh</h3>
+        <ul>
+          <li><code>lgGlass1Color</code> <code>0x1C1E26</code> → <code>0x14161C</code> (match design `rgba(20,22,28,0.55)`).</li>
+          <li>Thêm <code>lgTextWarm</code> <code>#C7C3B7</code> (gradient end-stop + sub-title color).</li>
+          <li>Thêm <code>lgRefractiveStrength = 0.24</code> (single source of truth — design spec 24% red bottom-left).</li>
+        </ul>
+
+        <h3>📁 Refresh Design/ folder</h3>
+        <p>Replace nội dung `Design/` bằng Tonal design system handoff đầy đủ (<code>vkey Design System-handoff.zip</code>): SKILL.md skill metadata, 43 SVG icons, 4 brand logos, 3 fonts (Noto Sans Display upright/italic + Carter One), 22 preview HTML, screenshots.</p>
+
+        <h3>🛡 Không thay đổi</h3>
+        <p>Engine gõ Telex/VNI, từ điển, spell-check, prediction logic, Smart Switch, Macro — không đổi behavior. <strong>213/213 test pass</strong>.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.2.2 — "Liquid Glass"</title>
       <sparkle:version>20202</sparkle:version>
       <sparkle:shortVersionString>2.2.2</sparkle:shortVersionString>

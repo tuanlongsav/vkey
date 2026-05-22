@@ -7,6 +7,7 @@
 //  Mirrors `colors_and_type.css` from the vkey Design System.
 //
 
+import AppKit
 import SwiftUI
 
 // MARK: - Brand palette
@@ -29,11 +30,11 @@ enum VKeyDesign {
     /// Convenience alias for `red500`.
     static var brand: Color { red500 }
 
-    // -- Liquid Glass palette (v2.2.2): refractive glass, macOS Tahoe vibe --
-    /// Liquid Glass primary panel scrim (`rgba(28,30,38,0.55)`).
-    /// Mỗi giá trị 0...1 trên kênh = round(value * 255). Hex sRGB =
-    /// `0x1C1E26` (28, 30, 38) — opacity adjustable.
-    static let lgGlass1Color = Color(hex: 0x1C1E26)
+    // -- Liquid Glass palette (v2.3.0): refractive glass, macOS Tahoe vibe -
+    // v2.3.0: chỉnh `lgGlass1Color` từ `0x1C1E26` (28,30,38) sang `0x14161C`
+    // (20,22,28) để khớp design handoff `.hud.hud--lg` background scrim.
+    /// Liquid Glass primary panel scrim (`rgba(20,22,28,0.55)`).
+    static let lgGlass1Color = Color(hex: 0x14161C)
     /// Liquid Glass elevated row (`rgba(38,40,50,0.55)`).
     static let lgGlass2Color = Color(hex: 0x262832)
     /// Liquid Glass sunken (`rgba(14,15,20,0.55)`).
@@ -44,6 +45,12 @@ enum VKeyDesign {
     static let lgBlueTint    = Color(hex: 0x2D89E5)
     /// Liquid Glass amber (used for ⇥ Tab chip warmer alternate).
     static let lgAmber       = Color(hex: 0xF0A23C)
+    /// Warm white text color for Liquid Glass dark scrims (gradient end-stop
+    /// in Settings header wordmark + HUD sub-title body). `--fg-2` in design.
+    static let lgTextWarm    = Color(hex: 0xC7C3B7)
+    /// Refractive corner tint strength — single source of truth for both
+    /// HUD and Settings backgrounds. Design spec: 24% red bottom-left.
+    static let lgRefractiveStrength: Double = 0.24
 
     // -- Saigon gold (sparingly: VN flag star, "new" badges, highlights) ----
     static let gold300 = Color(hex: 0xFAD37A)
@@ -104,9 +111,19 @@ enum VKeyDesign {
         Font.system(size: size, weight: weight, design: .default)
     }
 
-    /// Display heading — used for hero / settings header.
+    /// Display heading — used for hero / settings header. v2.3.0: ưu tiên
+    /// font Noto Sans Display (bundled qua `vkey/Resources/`); fallback về
+    /// system rounded heavy nếu font không load được (Info.plist auto-register
+    /// fail + runtime FontRegistration cũng fail).
     static func display(_ size: CGFloat, weight: Font.Weight = .heavy) -> Font {
-        Font.system(size: size, weight: weight, design: .rounded)
+        // NSFont(name:size:) returns nil nếu font name không có ở system.
+        // Dùng để discriminate giữa registered font và system fallback.
+        if NSFont(name: "NotoSansDisplay", size: size) != nil {
+            return Font.custom("NotoSansDisplay", size: size).weight(weight)
+        }
+        // Carter One — bundled but English-only (no VN diacritics).
+        // Reserved for future English-only marketing surfaces.
+        return Font.system(size: size, weight: weight, design: .rounded)
     }
 
     /// Mono — used for HUD prediction text, shortcuts.

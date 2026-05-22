@@ -2,6 +2,133 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.0] - 2026-05-23 — "Handoff Sync"
+
+**Đồng bộ code Swift với handoff bundle chính thức của Liquid Glass và Tonal. HUD layout chuyển ngang, font Noto Sans Display bundled, prediction format mới với keycap thật. 4 themes giữ nguyên.** README rà soát ✓
+
+### Bối cảnh
+
+User cung cấp 2 handoff bundle chính thức từ design tool: `Vkey 3D-handoff.zip` (Liquid Glass) và `vkey Design System-handoff.zip` (Tonal). Rà soát phát hiện code v2.2.2 chỉ apply một phần thiết kế — HUD vẫn dọc, prediction dùng plain `⇥ Tab` text, Settings header dùng VStack centered, font Noto Sans Display chưa bundle, scrim color sai lệch (0x1C1E26 vs design 0x14161C), refractive corner tint chỉ 0.18 (vs design 0.24).
+
+### 🔄 HUD VI/EN — layout ngang
+
+**Trước (v2.2.2)**: VStack dọc:
+```
+[icon character.bubble.fill 40pt]
+[Tiếng Việt / English]
+[VI/EN pill]
+```
+
+**Sau (v2.3.0)**: HStack ngang chuẩn design `.hud-toggle`:
+```
+[flag 48×36] [Tiếng Việt / English 17pt bold]   [⇧][⌥]
+              [Telex · Kiểu mới 12pt 70%]
+```
+
+- **Flag image**: dùng asset hiện có `vn-flag.imageset` / `us-flag.imageset` (đã PNG @1x/@2x/@3x), wrap trong `HUDFlag` component với inner stroke white 0.15 + top-gloss linear + drop shadow.
+- **Title font**: `VKeyDesign.display(17, weight: .bold)` — Noto Sans Display 800 nếu loaded, fallback `.rounded` system.
+- **Sub-title**: dynamic content theo state: VI → `"\(typingMethod) · Kiểu \(mới|cũ)"`, EN → `"vkey tạm tắt"`.
+- **Keycap row**: đọc `Defaults[.modifierOnlyToggleHotkey]`, parse qua `formatModifierMask` (đã có ở `SettingView.swift`), render mỗi modifier (⌃ ⌥ ⇧ ⌘) thành `Keycap(_, size: .md)` riêng.
+
+Cả Liquid Glass và Tonal dùng cùng HStack skeleton — chỉ background modifier khác nhau:
+- LG: `.refractiveGlassBackground(radius: 28, scrimOpacity:)` — 5-layer (refractive tints + linear/radial highlights + scrim + material + triple edge stroke).
+- Tonal: `.tonalScrimBackground(radius: 20, scrimOpacity:)` — đơn giản (scrim ink500 + material + thin white stroke).
+
+### 🔄 Prediction HUD — format mới `→ <từ> · Tab(keycap)`
+
+**Trước**: `→ \(prediction)   ⇥ Tab` plain text với `⇥` Unicode glyph + monospaced font.
+
+**Sau**: `→ <prediction> · Tab` với Tab là `Keycap("Tab", size: .sm)` (mini glass pill 22×20 radius 6 với multi-layer glass background). Prediction text bỏ `.monospaced` design — chuyển sang proportional `Font.system` (theo design `.pred-suggest`).
+
+`contentSize(for:fontSize:)` cập nhật: measurement string đổi sang `"→ \(prediction) ·"` + thêm `keycapAllowance: CGFloat = 40` (Tab pill width). Floor: min width 180, min height 38.
+
+### 🔄 Settings header — layout ngang + Noto Sans Display 36pt
+
+**Trước**: VStack centered (icon 84/88px → wordmark 28-30pt rounded → tagline).
+
+**Sau**: HStack ngang chuẩn design `.set-header`:
+```
+[icon 96px + red halo glow]   [vkey 36pt heavy]
+                              [tagline 13pt]
+```
+
+- **Icon**: 96px (so với 84-88 cũ), radius 22, multi-shadow (red500 0.32-0.45 r 18-24 y 8-12 + black 0.12-0.5). LG có thêm overlay glass border `linear-gradient(white 0.55 → 0.10)`.
+- **Halo**: Circle 132×132 fill RadialGradient red500 (0.32 Tonal / 0.50 LG) opacity → clear, blur 4-6 — match design `.set-header-halo`.
+- **Wordmark**:
+  - **Liquid Glass**: `Font.custom("NotoSansDisplay", size: 36).weight(.heavy)` (fallback system rounded) + gradient text `linear-gradient(white → #C7C3B7)` qua `.foregroundStyle(LinearGradient(...))` — design spec.
+  - **Tonal**: cùng font helper nhưng solid color `VKeyDesign.red500`.
+- **Tracking**: `-0.72` per design `letter-spacing: -0.02em`.
+- **Tagline**: 13pt regular, color `lgTextWarm` (LG) / `.secondary` (Tonal).
+
+### 📦 Bundle 2 custom fonts
+
+| Font | Size | Purpose | Used in v2.3.0 |
+|---|---|---|---|
+| `NotoSansDisplay-Variable.ttf` | 1.54 MB | Display wordmark, variable wght 100-900 + wdth axis | ✓ Settings header LG + Tonal |
+| `CarterOne-Regular.ttf` | 64 KB | English-only brand display | ❌ (reserved cho future marketing — design warn không dùng VN text) |
+
+Skip italic variant `NotoSansDisplay-Italic-VariableFont_wdth,wght.ttf` (1.66 MB) — không dùng italic display.
+
+**Registration approach** (2-tier defensive):
+
+- **Tier 1 (Info.plist)**: `ATSApplicationFontsPath` đã thử bundled — phát hiện path mismatch (Xcode bundle structure không khớp với key value). Đã **bỏ key**, dựa hoàn toàn vào Tier 2.
+- **Tier 2 (Runtime)**: `FontRegistration.swift` `enum FontRegistration { static func register() }` — `Bundle.main.urls(forResourcesWithExtension: "ttf", subdirectory: nil)` → `CTFontManagerRegisterFontsForURL(_, .process, &error)`. Idempotent — swallow `kCTFontManagerErrorAlreadyRegistered` (code 105). Gọi từ `AppDelegate.applicationDidFinishLaunching` line đầu, trước `setActivationPolicy(.accessory)`.
+
+**Fallback**: `VKeyDesign.display(_:weight:)` check `NSFont(name: "NotoSansDisplay", size: size) != nil` — nil thì return `Font.system(size:weight:design:.rounded)`. Graceful — không tofu / missing-glyph nếu font load fail vì bất cứ lý do gì.
+
+### 🏗 Abstractions mới
+
+| File | Nội dung |
+|---|---|
+| `vkey/View/Components/HUDComponents.swift` (new, ~270 LOC) | `Keycap` view (md 28×28 + sm 22×20), `HUDFlag` view (48×36 với 2 overlay + 1 shadow), `refractiveGlassBackground` View modifier (5-layer LG recipe), `tonalScrimBackground` View modifier (simpler Tonal variant) |
+| `vkey/App/FontRegistration.swift` (new) | `enum FontRegistration { static func register() }` runtime CTFontManager bulk register |
+| `vkey/Resources/` (new dir) | `NotoSansDisplay-Variable.ttf` + `CarterOne-Regular.ttf` |
+
+### 🎨 Tokens điều chỉnh
+
+`VKeyDesign.swift`:
+- `lgGlass1Color`: `0x1C1E26` → **`0x14161C`** (match design `rgba(20,22,28,0.55)` `.hud-toggle` background).
+- Thêm `lgTextWarm = Color(hex: 0xC7C3B7)` — gradient end-stop wordmark + sub-title fg-2.
+- Thêm `lgRefractiveStrength: Double = 0.24` — single source of truth (design spec 24% red bottom-left, code cũ inline 0.18).
+- `display(_ size:weight:)` body sửa: ưu tiên `Font.custom("NotoSansDisplay")` với fallback `.system(.rounded)`.
+
+### 📁 Refresh Design/ folder
+
+Replace nội dung `Design/` cũ bằng Tonal design system handoff đầy đủ (`vkey Design System-handoff.zip`):
+- `SKILL.md` — Claude skill metadata cho design system (Vietnamese voice rules, brand guidelines)
+- `assets/icons/*.svg` — **43 custom SVG icons** (24px box, 1.5px stroke, currentColor) — reserved cho future ThemedSymbol replacement
+- `assets/logo/*.svg` — 4 brand logos (vkey-app-icon, vkey-wordmark, vkey-lockup, tone-mark)
+- `assets/vkey-app-icon-{128,256,1024}.png` — pre-rendered macOS app icons
+- `fonts/{CarterOne, NotoSansDisplay-Italic, NotoSansDisplay}.ttf` — 3 fonts
+- `preview/*.html` — 22 component preview cards
+- Rich brand documentation in `README.md` (voice, casing, emoji rules, color/type fundamentals)
+
+`colors_and_type.css` và `components.css` **identical** với bản cũ — confirmed handoff packaging chính thức của Tonal đang dùng.
+
+### 🛡 Không thay đổi
+
+- Engine gõ Telex/VNI/Simple, từ điển, spell-check, prediction logic, Smart Switch, Macro — không đổi behavior. **213/213 test pass**.
+- User Defaults / personal dictionary / macro store / statistics giữ nguyên.
+- Sparkle update flow, codesign, hardened runtime, entitlements — không thay đổi.
+- 4 themes giữ nguyên: Mặc định / Emoji vui tươi / Tonal / Liquid Glass.
+- Build target macOS 14+, universal arm64 + x86_64.
+
+### 📦 Release artifacts
+
+- `vkey-2.3.0.dmg` — universal binary, ~8.3 MB (size tăng từ 7.3 MB vì bundle fonts ~1.6 MB).
+- Sparkle signature: `WuBtxofq1f80+g1pHUjf0bRNLfzyhQWVUtWt35n85YdrgBehTUh9CpB//qqKQxfOrm/WTAR5rk74Jr4dQYbJBQ==` (length 8655679).
+- Codesign: `adhoc,runtime` (flags 0x10002), Identifier `dev.longht.vkey`, sealed resources v2.
+
+### Defer (out of scope cho 2.3.0)
+
+- **43 SVG icons** thay thế SF Symbols qua `ThemedSymbol` — scope lớn, refactor 14 file UI.
+- **Multi-tile gradient backgrounds** cho setting rows (design `surfaces2.css` `.tile--red/gold/blue/green/purple/ink`).
+- **Brand logo SVG** thay raster `Cficon.imageset`.
+- **Carter One actual use** — bundle sẵn nhưng chưa dùng (reserved English-only marketing).
+- **Settings TabView grid restructure** + custom Toggle/Picker styling (SwiftUI Settings scene limitations).
+
+---
+
 ## [2.2.2] - 2026-05-22 — "Liquid Glass"
 
 **Xoá "3D bóng bẩy" và "Sơn Mài". Thêm "Liquid Glass" — refractive multi-layer glass theo phong cách macOS Tahoe / visionOS. Tổng 4 giao diện.** README rà soát ✓

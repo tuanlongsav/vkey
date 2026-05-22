@@ -26,6 +26,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
   private let maxTrustCheckRetries = 30
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    // v2.3.0: register bundled custom fonts before any view materialises.
+    // Tier 1 (Info.plist ATSApplicationFontsPath) đã handle phần lớn — đây
+    // là fallback idempotent đảm bảo Font.custom("NotoSansDisplay") work
+    // ngay launch đầu tiên dù plist key có vấn đề.
+    FontRegistration.register()
+
     // Hide dock icon since we use MenuBarExtra
     NSApp.setActivationPolicy(.accessory)
 

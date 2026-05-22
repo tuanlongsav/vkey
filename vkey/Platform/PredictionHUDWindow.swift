@@ -51,7 +51,9 @@ final class PredictionHUDWindow {
     // window resize → NSException crash (xảy ra ở v1.9.0).
     let fontSize = Self.clampedFontSize(Defaults[.predictionHUDFontSize])
     let backgroundStrength = Self.clampedBackgroundStrength(Defaults[.hudOpacityPercent])
-    let contentSize = Self.contentSize(for: "→ \(prediction)   ⇥ Tab", fontSize: fontSize)
+    // v2.3.0: format mới `→ <pred> · Tab` (Tab là Keycap pill, allowance
+    // handled trong contentSize). Measurement string không gồm "Tab" text.
+    let contentSize = Self.contentSize(for: "→ \(prediction) ·", fontSize: fontSize)
     let view = PredictionHUDView(
       prediction: prediction,
       fontSize: fontSize,
@@ -107,11 +109,14 @@ final class PredictionHUDWindow {
     )
 
     let horizontalPadding: CGFloat = 32
-    let verticalPadding: CGFloat = 20
+    let verticalPadding: CGFloat = 22
     let shadowAllowance: CGFloat = 16
+    // v2.3.0: Tab giờ là Keycap pill (size .sm: minWidth 22 + padding 10 + spacing).
+    // Cũng chừa chỗ cho `·` separator + 6pt khoảng đệm. Tổng ≈ 40pt.
+    let keycapAllowance: CGFloat = 40
     return CGSize(
-      width: max(160, ceil(measured.width + horizontalPadding + shadowAllowance)),
-      height: max(36, ceil(measured.height + verticalPadding + shadowAllowance))
+      width: max(180, ceil(measured.width + horizontalPadding + shadowAllowance + keycapAllowance)),
+      height: max(38, ceil(measured.height + verticalPadding + shadowAllowance))
     )
   }
 
@@ -362,12 +367,10 @@ struct PredictionHUDView: View {
     .frame(width: contentSize.width, height: contentSize.height)
   }
 
-  // MARK: - Liquid Glass (v2.2.2)
+  // MARK: - Liquid Glass (v2.3.0) — handoff format `→ <pred> · Tab(keycap)`
 
   private var liquidGlassBody: some View {
-    let radius: CGFloat = 14
-
-    return HStack(spacing: 6) {
+    HStack(spacing: 6) {
       Text("→")
         .font(.system(size: CGFloat(fontSize), weight: .heavy, design: .rounded))
         .foregroundStyle(LinearGradient(
@@ -375,70 +378,21 @@ struct PredictionHUDView: View {
           startPoint: .top, endPoint: .bottom
         ))
         .shadow(color: VKeyDesign.red500.opacity(0.35), radius: 3, x: 0, y: 1)
+
       Text(prediction)
-        .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .monospaced))
+        .font(.system(size: CGFloat(fontSize), weight: .semibold))
         .foregroundStyle(Color(hex: 0xF2EFE8))
         .shadow(color: .black.opacity(0.30), radius: 0.5, x: 0, y: 0.5)
-      Text("⇥ Tab")
-        .font(.system(size: CGFloat(fontSize) * 0.78, weight: .medium, design: .monospaced))
-        .foregroundStyle(Color.white.opacity(0.55))
-        .padding(.leading, 4)
+
+      Text("·")
+        .font(.system(size: CGFloat(fontSize), weight: .regular))
+        .foregroundStyle(Color.white.opacity(0.40))
+
+      Keycap("Tab", size: .sm)
     }
     .padding(.horizontal, 14)
     .padding(.vertical, 9)
-    .background(
-      // Refractive bottom-left red tint + top-right blue tint
-      ZStack {
-        RadialGradient(
-          colors: [VKeyDesign.red500.opacity(0.16), .clear],
-          center: .bottomLeading, startRadius: 0, endRadius: 80
-        )
-        RadialGradient(
-          colors: [VKeyDesign.lgBlueTint.opacity(0.08), .clear],
-          center: .topTrailing, startRadius: 0, endRadius: 80
-        )
-      }
-      .blendMode(.softLight)
-      .clipShape(RoundedRectangle(cornerRadius: radius))
-    )
-    .background(
-      ZStack {
-        LinearGradient(
-          colors: [
-            Color.white.opacity(0.16),
-            Color.white.opacity(0.02),
-            Color.black.opacity(0.14),
-          ],
-          startPoint: .top, endPoint: .bottom
-        )
-        RadialGradient(
-          colors: [Color.white.opacity(0.22), .clear],
-          center: .top, startRadius: 0, endRadius: 100
-        )
-      }
-      .clipShape(RoundedRectangle(cornerRadius: radius))
-    )
-    .background(
-      VKeyDesign.lgGlass1Color.opacity(liquidGlassScrimOpacity),
-      in: RoundedRectangle(cornerRadius: radius)
-    )
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius))
-    .overlay(
-      RoundedRectangle(cornerRadius: radius)
-        .strokeBorder(
-          LinearGradient(
-            colors: [
-              Color.white.opacity(0.50),
-              Color.white.opacity(0.14),
-              Color.white.opacity(0.04),
-            ],
-            startPoint: .top, endPoint: .bottom
-          ),
-          lineWidth: 1
-        )
-    )
-    .shadow(color: .black.opacity(0.42), radius: 14, x: 0, y: 6)
-    .shadow(color: .black.opacity(0.28), radius: 4, x: 0, y: 2)
+    .refractiveGlassBackground(radius: 12, scrimOpacity: liquidGlassScrimOpacity)
   }
 
   private var liquidGlassScrimOpacity: Double {
@@ -476,20 +430,23 @@ struct PredictionHUDView: View {
     colorScheme == .dark ? 0.18 : 0.28
   }
 
-  // MARK: - Tonal (v2.1.0+)
+  // MARK: - Tonal (v2.3.0+) — handoff format `→ <pred> · Tab(keycap)`
 
   private var tonalBody: some View {
     HStack(spacing: 6) {
       Text("→")
         .font(.system(size: CGFloat(fontSize), weight: .heavy, design: .rounded))
         .foregroundStyle(VKeyDesign.red300)
+
       Text(prediction)
-        .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .monospaced))
+        .font(.system(size: CGFloat(fontSize), weight: .semibold))
         .foregroundStyle(.white)
-      Text("⇥ Tab")
-        .font(.system(size: CGFloat(fontSize) * 0.78, weight: .medium, design: .monospaced))
-        .foregroundStyle(.white.opacity(0.62))
-        .padding(.leading, 4)
+
+      Text("·")
+        .font(.system(size: CGFloat(fontSize), weight: .regular))
+        .foregroundStyle(Color.white.opacity(0.45))
+
+      Keycap("Tab", size: .sm)
     }
     .shadow(color: .black.opacity(0.25), radius: 0.5, x: 0, y: 0.5)
     .padding(.horizontal, 14)

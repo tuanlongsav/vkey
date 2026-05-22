@@ -183,67 +183,115 @@ struct GeneralView: View {
     // v2.1.1: theme picker
     @Default(.uiTheme) private var uiTheme
 
-    /// v2.1.1+: settings header rẽ nhánh theo theme.
+    /// v2.3.0+: settings header rẽ nhánh theo theme. LG + Tonal dùng layout
+    /// ngang theo design handoff `.set-header` (icon trái + title stack phải).
     @ViewBuilder
     private var settingsHeader: some View {
         switch uiTheme {
         case .tonal:
-            VStack(spacing: 10) {
-                Image(uiTheme.headerImageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 84, height: 84)
-                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .shadow(color: VKeyDesign.red500.opacity(0.28), radius: 16, x: 0, y: 6)
-                    .shadow(color: .black.opacity(0.10), radius: 4, x: 0, y: 2)
-                Text("vkey")
-                    .font(.system(size: 28, weight: .heavy, design: .rounded))
-                    .foregroundStyle(VKeyDesign.red500)
-                    .tracking(-0.8)
-                Text("Bộ gõ tiếng Việt thông minh cho macOS")
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .center, spacing: 18) {
+                // Icon + red halo glow
+                ZStack {
+                    Circle()
+                        .fill(RadialGradient(
+                            colors: [
+                                VKeyDesign.red500.opacity(0.32),
+                                VKeyDesign.red500.opacity(0.0),
+                            ],
+                            center: .center,
+                            startRadius: 10,
+                            endRadius: 70
+                        ))
+                        .frame(width: 132, height: 132)
+                        .blur(radius: 6)
+                    Image(uiTheme.headerImageName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 96, height: 96)
+                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                        .shadow(color: VKeyDesign.red500.opacity(0.32), radius: 18, x: 0, y: 8)
+                        .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+                }
+                .frame(width: 96, height: 96)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    // Wordmark — Noto Sans Display 800 (fallback system rounded)
+                    Text("vkey")
+                        .font(VKeyDesign.display(36, weight: .heavy))
+                        .foregroundStyle(VKeyDesign.red500)
+                        .tracking(-0.72)
+                    Text("Bộ gõ tiếng Việt cho macOS · Telex & VNI")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
             }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 18)
+
         case .liquidGlass:
-            // v2.2.2: refractive Liquid Glass — multi-layer gradient pill
-            // wordmark, blue+red refractive corner tints, edge highlights.
-            VStack(spacing: 10) {
-                Image(uiTheme.headerImageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 88, height: 88)
-                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.55),
-                                        Color.white.opacity(0.10),
-                                    ],
-                                    startPoint: .top, endPoint: .bottom
-                                ),
-                                lineWidth: 1.2
-                            )
-                    )
-                    .shadow(color: VKeyDesign.red500.opacity(0.45), radius: 22, x: 0, y: 10)
-                    .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 3)
+            // v2.3.0: refractive Liquid Glass — horizontal layout, gradient
+            // wordmark `linear-gradient(180deg, #fff, #C7C3B7)`, halo đỏ
+            // radial `inset -16px` 40% opacity per design `.set-header-halo`.
+            HStack(alignment: .center, spacing: 18) {
+                // Icon + red halo glow (design `.set-header-halo`)
+                ZStack {
+                    Circle()
+                        .fill(RadialGradient(
+                            colors: [
+                                VKeyDesign.red500.opacity(0.50),
+                                VKeyDesign.red500.opacity(0.0),
+                            ],
+                            center: .center,
+                            startRadius: 8,
+                            endRadius: 68
+                        ))
+                        .frame(width: 132, height: 132)
+                        .blur(radius: 4)
+                    Image(uiTheme.headerImageName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 96, height: 96)
+                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .strokeBorder(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.55),
+                                            Color.white.opacity(0.10),
+                                        ],
+                                        startPoint: .top, endPoint: .bottom
+                                    ),
+                                    lineWidth: 1.2
+                                )
+                        )
+                        .shadow(color: VKeyDesign.red500.opacity(0.45), radius: 24, x: 0, y: 12)
+                        .shadow(color: .black.opacity(0.5), radius: 8, x: 0, y: 4)
+                }
+                .frame(width: 96, height: 96)
 
-                // Wordmark "vkey" — glass-glossy red gradient
-                Text("vkey")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
-                    .foregroundStyle(LinearGradient(
-                        colors: [Color.white, VKeyDesign.red300, VKeyDesign.red500],
-                        startPoint: .top, endPoint: .bottom
-                    ))
-                    .tracking(-0.8)
-                    .shadow(color: VKeyDesign.red500.opacity(0.50), radius: 12, x: 0, y: 4)
-                    .shadow(color: .white.opacity(0.30), radius: 0.5, x: 0, y: -0.5)
+                VStack(alignment: .leading, spacing: 6) {
+                    // Wordmark "vkey" — Noto Sans Display 800 + gradient text
+                    // `linear-gradient(180deg, #fff, #C7C3B7)`
+                    Text("vkey")
+                        .font(VKeyDesign.display(36, weight: .heavy))
+                        .tracking(-0.72)
+                        .foregroundStyle(LinearGradient(
+                            colors: [Color.white, VKeyDesign.lgTextWarm],
+                            startPoint: .top, endPoint: .bottom
+                        ))
+                    Text("Bộ gõ tiếng Việt cho macOS")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(VKeyDesign.lgTextWarm)
+                }
 
-                Text("Bộ gõ tiếng Việt — Liquid Glass")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
             }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 18)
+
         case .classic:
             Image(uiTheme.headerImageName)
                 .resizable()
@@ -260,9 +308,11 @@ struct GeneralView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // v2.1.1: header rẽ nhánh theo theme.
-            //   .tonal   → app icon 84px + wordmark "vkey" + tagline + glow
-            //   .classic → icon 96px centered, no wordmark (v2.0.2 look)
+            // v2.3.0: header rẽ nhánh theo theme.
+            //   .tonal       → HStack icon 96px + halo + wordmark "vkey" 36pt
+            //   .liquidGlass → HStack icon 96px + halo + Noto Sans Display
+            //                  gradient text white→#C7C3B7 + tagline
+            //   .classic     → icon 96px centered, no wordmark (v2.0.2)
             settingsHeader
                 .padding(.top, 16)
                 .padding(.bottom, 14)
@@ -381,7 +431,7 @@ struct GeneralView: View {
 
             // v2.2.0 "Theme Library" — 5 themes (Mặc định / 3D / Emoji / Tonal / Mực)
             // chuyển ra MenuBar; thêm Mực; fix bug gõ "theme" → "thêm".
-            Text("Phiên bản \(appVersion) ngày 22/5/2026")
+            Text("Phiên bản \(appVersion) ngày 23/5/2026")
                 .font(.caption)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)

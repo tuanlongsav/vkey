@@ -58,6 +58,10 @@
 		7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F3 /* VKeyDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A3 /* VKeyDesign.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F4 /* AppIconSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A4 /* AppIconSwitcher.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F5 /* HUDComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F6 /* FontRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A6 /* FontRegistration.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F7 /* NotoSansDisplay-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A7 /* NotoSansDisplay-Variable.ttf */; };
+		A1B2C3D4E5F6A7B8C9D0E1F8 /* CarterOne-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A8 /* CarterOne-Regular.ttf */; };
 		964199382501358B452A147B /* TextConversionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */; };
 		9972B2786EB0E3A600C0FF4A /* EnVnReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0A79FB401501E597B689C9 /* EnVnReference.swift */; };
 		A085F9440573F6BC7380FAEE /* PersonalDictSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A620251BD70C5F36817A13 /* PersonalDictSuggestionSheet.swift */; };
@@ -145,6 +149,11 @@
 		69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThemedSymbol.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A3 /* VKeyDesign.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VKeyDesign.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A4 /* AppIconSwitcher.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppIconSwitcher.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Components/HUDComponents.swift"; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A6 /* FontRegistration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FontRegistration.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A7 /* NotoSansDisplay-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "NotoSansDisplay-Variable.ttf"; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A8 /* CarterOne-Regular.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "CarterOne-Regular.ttf"; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A9 /* Resources */ = {isa = PBXGroup; children = (B1C2D3E4F5A6B7C8D9E0F1A7 /* NotoSansDisplay-Variable.ttf */, B1C2D3E4F5A6B7C8D9E0F1A8 /* CarterOne-Regular.ttf */, ); path = Resources; sourceTree = "<group>"; };
 		716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageStatistics.swift; sourceTree = "<group>"; };
 		76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartSwitchSuggestionSheet.swift; sourceTree = "<group>"; };
 		82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacroSuggestionSheet.swift; sourceTree = "<group>"; };
@@ -218,6 +227,7 @@
 				22C15A8AB81A235FF54939DC /* Updater.swift */,
 				E0316EE5AB4EBE700B533B62 /* UserDataMigration.swift */,
 				C5E12D557ABDC3D7864363DE /* DefaultMacros.swift */,
+				B1C2D3E4F5A6B7C8D9E0F1A6 /* FontRegistration.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -262,6 +272,7 @@
 				5FF63E69BB34FE155ED450E7 /* Lexicon */,
 				E832E39C064A0FFEAD964C5B /* Input */,
 				2C5DF9C9207C18B6E3F257BE /* Stats */,
+				B1C2D3E4F5A6B7C8D9E0F1A9 /* Resources */,
 				F3E422CB49C1C850FC80043D /* vkey-Bridging-Header.h */,
 			);
 			path = vkey;
@@ -348,6 +359,7 @@
 				69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */,
 				B1C2D3E4F5A6B7C8D9E0F1A3 /* VKeyDesign.swift */,
 				B1C2D3E4F5A6B7C8D9E0F1A4 /* AppIconSwitcher.swift */,
+				B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */,
 				A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */,
 				82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */,
 				76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */,
@@ -511,6 +523,8 @@
 			files = (
 				3FAFBB8E2B84A86D0032A55E /* Preview Assets.xcassets in Resources */,
 				3FAFBB8B2B84A86D0032A55E /* Assets.xcassets in Resources */,
+				A1B2C3D4E5F6A7B8C9D0E1F7 /* NotoSansDisplay-Variable.ttf in Resources */,
+				A1B2C3D4E5F6A7B8C9D0E1F8 /* CarterOne-Regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -600,6 +614,8 @@
 				7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F3 /* VKeyDesign.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F4 /* AppIconSwitcher.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1F5 /* HUDComponents.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1F6 /* FontRegistration.swift in Sources */,
 				40D7FB871260EEC2B9077795 /* MenuBarFooterRow.swift in Sources */,
 				3A1CEF871E6A885DD3916044 /* MacroSuggestionSheet.swift in Sources */,
 				B5120602CCC5EAE262D73C62 /* SmartSwitchSuggestionSheet.swift in Sources */,
@@ -777,7 +793,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 20202;
+				CURRENT_PROJECT_VERSION = 20300;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -800,7 +816,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.2.2;
+				MARKETING_VERSION = 2.3.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -819,7 +835,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 20202;
+				CURRENT_PROJECT_VERSION = 20300;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
@@ -843,7 +859,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.2.2;
+				MARKETING_VERSION = 2.3.0;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;

@@ -153,6 +153,9 @@ private struct ToggleHUDView: View {
     @ObservedObject var viewModel: ToggleHUDViewModel
     @Environment(\.colorScheme) var colorScheme
     @Default(.uiTheme) private var uiTheme
+    @Default(.typingMethod) private var typingMethod
+    @Default(.newStyleTonePlacement) private var newStyleTonePlacement
+    @Default(.modifierOnlyToggleHotkey) private var modifierOnlyToggleHotkey
 
     var body: some View {
         Group {
@@ -165,134 +168,62 @@ private struct ToggleHUDView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
     }
 
-    // MARK: - Liquid Glass (v2.2.2) — macOS Tahoe / visionOS refractive glass
+    // MARK: - Sub-title + keycap helpers (v2.3.0)
+
+    /// Sub-title text below the main "Tiếng Việt" / "English" label.
+    /// Reads current typing method + tone-placement style for VI state;
+    /// indicates idle/inactive state for EN.
+    private var subTitle: String {
+        if viewModel.isEnabled {
+            let style = newStyleTonePlacement ? "Kiểu mới" : "Kiểu cũ"
+            return "\(typingMethod.rawValue) · \(style)"
+        } else {
+            return "vkey tạm tắt"
+        }
+    }
+
+    /// Modifier glyphs in canonical macOS order (⌃⌥⇧⌘) for current toggle hotkey.
+    /// Empty array if hotkey unset → keycap row hidden.
+    private var hotkeyGlyphs: [String] {
+        let raw = modifierOnlyToggleHotkey
+        guard raw != 0 else { return [] }
+        let formatted = formatModifierMask(raw)
+        return formatted.map { String($0) }
+    }
+
+    // MARK: - Liquid Glass (v2.3.0) — handoff horizontal layout
 
     private var liquidGlassBody: some View {
-        let radius: CGFloat = 22
-
-        return VStack(spacing: 6) {
-            ThemedSymbol(name: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
-                .font(.system(size: 40, weight: .semibold))
-                .foregroundStyle(
-                    viewModel.isEnabled
-                    ? AnyShapeStyle(LinearGradient(
-                        colors: [Color.white, VKeyDesign.red300, VKeyDesign.red500],
-                        startPoint: .top, endPoint: .bottom
-                    ))
-                    : AnyShapeStyle(LinearGradient(
-                        colors: [Color.white.opacity(0.95), Color.white.opacity(0.55)],
-                        startPoint: .top, endPoint: .bottom
-                    ))
-                )
-                .shadow(color: viewModel.isEnabled
-                    ? VKeyDesign.red500.opacity(0.45)
-                    : Color.black.opacity(0.25),
-                    radius: 6, x: 0, y: 2)
-                .shadow(color: .white.opacity(0.30), radius: 0.5, x: 0, y: -0.5)
-                .frame(width: 48, height: 48)
+        HStack(alignment: .center, spacing: 14) {
+            HUDFlag(viewModel.isEnabled)
                 .vkeySymbolReplacementTransition()
 
-            Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundStyle(Color(hex: 0xF2EFE8))
-                .shadow(color: .black.opacity(0.45), radius: 0.5, x: 0, y: 0.5)
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
+                    .font(VKeyDesign.display(17, weight: .bold))
+                    .foregroundStyle(Color(hex: 0xF2EFE8))
+                    .shadow(color: .black.opacity(0.45), radius: 0.5, x: 0, y: 0.5)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
 
-            // Glass pill VI/EN — multi-layer gradient + inner highlight
-            Text(viewModel.isEnabled ? "VI" : "EN")
-                .font(.system(size: 11, weight: .black, design: .rounded))
-                .tracking(0.6)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 3)
-                .background(
-                    ZStack {
-                        if viewModel.isEnabled {
-                            // Glossy red pill
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.30), Color.white.opacity(0.02)],
-                                startPoint: .top, endPoint: .bottom
-                            )
-                            VKeyDesign.red500.opacity(0.95)
-                        } else {
-                            // Glass-neutral pill
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.22), Color.white.opacity(0.04)],
-                                startPoint: .top, endPoint: .bottom
-                            )
-                            Color.white.opacity(0.05)
-                        }
+                Text(subTitle)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.white.opacity(0.70))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+
+            if !hotkeyGlyphs.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(hotkeyGlyphs, id: \.self) { glyph in
+                        Keycap(glyph, size: .md)
                     }
-                )
-                .foregroundStyle(Color.white)
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .strokeBorder(Color.white.opacity(0.45), lineWidth: 0.6)
-                )
-                .shadow(color: viewModel.isEnabled
-                    ? VKeyDesign.red500.opacity(0.55)
-                    : .clear,
-                    radius: 6, x: 0, y: 2)
+                }
+            }
         }
-        .frame(width: 138)
-        .padding(.vertical, 16)
-        .padding(.horizontal, 10)
-        .background(
-            // Refractive corner tints (red bottom-left + blue top-right)
-            ZStack {
-                RadialGradient(
-                    colors: [VKeyDesign.red500.opacity(0.18), .clear],
-                    center: .bottomLeading, startRadius: 0, endRadius: 120
-                )
-                RadialGradient(
-                    colors: [VKeyDesign.lgBlueTint.opacity(0.10), .clear],
-                    center: .topTrailing, startRadius: 0, endRadius: 120
-                )
-            }
-            .blendMode(.softLight)
-            .clipShape(RoundedRectangle(cornerRadius: radius))
-        )
-        .background(
-            // Top spec arc + base shading
-            ZStack {
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(0.18),
-                        Color.white.opacity(0.02),
-                        Color.black.opacity(0.18),
-                    ],
-                    startPoint: .top, endPoint: .bottom
-                )
-                RadialGradient(
-                    colors: [Color.white.opacity(0.28), .clear],
-                    center: .top, startRadius: 0, endRadius: 180
-                )
-            }
-            .clipShape(RoundedRectangle(cornerRadius: radius))
-        )
-        .background(
-            VKeyDesign.lgGlass1Color.opacity(liquidGlassScrimOpacity),
-            in: RoundedRectangle(cornerRadius: radius)
-        )
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius))
-        .overlay(
-            // Triple inner edge: top white highlight, bottom black, rim white
-            RoundedRectangle(cornerRadius: radius)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.55),
-                            Color.white.opacity(0.18),
-                            Color.white.opacity(0.06),
-                        ],
-                        startPoint: .top, endPoint: .bottom
-                    ),
-                    lineWidth: 1.2
-                )
-        )
-        .shadow(color: Color.black.opacity(0.55), radius: 30, x: 0, y: 12)
-        .shadow(color: Color.black.opacity(0.35), radius: 10, x: 0, y: 4)
+        .padding(.vertical, 18)
+        .padding(.horizontal, 24)
+        .refractiveGlassBackground(radius: 28, scrimOpacity: liquidGlassScrimOpacity)
     }
 
     private var liquidGlassScrimOpacity: Double {
@@ -356,52 +287,38 @@ private struct ToggleHUDView: View {
         return base + range * viewModel.backgroundStrength
     }
 
-    // MARK: - Tonal (v2.1.0+)
+    // MARK: - Tonal (v2.3.0+) — handoff horizontal layout, deep-ink scrim
 
     private var tonalBody: some View {
-        VStack(spacing: 6) {
-            ThemedSymbol(name: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
-                .font(.system(size: 40, weight: .semibold))
-                .foregroundStyle(
-                    viewModel.isEnabled
-                    ? AnyShapeStyle(VKeyDesign.red400.gradient)
-                    : AnyShapeStyle(VKeyDesign.paper200.gradient)
-                )
-                .frame(width: 48, height: 48)
+        HStack(alignment: .center, spacing: 14) {
+            HUDFlag(viewModel.isEnabled)
                 .vkeySymbolReplacementTransition()
 
-            Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
+                    .font(VKeyDesign.display(17, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
 
-            Text(viewModel.isEnabled ? "VI" : "EN")
-                .font(.system(size: 11, weight: .black, design: .rounded))
-                .tracking(0.5)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 2)
-                .background(
-                    viewModel.isEnabled
-                    ? VKeyDesign.red500.opacity(0.28)
-                    : Color.white.opacity(0.14)
-                )
-                .foregroundStyle(viewModel.isEnabled ? VKeyDesign.red200 : Color.white.opacity(0.82))
-                .clipShape(RoundedRectangle(cornerRadius: 5))
+                Text(subTitle)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.white.opacity(0.65))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+
+            if !hotkeyGlyphs.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(hotkeyGlyphs, id: \.self) { glyph in
+                        Keycap(glyph, size: .md)
+                    }
+                }
+            }
         }
-        .frame(width: 130)
-        .padding(.vertical, 14)
-        .padding(.horizontal, 8)
-        .background(
-            VKeyDesign.ink500.opacity(tonalScrimOpacity),
-            in: RoundedRectangle(cornerRadius: 20)
-        )
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.55), radius: 24, x: 0, y: 12)
+        .padding(.vertical, 18)
+        .padding(.horizontal, 24)
+        .tonalScrimBackground(radius: 20, scrimOpacity: tonalScrimOpacity)
     }
 
     private var tonalScrimOpacity: Double {
