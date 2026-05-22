@@ -123,13 +123,7 @@ class AppState: ObservableObject, FileMonitorDelegate {
             self.setEnabled(set: !self.enabled)
         }
 
-        // 2.0 (A1): mở/đóng Floating Toolbar tại cursor.
-        KeyboardShortcuts.onKeyUp(for: .toggleFloatingToolbar) { [weak self] in
-            guard let self = self else { return }
-            DispatchQueue.main.async {
-                FloatingToolbarWindow.shared.toggle(appState: self)
-            }
-        }
+        // 2.0.1: Floating Toolbar handler đã bị xoá cùng với tính năng.
 
         // 2.0 (B4): mở Text Conversion menu cho selection.
         KeyboardShortcuts.onKeyUp(for: .openTextConversionMenu) {

@@ -5,9 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.0.0 — "Symphony"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.0.1 — "Symphony Polish"** ([CHANGELOG](CHANGELOG.md))
 
-> **Bản phát hành lớn 2.0** — gộp 13 tính năng mới (xem [CHANGELOG](CHANGELOG.md#200---2026-05-22--symphony)) lấy cảm hứng từ xkey + gonhanh.org: Floating Toolbar tại cursor, Đoán từ top-3, Theme tuỳ biến, Auto-capitalize, Free Mark mode, Window Title Rules, Auto-disable khi đổi IME, Text Conversion Tools, Pipeline 7-stage tường minh, Race-condition hardening, **Rust Core Engine foundation** (qua FFI).
+> **2.0** gộp 13 tính năng mới lấy cảm hứng từ xkey + gonhanh.org: Đoán từ top-3, Auto-capitalize, Free Mark mode, Window Title Rules, Auto-disable khi đổi IME, Text Conversion Tools, Pipeline 7-stage tường minh, Race-condition hardening, **Rust Core Engine foundation** (qua FFI). **2.0.1** dọn dẹp 3 mục chưa hoàn chỉnh (Floating Toolbar, HUD theme controls) và gộp tab Rules vào Smart Switch.
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)

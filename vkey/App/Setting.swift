@@ -32,12 +32,10 @@ extension KeyboardShortcuts.Name {
   // the user can keep their letter keys free.
   static let toggleInputMode = Self("toggleInputMode")
 
-  /// 2.0 (A1): mở Floating Toolbar nổi tại cursor. Mặc định chưa gán phím —
-  /// user phải set thủ công để tránh xung đột.
-  static let toggleFloatingToolbar = Self("toggleFloatingToolbar")
-
   /// 2.0 (B4): mở Text Conversion Tools menu cho selected text.
   static let openTextConversionMenu = Self("openTextConversionMenu")
+
+  // 2.0.1: `toggleFloatingToolbar` đã bị xoá cùng với Floating Toolbar.
 }
 
 /// Default modifier-only hotkey: Control + Shift.
@@ -397,31 +395,15 @@ extension Defaults.Keys {
   )
 
   // MARK: - 2.0 — Track 2: UX Modern Layer
-
-  /// A1 (2.0): hiển thị floating toolbar nổi tại cursor khi nhấn hotkey.
-  /// Chỉ điều khiển khả dụng — bản thân hotkey nằm trong
-  /// `KeyboardShortcuts.Name.toggleFloatingToolbar`.
-  static let floatingToolbarEnabled = Key<Bool>(
-    "floating-toolbar-enabled",
-    default: false
-  )
+  //
+  // 2.0.1: `floatingToolbarEnabled`, `hudThemeStyle`, `hudBlurIntensity`,
+  // `hudAccentColorHex` đã bị xoá. Floating Toolbar không còn tính năng,
+  // HUDThemeSection chưa wire vào HUD thực — gây nhầm lẫn user. Dùng
+  // `hudOpacityPercent` (1.9.0) cho điều chỉnh HUD đang hoạt động.
 
   /// A2 (2.0): số gợi ý hiển thị trong PredictionHUD. 1 = legacy behavior,
   /// 2-3 = popup nhiều dòng, chọn bằng số phím hoặc Tab+arrow.
   static let predictionTopN = Key<Int>("prediction-top-n", default: 3)
-
-  /// A3 (2.0): theme cho HUD/Toolbar/Popup. Khác `appTheme` (icon style):
-  /// `.auto` = follow system (NSApp.effectiveAppearance), `.light`/`.dark`
-  /// force, `.glass` = explicit `.hudWindow` material với blur cao.
-  static let hudThemeStyle = Key<HUDThemeStyle>("hud-theme-style", default: .auto)
-
-  /// A3 (2.0): blur intensity 0–100 cho material background của HUD.
-  /// Map: 0 = `.popover` (nhẹ), 50 = `.hudWindow` (default), 100 = `.fullScreenUI`.
-  static let hudBlurIntensity = Key<Int>("hud-blur-intensity", default: 50)
-
-  /// A3 (2.0): accent color cho HUD UI (viền, text highlight). Lưu hex
-  /// string `#RRGGBB`. Default = nil (dùng accentColor mặc định macOS).
-  static let hudAccentColorHex = Key<String>("hud-accent-color-hex", default: "")
 
   /// B1 (2.0): danh sách rules theo bundle ID + window title regex để
   /// override hành vi vkey per-context (vd Google Docs delay 50ms,
@@ -449,25 +431,9 @@ extension Defaults.Keys {
   static let cgEventFlushDelayMs = Key<Int>("cgevent-flush-delay-ms", default: 0)
 }
 
-// MARK: - 2.0 — HUD Theme + Window Title Rule types
-
-/// A3 (2.0): style cho HUD/Toolbar/Popup. Áp dụng cho ToggleHUDWindow,
-/// PredictionHUDWindow, FloatingToolbarWindow.
-enum HUDThemeStyle: String, CaseIterable, Defaults.Serializable {
-  case auto    // theo system appearance
-  case light   // force light
-  case dark    // force dark
-  case glass   // glassmorphism (heavy blur + transparency)
-
-  var displayName: String {
-    switch self {
-    case .auto: return "Tự động (theo hệ thống)"
-    case .light: return "Sáng"
-    case .dark: return "Tối"
-    case .glass: return "Kính mờ"
-    }
-  }
-}
+// MARK: - 2.0 — Window Title Rule types
+//
+// 2.0.1: `enum HUDThemeStyle` đã được xoá cùng HUDThemeSection.
 
 /// B1 (2.0): rule cho per-context behavior. Áp dụng theo bundle ID
 /// (prefix match) cộng window title regex. Nếu cả hai match → áp dụng

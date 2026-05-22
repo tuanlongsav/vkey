@@ -6,6 +6,39 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.0.1 — "Symphony Polish"</title>
+      <sparkle:version>20001</sparkle:version>
+      <sparkle:shortVersionString>2.0.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 22 May 2026 14:35:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.0.1/vkey-2.0.1.dmg"
+        sparkle:edSignature="dcKAoBSZF1SpXYOjE0gYzgrX2287ZfiUTYwA0TbRSYrS/CbVy86IzHdpct6omxrumlAyLIBSvhxeji9MmpSqCg=="
+        length="7487209"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.0.1 — "Symphony Polish":</h2>
+        <p><em>Bản patch dọn dẹp sau khi user dùng thử 2.0. Không thêm tính năng mới.</em></p>
+
+        <h3>Thay đổi</h3>
+        <ul>
+          <li><strong>Tab Chung — sắp xếp lại</strong>: chuyển "Đặt dấu tự do" xuống dưới "Hiển thị thông báo khi chuyển VI/EN" và trên "Kiểu đặt dấu" để nhóm với các option định dạng văn bản.</li>
+          <li><strong>Bỏ Floating Toolbar (A1)</strong>: tính năng floating panel tại cursor bị xoá hoàn toàn. Lý do: trùng chức năng với menubar icon + HUD, ít user dùng. Xoá file `FloatingToolbarWindow.swift`, key `floatingToolbarEnabled`, hotkey `toggleFloatingToolbar` và mọi UI tương ứng.</li>
+          <li><strong>Bỏ HUDThemeSection (A3)</strong>: 3 control theme/blur/màu nhấn bị xoá vì chưa thực sự kết nối tới ToggleHUD/PredictionHUD — gây nhầm lẫn cho user. Setting `hudOpacityPercent` (1.9.0) vẫn còn và đang hoạt động cho HUD thực tế. Xoá file `HUDTheme.swift`, enum `HUDThemeStyle` và 3 Defaults keys (`hudThemeStyle`, `hudBlurIntensity`, `hudAccentColorHex`).</li>
+          <li><strong>Gộp tab Rules vào Smart Switch</strong>: editor "Quy tắc theo cửa sổ" (B1) chuyển từ tab riêng sang DisclosureGroup gập được dưới list app trong tab Smart Switch. Xoá file `WindowRulesView.swift`. Tab count giảm 1. Data model + engine (`WindowTitleRule` + `WindowTitleRuleEngine`) giữ nguyên — mọi rule hiện có vẫn hoạt động.</li>
+        </ul>
+
+        <h3>Migration</h3>
+        <ul>
+          <li>User upgrade 2.0.0 → 2.0.1: hotkey "Floating Toolbar" cũ (nếu đã gán) sẽ bị bỏ qua. Settings "Giao diện HUD" biến mất khỏi tab Chung. Window Rules nằm trong tab Smart Switch (cuối, mở collapsible).</li>
+          <li>Sparkle auto-update tự động chạy như thường lệ. DMG giảm nhẹ (7.59 → 7.49 MB) do bỏ code không dùng.</li>
+        </ul>
+
+        <p><strong>Tests</strong>: 205/205 pass. <strong>Build</strong>: macOS 14+, Apple Silicon hoặc Intel.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.0.0 — "Symphony"</title>
       <sparkle:version>20000</sparkle:version>
       <sparkle:shortVersionString>2.0.0</sparkle:shortVersionString>

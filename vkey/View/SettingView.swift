@@ -241,7 +241,13 @@ struct GeneralView: View {
                 }
                 .toggleStyle(SwitchToggleStyle(tint: .accentColor))
 
+                Toggle(isOn: $hudEnabled) {
+                    Label("Hiển thị thông báo khi chuyển VI/EN", themedSymbol: "macwindow.badge.plus")
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+
                 // 2.0 (A6): free mark mode — đặt dấu tự do
+                // 2.0.1: di chuyển xuống đây theo yêu cầu (dưới hudEnabled, trên Kiểu đặt dấu)
                 Toggle(isOn: $freeMarkModeEnabled) {
                     Label("Đặt dấu tự do (Free Mark)", themedSymbol: "wand.and.stars")
                 }
@@ -253,11 +259,6 @@ struct GeneralView: View {
                         .padding(.top, -8)
                 }
 
-                Toggle(isOn: $hudEnabled) {
-                    Label("Hiển thị thông báo khi chuyển VI/EN", themedSymbol: "macwindow.badge.plus")
-                }
-                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                    
                 Picker(selection: $newStyleTonePlacement) {
                     Text("Kiểu cũ").tag(false)
                     Text("Kiểu mới").tag(true)
@@ -284,13 +285,6 @@ struct GeneralView: View {
                     Label("Phím tắt", themedSymbol: "command")
                 }
 
-                // 2.0 (A1): hotkey cho Floating Toolbar
-                LabeledContent {
-                    FlexibleShortcutRecorder(name: .toggleFloatingToolbar)
-                } label: {
-                    Label("Phím tắt mở Floating Toolbar", themedSymbol: "menubar.rectangle")
-                }
-
                 // 2.0 (B4): hotkey cho Text Conversion menu
                 LabeledContent {
                     FlexibleShortcutRecorder(name: .openTextConversionMenu)
@@ -298,11 +292,9 @@ struct GeneralView: View {
                     Label("Phím tắt Text Tools", themedSymbol: "textformat")
                 }
 
-                // 2.0 (A3): HUD Theme & Glassmorphism
-                HUDThemeSection()
-
-                // 1.9.2: HUD customization Steppers chuyển sang block "Đoán từ
-                // tiếp theo" trong tab Chính tả (cùng với khoảng cách HUD).
+                // 2.0.1: Floating Toolbar + HUDThemeSection đã bị xoá theo
+                // yêu cầu user — HUD opacity/font đã có trong block "Đoán từ
+                // tiếp theo" (tab Chính tả) cho HUD thực tế đang dùng.
 
             }
             .formStyle(.grouped)
@@ -323,48 +315,10 @@ struct GeneralView: View {
     }
 }
 
-/// 2.0 (A3): Section trong tab General để cấu hình HUD theme.
-struct HUDThemeSection: View {
-    @Default(.hudThemeStyle) private var hudThemeStyle
-    @Default(.hudBlurIntensity) private var hudBlurIntensity
-    @Default(.hudAccentColorHex) private var hudAccentColorHex
-    @Default(.floatingToolbarEnabled) private var floatingToolbarEnabled
-
-    var body: some View {
-        Picker(selection: $hudThemeStyle) {
-            ForEach(HUDThemeStyle.allCases, id: \.self) { style in
-                Text(style.displayName).tag(style)
-            }
-        } label: {
-            Label("Giao diện HUD", themedSymbol: "paintbrush")
-        }
-        .pickerStyle(.menu)
-
-        Stepper(value: $hudBlurIntensity, in: 0...100, step: 5) {
-            HStack {
-                Label("Độ kính mờ HUD", themedSymbol: "drop.halffull")
-                Spacer()
-                Text("\(hudBlurIntensity)%")
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-            }
-        }
-
-        HStack {
-            Label("Màu nhấn (hex)", themedSymbol: "paintpalette")
-            Spacer()
-            TextField("#FF6600", text: $hudAccentColorHex)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 120)
-                .monospaced()
-        }
-
-        Toggle(isOn: $floatingToolbarEnabled) {
-            Label("Bật Floating Toolbar (cần phím tắt)", themedSymbol: "macwindow")
-        }
-        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-    }
-}
+// 2.0.1: HUDThemeSection đã được xoá. 3 control (theme/blur/accent) chưa
+// thực sự kết nối tới ToggleHUD/PredictionHUD nên gây nhầm lẫn cho user.
+// `hudOpacityPercent` (Defaults từ 1.9.0) vẫn còn và đang hoạt động — đủ
+// cho nhu cầu chỉnh độ mờ HUD.
 
 struct GeneralView_Previews: PreviewProvider {
     static var previews: some View {

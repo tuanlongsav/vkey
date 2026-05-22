@@ -2,6 +2,46 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.0.1] - 2026-05-22 — "Symphony Polish"
+
+**Patch dọn dẹp sau khi user dùng thử 2.0**. Không thêm tính năng mới — 4 thay đổi để gọn UI + gọn code. README rà soát ✓
+
+### Thay đổi
+
+- **G1 — Tab Chung sắp xếp lại** (`vkey/View/SettingView.swift`): di chuyển Toggle "Đặt dấu tự do" xuống dưới Toggle "Hiển thị thông báo khi chuyển VI/EN" và trên Picker "Kiểu đặt dấu". Nhóm các option định dạng văn bản với nhau.
+- **G2 — Bỏ Floating Toolbar hoàn toàn (A1 từ 2.0)**:
+  - Xoá `vkey/Platform/FloatingToolbarWindow.swift`
+  - Xoá `KeyboardShortcuts.Name.toggleFloatingToolbar` (`Setting.swift`)
+  - Xoá `Defaults.Keys.floatingToolbarEnabled`
+  - Xoá hotkey row + handler trong `AppState.swift`
+  - Xoá FlexibleShortcutRecorder row trong SettingView
+  - Lý do: trùng chức năng với menubar icon + HUD, user feedback ít dùng.
+- **G3 — Bỏ HUDThemeSection (A3 từ 2.0)**:
+  - Xoá `vkey/Platform/HUDTheme.swift` (struct HUDTheme, enum HUDThemeStyle, HUDThemeBackground modifier, parseHex helper)
+  - Xoá 3 Defaults keys: `hudThemeStyle`, `hudBlurIntensity`, `hudAccentColorHex`
+  - Xoá `struct HUDThemeSection: View` trong SettingView
+  - Lý do: 3 control chưa thực sự kết nối tới ToggleHUD/PredictionHUD — chỉ Floating Toolbar dùng, mà Floating Toolbar cũng bỏ → gây nhầm lẫn cho user. `hudOpacityPercent` (1.9.0) vẫn còn và đang hoạt động cho HUD thực tế.
+- **G4 — Embed Window Title Rules vào Smart Switch tab (B1 từ 2.0)**:
+  - Xoá `vkey/View/WindowRulesView.swift`
+  - Bỏ tab "Rules" trong `vkeyApp.swift` Settings TabView
+  - Thêm `WindowRulesSection` + `WindowRuleRow` (private struct) vào cuối `SmartSwitchView.swift`, render dưới dạng `DisclosureGroup` gập được, mặc định collapsed.
+  - Data model + engine giữ nguyên: `WindowTitleRule` struct, `Defaults.Keys.windowTitleRules`, `Platform/WindowTitleRuleEngine.swift`. Mọi rule hiện có vẫn hoạt động.
+  - Tab count giảm 1 (5 → 4).
+
+### Migration
+
+- User 2.0.0 → 2.0.1: hotkey "Floating Toolbar" cũ (nếu đã gán) sẽ bị bỏ qua (Defaults key xoá → KeyboardShortcuts không còn observer). Settings "Giao diện HUD" biến mất khỏi tab Chung. Window Rules nằm trong tab Smart Switch (cuối, mở collapsible).
+- Không breaking change cho engine/parser/macros/dictionary.
+- Sparkle auto-update chạy như thường lệ. DMG giảm nhẹ (7,585,103 → 7,487,209 bytes, ~13% giảm code không dùng).
+- 5 file Swift bị xoá: FloatingToolbarWindow, HUDTheme, WindowRulesView + 2 file related.
+
+### Thông tin build
+
+- macOS 14+ (Sonoma), Xcode 26.5+, Swift 5.10+, Rust 1.95+ (chỉ khi rebuild rust-core).
+- DMG: vkey-2.0.1.dmg, 7,487,209 bytes.
+- Sparkle signature: `dcKAoBSZF1SpXYOjE0gYzgrX2287ZfiUTYwA0TbRSYrS/CbVy86IzHdpct6omxrumlAyLIBSvhxeji9MmpSqCg==`
+- Tests: 205/205 pass.
+
 ## [2.0.0] - 2026-05-22 — "Symphony"
 
 **Bản phát hành lớn gộp 13 tính năng cùng lúc** — lấy cảm hứng từ **[xkey](https://github.com/xmannv/xkey)** (xmannv) + **[gonhanh.org](https://github.com/khaphanspace/gonhanh.org)** (khaphanspace). Plan đầy đủ tại `~/.claude/plans/`.
