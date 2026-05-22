@@ -2,6 +2,64 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.2] - 2026-05-23 — "Header Strip + LG Category Colors"
+
+**2 user requests**: (1) Settings header chỉ giữ logo centered, bỏ chữ "vkey" + tagline ở mọi theme. (2) MenuBar Tonal vs LG khác màu rõ rệt — LG có per-category icon colors theo design.
+
+### 🪟 Settings header — logo centered only
+
+**User request**: "chỉ để logo ở chính giữa bề ngang, bỏ hết chữ Vkey hay bộ gõ macOS,...ở tất cả các theme".
+
+**Trước 2.3.2**: Tonal + LG header có HStack `[icon + halo] + [Wordmark "vkey" + tagline]` — chiếm nhiều không gian, text wordmark cạnh icon. Classic không có text nhưng cũng có chứa nguyên gốc.
+
+**Sau 2.3.2**: cả 3 theme đều `HStack { Spacer; icon; Spacer }` — logo centered duy nhất, chiều ngang đầy đủ.
+- Tonal: flat icon 96px + red halo radial gradient.
+- LG: icon + refractive corner tints (red + blue blobs) + caustic halo + specular gloss + glass rim border + triple shadow.
+- Classic: icon 96px + simple shadow.
+
+Header gọn hơn, dồn focus vào icon. Code: `vkey/View/SettingView.swift:settingsHeader` — 3 case branches, mỗi case là HStack center.
+
+### 🎨 LG MenuBar — per-category icon colors
+
+**User feedback**: "Rà soát để màu sắc menu bar, các icon, toggle switch của theme Tonal và LG khác nhau". Trước 2.3.2 cả 2 theme có cùng accent red applied qua `.tint()` → menu icons đều red.
+
+**Design source** (`Liquid Glass/vkey-3d/project/components/MenuBar.jsx`): mỗi menu item icon được wrap trong `GlassTile color="..."` với mapping:
+- `red` — flag VN, brand, dangerous
+- `blue` — switch, info
+- `green` — check, refresh
+- `purple` — wand
+- `gold` — paintbrush
+- `gray` — keyboard, gear
+
+**Implementation** (`vkey/View/ThemedSymbol.swift`):
+- Static method `liquidGlassCategoryColor(for name: String) -> Color?` map SF Symbol → category color.
+- Observe `Defaults[.uiTheme]` — apply `LiquidGlassTintModifier` CHỈ khi LG. Tonal + Classic không ảnh hưởng.
+- Modifier dùng `.symbolRenderingMode(.hierarchical) + .foregroundStyle(color)` để có gradient nhẹ (match design `.tile` spherical lighting).
+
+Color palette (hex):
+| Category | Color | Apply for |
+|---|---|---|
+| Blue | `#2D89E5` | Smart Switch, language toggle, info, stats |
+| Green | `#2BB673` | Spell check, refresh, updates |
+| Purple | `#8B5CF6` | Macro (text.cursor) |
+| Gold | `#F5C645` | Theme picker (paintbrush), donate, globe |
+| Red | `#E04434` | Thoát, VI active |
+| Gray | `#9CA3AF` | Settings (gear), keyboard |
+
+**Tonal giữ nguyên** — accent red đồng nhất qua `.tint()` ở root scene → visually obvious khác biệt khi switch theme.
+
+### 📦 Release artifacts
+
+- `vkey-2.3.2.dmg` — universal, ~8.7 MB. Ad-hoc codesign + hardened runtime.
+- Sparkle signature: `9OgUa0rcdpxocjYKvnr8B+6UnaJNOfS+Sjp6cSIIt9wrUiHofHW58J7cOLkUH29LLnoqAGMZ6DDv9FV5NjEHCQ==` (length 8698662).
+
+### 🛡 Không thay đổi
+
+- Engine gõ, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi.
+- 213/213 test pass.
+
+---
+
 ## [2.3.1] - 2026-05-23 — "LG Differentiation + Hotkey Fix"
 
 **Fix 2 bug user feedback**: (1) cả 2 nút hotkey hiển thị cùng modifier mask của Toggle, (2) Liquid Glass và Tonal theme nhìn giống nhau quá ở Settings header.

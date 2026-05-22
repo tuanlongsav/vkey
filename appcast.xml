@@ -6,6 +6,52 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.2 — "Header Strip + LG Category Colors"</title>
+      <sparkle:version>20302</sparkle:version>
+      <sparkle:shortVersionString>2.3.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sat, 23 May 2026 01:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.2/vkey-2.3.2.dmg"
+        sparkle:edSignature="9OgUa0rcdpxocjYKvnr8B+6UnaJNOfS+Sjp6cSIIt9wrUiHofHW58J7cOLkUH29LLnoqAGMZ6DDv9FV5NjEHCQ=="
+        length="8698662"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.2 — "Header Strip + LG Category Colors":</h2>
+
+        <h3>🪟 Settings header — logo centered only</h3>
+        <p>Theo user request: bỏ wordmark "vkey" + tagline "Bộ gõ tiếng Việt cho macOS" ở tất cả 3 theme. Header giờ chỉ giữ <strong>logo centered horizontally</strong>:</p>
+        <ul>
+          <li><strong>Tonal</strong>: flat icon 96px + red halo glow.</li>
+          <li><strong>Liquid Glass</strong>: icon refractive corner tints + specular gloss + 3-stop caustic halo + glass rim border.</li>
+          <li><strong>Classic</strong>: icon 96px đơn giản.</li>
+        </ul>
+
+        <h3>🎨 LG MenuBar — per-category icon colors (per design)</h3>
+        <p>User feedback: menu bar Tonal vs LG nhìn như nhau, không match <code>MenuBar.jsx</code> design (mỗi menu item icon 1 màu category). Sau 2.3.2 LG menu icons có color mapping:</p>
+        <ul>
+          <li><strong>🔵 Blue</strong> — Smart Switch, language toggle (arrow.left.arrow.right.*), Thông tin, Thống kê.</li>
+          <li><strong>🟢 Green</strong> — Sửa lỗi chính tả, Kiểm tra cập nhật.</li>
+          <li><strong>🟣 Purple</strong> — Macro (text.cursor).</li>
+          <li><strong>🟡 Gold</strong> — Giao diện ứng dụng (paintbrush), Ủng hộ tác giả, Globe.</li>
+          <li><strong>🔴 Red</strong> — Thoát (power), VI active state.</li>
+          <li><strong>⚪ Gray</strong> — Settings (gear), Kiểu gõ (keyboard).</li>
+        </ul>
+        <p>Tonal giữ accent red đồng nhất theo brand. Differentiation visually obvious khi switch theme.</p>
+
+        <h3>🛠 Architecture</h3>
+        <ul>
+          <li><code>ThemedSymbol.liquidGlassCategoryColor(for:)</code> — static map SF Symbol name → category color.</li>
+          <li>Observe <code>Defaults[.uiTheme]</code> — apply <code>LiquidGlassTintModifier</code> chỉ khi LG. Tonal/Classic không bị ảnh hưởng.</li>
+          <li>Modifier dùng <code>.symbolRenderingMode(.hierarchical)</code> + <code>.foregroundStyle(color)</code> để icon có gradient nhẹ (match design <code>.tile</code> spherical look).</li>
+        </ul>
+
+        <h3>🛡 Không thay đổi</h3>
+        <p>Engine gõ, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi. 213/213 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.1 — "LG Differentiation + Hotkey Fix"</title>
       <sparkle:version>20301</sparkle:version>
       <sparkle:shortVersionString>2.3.1</sparkle:shortVersionString>

@@ -196,14 +196,17 @@ struct GeneralView: View {
     // v2.1.1: theme picker
     @Default(.uiTheme) private var uiTheme
 
-    /// v2.3.0+: settings header rẽ nhánh theo theme. LG + Tonal dùng layout
-    /// ngang theo design handoff `.set-header` (icon trái + title stack phải).
+    /// v2.3.2: settings header — chỉ giữ logo centered, bỏ wordmark text
+    /// và tagline. User request "chỉ để logo ở chính giữa bề ngang, bỏ
+    /// hết chữ Vkey hay bộ gõ macOS". Mỗi theme giữ icon styling riêng
+    /// (Tonal flat + halo, LG refractive + specular, Classic simple).
     @ViewBuilder
     private var settingsHeader: some View {
         switch uiTheme {
         case .tonal:
-            HStack(alignment: .center, spacing: 18) {
-                // Icon + red halo glow
+            // Tonal: flat icon 96px + red halo glow — centered.
+            HStack {
+                Spacer(minLength: 0)
                 ZStack {
                     Circle()
                         .fill(RadialGradient(
@@ -226,21 +229,8 @@ struct GeneralView: View {
                         .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
                 }
                 .frame(width: 96, height: 96)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    // Wordmark — Noto Sans Display 800 (fallback system rounded)
-                    Text("vkey")
-                        .font(VKeyDesign.display(36, weight: .heavy))
-                        .foregroundStyle(VKeyDesign.red500)
-                        .tracking(-0.72)
-                    Text("Bộ gõ tiếng Việt cho macOS · Telex & VNI")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(.secondary)
-                }
-
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 4)
             .padding(.vertical, 18)
 
         case .liquidGlass:
@@ -252,7 +242,9 @@ struct GeneralView: View {
             //     gloss inside RoundedRect — mimic `.tile::after`.
             // (3) Caustic halo: 3-stop radial gradient lớn hơn để icon "nổi"
             //     như sphere, không chỉ glow flat.
-            HStack(alignment: .center, spacing: 18) {
+            // v2.3.2: centered icon only — no wordmark text.
+            HStack {
+                Spacer(minLength: 0)
                 ZStack {
                     // ─── Refractive corner tints (LG signature) ─────────────
                     // Bottom-left red blob (per design `.lg-window::after`
@@ -345,35 +337,22 @@ struct GeneralView: View {
                         .shadow(color: .black.opacity(0.55), radius: 10, x: 0, y: 6)
                 }
                 .frame(width: 96, height: 96)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    // Wordmark "vkey" — Noto Sans Display 800 + gradient text
-                    // `linear-gradient(180deg, #fff, #C7C3B7)`
-                    Text("vkey")
-                        .font(VKeyDesign.display(36, weight: .heavy))
-                        .tracking(-0.72)
-                        .foregroundStyle(LinearGradient(
-                            colors: [Color.white, VKeyDesign.lgTextWarm],
-                            startPoint: .top, endPoint: .bottom
-                        ))
-                        .shadow(color: VKeyDesign.red500.opacity(0.35), radius: 6, x: 0, y: 2)
-                    Text("Bộ gõ tiếng Việt cho macOS")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(VKeyDesign.lgTextWarm)
-                }
-
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 4)
             .padding(.vertical, 18)
 
         case .classic:
-            Image(uiTheme.headerImageName)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 96, height: 96)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
-                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+            HStack {
+                Spacer(minLength: 0)
+                Image(uiTheme.headerImageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 96, height: 96)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 18)
         }
     }
     // 1.9.0: HUD customization

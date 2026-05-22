@@ -29,8 +29,71 @@ import SwiftUI
 struct ThemedSymbol: View {
   let name: String
   @Default(.appTheme) private var theme
+  // v2.3.2: read UI theme để áp dụng category color cho Liquid Glass.
+  // LG menu items có mỗi icon 1 màu (per design `MenuItem icon color`).
+  // Các theme khác (Tonal/Classic) inherit accent từ `.tint()` ở root.
+  @Default(.uiTheme) private var uiTheme
+
+  /// v2.3.2: SF Symbol name → category color khi LG theme active.
+  /// Mapping bám sát design `MenuBar.jsx`:
+  ///   red — flag VN, brand, dangerous (Thoát)
+  ///   blue — switch, info, statistics
+  ///   green — check, refresh, spell-check
+  ///   purple — wand/Macro
+  ///   gold — paintbrush/Giao diện, lightbulb/Ủng hộ
+  ///   gray — gear, keyboard, default
+  /// Trả nil nếu icon không có category → inherit parent .tint().
+  private static func liquidGlassCategoryColor(for name: String) -> Color? {
+    switch name {
+    case "arrow.left.arrow.right.square",
+         "arrow.left.arrow.right.circle",
+         "switch":
+      return Color(hex: 0x2D89E5)  // blue — Smart Switch / language toggle
+    case "checkmark.circle",
+         "check.circle",
+         "text.badge.checkmark":
+      return Color(hex: 0x2BB673)  // green — spell check
+    case "arrow.triangle.2.circlepath",
+         "arrow.clockwise":
+      return Color(hex: 0x2BB673)  // green — refresh/update
+    case "text.cursor":
+      return Color(hex: 0x8B5CF6)  // purple — Macro
+    case "paintbrush", "paintpalette":
+      return Color(hex: 0xF5C645)  // gold — theme picker
+    case "cup.and.saucer", "heart.fill", "lightbulb":
+      return Color(hex: 0xF5C645)  // gold — donate/support
+    case "info.circle", "chart.bar.doc.horizontal":
+      return Color(hex: 0x2D89E5)  // blue — info/stats
+    case "power":
+      return Color(hex: 0xE04434)  // red — Thoát (dangerous)
+    case "gear", "gearshape":
+      return Color(hex: 0x9CA3AF)  // gray — settings
+    case "keyboard", "keyboard.badge.ellipsis":
+      return Color(hex: 0x9CA3AF)  // gray — typing method
+    case "character.bubble.fill":
+      return Color(hex: 0xE04434)  // red — VI active
+    case "globe":
+      return Color(hex: 0xF5C645)  // gold — globe/language
+    default:
+      return nil
+    }
+  }
+
+  /// Apply LG category color if available, else nil = inherit parent tint.
+  private var liquidGlassTintOverride: Color? {
+    guard uiTheme == .liquidGlass else { return nil }
+    return Self.liquidGlassCategoryColor(for: name)
+  }
 
   var body: some View {
+    Group {
+      themedBody
+    }
+    .modifier(LiquidGlassTintModifier(color: liquidGlassTintOverride))
+  }
+
+  @ViewBuilder
+  private var themedBody: some View {
     switch theme {
     case .default:
       Image(systemName: name)
@@ -233,6 +296,25 @@ struct ThemedSymbol: View {
     case "keyboard":                          return "⌨️"
 
     default:                                  return nil
+    }
+  }
+}
+
+/// v2.3.2: ViewModifier applying explicit foregroundStyle when LG theme
+/// has a per-category color for this icon. Khi `color = nil`, identity —
+/// để theme khác (Tonal/Classic) giữ `.tint()` inheritance bình thường.
+/// Override symbolRenderingMode to `.hierarchical` để LG icons có gradient
+/// nhẹ thay vì flat fill — match design `.tile` look (sphere lighting).
+private struct LiquidGlassTintModifier: ViewModifier {
+  let color: Color?
+
+  func body(content: Content) -> some View {
+    if let color {
+      content
+        .symbolRenderingMode(.hierarchical)
+        .foregroundStyle(color)
+    } else {
+      content
     }
   }
 }
