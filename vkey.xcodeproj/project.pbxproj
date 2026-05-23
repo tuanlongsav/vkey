@@ -60,6 +60,7 @@
 		A1B2C3D4E5F6A7B8C9D0E1F4 /* AppIconSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A4 /* AppIconSwitcher.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F5 /* HUDComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F9 /* GlassTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1B0 /* GlassTile.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1FA /* TonalRowIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1B1 /* TonalRowIcon.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F6 /* FontRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A6 /* FontRegistration.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F7 /* NotoSansDisplay-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A7 /* NotoSansDisplay-Variable.ttf */; };
 		A1B2C3D4E5F6A7B8C9D0E1F8 /* CarterOne-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A8 /* CarterOne-Regular.ttf */; };
@@ -152,6 +153,7 @@
 		B1C2D3E4F5A6B7C8D9E0F1A4 /* AppIconSwitcher.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppIconSwitcher.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Components/HUDComponents.swift"; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1B0 /* GlassTile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Components/GlassTile.swift"; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1B1 /* TonalRowIcon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Components/TonalRowIcon.swift"; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A6 /* FontRegistration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FontRegistration.swift; path = ../App/FontRegistration.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A7 /* NotoSansDisplay-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "NotoSansDisplay-Variable.ttf"; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A8 /* CarterOne-Regular.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "CarterOne-Regular.ttf"; sourceTree = "<group>"; };
@@ -363,6 +365,7 @@
 				B1C2D3E4F5A6B7C8D9E0F1A4 /* AppIconSwitcher.swift */,
 				B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */,
 				B1C2D3E4F5A6B7C8D9E0F1B0 /* GlassTile.swift */,
+				B1C2D3E4F5A6B7C8D9E0F1B1 /* TonalRowIcon.swift */,
 				A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */,
 				82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */,
 				76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */,
@@ -619,6 +622,7 @@
 				A1B2C3D4E5F6A7B8C9D0E1F4 /* AppIconSwitcher.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F5 /* HUDComponents.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F9 /* GlassTile.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1FA /* TonalRowIcon.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F6 /* FontRegistration.swift in Sources */,
 				40D7FB871260EEC2B9077795 /* MenuBarFooterRow.swift in Sources */,
 				3A1CEF871E6A885DD3916044 /* MacroSuggestionSheet.swift in Sources */,
@@ -797,7 +801,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 20303;
+				CURRENT_PROJECT_VERSION = 20304;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -820,7 +824,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.3;
+				MARKETING_VERSION = 2.3.4;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -839,7 +843,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 20303;
+				CURRENT_PROJECT_VERSION = 20304;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
@@ -863,7 +867,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.3;
+				MARKETING_VERSION = 2.3.4;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;

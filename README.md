@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.3 — "LG Glass Tile Icons"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.4 — "Tonal Refinement"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.4** — Tonal theme refresh full theo handoff design CSS. New **TonalRowIcon** component (flat sunken tile + red brand accent, match `.row__icon`) cho mọi menu/setting row. HUD scrim 4-layer match `.hud` exactly (top highlight + warm ink + material blur + inset border). Settings header icon radius 22→28pt (`--r-2xl`). Visual differentiation matrix Tonal (refined macOS native) vs LG (premium 3D visionOS) bây giờ rõ rệt.
 
 > **2.3.3** — Liquid Glass theme bây giờ render đầy đủ với **3D glass tile icons** (gradient + diagonal gloss + top arc specular + white rim + drop shadow) match design `SwiftSnippets.jsx`. New `GlassTile` SwiftUI component + opt-in env `useGlassTile` cho MenuContent/Settings. MenuBarLabel status icon giữ flat (macOS conventions). 7 màu preset (red/gold/blue/green/purple/gray/ink) + 40+ SF Symbol category map. Bonus: fix pbxproj path cho FontRegistration.swift.
 

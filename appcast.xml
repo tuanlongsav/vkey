@@ -6,6 +6,68 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.4 — "Tonal Refinement"</title>
+      <sparkle:version>20304</sparkle:version>
+      <sparkle:shortVersionString>2.3.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sat, 23 May 2026 09:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.4/vkey-2.3.4.dmg"
+        sparkle:edSignature="3cHVu6AleHmav4NB8YDzDgwcmIJZ1aDex2t9TxF3/wTwbyDac2HnPiZJzAKNYmetk8PrLzcPmZ5zfdNEAMtyCw=="
+        length="8765559"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.4 — "Tonal Refinement":</h2>
+        <p><em>Tonal theme refresh full theo handoff design — thêm row-icon tile sunken bg + red accent (match <code>.row__icon</code>), tinh chỉnh HUD scrim layer warmer (`glass-dark`), bump header icon radius 22→28pt (`--r-2xl`).</em></p>
+
+        <h3>🟥 TonalRowIcon component</h3>
+        <ul>
+          <li>SwiftUI view mới — <strong>flat sunken tile + red brand accent</strong>. Khác với GlassTile (3D glass) — Tonal flat hơn, subtle hơn, đậm "macOS native" feel.</li>
+          <li>Background: dark mode ink-600 (#0E0F12) 85%, light mode paper-100 (#F2EFE8) 100%.</li>
+          <li>Icon foreground: dark red-300 (#F18A74), light red-500 (#E04434).</li>
+          <li>Border subtle 0.5pt + inset shadow gradient cho cảm giác "recessed" tile.</li>
+          <li>Default 28pt với squircle radius 7pt (8/32 ratio per design).</li>
+        </ul>
+
+        <h3>🔌 ThemedSymbol 4-cấp render priority</h3>
+        <pre>
+LG + useGlassTile=true   → GlassTile (3D glass, per-category color)
+Tonal + useGlassTile=true → TonalRowIcon (flat sunken + red accent)
+LG only (no env)         → flat hierarchical category color (v2.3.2)
+Classic / Tonal only     → themedBody (appTheme-driven)
+        </pre>
+        <p>Env <code>\.useGlassTile</code> bây giờ set <code>true</code> cho cả LG VÀ Tonal ở MenuContent + Settings root. Mỗi theme render tile của riêng mình.</p>
+
+        <h3>✨ Tonal HUD scrim — multi-layer match `.hud`</h3>
+        <ul>
+          <li><strong>Layer 4</strong>: top highlight gradient (white 6% → 0%) — match <code>inset 0 1px 0 rgba(255,255,255,0.06)</code> "lit from above".</li>
+          <li><strong>Layer 3</strong>: warm ink scrim — <code>#131519</code> @ scrimOpacity (0.32-0.62 baseline).</li>
+          <li><strong>Layer 2</strong>: <code>.ultraThinMaterial</code> blur baseline — match <code>backdrop-filter: blur(40px) saturate(180%)</code>.</li>
+          <li><strong>Layer 1</strong>: inset border white 8% — match <code>inset 0 0 0 1px rgba(255,255,255,0.08)</code>.</li>
+          <li>Outer shadow <code>0 24px 60px -16px rgba(0,0,0,0.55)</code>.</li>
+        </ul>
+
+        <h3>📐 Settings header Tonal — radius 22 → 28</h3>
+        <ul>
+          <li>Icon cornerRadius bump per design <code>--r-2xl</code> token (28px).</li>
+          <li>Halo radial gradient radius 70→72, blur 6→8, frame 132→136 — softer glow.</li>
+          <li>Thêm subtle white rim border (0.6pt, 8% opacity) — match <code>--shadow-inset</code>.</li>
+          <li>Shadow stack tinh chỉnh: red 30% @ blur 24/y 10 + black 18% @ blur 6/y 3 — match <code>--shadow-lg</code>.</li>
+        </ul>
+
+        <h3>🎨 Visual differentiation Tonal vs LG (after 2.3.4)</h3>
+        <ul>
+          <li><strong>Menu icon tile</strong>: Tonal flat sunken (subtle), LG 3D glass (bold gradient + gloss).</li>
+          <li><strong>HUD scrim</strong>: Tonal warm ink + top highlight (single tone), LG multi-color refractive (red bottom-left + blue top-right).</li>
+          <li><strong>Settings header icon</strong>: Tonal flat with halo (clean), LG glass with caustic halo + specular gloss + multi-shadow (premium 3D).</li>
+        </ul>
+
+        <h3>🛡 Không thay đổi</h3>
+        <p>Engine gõ, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi. 213/213 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.3 — "LG Glass Tile Icons"</title>
       <sparkle:version>20303</sparkle:version>
       <sparkle:shortVersionString>2.3.3</sparkle:shortVersionString>

@@ -12,12 +12,16 @@ struct vkeyApp: App {
     MenuBarExtra {
       MenuContentView(appDelegate: appDelegate)
         .tint(themeManager.current.accentColor)
-        // v2.3.3: LG theme — opt-in GlassTile wrap cho mỗi menu item icon.
-        // ThemedSymbol đọc `\.useGlassTile` từ env; khi true + uiTheme=.liquidGlass
-        // → wrap SF Symbol trong glass tile colored (per design MenuBar.jsx).
-        // MenuBarLabel (label closure bên dưới) KHÔNG nhận env này → status
+        // v2.3.3+: opt-in tile wrap cho mỗi menu item icon. Env value true
+        // khi LG hoặc Tonal active — ThemedSymbol wrap tương ứng:
+        //   - LG → GlassTile (3D glass với per-category color)
+        //   - Tonal → TonalRowIcon (flat sunken tile + red brand accent)
+        // Classic → no tile (theme nguyên gốc v2.0.2).
+        // MenuBarLabel (label closure bên dưới) KHÔNG nhận env → status
         // bar icon giữ flat SF Symbol (match macOS menu bar conventions).
-        .environment(\.useGlassTile, themeManager.current == .liquidGlass)
+        .environment(\.useGlassTile,
+                     themeManager.current == .liquidGlass
+                       || themeManager.current == .tonal)
     } label: {
       MenuBarLabel(appDelegate: appDelegate, appState: appDelegate.appState)
     }
@@ -69,9 +73,11 @@ struct vkeyApp: App {
       // accent color so Toggles, Pickers, focus rings, and SwiftUI control
       // chrome all match. Classic → system blue; Tonal → brand red.
       .tint(themeManager.current.accentColor)
-      // v2.3.3: LG theme — wrap tab item icons + setting row icons trong
-      // GlassTile. Identical opt-in mechanism với MenuContentView ở trên.
-      .environment(\.useGlassTile, themeManager.current == .liquidGlass)
+      // v2.3.3+: wrap tab item + setting row icons trong tile (GlassTile
+      // cho LG / TonalRowIcon cho Tonal). Classic không wrap.
+      .environment(\.useGlassTile,
+                   themeManager.current == .liquidGlass
+                     || themeManager.current == .tonal)
     }
     // 1.7.6: cho phép user resize Settings window qua góc/cạnh. Default
     // .automatic enforces non-resizable + sized-to-content trong macOS 13+

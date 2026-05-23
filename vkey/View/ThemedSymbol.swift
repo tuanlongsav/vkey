@@ -137,16 +137,21 @@ struct ThemedSymbol: View {
   }
 
   var body: some View {
-    // v2.3.3: 3-cấp render priority cho LG theme:
-    //  (1) `uiTheme == .liquidGlass` AND `useGlassTile = true` (set qua env
-    //      ở MenuContent + Settings root) → wrap trong GlassTile glass 3D
-    //      với per-category color. Match design `MenuBar.jsx`.
-    //  (2) `uiTheme == .liquidGlass` chỉ — KHÔNG env flag (vd MenuBarLabel
-    //      status icon) → flat SF Symbol với hierarchical fg color (giữ
-    //      v2.3.2 behavior tránh phá macOS menu bar conventions).
-    //  (3) Tonal/Classic → fall through `themedBody` (appTheme-driven).
+    // v2.3.4: 4-cấp render priority — Tonal cũng wrap khi env opt-in,
+    // dùng `TonalRowIcon` (flat sunken tile + red accent) thay vì
+    // GlassTile (3D glass).
+    //  (1) LG + useGlassTile=true → GlassTile (per design MenuBar.jsx)
+    //  (2) Tonal + useGlassTile=true → TonalRowIcon (per design .row__icon)
+    //  (3) LG only — không env (MenuBarLabel status icon) → flat SF Symbol
+    //      với hierarchical category color (v2.3.2 behavior)
+    //  (4) Tonal only / Classic → themedBody (appTheme-driven)
     if uiTheme == .liquidGlass && useGlassTile {
       GlassTile(color: Self.liquidGlassTileColor(for: name), size: 24) {
+        Image(systemName: name)
+          .font(.system(size: 13, weight: .regular))
+      }
+    } else if uiTheme == .tonal && useGlassTile {
+      TonalRowIcon(size: 24) {
         Image(systemName: name)
           .font(.system(size: 13, weight: .regular))
       }

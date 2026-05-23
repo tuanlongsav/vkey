@@ -205,6 +205,8 @@ struct GeneralView: View {
         switch uiTheme {
         case .tonal:
             // Tonal: flat icon 96px + red halo glow — centered.
+            // v2.3.4: cornerRadius 22 → 28 (match design `--r-2xl`).
+            // Shadow tweaks per design tokens `--shadow-lg` (24px blur, y 8).
             HStack {
                 Spacer(minLength: 0)
                 ZStack {
@@ -216,17 +218,23 @@ struct GeneralView: View {
                             ],
                             center: .center,
                             startRadius: 10,
-                            endRadius: 70
+                            endRadius: 72
                         ))
-                        .frame(width: 132, height: 132)
-                        .blur(radius: 6)
+                        .frame(width: 136, height: 136)
+                        .blur(radius: 8)
                     Image(uiTheme.headerImageName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 96, height: 96)
-                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                        .shadow(color: VKeyDesign.red500.opacity(0.32), radius: 18, x: 0, y: 8)
-                        .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+                        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        .overlay(
+                            // Subtle white rim — match design `--shadow-inset`
+                            // `inset 0 0 0 1px var(--border-1)` for elevated feel.
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.6)
+                        )
+                        .shadow(color: VKeyDesign.red500.opacity(0.30), radius: 24, x: 0, y: 10)
+                        .shadow(color: .black.opacity(0.18), radius: 6, x: 0, y: 3)
                 }
                 .frame(width: 96, height: 96)
                 Spacer(minLength: 0)

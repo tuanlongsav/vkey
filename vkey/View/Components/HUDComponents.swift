@@ -262,20 +262,45 @@ private struct TonalScrimBackground: ViewModifier {
     let radius: CGFloat
     let scrimOpacity: Double
 
+    /// v2.3.4: Tonal HUD scrim refined per design `.hud` spec:
+    ///   background: var(--glass-dark);                    → ink500 @ scrimOpacity
+    ///   backdrop-filter: blur(40px) saturate(180%);       → .ultraThinMaterial
+    ///   box-shadow: 0 24px 60px -16px rgba(0,0,0,0.6),    → outer drop shadow
+    ///               0 0 0 1px rgba(255,255,255,0.08) inset; → overlay strokeBorder
+    ///
+    /// v2.3.4 thêm 2 layer:
+    ///   1. Subtle warm ink tint trên top — match `--shadow-key` warm undertone.
+    ///   2. Inner top highlight (white 6%) — match `inset 0 1px 0 white-0.06`
+    ///      cho cảm giác glass "lit from above".
     func body(content: Content) -> some View {
         content
+            // Layer 4: subtle top highlight (white 6% gradient top → clear)
             .background(
-                VKeyDesign.ink500.opacity(scrimOpacity),
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.06),
+                        Color.white.opacity(0.0),
+                    ],
+                    startPoint: .top, endPoint: .center
+                )
+                .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+            )
+            // Layer 3: warm ink tint overlay — match `--glass-dark` warmth
+            .background(
+                Color(hex: 0x131519).opacity(scrimOpacity),
                 in: RoundedRectangle(cornerRadius: radius, style: .continuous)
             )
+            // Layer 2: material blur baseline (backdrop-filter equivalent)
             .background(
                 .ultraThinMaterial,
                 in: RoundedRectangle(cornerRadius: radius, style: .continuous)
             )
+            // Layer 1: inset border — match `inset 0 0 0 1px rgba(255,255,255,0.08)`
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
             )
+            // Outer drop shadow — match `0 24px 60px -16px rgba(0,0,0,0.6)`
             .shadow(color: Color.black.opacity(0.55), radius: 24, x: 0, y: 12)
     }
 }

@@ -2,6 +2,97 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.4] - 2026-05-23 — "Tonal Refinement"
+
+**Tonal theme refresh full theo handoff design** — thêm `TonalRowIcon` (flat sunken tile + red accent) cho mọi menu/setting row, tinh chỉnh HUD scrim layer warmer match `--glass-dark`, bump header icon radius 22→28pt theo `--r-2xl`. User feedback: "đọc kỹ lại để sửa theme Tonal cho đẹp hơn, đồng bộ hơn" → đối chiếu trực tiếp với `colors_and_type.css` + `components.css` từ handoff.
+
+### 🟥 TonalRowIcon component
+
+`vkey/View/Components/TonalRowIcon.swift` — SwiftUI view bám sát design CSS:
+
+```css
+.row__icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--bg-sunken);   /* ink-600 dark, paper-100 light */
+  color: var(--fg-accent);        /* red-500 / red-300 */
+}
+```
+
+Swift impl:
+- **Sunken background**: dark `#0E0F12` @ 0.85, light `#F2EFE8` @ 1.0
+- **Icon foreground**: dark `#F18A74` (red-300), light `#E04434` (red-500)
+- **Border**: 0.5pt subtle (`--border-1`)
+- **Inset shadow gradient**: 0.8pt linear gradient với `.overlay` blendMode để mô phỏng `inset shadow` (SwiftUI không có native inset)
+- **Default 28pt** size với squircle radius 7pt (8/32 ratio)
+
+KHÁC với GlassTile:
+| Aspect | TonalRowIcon | GlassTile |
+|---|---|---|
+| Background | Flat sunken (1 màu) | 3-stop gradient |
+| Gloss | None | Diagonal + top-arc specular |
+| Icon color | Red brand accent | White |
+| Rim | Subtle 0.5pt | Bright 0.5pt + soft shadow |
+| Feel | Refined macOS native | Premium 3D glassy |
+
+### 🔌 ThemedSymbol 4-cấp render priority (v2.3.4)
+
+```swift
+if uiTheme == .liquidGlass && useGlassTile {
+  GlassTile(color: liquidGlassTileColor(for: name), size: 24) { Image(systemName: name) }
+} else if uiTheme == .tonal && useGlassTile {
+  TonalRowIcon(size: 24) { Image(systemName: name) }
+} else if uiTheme == .liquidGlass {
+  themedBody.modifier(LiquidGlassTintModifier(...))  // v2.3.2 flat tint
+} else {
+  themedBody  // appTheme-driven
+}
+```
+
+Env `\.useGlassTile` set `true` ở MenuContentView + Settings TabView roots khi **LG hoặc Tonal** active (trước 2.3.4 chỉ LG). MenuBarLabel status icon không nhận env → flat SF Symbol (macOS convention).
+
+### ✨ Tonal HUD scrim refinement
+
+Trước 2.3.4: single-layer ink-500 opacity + ultraThinMaterial. Sau 2.3.4: **4-layer composition** match design `.hud`:
+
+| Layer | Composition | Maps to CSS |
+|---|---|---|
+| 4 | LinearGradient white 6% top → 0% center | `inset 0 1px 0 rgba(255,255,255,0.06)` |
+| 3 | `#131519` @ scrimOpacity (0.32-0.62) | `background: var(--glass-dark)` |
+| 2 | `.ultraThinMaterial` | `backdrop-filter: blur(40px) saturate(180%)` |
+| 1 | strokeBorder white 8% (1pt) | `inset 0 0 0 1px rgba(255,255,255,0.08)` |
+| Outer | shadow black 55% blur 24 y 12 | `0 24px 60px -16px rgba(0,0,0,0.6)` |
+
+Top highlight layer rất subtle nhưng đủ tạo cảm giác "glass lit from above" — match handoff exactly.
+
+### 📐 Settings header Tonal — radius 22 → 28
+
+Per design `--r-2xl: 28px`. Tinh chỉnh thêm:
+- Halo radial gradient: radius 70→72, blur 6→8, frame 132→136 (softer)
+- Thêm subtle white rim border 0.6pt @ 8% opacity — match `--shadow-inset`
+- Shadow stack: red 30% @ blur 24/y 10 + black 18% @ blur 6/y 3 — match `--shadow-lg`
+
+### 🎨 Visual differentiation matrix (v2.3.4)
+
+| Surface | Classic | Tonal | Liquid Glass |
+|---|---|---|---|
+| Menu icon | Flat SF Symbol, system blue | Sunken tile + red icon | 3D glass tile + per-category color |
+| HUD scrim | Light material + accent | 4-layer warm ink + top highlight | 5-layer + refractive corner tints |
+| Settings header | Icon 18pt radius | Icon 28pt radius + halo + rim | Icon 22pt radius + caustic + specular + multi-shadow |
+| Vibe | macOS native nguyên gốc | Refined macOS native | Premium 3D visionOS |
+
+### 📦 Release artifacts
+
+- `vkey-2.3.4.dmg` — universal, ~8.8 MB. Ad-hoc codesign + hardened runtime.
+- Sparkle signature: `3cHVu6AleHmav4NB8YDzDgwcmIJZ1aDex2t9TxF3/wTwbyDac2HnPiZJzAKNYmetk8PrLzcPmZ5zfdNEAMtyCw==` (length 8765559).
+
+### 🛡 Không thay đổi
+
+- Engine gõ, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi.
+- 213/213 test pass.
+
+---
+
 ## [2.3.3] - 2026-05-23 — "LG Glass Tile Icons"
 
 **Liquid Glass theme bây giờ render đầy đủ với 3D glass tile icons** (gradient + diagonal gloss + top arc specular + white rim + drop shadow) — match 1:1 design `SwiftSnippets.jsx` handoff. User feedback: LG icons chỉ flat colored SF Symbol → không đủ "3D" so với design — bây giờ wrap trong GlassTile component.
