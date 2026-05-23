@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.2 — "Header Strip + LG Category Colors"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.3 — "LG Glass Tile Icons"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.3** — Liquid Glass theme bây giờ render đầy đủ với **3D glass tile icons** (gradient + diagonal gloss + top arc specular + white rim + drop shadow) match design `SwiftSnippets.jsx`. New `GlassTile` SwiftUI component + opt-in env `useGlassTile` cho MenuContent/Settings. MenuBarLabel status icon giữ flat (macOS conventions). 7 màu preset (red/gold/blue/green/purple/gray/ink) + 40+ SF Symbol category map. Bonus: fix pbxproj path cho FontRegistration.swift.
 
 > **2.3.2** (1) Settings header bỏ wordmark "vkey" + tagline ở mọi theme — chỉ giữ logo centered. (2) Liquid Glass MenuBar có per-category icon colors theo design `MenuBar.jsx`: blue (Smart Switch/info), green (spell check/refresh), purple (Macro), gold (theme picker/donate), red (Thoát/VI), gray (gear/keyboard). Tonal giữ accent red đồng nhất → visually obvious khác biệt khi switch theme.
 

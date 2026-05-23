@@ -6,6 +6,57 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.3 — "LG Glass Tile Icons"</title>
+      <sparkle:version>20303</sparkle:version>
+      <sparkle:shortVersionString>2.3.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sat, 23 May 2026 08:45:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.3/vkey-2.3.3.dmg"
+        sparkle:edSignature="BmDXfXr8TEpyGB9dffyY2UAtNkyELnGF39Tn0NnfmiFroklX8lKDY4dJTYQvXz036UCuXyuzlS8rMYLfvWIrBw=="
+        length="8745871"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.3 — "LG Glass Tile Icons":</h2>
+        <p><em>Liquid Glass theme bây giờ render đầy đủ với <strong>3D glass tile icons</strong> (gradient + diagonal gloss + top arc specular + white rim + drop shadow) — match 1:1 design `SwiftSnippets.jsx` handoff.</em></p>
+
+        <h3>✨ GlassTile component</h3>
+        <ul>
+          <li>SwiftUI view với <strong>4-layer composition</strong>: base gradient (3-stop spherical lighting) + diagonal gloss (160deg) + top-arc specular ellipse + white rim border + outer drop shadow.</li>
+          <li>7 màu preset: red/gold/blue/green/purple/gray/ink — map theo category trong design system.</li>
+          <li>Default size 24pt với squircle radius 7pt (7/24 ratio). Auto-scale: <code>radius = size * 7/24</code>.</li>
+        </ul>
+
+        <h3>🔌 Opt-in qua Environment value</h3>
+        <ul>
+          <li><code>@Environment(\.useGlassTile)</code> — default false. Chỉ contexts EXPLICITLY enable (MenuContentView + Settings root) thì wrap.</li>
+          <li><code>MenuBarLabel</code> status icon ở top of screen <strong>KHÔNG</strong> nhận env → giữ flat SF Symbol (match macOS menu bar conventions).</li>
+          <li>HUD, Tonal, Classic không bị ảnh hưởng.</li>
+        </ul>
+
+        <h3>🎨 ThemedSymbol patch</h3>
+        <ul>
+          <li>Khi <code>uiTheme == .liquidGlass</code> AND <code>useGlassTile == true</code> → wrap SF Symbol trong GlassTile với category color (40+ mappings).</li>
+          <li>Khi <code>uiTheme == .liquidGlass</code> chỉ — không env flag → flat SF Symbol với hierarchical category color (giữ v2.3.2 behavior).</li>
+          <li>Tonal / Classic → fall through appTheme-driven render.</li>
+        </ul>
+
+        <h3>🐛 Bonus fix</h3>
+        <p>Sửa pbxproj path sai cho <code>FontRegistration.swift</code> (đăng ký ở <code>vkey/View/</code> nhưng file thực ở <code>vkey/App/</code>) — đã trỏ đúng path với <code>name=...</code> reference.</p>
+
+        <h3>📦 Architecture</h3>
+        <ul>
+          <li><code>GlassTileColor</code> top-level enum (extract from generic struct) — gọi được từ ThemedSymbol mà không cần specify generic param.</li>
+          <li><code>vkey/View/Components/GlassTile.swift</code> — 95 lines, drop-in component.</li>
+          <li>Bundle size impact: ~5 KB (runtime SwiftUI rendering, không bundle PNG assets — bỏ Icons3D pack 117 MB do quá lớn).</li>
+        </ul>
+
+        <h3>🛡 Không thay đổi</h3>
+        <p>Engine gõ, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi. 213/213 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.2 — "Header Strip + LG Category Colors"</title>
       <sparkle:version>20302</sparkle:version>
       <sparkle:shortVersionString>2.3.2</sparkle:shortVersionString>

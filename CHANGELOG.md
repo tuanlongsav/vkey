@@ -2,6 +2,90 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.3] - 2026-05-23 — "LG Glass Tile Icons"
+
+**Liquid Glass theme bây giờ render đầy đủ với 3D glass tile icons** (gradient + diagonal gloss + top arc specular + white rim + drop shadow) — match 1:1 design `SwiftSnippets.jsx` handoff. User feedback: LG icons chỉ flat colored SF Symbol → không đủ "3D" so với design — bây giờ wrap trong GlassTile component.
+
+### ✨ GlassTile component
+
+`vkey/View/Components/GlassTile.swift` — 95-line SwiftUI view với **4-layer composition**:
+
+1. **Base gradient**: 3-stop spherical lighting (`top-light → mid-color → bottom-shadow`) — `linear-gradient(160deg)`.
+2. **Diagonal gloss**: white 40% → 8% → black 15% từ top-left xuống bottom-right.
+3. **Top-arc specular ellipse**: white 55% → 0% ellipse hugging top edge — mimic "wet" gloss `.tile::after`.
+4. **White rim border** (0.5pt, 12% opacity) + **outer drop shadow** (black 35%, blur 3pt, y 1.5).
+
+Icon content tinted white với double-shadow (white sub-pixel glow + black drop) cho contrast.
+
+**7 màu preset** trong `GlassTileColor` enum (top-level — không nested để gọi từ ThemedSymbol mà không specify generic param): `red`, `gold`, `blue`, `green`, `purple`, `gray`, `ink`. Mỗi màu có (top, mid, bot) hex riêng — match design `.tile--red/gold/...` từ glass.css.
+
+Default size 24pt với squircle radius 7pt (auto-scale: `radius = max(5, size * 7/24)`).
+
+### 🔌 Opt-in qua Environment value
+
+Tránh side effects ở contexts không phù hợp (status bar, HUD large icons):
+
+```swift
+@Environment(\.useGlassTile) private var useGlassTile  // default false
+```
+
+Set `true` ở 2 contexts trong `vkeyApp.swift`:
+- `MenuContentView` root — menu dropdown items get tiles.
+- `Settings TabView` root — tab item icons + row icons get tiles.
+
+KHÔNG set ở:
+- `MenuBarLabel` (status bar icon top of screen) — giữ flat SF Symbol theo macOS menu bar conventions.
+- HUD bodies — đã dùng `HUDFlag` custom view, không cần tile.
+
+### 🎨 ThemedSymbol 3-cấp render priority
+
+```swift
+if uiTheme == .liquidGlass && useGlassTile {
+  GlassTile(color: liquidGlassTileColor(for: name), size: 24) { Image(systemName: name) }
+} else if uiTheme == .liquidGlass {
+  themedBody.modifier(LiquidGlassTintModifier(color: categoryColor))  // v2.3.2 flat tint
+} else {
+  themedBody  // appTheme-driven (default/threeD/emoji)
+}
+```
+
+Category color map (40+ SF Symbol names → GlassTileColor) — match design `SpecSheets.jsx` Icon system groupings:
+- **red**: keyboard, character.bubble.fill, globe, paintbrush, power
+- **gold**: sparkles, lightbulb, rocket, cup.and.saucer, heart.fill, chart.bar
+- **blue**: arrow.left.arrow.right.*, switch, info.circle, text.cursor.ibeam
+- **green**: checkmark, shield, text.badge.checkmark, arrow.triangle.2.circlepath
+- **purple**: text.cursor, abc, character, wand.and.stars
+- **ink**: lock, lock.square, nosign, gear.badge.questionmark, trash
+- **gray**: gear, gearshape, magnifyingglass, plus, minus
+
+### 🐛 Bonus fix: FontRegistration.swift path
+
+Trong pbxproj, `FontRegistration.swift` được đăng ký ở `vkey/View/` (sai) nhưng file thực sự ở `vkey/App/`. Build trước đó lỗi `Build input file cannot be found`. Fix bằng cách thay path thành `name = FontRegistration.swift; path = ../App/FontRegistration.swift` (Xcode dùng `name` cho hiển thị + `path` relative cho file system).
+
+### 📦 Tại sao không bundle Icons3D PNG?
+
+User cung cấp `vkey-Icons3D.zip` — 76 imagesets pre-rendered @1x/@2x/@3x (1024×1024). Tổng **117 MB** — quá lớn cho macOS app bundle (current ~8 MB).
+
+Runtime SwiftUI rendering qua `GlassTile`:
+- Bundle size impact: ~5 KB (Swift source).
+- Vector scale: perfect ở mọi pixel density.
+- Customizable per-context (size, radius).
+- Match design fidelity ~95% (chỉ thiếu micro-details của Photoshop layers).
+
+Trade-off đúng cho LG theme.
+
+### 📦 Release artifacts
+
+- `vkey-2.3.3.dmg` — universal, ~8.7 MB. Ad-hoc codesign + hardened runtime.
+- Sparkle signature: `BmDXfXr8TEpyGB9dffyY2UAtNkyELnGF39Tn0NnfmiFroklX8lKDY4dJTYQvXz036UCuXyuzlS8rMYLfvWIrBw==` (length 8745871).
+
+### 🛡 Không thay đổi
+
+- Engine gõ, từ điển, spell-check, prediction, Smart Switch, Macro — không đổi.
+- 213/213 test pass.
+
+---
+
 ## [2.3.2] - 2026-05-23 — "Header Strip + LG Category Colors"
 
 **2 user requests**: (1) Settings header chỉ giữ logo centered, bỏ chữ "vkey" + tagline ở mọi theme. (2) MenuBar Tonal vs LG khác màu rõ rệt — LG có per-category icon colors theo design.

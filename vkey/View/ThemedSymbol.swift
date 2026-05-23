@@ -34,6 +34,57 @@ struct ThemedSymbol: View {
   // Các theme khác (Tonal/Classic) inherit accent từ `.tint()` ở root.
   @Default(.uiTheme) private var uiTheme
 
+  // v2.3.3: opt-in glass tile wrap. Set qua `.environment(\.useGlassTile, true)`
+  // ở MenuContentView + Settings root. MenuBarLabel status icon + HUD KHÔNG
+  // set → giữ flat SF Symbol (match macOS menu bar conventions).
+  @Environment(\.useGlassTile) private var useGlassTile
+
+  /// v2.3.3: SF Symbol name → `GlassTileColor` cho LG theme.
+  /// Mapping match design `SpecSheets.jsx` (Icon system grouped by function).
+  private static func liquidGlassTileColor(for name: String) -> GlassTileColor {
+    switch name {
+    // Brand / on-state
+    case "keyboard", "keyboard.badge.ellipsis", "character.bubble.fill":
+      return .red
+    case "globe", "paintbrush", "paintpalette", "power":
+      return .red
+    // Suggestion / warning / lightbulb
+    case "sparkles", "lightbulb", "lightbulb.fill", "rocket",
+         "cup.and.saucer", "heart.fill":
+      return .gold
+    case "chart.bar", "chart.bar.doc.horizontal":
+      return .gold
+    // Smart Switch / language toggle / info
+    case "arrow.left.arrow.right.square",
+         "arrow.left.arrow.right.circle",
+         "arrow.left.arrow.right.circle.fill",
+         "app.dashed", "switch", "switch.2":
+      return .blue
+    case "info.circle", "text.cursor.ibeam":
+      return .blue
+    // Spell / check / success / refresh
+    case "checkmark", "checkmark.circle", "checkmark.circle.fill",
+         "text.badge.checkmark", "shield", "shield.fill":
+      return .green
+    case "arrow.triangle.2.circlepath", "arrow.clockwise", "tray":
+      return .green
+    // Macro / wand / text cursor (purple)
+    case "text.cursor", "abc", "character", "textformat",
+         "wand.and.stars", "wand.and.rays":
+      return .purple
+    // Destructive / lock / system (ink — dark)
+    case "lock", "lock.square", "lock.fill",
+         "nosign", "gear.badge.questionmark", "trash":
+      return .ink
+    // Settings / structural (gray)
+    case "gear", "gearshape", "ellipsis", "arrow.right",
+         "magnifyingglass", "plus.circle", "plus", "minus":
+      return .gray
+    default:
+      return .gray
+    }
+  }
+
   /// v2.3.2: SF Symbol name → category color khi LG theme active.
   /// Mapping bám sát design `MenuBar.jsx`:
   ///   red — flag VN, brand, dangerous (Thoát)
@@ -86,10 +137,25 @@ struct ThemedSymbol: View {
   }
 
   var body: some View {
-    Group {
-      themedBody
+    // v2.3.3: 3-cấp render priority cho LG theme:
+    //  (1) `uiTheme == .liquidGlass` AND `useGlassTile = true` (set qua env
+    //      ở MenuContent + Settings root) → wrap trong GlassTile glass 3D
+    //      với per-category color. Match design `MenuBar.jsx`.
+    //  (2) `uiTheme == .liquidGlass` chỉ — KHÔNG env flag (vd MenuBarLabel
+    //      status icon) → flat SF Symbol với hierarchical fg color (giữ
+    //      v2.3.2 behavior tránh phá macOS menu bar conventions).
+    //  (3) Tonal/Classic → fall through `themedBody` (appTheme-driven).
+    if uiTheme == .liquidGlass && useGlassTile {
+      GlassTile(color: Self.liquidGlassTileColor(for: name), size: 24) {
+        Image(systemName: name)
+          .font(.system(size: 13, weight: .regular))
+      }
+    } else {
+      Group {
+        themedBody
+      }
+      .modifier(LiquidGlassTintModifier(color: liquidGlassTintOverride))
     }
-    .modifier(LiquidGlassTintModifier(color: liquidGlassTintOverride))
   }
 
   @ViewBuilder
