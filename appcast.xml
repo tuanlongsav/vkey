@@ -6,6 +6,43 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.5 — "Excel Hotfix"</title>
+      <sparkle:version>20305</sparkle:version>
+      <sparkle:shortVersionString>2.3.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 24 May 2026 22:15:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.5/vkey-2.3.5.dmg"
+        sparkle:edSignature="iJ+cbPdfMkHBkSJ5VxqHgGW6sK+eGI2OyabxQSvmHZkf1APVpuDrNH+u8VOwNDASz/YQnc7AOulxnReSqMcoBA=="
+        length="8766574"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.5 — "Excel Hotfix":</h2>
+        <p><em>Sửa lỗi gấp khi gõ Telex trong Microsoft Excel: con trỏ nhảy và bôi các ô bên trái, đồng thời chữ Việt compose sai.</em></p>
+
+        <h3>🐛 Lỗi</h3>
+        <ul>
+          <li>Trong Excel, khi gõ Telex (vd <code>tieesng vieejt</code>), con trỏ "nhảy" qua các ô bên trái và bôi xanh chúng.</li>
+          <li>Hệ quả: chữ tiếng Việt cuối cùng ghi đè sang các cell hàng xóm, trông như compose hỏng.</li>
+        </ul>
+
+        <h3>🔧 Nguyên nhân</h3>
+        <ul>
+          <li>Excel nằm trong danh sách <code>FixAutocompleteApps</code> — vốn dành cho các browser có <em>inline autocomplete</em> (Chrome, Safari, Edge…).</li>
+          <li>Đường đi này dùng <code>Shift+Left</code> để bao trùm vùng autocomplete, nhưng trong Excel <code>Shift+Left</code> = mở rộng chọn cell sang trái → nhảy/bôi ô.</li>
+        </ul>
+
+        <h3>✅ Fix</h3>
+        <ul>
+          <li>Loại <code>com.microsoft.Excel</code> và <code>com.microsoft.Office.Excel</code> khỏi <code>FixAutocompleteApps</code>.</li>
+          <li>Excel giờ đi qua nhánh backspace+retype an toàn (không kèm Shift), dùng strategy <code>.hybrid(1000μs)</code> đã cấu hình sẵn — giống Word/PowerPoint/Outlook/OneNote (đều ổn lâu nay).</li>
+          <li>Dropdown autocomplete của Excel (<code>=SUM</code>, <code>=SUMIF</code>…) <strong>không bị ảnh hưởng</strong> — đó là UI native, không cần Shift+Left.</li>
+          <li>Edge browser <strong>không bị ảnh hưởng</strong> — vẫn dùng đường Shift+Left để bao trùm inline autocomplete.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.4 — "Tonal Refinement"</title>
       <sparkle:version>20304</sparkle:version>
       <sparkle:shortVersionString>2.3.4</sparkle:shortVersionString>

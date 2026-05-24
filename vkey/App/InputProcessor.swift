@@ -645,8 +645,11 @@ class InputProcessor {
     "com.pushplaylabs.sidekick", "com.firstversionist.polypane",
     "ai.perplexity.comet", "com.electron.min",
 
-    // Office & Legacy
-    "com.microsoft.Excel", "com.microsoft.Office.Excel", "com.microsoft.edge", "com.microsoft.Edge",
+    // Edge (Chromium — inline autocomplete cần Shift+Left)
+    // Excel cố tình KHÔNG nằm trong danh sách: Excel không có inline autocomplete,
+    // và Shift+Left trong Excel = mở rộng selection sang cell trái → nhảy/bôi ô.
+    // Excel vẫn dùng .hybrid(1000μs) qua appStrategies (EventSimulator.swift:94).
+    "com.microsoft.edge", "com.microsoft.Edge",
   ]
   static let NewWordKeys = "`!@#$%^&*()-=[]\\;',./~_+{}|:\"<>?"
   static let NewWordTaskKeys: [TaskKey] = [.Enter, .Space, .Tab]

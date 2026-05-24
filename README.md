@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.4 — "Tonal Refinement"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.5 — "Excel Hotfix"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.5** — Sửa lỗi gấp khi gõ Telex trong Microsoft Excel: con trỏ "nhảy" và bôi các ô bên trái, làm chữ Việt compose sai. Nguyên nhân: Excel nằm nhầm trong danh sách `FixAutocompleteApps` (vốn dành cho browser có inline autocomplete), nên đường gõ dùng `Shift+Left` — mà trong Excel `Shift+Left` = mở rộng selection sang cell trái. Fix: loại Excel khỏi danh sách → rơi xuống nhánh backspace+retype an toàn với strategy `.hybrid(1000μs)` đã có sẵn (giống Word/PowerPoint/Outlook/OneNote, vốn ổn lâu nay). Dropdown gợi ý của Excel (`=SUM`…) và Edge browser không bị ảnh hưởng.
 
 > **2.3.4** — Tonal theme refresh full theo handoff design CSS. New **TonalRowIcon** component (flat sunken tile + red brand accent, match `.row__icon`) cho mọi menu/setting row. HUD scrim 4-layer match `.hud` exactly (top highlight + warm ink + material blur + inset border). Settings header icon radius 22→28pt (`--r-2xl`). Visual differentiation matrix Tonal (refined macOS native) vs LG (premium 3D visionOS) bây giờ rõ rệt.
 

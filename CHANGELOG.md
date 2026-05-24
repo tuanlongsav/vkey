@@ -2,6 +2,40 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.5] - 2026-05-24 — "Excel Hotfix"
+
+**Sửa lỗi gấp khi gõ Telex trong Microsoft Excel** — con trỏ "nhảy" và bôi các ô bên trái, đồng thời chữ Việt bị compose sai khi dấu được áp.
+
+### 🐛 Triệu chứng
+
+- Trong Excel, gõ Telex (vd `tieesng vieejt`, `chuwowng`) → con trỏ nhảy qua các ô bên trái, các ô đó bị bôi xanh (cell selection mở rộng).
+- Hệ quả: ký tự thay thế khi áp dấu Telex ghi đè sang ô hàng xóm thay vì ô đang gõ, chữ Việt trông như compose hỏng.
+
+### 🔍 Nguyên nhân
+
+Hai bundle Excel (`com.microsoft.Excel`, `com.microsoft.Office.Excel`) đang nằm trong mảng `FixAutocompleteApps` tại [`App/InputProcessor.swift:649`](vkey/App/InputProcessor.swift).
+
+Mảng này được thiết kế cho các **browser có inline autocomplete** (Chrome, Safari, Edge, Arc…) — nơi cần `Shift+Left` để bao trùm vùng autocomplete xám trước khi ghi đè. Đường đi này gọi [`EventSimulator.sendShiftLeft`](vkey/Platform/EventSimulator.swift) — function gắn cứng `.maskShift` lên các CGEvent mũi tên trái.
+
+Excel **không có inline autocomplete** (dropdown gợi ý của Excel là UI native, không phải selection text). Khi vkey gửi `Shift+Left`, Excel diễn giải đúng theo nghĩa native: mở rộng vùng chọn sang cell bên trái. Kết quả: nhảy + bôi ô + compose hỏng.
+
+### ✅ Cách sửa
+
+Loại `com.microsoft.Excel` và `com.microsoft.Office.Excel` khỏi `FixAutocompleteApps`. Sau khi loại, Excel rơi xuống nhánh `EventSimulator.sendReplacement` an toàn (backspace không kèm Shift), dùng strategy `.hybrid(backspaceDelayMicroseconds: 1000)` đã có sẵn cho Excel tại [`EventSimulator.swift:94`](vkey/Platform/EventSimulator.swift) — giống cách Word/PowerPoint/Outlook/OneNote vẫn chạy ổn lâu nay.
+
+### 🛡️ Không bị ảnh hưởng
+
+- **Dropdown gợi ý Excel** (`=SUM`, `=SUMIF`…): vẫn hoạt động bình thường, không cần Shift+Left.
+- **Edge browser** (`com.microsoft.edge`): vẫn nằm trong `FixAutocompleteApps`, vẫn dùng Shift+Left để xử lý inline autocomplete đúng cách.
+- **Office sibling** (Word, PowerPoint, Outlook, OneNote): không thay đổi — vốn không nằm trong `FixAutocompleteApps`.
+- **Engine Telex/VNI**: không đụng, 213 test pass nguyên.
+
+### Bump
+
+`2.3.4 → 2.3.5` / `20304 → 20305`. DMG 8766574 bytes, sig `iJ+cbPdfMkHBkSJ5VxqHgGW6sK+eGI2OyabxQSvmHZkf1APVpuDrNH+u8VOwNDASz/YQnc7AOulxnReSqMcoBA==`.
+
+---
+
 ## [2.3.4] - 2026-05-23 — "Tonal Refinement"
 
 **Tonal theme refresh full theo handoff design** — thêm `TonalRowIcon` (flat sunken tile + red accent) cho mọi menu/setting row, tinh chỉnh HUD scrim layer warmer match `--glass-dark`, bump header icon radius 22→28pt theo `--r-2xl`. User feedback: "đọc kỹ lại để sửa theme Tonal cho đẹp hơn, đồng bộ hơn" → đối chiếu trực tiếp với `colors_and_type.css` + `components.css` từ handoff.
