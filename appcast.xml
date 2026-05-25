@@ -6,6 +6,55 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.7 — "Universal Anywhere-DD"</title>
+      <sparkle:version>20307</sparkle:version>
+      <sparkle:shortVersionString>2.3.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 25 May 2026 20:10:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.7/vkey-2.3.7.dmg"
+        sparkle:edSignature="T6qDR5B7VhZnsxTUz+l3Bc2Tr+awDKOK7nDeIgsgYOaTm0t1cEcDPo+vtxTvTZ8A/yujQvwFErLMWQcRmTpNAQ=="
+        length="8770293"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.7 — "Universal Anywhere-DD":</h2>
+        <p><em>Sửa lỗi không thể gõ <code>QĐ</code>, <code>BCTĐ</code>, <code>vcđ</code>… khi Free Mark Mode đang bật (hoặc khi buffer ở state hợp lệ). Anywhere-DD toggle bây giờ universal — hoạt động mọi lúc.</em></p>
+
+        <h3>🐛 Triệu chứng</h3>
+        <ul>
+          <li>Gõ <code>QDD</code> → kỳ vọng <code>QĐ</code>, nhưng hiện <code>QDD</code> (không đổi).</li>
+          <li>Tương tự <code>BCTDD</code>, <code>vcdd</code>, <code>add</code>… đều không chuyển thành <code>Đ</code>/<code>đ</code>.</li>
+          <li>Initial <code>dd → đ</code> (gõ <code>ddi → đi</code>) vẫn ổn — lỗi chỉ ở anywhere-DD.</li>
+        </ul>
+
+        <h3>🔍 Nguyên nhân</h3>
+        <p>Anywhere-DD toggle (v1.9.7) được gate bởi điều kiện <code>stopProcessing == true</code> — chỉ fire khi buffer ở state recovery do <code>needsRecovery</code> trả về <code>true</code>.</p>
+        <p>Free Mark Mode (v2.0 A6) bypass <code>needsRecovery</code> — luôn trả về <code>false</code>. Hệ quả: <code>stopProcessing</code> không bao giờ được set bởi validator → anywhere-DD không bao giờ fire khi user bật Free Mark Mode.</p>
+
+        <h3>✅ Fix</h3>
+        <ul>
+          <li>Thêm <strong>universal anywhere-DD pre-check</strong> ở đầu <code>WordBuffer.push</code> — fire trước cả nhánh <code>stopProcessing</code>.</li>
+          <li>Điều kiện fire: char là <code>d/D</code>, transformed đã có ≥2 char, last char là <code>d/D</code>, second-to-last KHÔNG phải <code>d/D</code> (để không phá toggle-off/frozen state).</li>
+          <li>Conflict avoidance: <code>ddToggleStage == 0</code> — không fire khi đã ở stage 1 (toggled) hoặc 2 (frozen), để existing logic xử lý toggle-off.</li>
+          <li>Bonus: set <code>stopProcessing = true</code> sau khi fire để toggle-off của char <code>d</code> kế tiếp đi qua existing branch đúng cách.</li>
+        </ul>
+
+        <h3>📊 Trước/sau</h3>
+        <ul>
+          <li><code>QDD</code> → trước (Free Mark ON): <code>QDD</code> | sau: <code>QĐ</code> ✓</li>
+          <li><code>BCTDD</code> → trước: <code>BCTDD</code> | sau: <code>BCTĐ</code> ✓</li>
+          <li><code>vcdd</code> → trước: <code>vcdd</code> | sau: <code>vcđ</code> ✓</li>
+          <li><code>add</code> → trước: <code>add</code> | sau: <code>ađ</code> ✓</li>
+          <li><code>ddi</code> (initial dd) → trước & sau: <code>đi</code> ✓ (không đổi)</li>
+          <li><code>vcddd</code> (toggle off) → trước & sau: <code>vcdd</code> ✓ (không đổi)</li>
+        </ul>
+
+        <h3>🧪 Test</h3>
+        <p>216/216 test pass. 2 test mới: <code>testTelexAnywhereDDWithFreeMarkMode</code> + <code>testTelexAllCapsAbbreviationDD</code> pin behavior cho QDD/BCTDD và Free Mark Mode.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.6 — "Loanword Typo Guard"</title>
       <sparkle:version>20306</sparkle:version>
       <sparkle:shortVersionString>2.3.6</sparkle:shortVersionString>

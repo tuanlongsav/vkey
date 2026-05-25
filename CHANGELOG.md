@@ -2,6 +2,88 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.7] - 2026-05-25 — "Universal Anywhere-DD"
+
+**Sửa lỗi không thể gõ `QĐ`, `BCTĐ`, `vcđ`… (anywhere-DD toggle bị Free Mark Mode block)** — user report: "gõ Q và DD liền nhau sẽ được là QĐ, cả BCTĐ".
+
+### 🐛 Triệu chứng
+
+- Gõ `QDD` → kỳ vọng `QĐ`, nhưng hiện `QDD` (không đổi).
+- Tương tự `BCTDD`, `vcdd`, `add`… đều không chuyển thành `Đ`/`đ`.
+- Initial `dd → đ` (vd `ddi → đi`) vẫn ổn — lỗi chỉ ở anywhere-DD.
+
+### 🔍 Nguyên nhân
+
+Anywhere-DD toggle (v1.9.7, ở [`vkey/App/InputProcessor.swift:346-389`](vkey/App/InputProcessor.swift)) được gate bởi `if stopProcessing && !wasOnlyEnglishRestored`. Chỉ fire khi buffer ở recovery state.
+
+Free Mark Mode (v2.0 A6, [`vkey/Engine/TiengVietState.swift:108-111`](vkey/Engine/TiengVietState.swift)) bypass validator:
+
+```swift
+var needsRecovery: Bool {
+  if Defaults[.freeMarkModeEnabled] { return false }  // ← BYPASS
+  return TiengVietValidator.needsRecovery(thanhPhanTieng, dauMu: dauMu)
+}
+```
+
+Hệ quả: khi user bật Free Mark Mode, `stopProcessing` không bao giờ được set bởi validator → anywhere-DD không bao giờ fire.
+
+### ✅ Fix
+
+Thêm **universal anywhere-DD pre-check** ở đầu `WordBuffer.push` ([`vkey/App/InputProcessor.swift`](vkey/App/InputProcessor.swift)), fire trước cả nhánh `stopProcessing`:
+
+```swift
+if (char == "d" || char == "D"),
+   ddToggleStage == 0,
+   transformed.count >= 2,
+   let lastChar = transformed.last,
+   lastChar == "d" || lastChar == "D",
+   let secondLast = transformed.dropLast().last,
+   secondLast != "d" && secondLast != "D" {
+  let lastIsUpper = lastChar == "D"
+  transformed.removeLast()
+  transformed.append(lastIsUpper ? "Đ" : "đ")
+  ddToggleStage = 1
+  wordState = wordState.push(char)
+  if !stopProcessing {
+    stopProcessing = true
+    if !snapshot.stopProcessing { lastValidSnapshot = snapshot }
+  }
+  return
+}
+```
+
+### 🛡️ Conflict avoidance
+
+- **Initial Telex `dd → đ`**: khi đó `transformed.count == 1` ("d"), không match điều kiện `count >= 2`. Telex.push xử lý như cũ.
+- **Toggle-off / frozen state**: gate `ddToggleStage == 0` ngăn rule mới fire ở stage 1, 2. Khi rule mới fire, set stage=1 — char `d` kế tiếp sẽ đi qua existing branch để toggle-off đúng cách.
+- **`vcdd` + `d` (frozen)**: second-to-last là `d` → rule mới skip → existing logic xử lý frozen state.
+- **Set `stopProcessing = true`** sau khi fire để toggle-off của char `d` kế tiếp đi qua existing branch.
+
+### 📊 Trước/sau (giả sử Free Mark Mode bật)
+
+| Input | Trước | Sau |
+|---|---|---|
+| `QDD` | `QDD` | `QĐ` ✓ |
+| `BCTDD` | `BCTDD` | `BCTĐ` ✓ |
+| `vcdd` | `vcdd` | `vcđ` ✓ |
+| `add` | `add` | `ađ` ✓ |
+| `NDD` | `NDD` | `NĐ` ✓ |
+| `ddi` (initial) | `đi` ✓ | `đi` ✓ |
+| `vcddd` (toggle off) | `vcdd` ✓ | `vcdd` ✓ |
+| `vcdddd` (frozen) | `vcdd` ✓ | `vcdd` ✓ |
+
+### 🧪 Test
+
+216/216 test pass. 2 test mới:
+- `testTelexAnywhereDDWithFreeMarkMode` — pin behavior cho Free Mark Mode case.
+- `testTelexAllCapsAbbreviationDD` — pin QDD/BCTDD/NDD/Qdd.
+
+### Bump
+
+`2.3.6 → 2.3.7` / `20306 → 20307`. DMG 8770293 bytes, sig `T6qDR5B7VhZnsxTUz+l3Bc2Tr+awDKOK7nDeIgsgYOaTm0t1cEcDPo+vtxTvTZ8A/yujQvwFErLMWQcRmTpNAQ==`.
+
+---
+
 ## [2.3.6] - 2026-05-25 — "Loanword Typo Guard"
 
 **Sửa lỗi từ tiếng Anh bắt đầu bằng phụ âm loanword (`w/z/j/f`) bị parser áp nhầm typo-correction tiếng Việt** — ví dụ gõ `weight` trong ô tìm kiếm Google hiển thị thành `wieght`.

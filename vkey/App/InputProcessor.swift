@@ -326,6 +326,44 @@ struct WordBuffer {
     keys.append(char)
     lastTransformed = transformed
 
+    // v2.3.7: UNIVERSAL anywhere-DD toggle — fire trước cả `stopProcessing`
+    // branch, đảm bảo hoạt động khi:
+    //   - Free Mark Mode bật (`needsRecovery` bypass → stopProcessing
+    //     không bao giờ được set bởi validator).
+    //   - Buffer ở state "valid VN" mà user vẫn muốn DD = Đ (vd
+    //     all-caps abbreviation như `QDD → QĐ`, `BCTDD → BCTĐ`).
+    //
+    // Conflict avoidance:
+    //   - Telex initial `dd → đ` (chuKhongDau=[d]+push d): khi đó
+    //     `transformed.count==1` ("d"), không match điều kiện count>=2.
+    //     Telex.push tự xử lý, transformed thành "đ" (1 char).
+    //   - Toggle-off / frozen state (stage 1, 2): khi rule mới fire,
+    //     set stage=1. Lần kế tiếp char d/D đến: rule mới check stage==0,
+    //     skip → existing anywhere-DD ở dưới xử lý stage 1→2 (toggle off).
+    //   - Khi second-to-last cũng là d/D (vd "vcdd" + d): rule mới skip
+    //     để existing logic xử lý frozen state đúng cách.
+    if (char == "d" || char == "D"),
+       ddToggleStage == 0,
+       transformed.count >= 2,
+       let lastChar = transformed.last,
+       lastChar == "d" || lastChar == "D",
+       let secondLast = transformed.dropLast().last,
+       secondLast != "d" && secondLast != "D" {
+      let lastIsUpper = lastChar == "D"
+      transformed.removeLast()
+      transformed.append(lastIsUpper ? "Đ" : "đ")
+      ddToggleStage = 1
+      wordState = wordState.push(char)
+      // Set stopProcessing để toggle-off (3rd d) đi qua existing branch.
+      if !stopProcessing {
+        stopProcessing = true
+        if !snapshot.stopProcessing {
+          lastValidSnapshot = snapshot
+        }
+      }
+      return
+    }
+
     // If stopProcessing was set, but it was ONLY because of English word restoration on the previous step
     // (i.e. the previous state did not have a real spelling matrix failure or impossible cluster),
     // we allow re-evaluation by REPLAYING all keys from scratch through the engine.

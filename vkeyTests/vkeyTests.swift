@@ -529,6 +529,48 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "ddi"), "đi")
   }
 
+  /// v2.3.7 — Universal anywhere-DD: hoạt động ngay cả khi Free Mark Mode bật.
+  /// Free Mark Mode bypass `needsRecovery` → `stopProcessing` không được set →
+  /// existing anywhere-DD (gated bởi stopProcessing) không fire. Universal rule
+  /// mới đặt ở pre-check fire bất kể state.
+  func testTelexAnywhereDDWithFreeMarkMode() throws {
+    let oldFreeMark = Defaults[.freeMarkModeEnabled]
+    Defaults[.freeMarkModeEnabled] = true
+    defer { Defaults[.freeMarkModeEnabled] = oldFreeMark }
+
+    // Anywhere-DD vẫn phải hoạt động:
+    XCTAssertEqual(transform_text_telex(for: "vcdd"), "vcđ", "vcdd phải ra vcđ kể cả Free Mark")
+    XCTAssertEqual(transform_text_telex(for: "QDD"), "QĐ", "QDD phải ra QĐ kể cả Free Mark")
+    XCTAssertEqual(transform_text_telex(for: "BCTDD"), "BCTĐ", "BCTDD phải ra BCTĐ kể cả Free Mark")
+
+    // Initial dd vẫn ok (Telex chuẩn):
+    XCTAssertEqual(transform_text_telex(for: "dduowngf"), "đường", "Initial dd vẫn → đ kể cả Free Mark")
+  }
+
+  /// v2.3.7 — All-caps abbreviations với DD trailing → Đ.
+  /// User report: gõ `QDD` muốn ra `QĐ` (Quyết Định), `BCTDD` muốn ra `BCTĐ`,…
+  /// Đây là anywhere-DD toggle nhưng cho all-uppercase abbreviation.
+  func testTelexAllCapsAbbreviationDD() throws {
+    // Print actual output để debug — verify chính xác behavior.
+    let qdd = transform_text_telex(for: "QDD")
+    let bctdd = transform_text_telex(for: "BCTDD")
+    let ndd = transform_text_telex(for: "NDD")
+    let qddMixed = transform_text_telex(for: "Qdd")
+    print("DEBUG QDD: '\(qdd)' (expect 'QĐ')")
+    print("DEBUG BCTDD: '\(bctdd)' (expect 'BCTĐ')")
+    print("DEBUG NDD: '\(ndd)' (expect 'NĐ')")
+    print("DEBUG Qdd: '\(qddMixed)' (expect 'Qđ')")
+
+    // QDD → QĐ (Quyết Định)
+    XCTAssertEqual(qdd, "QĐ", "QDD phải ra QĐ")
+    // BCTDD → BCTĐ
+    XCTAssertEqual(bctdd, "BCTĐ", "BCTDD phải ra BCTĐ")
+    // NĐDD — type "NDD" thì "NĐ" (mid-stream all-caps)
+    XCTAssertEqual(ndd, "NĐ", "NDD phải ra NĐ")
+    // Mixed-case không bị uppercase hóa: Qdd → Qđ
+    XCTAssertEqual(qddMixed, "Qđ", "Qdd (mixed) → Qđ giữ case")
+  }
+
   /// 1.8.4: Telex regression — gõ "teen" (t + ee→ê + n) phải ra "tên" VN,
   /// không lock raw "teen". Bug v1.7.9: post-replay check dùng full enLexicon
   /// 9826 từ — "teen" match → override sang raw. Fix: dùng isInstantRestoreEnglish

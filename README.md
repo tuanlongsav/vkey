@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.6 — "Loanword Typo Guard"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.7 — "Universal Anywhere-DD"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.7** — Sửa lỗi không thể gõ `QĐ`, `BCTĐ`, `vcđ`… khi Free Mark Mode đang bật. Anywhere-DD toggle (v1.9.7) trước đây bị gate bởi `stopProcessing` — chỉ fire khi validator trả về `needsRecovery=true`. Free Mark Mode bypass validator → `stopProcessing` không set → toggle không fire. Fix: thêm universal pre-check ở đầu `WordBuffer.push`, fire bất kể recovery state. Conflict avoidance: gate bằng `ddToggleStage == 0` + second-to-last không phải d/D (giữ toggle-off/frozen state machine). Initial Telex `dd → đ` không đổi. 216/216 test pass.
 
 > **2.3.6** — Sửa lỗi từ tiếng Anh bắt đầu bằng phụ âm loanword (`w/z/j/f`) bị parser áp nhầm typo-correction tiếng Việt: `weight → wieght`, `four → fuor`. Trong ô tìm kiếm (Google search, address bar…) rollback không kịp nên `wieght` còn lại trên màn hình. Fix: thêm guard `!startsWithForeignConsonant(phuAmDau)` vào 4 rule swap vowel (veit→viet, bous→buos, haois→hoais, haoc→hoac). Lý do: tiếng Việt không có từ bản địa bắt đầu bằng `w/z/j/f`. Native consonants vẫn áp như cũ (`veit → viet`), tone marks cho loanword vẫn áp (`zas → zá`). 214/214 test pass.
 
