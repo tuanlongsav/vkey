@@ -1406,6 +1406,48 @@ final class vkeyTests: XCTestCase {
     XCTAssertTrue(swappedAoFinal.conLai.isEmpty)
   }
 
+  /// v2.3.6 — Loanword consonants (w/z/j/f) KHÔNG được áp swap typo-correction.
+  /// Bug: gõ "weight" trong ô tìm kiếm → "wieght" vì rule veit→viet swap "ei" → "ie".
+  /// Tiếng Việt không có từ bản địa bắt đầu bằng w/z/j/f → mọi từ w-/z-/j-/f- là loanword.
+  func testForeignConsonantSkipsVowelSwapTypoCorrection() throws {
+    // Setup: bật allowedZWJF để w/z/j/f thành phụ âm đầu (như default).
+    let oldPhuAmDau = TiengViet.PhuAmDau
+    let oldAllowed = Defaults[.allowedZWJF]
+    Defaults[.allowedZWJF] = true
+    TiengViet.PhuAmDau = TiengViet.PhuAmGhep + TiengViet.PhuAmDon + TiengViet.PhuAmDonNuocNgoai
+    TiengViet.updatePhuAmDauTrie()
+    defer {
+      Defaults[.allowedZWJF] = oldAllowed
+      TiengViet.PhuAmDau = oldPhuAmDau
+      TiengViet.updatePhuAmDauTrie()
+    }
+
+    // veit→viet rule: KHÔNG fire cho phụ âm đầu loanword.
+    // "wei" — nguyenAm phải giữ là "e", "i" ở conLai (raw). KHÔNG được swap thành "ie".
+    let wei = TiengVietParser.parse(Array("wei"))
+    XCTAssertEqual(String(wei.phuAmDau), "w")
+    XCTAssertEqual(String(wei.nguyenAm), "e")
+    XCTAssertEqual(String(wei.conLai), "i", "wei phải giữ 'i' ở conLai, không bị swap")
+
+    // "weight" full word — phải giữ raw, output từ transformer = "weight" (qua thanhPhanTieng).
+    let weight = TiengVietParser.parse(Array("weight"))
+    XCTAssertEqual(String(weight.phuAmDau), "w")
+    XCTAssertEqual(String(weight.nguyenAm), "e")
+    // "ight" không phải PhuAmCuoi → conLai
+    XCTAssertEqual(String(weight.conLai), "ight", "weight phải giữ 'ight' ở conLai, không swap thành 'ieght'")
+
+    // bous→buos rule: KHÔNG fire cho loanword. "four" phải giữ raw.
+    let four = TiengVietParser.parse(Array("four"))
+    XCTAssertEqual(String(four.phuAmDau), "f")
+    XCTAssertEqual(String(four.nguyenAm), "o")
+    XCTAssertEqual(String(four.conLai), "ur", "four phải giữ 'ur' ở conLai, không swap thành 'uor'")
+
+    // Regression check: native consonant vẫn fire swap như cũ.
+    let veit = TiengVietParser.parse(Array("veit"))
+    XCTAssertEqual(String(veit.nguyenAm), "ie", "veit (v native) vẫn swap → viet")
+    XCTAssertEqual(String(veit.phuAmCuoi), "t")
+  }
+
   func testAdvancedEarlyTonesAndLateStrokes() throws {
     // 1. Test Misplaced Tone Marks (Early Tone Marks)
     XCTAssertEqual(transform_text_telex(for: "thfi"), "thì")

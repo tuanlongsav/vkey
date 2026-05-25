@@ -6,6 +6,53 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.6 — "Loanword Typo Guard"</title>
+      <sparkle:version>20306</sparkle:version>
+      <sparkle:shortVersionString>2.3.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 25 May 2026 10:55:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.6/vkey-2.3.6.dmg"
+        sparkle:edSignature="U3+/jRutGXzWLBx4o82j180YD1aGvrp0Cc4Ely5CrJ2g2GsInUZBpR0/dKN7/ht7NeJwTbrwEBKeAu7UnTM0Cw=="
+        length="8768557"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.6 — "Loanword Typo Guard":</h2>
+        <p><em>Sửa lỗi gõ từ tiếng Anh có phụ âm đầu loanword (<code>w/z/j/f</code>) bị parser áp nhầm typo-correction tiếng Việt — vd "weight" hiển thị thành "wieght" trong ô tìm kiếm.</em></p>
+
+        <h3>🐛 Triệu chứng</h3>
+        <ul>
+          <li>Gõ <code>wei</code> (cho "weight") → composing hiển thị <code>wie</code>. Tiếp <code>weight</code> → <code>wieght</code>.</li>
+          <li>Ở field thường, Space → engine rollback về <code>weight</code> (OK).</li>
+          <li>Nhưng ở <strong>ô tìm kiếm</strong> (Google search, address bar, Spotlight…) thì rollback không kịp / bị page can thiệp → <code>wieght</code> còn lại.</li>
+          <li>Cùng pattern với <code>four → fuor</code>, <code>journey</code>… từ tiếng Anh có <code>w/z/j/f</code> đầu.</li>
+        </ul>
+
+        <h3>🔍 Nguyên nhân</h3>
+        <p>Parser có 4 rule "swap vowel" để sửa typo tiếng Việt (vd <code>veit → viet</code>, <code>bous → buos</code> cho từ "buốt"). Khi cài đặt <code>allowedZWJF</code> bật (default true), các phụ âm loanword <code>w/z/j/f</code> trở thành PhuAmDau hợp lệ → các rule này áp luôn cho từ tiếng Anh, gây méo chữ.</p>
+
+        <h3>✅ Fix</h3>
+        <ul>
+          <li>Thêm guard <code>!startsWithForeignConsonant(phuAmDau)</code> vào cả 4 rule trong <code>TiengVietParser.applyTypoCorrections</code>.</li>
+          <li>Lý do: tiếng Việt không có từ bản địa bắt đầu bằng <code>w/z/j/f</code> → từ nào bắt đầu bằng các chữ này là loanword, không cần auto-correct theo cấu trúc âm tiết Việt.</li>
+          <li>Native consonants vẫn áp như cũ: <code>veit → viet</code> (v native), <code>phuogn → phuong</code>, <code>bous → buos</code>… không đổi.</li>
+          <li>Tone mark cho loanword vẫn áp: <code>zas → zá</code>, <code>fair → fải</code>… không đổi.</li>
+        </ul>
+
+        <h3>📊 Trước/sau</h3>
+        <ul>
+          <li><code>wei</code> → trước: <code>wie</code> | sau: <code>wei</code> ✓</li>
+          <li><code>weight</code> → trước: <code>wieght</code> | sau: <code>weight</code> ✓</li>
+          <li><code>four</code> → trước: <code>fuor</code> | sau: <code>four</code> ✓</li>
+          <li><code>veit</code> (Telex của "việt") → trước: <code>viet</code> ✓ | sau: <code>viet</code> ✓ (giữ nguyên)</li>
+        </ul>
+
+        <h3>🧪 Test</h3>
+        <p>214/214 test pass. Test mới <code>testForeignConsonantSkipsVowelSwapTypoCorrection</code> pin behavior cho <code>wei</code>/<code>weight</code>/<code>four</code> và regression-check <code>veit</code> vẫn swap.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.5 — "Excel Hotfix"</title>
       <sparkle:version>20305</sparkle:version>
       <sparkle:shortVersionString>2.3.5</sparkle:shortVersionString>

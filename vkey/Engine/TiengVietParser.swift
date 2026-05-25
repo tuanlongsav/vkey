@@ -126,15 +126,27 @@ enum TiengVietParser {
     return TiengViet.NguyenAmUO.contains { $0.lowercased() == key }
   }
 
+  /// True khi phụ âm đầu của syllable là loanword consonant (`w/z/j/f`).
+  /// Tiếng Việt không có từ bản địa bắt đầu bằng các chữ này, nên các typo-correction
+  /// dạng "swap vowel" (vd veit→viet, bous→buos) không nên áp cho loanword —
+  /// nếu không sẽ phá luôn từ tiếng Anh (weight → wieght, journey → juorney, …).
+  /// Chỉ tác động khi user bật `allowedZWJF` (mặc định true) khiến w/z/j/f thành phụ âm đầu.
+  private static func startsWithForeignConsonant(_ phuAmDau: [Character]) -> Bool {
+    guard let first = phuAmDau.first?.lowercased().first else { return false }
+    return first == "w" || first == "z" || first == "j" || first == "f"
+  }
+
   /// Auto-correct common adjacent-key ordering mistakes before validation.
   private static func applyTypoCorrections(to result: inout ThanhPhanTieng, originalInput: [Character]) {
     // "veit" -> "viet": users sometimes type the second "e" before "i"
     // when aiming for "việt". The first parse sees "e" + leftover "i...";
     // reparsing the tail lets final consonants such as "t" or "ng" attach normally.
+    // Gate: không áp cho loanword-initial (w/z/j/f) — vd "weight" KHÔNG nên thành "wieght".
     if result.nguyenAm.count == 1,
       result.nguyenAm[0].lowercased() == "e",
       let firstLeftover = result.conLai.first,
-      firstLeftover.lowercased() == "i"
+      firstLeftover.lowercased() == "i",
+      !startsWithForeignConsonant(result.phuAmDau)
     {
       let eChar = result.nguyenAm[0]
       let iChar = firstLeftover
@@ -154,10 +166,12 @@ enum TiengVietParser {
     // "bous" -> "buos" (to become "buốt" when tone/diacritics applied)
     // "ou" is not a valid Vietnamese vowel group, so vowel trie parses "o"
     // leaving "u" in conLai.
+    // Gate: không áp cho loanword (vd "four", "journey" KHÔNG nên thành "fuor", "juorney").
     if result.nguyenAm.count == 1,
       result.nguyenAm[0].lowercased() == "o",
       let firstLeftover = result.conLai.first,
-      firstLeftover.lowercased() == "u"
+      firstLeftover.lowercased() == "u",
+      !startsWithForeignConsonant(result.phuAmDau)
     {
       let oChar = result.nguyenAm[0]
       let uChar = firstLeftover
@@ -173,11 +187,13 @@ enum TiengVietParser {
 
     // "haois" -> "hoais" (to become "hoái")
     // "aoi" is not valid. Vowel trie parses "ao" -> nguyenAm = ["a", "o"], leaving "i" in conLai.
+    // Gate: không áp cho loanword (vd "waoi", "faoi" rare nhưng giữ predictable).
     if result.nguyenAm.count == 2,
       result.nguyenAm[0].lowercased() == "a",
       result.nguyenAm[1].lowercased() == "o",
       let firstLeftover = result.conLai.first,
-      firstLeftover.lowercased() == "i"
+      firstLeftover.lowercased() == "i",
+      !startsWithForeignConsonant(result.phuAmDau)
     {
       let aChar = result.nguyenAm[0]
       let oChar = result.nguyenAm[1]
@@ -200,7 +216,8 @@ enum TiengVietParser {
     if result.nguyenAm.count == 2,
       result.nguyenAm[0].lowercased() == "a",
       result.nguyenAm[1].lowercased() == "o",
-      (!result.phuAmCuoi.isEmpty || !result.conLai.isEmpty)
+      (!result.phuAmCuoi.isEmpty || !result.conLai.isEmpty),
+      !startsWithForeignConsonant(result.phuAmDau)
     {
       let aChar = result.nguyenAm[0]
       let oChar = result.nguyenAm[1]

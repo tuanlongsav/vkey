@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.5 — "Excel Hotfix"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.6 — "Loanword Typo Guard"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.6** — Sửa lỗi từ tiếng Anh bắt đầu bằng phụ âm loanword (`w/z/j/f`) bị parser áp nhầm typo-correction tiếng Việt: `weight → wieght`, `four → fuor`. Trong ô tìm kiếm (Google search, address bar…) rollback không kịp nên `wieght` còn lại trên màn hình. Fix: thêm guard `!startsWithForeignConsonant(phuAmDau)` vào 4 rule swap vowel (veit→viet, bous→buos, haois→hoais, haoc→hoac). Lý do: tiếng Việt không có từ bản địa bắt đầu bằng `w/z/j/f`. Native consonants vẫn áp như cũ (`veit → viet`), tone marks cho loanword vẫn áp (`zas → zá`). 214/214 test pass.
 
 > **2.3.5** — Sửa lỗi gấp khi gõ Telex trong Microsoft Excel: con trỏ "nhảy" và bôi các ô bên trái, làm chữ Việt compose sai. Nguyên nhân: Excel nằm nhầm trong danh sách `FixAutocompleteApps` (vốn dành cho browser có inline autocomplete), nên đường gõ dùng `Shift+Left` — mà trong Excel `Shift+Left` = mở rộng selection sang cell trái. Fix: loại Excel khỏi danh sách → rơi xuống nhánh backspace+retype an toàn với strategy `.hybrid(1000μs)` đã có sẵn (giống Word/PowerPoint/Outlook/OneNote, vốn ổn lâu nay). Dropdown gợi ý của Excel (`=SUM`…) và Edge browser không bị ảnh hưởng.
 

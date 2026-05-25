@@ -2,6 +2,75 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.6] - 2026-05-25 — "Loanword Typo Guard"
+
+**Sửa lỗi từ tiếng Anh bắt đầu bằng phụ âm loanword (`w/z/j/f`) bị parser áp nhầm typo-correction tiếng Việt** — ví dụ gõ `weight` trong ô tìm kiếm Google hiển thị thành `wieght`.
+
+### 🐛 Triệu chứng
+
+- Gõ `wei` (cho "weight") → composing hiển thị `wie`. Tiếp `weight` → `wieght`.
+- Field thường: Space → engine rollback về `weight` raw (OK).
+- **Ô tìm kiếm** (Google search, address bar, Spotlight, app search…): rollback không kịp / bị page can thiệp → `wieght` còn lại.
+- Cùng pattern với `four → fuor`, từ tiếng Anh khác có `w/z/j/f` đầu.
+
+### 🔍 Nguyên nhân
+
+Parser ([`vkey/Engine/TiengVietParser.swift`](vkey/Engine/TiengVietParser.swift)) có 4 rule "swap vowel" để sửa typo tiếng Việt:
+
+1. `veit → viet` (e+i → i+e) cho "việt"
+2. `bous → buos` (o+u → u+o) cho "buốt"
+3. `haois → hoais` (a+o+i → o+a+i) cho "hoái"
+4. `haoc → hoac` (a+o → o+a) cho "hoác"
+
+Cài đặt `allowedZWJF` ([`vkey/App/Setting.swift:205`](vkey/App/Setting.swift)) mặc định `true` → các phụ âm loanword `w/z/j/f` được thêm vào `PhuAmDauTrie` ([`vkey/App/AppState.swift:70-75`](vkey/App/AppState.swift)). Khi đó, gõ `wei`:
+
+- `phuAmDau = [w]`, `nguyenAm = [e]`, `conLai = [i]` → rule veit→viet fire → swap `[i, e]`
+- Output: `w` + `ie` + … = `wie` / `wieght`
+
+### ✅ Fix
+
+Thêm helper `startsWithForeignConsonant(_ phuAmDau: [Character]) -> Bool` và guard vào cả 4 rule:
+
+```swift
+if result.nguyenAm.count == 1,
+   result.nguyenAm[0].lowercased() == "e",
+   let firstLeftover = result.conLai.first,
+   firstLeftover.lowercased() == "i",
+   !startsWithForeignConsonant(result.phuAmDau)   // ← NEW GUARD
+{
+  ...
+}
+```
+
+**Lý do**: tiếng Việt không có từ bản địa bắt đầu bằng `w/z/j/f`. Mọi từ bắt đầu bằng các chữ này đều là loanword (English, Chinese pinyin…) → không cần áp typo-correction dạng cấu trúc âm tiết Việt.
+
+### 🛡️ Không bị ảnh hưởng
+
+- **Native consonants vẫn áp như cũ**: `veit → viet` (v), `phuogn → phuong` (ph), `bous → buos` (b), `haoi → hoai` (h), `haoc → hoac` (h) — tất cả test cũ pass nguyên.
+- **Tone mark cho loanword vẫn áp**: `zas → zá`, `fair → fải` — chỉ block 4 rule swap vowel, không đụng tone/diacritic.
+- **Late D toggle, GI classification, tone-mark recovery** — không đụng.
+
+### 📊 Trước/sau
+
+| Input | Trước | Sau |
+|---|---|---|
+| `wei` | `wie` | `wei` ✓ |
+| `weight` | `wieght` | `weight` ✓ |
+| `four` | `fuor` | `four` ✓ |
+| `journey` | `juorney` | `journey` ✓ |
+| `veit` (Telex của "việt") | `viet` ✓ | `viet` ✓ |
+| `zas` | `zá` ✓ | `zá` ✓ |
+
+### 🧪 Test
+
+214/214 test pass. Test mới [`testForeignConsonantSkipsVowelSwapTypoCorrection`](vkeyTests/vkeyTests.swift) pin behavior cho `wei`/`weight`/`four` và regression-check `veit` vẫn swap.
+
+### Bump
+
+`2.3.5 → 2.3.6` / `20305 → 20306`. DMG 8768557 bytes, sig `U3+/jRutGXzWLBx4o82j180YD1aGvrp0Cc4Ely5CrJ2g2GsInUZBpR0/dKN7/ht7NeJwTbrwEBKeAu7UnTM0Cw==`.
+
+---
+
 ## [2.3.5] - 2026-05-24 — "Excel Hotfix"
 
 **Sửa lỗi gấp khi gõ Telex trong Microsoft Excel** — con trỏ "nhảy" và bôi các ô bên trái, đồng thời chữ Việt bị compose sai khi dấu được áp.
