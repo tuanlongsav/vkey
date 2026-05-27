@@ -6,6 +6,47 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.9 — "Hotfix: revert NFD diff"</title>
+      <sparkle:version>20309</sparkle:version>
+      <sparkle:shortVersionString>2.3.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 01:15:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.9/vkey-2.3.9.dmg"
+        sparkle:edSignature="0InbxpEjljU7xhZD0fyQfab8u2Cv6+vL+NLeumU0hqmaiIve2ndtxhgOJZ3N5fgKL6ZCnjK9Gw2ZD8xRkhbtBw=="
+        length="8771643"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.9 — "Hotfix: revert NFD diff":</h2>
+        <p><em>HOTFIX KHẨN: revert v2.3.8 NFD-aware diff — đã phá vỡ gõ tiếng Việt trong Google Docs. Hypothesis "Chrome store NFD" SAI cho Google Docs (contenteditable + JS custom event handler).</em></p>
+
+        <h3>🐛 Regression từ v2.3.8</h3>
+        <ul>
+          <li>Gõ "trình" trong Google Docs → hiện "trinh̀nh" (duplicate "nh" + lệch combining mark).</li>
+          <li>Tương tự "các" → "caćc", "kiểm" → "kiêm̉m", "của" → "cuảa", "bày" → "baỳy".</li>
+          <li>Pattern: Telex áp tone diacritic vào nguyên âm → vkey gửi Shift+Left + replace → Google Docs IGNORE Shift+Left → sendString chỉ append → mặt chữ duplicate.</li>
+        </ul>
+
+        <h3>🔍 Nguyên nhân hypothesis sai</h3>
+        <p>v2.3.8 implement <code>calcKeyStrokesNFD</code> dựa trên giả thiết Chrome decompose Vietnamese text thành NFD. Đúng cho Chrome's URL bar có thể, nhưng SAI cho Google Docs — Docs dùng contenteditable + custom JS event handler, BỎ QUA Shift+Left của vkey. Kết quả: NFD diff send Shift+Left × N + sendString của combining mark + remaining chars → Google Docs chỉ append → mọi syllable Vietnamese bị duplicate.</p>
+
+        <h3>✅ Fix</h3>
+        <ul>
+          <li>Revert NFD-aware diff trong <code>handleTextChar</code> và <code>restoreRawEnglish</code>. Quay lại grapheme diff cho mọi app (như v2.3.7 trở về trước).</li>
+          <li>Giữ <code>EventSimulator.calcKeyStrokesNFD</code> function (dead code) để dùng research sau.</li>
+          <li>Bỏ recovery branch <code>isInstantRestoreEnglish</code> check (speculative, không cần).</li>
+          <li>Giữ lexicon additions (google, tools, sheets, docs, common "oo"/"ee" English words) — an toàn, cải thiện commit-time English detection.</li>
+        </ul>
+
+        <h3>⚠️ Limitation chưa fix</h3>
+        <p>"google → gooogle" trong Chrome address bar / Google search vẫn còn (pre-existing). Cần research khác — có thể switch strategy cho Chrome sang backspace-based hoặc tìm cách detect autocomplete state.</p>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass. Vietnamese typing test giữ nguyên 100%. <code>testCalcKeyStrokesNFDForCombiningDiacritic</code> giữ lại như unit test cho function (chưa dùng).</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.8 — "NFD-aware Chrome Diff"</title>
       <sparkle:version>20308</sparkle:version>
       <sparkle:shortVersionString>2.3.8</sparkle:shortVersionString>

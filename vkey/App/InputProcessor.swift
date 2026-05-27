@@ -423,15 +423,6 @@ struct WordBuffer {
       }
       transformed.append(char)
       wordState = wordState.push(char)
-      // v2.3.8: nếu trong recovery, keysStr giờ match English instant-restore
-      // (vd "google" sau khi append 'e'), mark stoppedByEnglishWord=true để
-      // commit-time spell decision xử lý đúng (restore raw). Không thay đổi
-      // transformed (đã là raw). Mục đích: cải thiện handoff giữa intermediate
-      // recovery state và full-word English recognition cho các app
-      // autocomplete (Chrome/Google) — tránh artifacts từ partial replacement.
-      if LexiconManager.shared.isInstantRestoreEnglish(keysStr) {
-        stoppedByEnglishWord = true
-      }
       return
     }
 
@@ -958,13 +949,12 @@ class InputProcessor {
     }
 
     push(char: newChar)
-    let isAutocompleteApp = isFixAutocompleteApp()
-    // v2.3.8: dùng NFD-aware diff cho FixAutocompleteApps để match scalar
-    // count với browser storage (Chrome decomposes "ô" → "o" + combining ̂).
-    // Tránh bug "google → gooogle" do Shift+Left count thiếu.
-    let (numBackspaces, diffChars) = isAutocompleteApp
-      ? EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
-      : EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
+    // v2.3.9 HOTFIX: revert v2.3.8 NFD-aware diff. Hypothesis "Chrome store NFD"
+    // SAI cho Google Docs — Docs ignore Shift+Left của vkey → NFD diff send
+    // selection count khác → bị append thay vì replace → "trình" thành "trinh̀nh".
+    // Quay lại grapheme diff cho mọi app. Chrome "google → gooogle" cần fix khác.
+    let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+      from: lastTransformed, to: transformed)
 
     // If the only change is the new character itself, let it pass through
     if let firstDiffChar = diffChars.first,
@@ -973,7 +963,7 @@ class InputProcessor {
       return Unmanaged.passUnretained(event)
     }
 
-    if isAutocompleteApp {
+    if isFixAutocompleteApp() {
       // For autocomplete-capable apps (browsers, etc.), use select-and-replace
       // instead of backspace-and-type. Shift+Left naturally extends any existing
       // inline autocomplete selection, so the typed replacement covers both the
@@ -1203,18 +1193,15 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
+      // v2.3.9 HOTFIX: revert v2.3.8 NFD diff (hypothesis sai — Google Docs
+      // ignore Shift+Left → diff sai). Quay lại grapheme diff.
+      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+        from: current, to: target)
       // 1.8.3: dùng select-and-replace cho commit-time restore khi
       // target app có autocomplete/strategy-mismatch (Word, Slack, Notion,
       // browsers, search fields...). Tránh bug "footer → foooter" do
-      // backspace nuốt sai trên những app này. handleKey đã dùng pattern
-      // tương tự ở line 791; đây cover thêm path commit-time restore.
-      // v2.3.8: cho autocomplete apps, dùng NFD-aware diff để tránh
-      // "google → gooogle" do scalar mismatch (Chrome NFD storage).
-      let isAutocompleteAppRestore = isFixAutocompleteApp()
-      let (numBackspaces, diffChars) = isAutocompleteAppRestore
-        ? EventSimulator.calcKeyStrokesNFD(from: current, to: target)
-        : EventSimulator.calcKeyStrokes(from: current, to: target)
-      if isAutocompleteAppRestore {
+      // backspace nuốt sai trên những app này.
+      if isFixAutocompleteApp() {
         let strategy = effectiveTypingStrategy(
           backspaceCount: numBackspaces,
           diffCharCount: diffChars.count

@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.8 — "NFD-aware Chrome Diff"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.9 — "Hotfix: revert NFD diff"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.9** — HOTFIX KHẨN: revert v2.3.8 NFD-aware diff. v2.3.8 dựa trên hypothesis sai (Chrome store NFD) — thực tế Google Docs ignore Shift+Left của vkey nên NFD diff biến mọi syllable Vietnamese trong Docs thành duplicate ("trình → trinh̀nh", "các → caćc", "kiểm → kiêm̉m"). v2.3.9 quay lại grapheme diff cho mọi app, giữ lexicon additions (google, tools, sheets, docs…). "google → gooogle" trong Chrome address bar / Google search vẫn còn (pre-existing), cần research khác. 217/217 test pass.
 
 > **2.3.8** — Sửa lỗi "google → gooogle" (extra 'o') khi gõ trong Chrome, Google Docs, Google Sheets. Root cause: Chrome store Vietnamese text dạng NFD (o + combining ◌̂) trong khi vkey send NFC (precomposed ô). Shift+Left của Chrome đếm UTF-16 scalar, không phải grapheme → selectLeftCount thiếu → replace bỏ sót 'o'. Fix: thêm `calcKeyStrokesNFD` compute diff trong NFD scalar space, dùng riêng cho `FixAutocompleteApps` (browsers, Google). Apple apps (Notes, TextEdit) vẫn dùng grapheme diff. Bonus: thêm common English words vào instant-restore lexicon (google, youtube, facebook, sheets, docs, spreadsheet, good, wood, look, book, food, week, screen, feed, free, tree…). 217/217 test pass.
 

@@ -2,6 +2,70 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.9] - 2026-05-28 — "Hotfix: revert NFD diff"
+
+**HOTFIX KHẨN: revert v2.3.8 NFD-aware diff — đã phá vỡ gõ tiếng Việt trong Google Docs.**
+
+### 🐛 Regression từ v2.3.8
+
+User report:
+> "tôi gõ vào bất kỳ đâu đều bị lỗi gõ google thì ấn space xong hiển thị gooogle"
+> "Đây là lỗi tôi gõ hiển thị gooogle doc: trinh̀nh baỳy rõ hơn caćc ý kiến cuảa đoàn kiêm̉m toán"
+
+Trong Google Docs (mở ở Chrome), mọi syllable Vietnamese có dấu đều bị duplicate:
+- `trình` → `trinh̀nh` (extra "nh" + lệch combining grave)
+- `bày` → `baỳy` (extra "y")
+- `các` → `caćc` (extra "c")
+- `của` → `cuảa` (extra "a")
+- `kiểm` → `kiêm̉m` (extra "m")
+
+Pattern: Telex áp tone diacritic → vkey gửi Shift+Left × N + sendString của (combining mark + remaining chars). Google Docs **bỏ qua Shift+Left**, sendString chỉ APPEND vào cuối → mặt chữ trông như duplicate.
+
+### 🔍 Nguyên nhân: hypothesis v2.3.8 sai
+
+v2.3.8 implement [`calcKeyStrokesNFD`](vkey/Platform/EventSimulator.swift) dựa trên giả thiết Chrome decompose Vietnamese text thành NFD (`o` + combining `◌̂`). NFD diff trả về `selectLeftCount` theo scalar count và `replaceString` chứa combining marks tách rời.
+
+Giả thiết này **không đúng cho Google Docs**:
+- Google Docs dùng contenteditable + custom JS event handler.
+- Synthesized Shift+Left CGEvent **không được Docs process** đúng cách — selection state không thay đổi.
+- Khi vkey gửi sendString của NFD-form sau Shift+Left, Docs chỉ append vào cuối.
+- Combining mark `◌̂` append sau `nh` → kết hợp với `h` thành `h̀` visually → output `trinh̀nh`.
+
+### ✅ Fix
+
+Revert NFD-aware diff path trong cả 2 chỗ:
+- [`handleTextChar`](vkey/App/InputProcessor.swift) — typing-time diff.
+- [`applySpellDecisionOnCommit`](vkey/App/InputProcessor.swift) — commit-time `restoreRawEnglish` diff.
+
+Quay lại `EventSimulator.calcKeyStrokes` (grapheme-based) cho **mọi app**, kể cả `FixAutocompleteApps`. Behavior giống v2.3.7 trở về trước.
+
+Cũng bỏ recovery branch `isInstantRestoreEnglish` check (speculative, không cần thiết).
+
+### 📚 Giữ lại từ v2.3.8
+
+- **Lexicon additions**: ~70 common English words (google, youtube, facebook, tools, sheet, sheets, docs, doc, spreadsheet, good, wood, look, book, food, week, screen, feed, free, tree…) trong [`EmbeddedLexiconData.englishWords`](vkey/Lexicon/EmbeddedLexiconData.swift). An toàn, cải thiện commit-time English detection cho các từ này.
+- **`EventSimulator.calcKeyStrokesNFD`** function — dead code (không được gọi). Giữ lại để research sau.
+- Unit test [`testCalcKeyStrokesNFDForCombiningDiacritic`](vkeyTests/vkeyTests.swift) — pure test cho function, vẫn pass.
+
+### ⚠️ Limitation chưa fix
+
+**"google → gooogle"** trong Chrome address bar / Google search vẫn còn (pre-existing bug class, không phải regression của v2.3.8). Cần research khác:
+- Có thể switch strategy cho Chrome browser-bar sang backspace-based.
+- Hoặc detect autocomplete state qua AX API trước khi gửi events.
+- Hoặc add "google" và tech brand vào lexicon early-detect path (đã làm partial qua instantRestore).
+
+User workaround tạm thời: gõ "googlex" + Tab/Esc để dismiss autocomplete, hoặc tắt vkey toggle (⇧⌥) khi gõ tiếng Anh trong browser.
+
+### 🧪 Test
+
+217/217 pass. Vietnamese typing test giữ nguyên 100%.
+
+### Bump
+
+`2.3.8 → 2.3.9` / `20308 → 20309`. DMG 8771643 bytes, sig `0InbxpEjljU7xhZD0fyQfab8u2Cv6+vL+NLeumU0hqmaiIve2ndtxhgOJZ3N5fgKL6ZCnjK9Gw2ZD8xRkhbtBw==`.
+
+---
+
 ## [2.3.8] - 2026-05-28 — "NFD-aware Chrome Diff"
 
 **Sửa lỗi "google → gooogle" (extra 'o') khi gõ trong Chrome, Google Docs, Google Sheets.**
