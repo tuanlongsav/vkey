@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.9 — "Hotfix: revert NFD diff"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.10 — "AX-based Autocomplete Detection"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.10** — Sửa cả 2 bug còn lại: Google Docs/Sheets duplicate syllable ("trình → trinình", "kiểm → kiêmểm"…) + Chrome URL bar "google → gooogle". Root fix: distinguish "search field" vs "text area" qua AX role thay vì bundle ID. Google Docs (AXTextArea) giờ dùng backspace path (hoạt động đúng trong contenteditable). Chrome URL bar / Google search box (AXSearchField) vẫn dùng Shift+Left + re-enable NFD-aware diff (Chrome URL bar store NFD scalar). 217/217 test pass.
 
 > **2.3.9** — HOTFIX KHẨN: revert v2.3.8 NFD-aware diff. v2.3.8 dựa trên hypothesis sai (Chrome store NFD) — thực tế Google Docs ignore Shift+Left của vkey nên NFD diff biến mọi syllable Vietnamese trong Docs thành duplicate ("trình → trinh̀nh", "các → caćc", "kiểm → kiêm̉m"). v2.3.9 quay lại grapheme diff cho mọi app, giữ lexicon additions (google, tools, sheets, docs…). "google → gooogle" trong Chrome address bar / Google search vẫn còn (pre-existing), cần research khác. 217/217 test pass.
 

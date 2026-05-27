@@ -949,12 +949,15 @@ class InputProcessor {
     }
 
     push(char: newChar)
-    // v2.3.9 HOTFIX: revert v2.3.8 NFD-aware diff. Hypothesis "Chrome store NFD"
-    // SAI cho Google Docs — Docs ignore Shift+Left của vkey → NFD diff send
-    // selection count khác → bị append thay vì replace → "trình" thành "trinh̀nh".
-    // Quay lại grapheme diff cho mọi app. Chrome "google → gooogle" cần fix khác.
-    let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-      from: lastTransformed, to: transformed)
+    // v2.3.10: NFD-aware diff CHỈ dùng cho search fields (AX role
+    // AXSearchField/AXComboBox) — nơi Shift+Left thực sự work và browser
+    // có thể store NFD scalar (vd Chrome URL bar). Google Docs / Sheets /
+    // contenteditable web app KHÔNG còn được match bởi isFixAutocompleteApp
+    // (sau khi loại bỏ bundle ID check) → dùng grapheme diff + backspace.
+    let isAutocompleteApp = isFixAutocompleteApp()
+    let (numBackspaces, diffChars) = isAutocompleteApp
+      ? EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
+      : EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
 
     // If the only change is the new character itself, let it pass through
     if let firstDiffChar = diffChars.first,
@@ -963,7 +966,7 @@ class InputProcessor {
       return Unmanaged.passUnretained(event)
     }
 
-    if isFixAutocompleteApp() {
+    if isAutocompleteApp {
       // For autocomplete-capable apps (browsers, etc.), use select-and-replace
       // instead of backspace-and-type. Shift+Left naturally extends any existing
       // inline autocomplete selection, so the typed replacement covers both the
@@ -1193,15 +1196,13 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
-      // v2.3.9 HOTFIX: revert v2.3.8 NFD diff (hypothesis sai — Google Docs
-      // ignore Shift+Left → diff sai). Quay lại grapheme diff.
-      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-        from: current, to: target)
-      // 1.8.3: dùng select-and-replace cho commit-time restore khi
-      // target app có autocomplete/strategy-mismatch (Word, Slack, Notion,
-      // browsers, search fields...). Tránh bug "footer → foooter" do
-      // backspace nuốt sai trên những app này.
-      if isFixAutocompleteApp() {
+      // v2.3.10: NFD diff cho search fields, grapheme diff cho mọi nơi khác.
+      // Match logic ở handleTextChar.
+      let isAutocompleteAppRestore = isFixAutocompleteApp()
+      let (numBackspaces, diffChars) = isAutocompleteAppRestore
+        ? EventSimulator.calcKeyStrokesNFD(from: current, to: target)
+        : EventSimulator.calcKeyStrokes(from: current, to: target)
+      if isAutocompleteAppRestore {
         let strategy = effectiveTypingStrategy(
           backspaceCount: numBackspaces,
           diffCharCount: diffChars.count
@@ -1248,13 +1249,28 @@ class InputProcessor {
     }
   }
 
+  /// v2.3.10: Detect khi nào nên dùng `sendSelectAndReplace` (Shift+Left) thay
+  /// vì backspace-based replacement. Chỉ áp dụng cho **search fields / combo
+  /// boxes** thực sự — nơi có inline autocomplete ghost text mà Shift+Left
+  /// bao trùm đúng cách.
+  ///
+  /// Trước v2.3.10: cũng return true cho TẤT CẢ Chrome / Safari / Firefox /…
+  /// (bundle ID match) — kể cả khi user đang gõ trong text area của Google
+  /// Docs / Sheets / web app. Hệ quả: Shift+Left bị contenteditable JS handler
+  /// của Docs bỏ qua → vkey gửi sendString sau Shift+Left mà selection chưa
+  /// thay đổi → mọi syllable Vietnamese bị duplicate ("trình → trinình",
+  /// "các → cacác", "kiểm → kiêmểm"…).
+  ///
+  /// Sau v2.3.10: chỉ check `isSearchOrComboFocused` (AX role = AXSearchField
+  /// hoặc AXComboBox). Browser URL bar / Google search box vẫn matched (search
+  /// field role) → giữ behavior cũ cho autocomplete URL. Web text area (Docs,
+  /// Sheets, contenteditable) role = AXTextArea → fall through sang
+  /// `sendReplacement` (backspace), hoạt động đúng trong contenteditable.
+  ///
+  /// `FixAutocompleteApps` list giữ lại cho documentation / future regression
+  /// (vd nếu một browser không expose AX role đúng — chưa thấy case nào).
   func isFixAutocompleteApp() -> Bool {
-    if isSearchOrComboFocused {
-      return true
-    }
-    return InputProcessor.FixAutocompleteApps.contains { app in
-      return activeApp.hasPrefix(app)
-    }
+    return isSearchOrComboFocused
   }
 
   static func macroReplacement(

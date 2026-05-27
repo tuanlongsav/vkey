@@ -6,6 +6,54 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.10 — "AX-based Autocomplete Detection"</title>
+      <sparkle:version>20310</sparkle:version>
+      <sparkle:shortVersionString>2.3.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 01:55:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.10/vkey-2.3.10.dmg"
+        sparkle:edSignature="VShrcqmufDdCRAJnY7NNo+msFCa9t/uk6YXscqLCpPt991yEyreWafmU5jROHRcOYaB/8kgY90SHfCCanh98Ag=="
+        length="8770198"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.10 — "AX-based Autocomplete Detection":</h2>
+        <p><em>Sửa cả 2 bug còn lại: Google Docs/Sheets duplicate syllable + Chrome URL bar "google → gooogle". Root fix: distinguish "search field" vs "text area" qua AX role thay vì bundle ID.</em></p>
+
+        <h3>🐛 Bugs đang tồn tại trước v2.3.10</h3>
+        <ul>
+          <li>Google Docs (Chrome): mọi syllable Vietnamese có dấu bị duplicate. "trình" → "trinình", "các" → "cacác", "kiến" → "kieíeién", "kiểm" → "kiêmểm", "toán" → "taoáooán", "của" → "cuaủa".</li>
+          <li>Chrome URL bar / Google search box: "google" → "gooogle" (extra 'o').</li>
+        </ul>
+
+        <h3>🔍 Nguyên nhân</h3>
+        <p><code>isFixAutocompleteApp()</code> trước v2.3.10 return true cho TẤT CẢ Chrome (qua bundle ID prefix match). Hệ quả: Google Docs (textarea content) cũng bị route vào <code>sendSelectAndReplace</code> (Shift+Left).</p>
+        <p>Nhưng Google Docs dùng contenteditable + JS event handler → <strong>bỏ qua Shift+Left</strong> của vkey. Khi vkey gửi <code>Shift+Left × N + sendString(replacement)</code>, Docs chỉ thấy <code>sendString</code> append, không có selection → mọi syllable bị duplicate ở mọi tone.</p>
+        <p>Trong khi đó Chrome URL bar (true search field) DOES process Shift+Left, nhưng store text NFD scalar → grapheme-based selectLeftCount thiếu → "google → gooogle".</p>
+
+        <h3>✅ Fix</h3>
+        <ul>
+          <li><strong>AX-based detection</strong>: <code>isFixAutocompleteApp()</code> giờ chỉ return true khi <code>isSearchOrComboFocused == true</code> (AX role = AXSearchField hoặc AXComboBox). Bỏ bundle ID prefix check.</li>
+          <li><strong>Google Docs / Sheets / web text areas</strong>: AX role = AXTextArea → fall through sang <code>sendReplacement</code> (backspace-based). Backspace hoạt động đúng trong contenteditable.</li>
+          <li><strong>Chrome URL bar / Google search box</strong>: AX role = AXSearchField → vẫn dùng <code>sendSelectAndReplace</code>. Re-enable NFD-aware diff (từ v2.3.8) cho search fields — Chrome URL bar store NFD scalar nên cần NFD count match.</li>
+        </ul>
+
+        <h3>📊 Hành vi sau v2.3.10</h3>
+        <ul>
+          <li><strong>Google Docs</strong>: "trinh + f" → backspace × 3 + "ình" → "trình" ✓</li>
+          <li><strong>Chrome URL bar</strong>: "goo" → NFD diff thấy `̂` cần thêm → 0 backspace + append `̂` → "gô". Tiếp 'gl': → NFD select 2 scalars + replace → "googl". ✓</li>
+          <li><strong>Notes/TextEdit</strong>: NSTextField AX role không phải search → grapheme + backspace. Không thay đổi.</li>
+        </ul>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass. Pure unit test <code>testCalcKeyStrokesNFDForCombiningDiacritic</code> verify NFD logic. Behavior change cần test thủ công ở Google Docs, Sheets, Chrome URL bar.</p>
+
+        <h3>📝 Note</h3>
+        <p>FixAutocompleteApps list giữ lại trong code làm documentation cho các browser cần special handling. Nếu sau này gặp browser không expose AX role đúng (chưa thấy case), có thể re-introduce fallback.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.9 — "Hotfix: revert NFD diff"</title>
       <sparkle:version>20309</sparkle:version>
       <sparkle:shortVersionString>2.3.9</sparkle:shortVersionString>

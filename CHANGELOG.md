@@ -2,6 +2,107 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.10] - 2026-05-28 — "AX-based Autocomplete Detection"
+
+**Sửa cả 2 bug còn lại: Google Docs/Sheets duplicate syllable + Chrome URL bar `google → gooogle`. Root fix: distinguish "search field" vs "text area" qua AX role thay vì bundle ID prefix.**
+
+### 🐛 Bugs
+
+1. **Google Docs / Sheets duplicate**: Mọi syllable Vietnamese có dấu bị duplicate.
+   - `trình` → `trinình`
+   - `các` → `cacác`
+   - `kiến` → `kieíeién`
+   - `kiểm` → `kiêmểm`
+   - `toán` → `taoáooán`
+   - `của` → `cuaủa`
+2. **Chrome URL bar `google → gooogle`**: Trong Chrome address bar / Google search box.
+
+### 🔍 Nguyên nhân
+
+`isFixAutocompleteApp()` trước v2.3.10 return true cho **TẤT CẢ** Chrome / Safari / Firefox / Edge (qua bundle ID prefix match):
+
+```swift
+func isFixAutocompleteApp() -> Bool {
+  if isSearchOrComboFocused { return true }
+  return InputProcessor.FixAutocompleteApps.contains { app in
+    return activeApp.hasPrefix(app)
+  }
+}
+```
+
+Hệ quả: bất kỳ window nào của Chrome (kể cả Google Docs/Sheets text area) đều route vào `sendSelectAndReplace` (Shift+Left + replace).
+
+**Google Docs** dùng contenteditable + custom JS event handler → **bỏ qua Shift+Left** của vkey. vkey gửi `Shift+Left × N + sendString(replacement)` — Docs chỉ thấy `sendString` append. Selection chưa thay đổi → replacement đè vào cuối → mọi syllable bị duplicate.
+
+**Chrome URL bar** (true search field) **does** process Shift+Left, nhưng store Vietnamese NFC text dạng NFD scalar (`ô` → `o` + combining `◌̂`). Grapheme-based `selectLeftCount` thiếu so với scalar storage → "google → gooogle".
+
+### ✅ Fix
+
+**AX-based detection**: `isFixAutocompleteApp()` giờ chỉ check AX role:
+
+```swift
+func isFixAutocompleteApp() -> Bool {
+  return isSearchOrComboFocused
+}
+```
+
+`isSearchOrComboFocused` set qua [`Focused.isComboBoxOrSearchField()`](vkey/Platform/Focused.swift) — return true khi AX role = `AXSearchField` hoặc `AXComboBox`.
+
+| Context | Trước v2.3.10 | Sau v2.3.10 |
+|---|---|---|
+| Chrome URL bar (AXSearchField) | Shift+Left + grapheme | Shift+Left + **NFD diff** |
+| Chrome Google search box (AXSearchField) | Shift+Left + grapheme | Shift+Left + **NFD diff** |
+| Google Docs textarea (AXTextArea) | Shift+Left (broken) | **Backspace** + grapheme |
+| Google Sheets cell (AXTextArea) | Shift+Left (broken) | **Backspace** + grapheme |
+| Web textarea / contenteditable | Shift+Left (broken) | **Backspace** + grapheme |
+| Notes/TextEdit/Mail (Apple native) | Backspace + grapheme | Backspace + grapheme |
+
+**Re-enable NFD diff** (từ v2.3.8) — nhưng giờ CHỈ áp dụng cho search fields (qua isFixAutocompleteApp), nơi Shift+Left thực sự work. Tránh được vấn đề v2.3.8 (NFD diff phá Google Docs vì Docs bỏ qua Shift+Left).
+
+### 📊 Trace ví dụ
+
+**Google Docs "trinh" + 'f' (= "trình")**:
+- Diff `"trinh" → "trình"`: backspace=3, diff="ình".
+- isFixAutocompleteApp = false (AXTextArea).
+- Path: `sendReplacement` (backspace × 3 + sendString "ình").
+- Chrome backspace × 3 deletes 'h','n','i' → "tr". sendString "ình" → "trình". ✓
+
+**Chrome URL bar "google"**:
+- Step 3 (gõ 'o' thứ 3): vkey transform "go" → "gô".
+- NFD diff `"go" → "gô"`: backspace=0, diff=`◌̂` (combining mark).
+- isFixAutocompleteApp = true (AXSearchField).
+- Path: `sendSelectAndReplace` (Shift+Left × 0 + sendString `◌̂`).
+- Chrome appends combining mark → "go,◌̂" (NFD storage) visible "gô". ✓
+- Step 5 ('l'): vkey recovery → transform "gôg" → "googl".
+- NFD diff: NFD from=[g,o,◌̂,g], NFD to=[g,o,o,g,l]. common=2 (g,o). backspace=2, diff="ogl".
+- Path: Shift+Left × 2 + sendString "ogl". Chrome selects [◌̂,g] (2 NFD scalars) → replace "ogl" → "googl". ✓
+- Step 6 'e': pass-through → "google". ✓
+
+### 🛡️ Không bị ảnh hưởng
+
+- **Apple apps**: Notes, TextEdit, Mail, Pages — AX role không phải search/combo → unchanged behavior.
+- **Microsoft Office**: Word, PowerPoint, Outlook, OneNote — không phải search field → unchanged.
+- **Vietnamese typing trong Google Docs**: bug duplicate đã được fix.
+
+### ⚠️ Risks
+
+- Nếu một browser không expose AX role đúng (chưa thấy), URL bar sẽ fall xuống backspace path. Backspace có thể có vấn đề với inline autocomplete (như "footer → foooter" của v1.8.3). Nếu xảy ra, cần thêm fallback bundle ID check.
+- `FixAutocompleteApps` list giữ lại trong code làm documentation.
+
+### 🧪 Test
+
+217/217 pass. Pure unit tests cover NFD logic. Behavior change cần test thủ công ở:
+- Google Docs: gõ tiếng Việt phức tạp.
+- Google Sheets: gõ trong cell.
+- Chrome URL bar: gõ "google", "tools", common English.
+- Notes/TextEdit: regression check.
+
+### Bump
+
+`2.3.9 → 2.3.10` / `20309 → 20310`. DMG 8770198 bytes, sig `VShrcqmufDdCRAJnY7NNo+msFCa9t/uk6YXscqLCpPt991yEyreWafmU5jROHRcOYaB/8kgY90SHfCCanh98Ag==`.
+
+---
+
 ## [2.3.9] - 2026-05-28 — "Hotfix: revert NFD diff"
 
 **HOTFIX KHẨN: revert v2.3.8 NFD-aware diff — đã phá vỡ gõ tiếng Việt trong Google Docs.**
