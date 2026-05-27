@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.10 — "AX-based Autocomplete Detection"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.11 — "Backspace-only Path"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.11** — Sửa nốt "google → gooogle" trong Chrome URL bar / Google search. v2.3.10 fix được Google Docs nhưng URL bar vẫn lỗi (Shift+Left + NFD diff không tương tác đúng với autocomplete). v2.3.11 đơn giản hóa: dùng backspace + retype cho **mọi app**. Drop `sendSelectAndReplace` path. Trade-off: v1.8.3 introduce Shift+Left để fix "footer → foooter" trong browsers — nếu bug đó quay lại trong v2.3.11, sẽ cần fix khác. 217/217 test pass.
 
 > **2.3.10** — Sửa cả 2 bug còn lại: Google Docs/Sheets duplicate syllable ("trình → trinình", "kiểm → kiêmểm"…) + Chrome URL bar "google → gooogle". Root fix: distinguish "search field" vs "text area" qua AX role thay vì bundle ID. Google Docs (AXTextArea) giờ dùng backspace path (hoạt động đúng trong contenteditable). Chrome URL bar / Google search box (AXSearchField) vẫn dùng Shift+Left + re-enable NFD-aware diff (Chrome URL bar store NFD scalar). 217/217 test pass.
 

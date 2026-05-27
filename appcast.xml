@@ -6,6 +6,54 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.11 — "Backspace-only Path"</title>
+      <sparkle:version>20311</sparkle:version>
+      <sparkle:shortVersionString>2.3.11</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 02:20:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.11/vkey-2.3.11.dmg"
+        sparkle:edSignature="wQiQYXRjWJqttzV3C8PcRHIKwLuaWpMtpIknmI1iJAdd+j5AA6+03owscS8Z1qxa/PKA6RDamjCmtwRk3ha4BA=="
+        length="8759626"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.11 — "Backspace-only Path":</h2>
+        <p><em>Sửa nốt "google → gooogle" trong Chrome URL bar / Google search. v2.3.10 fix được Google Docs nhưng URL bar vẫn lỗi (Shift+Left + NFD diff không tương tác đúng với autocomplete URL bar). v2.3.11 đơn giản hóa: dùng backspace + retype cho MỌI app.</em></p>
+
+        <h3>🐛 Bug còn lại</h3>
+        <p>Chrome URL bar / Google search box: gõ "google" → ra "gooogle" (extra 'o'). v2.3.10 dùng Shift+Left + NFD diff cho search field nhưng vẫn không fix được.</p>
+
+        <h3>🔍 Nguyên nhân (hypothesis)</h3>
+        <p>Chrome URL bar có autocomplete xen vào keystrokes — khi vkey gửi Shift+Left, Chrome có thể intercept, commit ghost text trước khi selection apply. Combined với Telex's intermediate states (oo → ô → recovery), kết quả khó predict.</p>
+        <p>Shift+Left selection-based replacement đã không reliable trong nhiều context. Backspace là deterministic — luôn xóa 1 char visible từ cursor.</p>
+
+        <h3>✅ Fix: đơn giản hóa</h3>
+        <ul>
+          <li>Drop <code>sendSelectAndReplace</code> path entirely khỏi <code>handleTextChar</code> và <code>restoreRawEnglish</code>.</li>
+          <li>Always use <code>sendReplacement</code> (backspace + retype).</li>
+          <li>Match behavior với Google Docs ở v2.3.10 (đã proved hoạt động đúng).</li>
+        </ul>
+
+        <h3>📊 Trace "google" trong Chrome URL bar sau v2.3.11</h3>
+        <ul>
+          <li>Step 3 ('o' thứ 3): diff "go" → "gô" = (1 bs, "ô"). Backspace × 1 + sendString "ô". → "gô" ✓</li>
+          <li>Step 4 'g': pass-through. → "gôg".</li>
+          <li>Step 5 'l' (recovery): diff "gôg" → "googl" = (2 bs, "oogl"). Backspace × 2 + sendString "oogl". → "googl" ✓</li>
+          <li>Step 6 'e': pass-through. → "google" ✓</li>
+        </ul>
+
+        <h3>⚠️ Trade-off</h3>
+        <p>v1.8.3 đã introduce <code>sendSelectAndReplace</code> để fix bug "footer → foooter" trong browsers với inline autocomplete. v2.3.11 revert decision đó — nếu "footer → foooter" quay lại, báo lại. Chrome có thể đã cải thiện autocomplete behavior từ 2024 đến nay nên hopefully không còn issue.</p>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass. Behavior change cần manual test ở Chrome URL bar, Google search, browser address bars khác.</p>
+
+        <h3>📝 Note</h3>
+        <p><code>EventSimulator.sendSelectAndReplace</code> và <code>calcKeyStrokesNFD</code> functions giữ lại làm dead code — có thể research lại sau nếu cần xử lý autocomplete đặc biệt.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.10 — "AX-based Autocomplete Detection"</title>
       <sparkle:version>20310</sparkle:version>
       <sparkle:shortVersionString>2.3.10</sparkle:shortVersionString>

@@ -949,15 +949,13 @@ class InputProcessor {
     }
 
     push(char: newChar)
-    // v2.3.10: NFD-aware diff CHỈ dùng cho search fields (AX role
-    // AXSearchField/AXComboBox) — nơi Shift+Left thực sự work và browser
-    // có thể store NFD scalar (vd Chrome URL bar). Google Docs / Sheets /
-    // contenteditable web app KHÔNG còn được match bởi isFixAutocompleteApp
-    // (sau khi loại bỏ bundle ID check) → dùng grapheme diff + backspace.
-    let isAutocompleteApp = isFixAutocompleteApp()
-    let (numBackspaces, diffChars) = isAutocompleteApp
-      ? EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
-      : EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
+    // v2.3.11: chỉ dùng grapheme diff + backspace path cho MỌI app.
+    // v2.3.10 thử Shift+Left + NFD diff cho search fields nhưng vẫn không
+    // fix được "google → gooogle" trong Chrome URL bar — Shift+Left không
+    // tương tác đúng với autocomplete của URL bar. Backspace path đơn giản
+    // và deterministic hơn — đã proved hoạt động đúng ở Google Docs v2.3.10.
+    let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+      from: lastTransformed, to: transformed)
 
     // If the only change is the new character itself, let it pass through
     if let firstDiffChar = diffChars.first,
@@ -966,33 +964,16 @@ class InputProcessor {
       return Unmanaged.passUnretained(event)
     }
 
-    if isAutocompleteApp {
-      // For autocomplete-capable apps (browsers, etc.), use select-and-replace
-      // instead of backspace-and-type. Shift+Left naturally extends any existing
-      // inline autocomplete selection, so the typed replacement covers both the
-      // autocomplete text and the characters being modified.
-      let strategy = effectiveTypingStrategy(
-        backspaceCount: numBackspaces,
-        diffCharCount: diffChars.count
-      )
-      let telemetry = EventSimulator.sendSelectAndReplace(
-        selectLeftCount: numBackspaces,
-        diffChars: diffChars,
-        strategy: strategy
-      )
-      observeTelemetry(telemetry, appLikelySensitive: true)
-    } else {
-      let strategy = effectiveTypingStrategy(
-        backspaceCount: numBackspaces,
-        diffCharCount: diffChars.count
-      )
-      let telemetry = EventSimulator.sendReplacement(
-        backspaceCount: numBackspaces,
-        diffChars: diffChars,
-        strategy: strategy
-      )
-      observeTelemetry(telemetry, appLikelySensitive: false)
-    }
+    let strategy = effectiveTypingStrategy(
+      backspaceCount: numBackspaces,
+      diffCharCount: diffChars.count
+    )
+    let telemetry = EventSimulator.sendReplacement(
+      backspaceCount: numBackspaces,
+      diffChars: diffChars,
+      strategy: strategy
+    )
+    observeTelemetry(telemetry, appLikelySensitive: false)
     return nil
   }
 
@@ -1196,31 +1177,15 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
-      // v2.3.10: NFD diff cho search fields, grapheme diff cho mọi nơi khác.
-      // Match logic ở handleTextChar.
-      let isAutocompleteAppRestore = isFixAutocompleteApp()
-      let (numBackspaces, diffChars) = isAutocompleteAppRestore
-        ? EventSimulator.calcKeyStrokesNFD(from: current, to: target)
-        : EventSimulator.calcKeyStrokes(from: current, to: target)
-      if isAutocompleteAppRestore {
-        let strategy = effectiveTypingStrategy(
-          backspaceCount: numBackspaces,
-          diffCharCount: diffChars.count
-        )
-        let telemetry = EventSimulator.sendSelectAndReplace(
-          selectLeftCount: numBackspaces,
-          diffChars: diffChars,
-          strategy: strategy
-        )
-        observeTelemetry(telemetry, appLikelySensitive: true)
-      } else {
-        let telemetry = EventSimulator.sendReplacement(
-          backspaceCount: numBackspaces,
-          diffChars: diffChars,
-          strategy: strategyTracker.currentStrategy
-        )
-        observeTelemetry(telemetry, appLikelySensitive: false)
-      }
+      // v2.3.11: chỉ dùng backspace path. Match handleTextChar.
+      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+        from: current, to: target)
+      let telemetry = EventSimulator.sendReplacement(
+        backspaceCount: numBackspaces,
+        diffChars: diffChars,
+        strategy: strategyTracker.currentStrategy
+      )
+      observeTelemetry(telemetry, appLikelySensitive: false)
       return true
 
     case .suggest(let suggestions):

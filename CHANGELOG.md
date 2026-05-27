@@ -2,6 +2,70 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.11] - 2026-05-28 — "Backspace-only Path"
+
+**Sửa nốt "google → gooogle" trong Chrome URL bar / Google search box. Đơn giản hóa: dùng backspace + retype cho mọi app.**
+
+### 🐛 Bug còn lại sau v2.3.10
+
+- Google Docs: OK ✓ (fixed in v2.3.10)
+- Chrome URL bar / Google search box: gõ "google" vẫn ra "gooogle" (extra 'o').
+
+v2.3.10 detect search field (AX role) → áp dụng Shift+Left + NFD diff. Nhưng vẫn không fix URL bar — Shift+Left không tương tác đúng với autocomplete của URL bar.
+
+### 🔍 Hypothesis cũ sai
+
+v2.3.8 + v2.3.10 đều dựa trên giả thiết về Chrome storage (NFD scalar) hoặc Shift+Left behavior. Cả 2 đều không khớp thực tế:
+- Google Docs: contenteditable + JS bỏ qua Shift+Left.
+- Chrome URL bar: autocomplete xen vào keystrokes, không predict được.
+
+`Shift+Left` selection-based replacement luôn unreliable trong nhiều context. **`Backspace` là deterministic** — luôn xóa 1 char visible từ cursor, không phụ thuộc app's selection state.
+
+### ✅ Fix: đơn giản hóa
+
+Drop `sendSelectAndReplace` path entirely:
+- [`handleTextChar`](vkey/App/InputProcessor.swift) — typing-time.
+- [`applySpellDecisionOnCommit`](vkey/App/InputProcessor.swift) — commit-time `restoreRawEnglish`.
+
+Always use `sendReplacement` (backspace + retype) cho mọi app. Match behavior với Google Docs ở v2.3.10 (đã proved hoạt động đúng).
+
+### 📊 Trace "google" trong Chrome URL bar sau v2.3.11
+
+| Step | Char | Diff | Action | Display |
+|---|---|---|---|---|
+| 1 | g | append | pass-through | `g` |
+| 2 | o | append | pass-through | `go` |
+| 3 | o (3rd) | (1 bs, "ô") | backspace × 1 + sendString "ô" | `gô` ✓ |
+| 4 | g | (0 bs, "g") | pass-through | `gôg` |
+| 5 | l | (2 bs, "oogl") recovery | backspace × 2 + sendString "oogl" | `googl` ✓ |
+| 6 | e | (0 bs, "e") | pass-through | `google` ✓ |
+
+### ⚠️ Trade-off
+
+v1.8.3 introduce `sendSelectAndReplace` (Shift+Left) để fix bug "footer → foooter" trong browsers với inline autocomplete. v2.3.11 revert decision đó.
+
+**Nếu "footer → foooter" hoặc bug tương tự quay lại** — báo lại để add fallback. Chrome có thể đã cải thiện autocomplete behavior từ 2024 đến nay (v1.8.3 era) nên hopefully không còn issue.
+
+### 🛡️ Không bị ảnh hưởng
+
+- **Google Docs / Sheets**: vẫn dùng backspace path → vẫn ok.
+- **Apple apps**: Notes, TextEdit, Mail — unchanged.
+- **Microsoft Office**: Word, PowerPoint, Outlook — unchanged.
+
+### 📝 Note
+
+`EventSimulator.sendSelectAndReplace` và `EventSimulator.calcKeyStrokesNFD` functions giữ lại làm dead code — có thể research lại sau nếu cần xử lý autocomplete đặc biệt cho 1 app cụ thể.
+
+### 🧪 Test
+
+217/217 pass. Behavior change cần manual test ở Chrome URL bar, Google search, browser address bars khác.
+
+### Bump
+
+`2.3.10 → 2.3.11` / `20310 → 20311`. DMG 8759626 bytes, sig `wQiQYXRjWJqttzV3C8PcRHIKwLuaWpMtpIknmI1iJAdd+j5AA6+03owscS8Z1qxa/PKA6RDamjCmtwRk3ha4BA==`.
+
+---
+
 ## [2.3.10] - 2026-05-28 — "AX-based Autocomplete Detection"
 
 **Sửa cả 2 bug còn lại: Google Docs/Sheets duplicate syllable + Chrome URL bar `google → gooogle`. Root fix: distinguish "search field" vs "text area" qua AX role thay vì bundle ID prefix.**
