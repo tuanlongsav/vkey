@@ -2,6 +2,98 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.8] - 2026-05-28 — "NFD-aware Chrome Diff"
+
+**Sửa lỗi "google → gooogle" (extra 'o') khi gõ trong Chrome, Google Docs, Google Sheets.**
+
+### 🐛 Triệu chứng
+
+- Gõ `google` trong Chrome address bar / Google search → ra `gooogle` (3 o's thay vì 2).
+- Cùng pattern trong Google Docs, Google Sheets khi mở ở Chrome.
+- Notes/TextEdit không bị (Apple text views dùng NFC).
+
+### 🔍 Nguyên nhân
+
+Telex áp `oo → ô` ở step 3 (gõ 'o' thứ 3). vkey gửi `Shift+Left × 1 + 'ô'` qua [`sendSelectAndReplace`](vkey/Platform/EventSimulator.swift). Chrome decompose `ô` thành NFD (`o` + combining `◌̂`), store **2 scalars** internally cho 1 grapheme.
+
+Khi gõ tới 'l' (step 5), recovery fires (buffer không hợp lệ tiếng Việt). vkey diff `"gôg" → "googl"` theo **grapheme count** → `Shift+Left × 2 + "oogl"`. Nhưng Chrome đếm **scalar**:
+
+```
+"gôg" NFD storage: [g, o, ◌̂, g]  (4 scalars, 3 graphemes)
+Shift+Left × 2: selects scalar 2-4 = [◌̂, g]  (combining + g)
+Replace với "oogl": [g, o] + [o, o, g, l] = "gooogl"  ← 3 o's!
++ 'e' → "gooogle"
+```
+
+### ✅ Fix
+
+Thêm [`EventSimulator.calcKeyStrokesNFD`](vkey/Platform/EventSimulator.swift) — compute diff trong NFD scalar space:
+
+```swift
+static func calcKeyStrokesNFD(from: String, to: String) -> (Int, [Character]) {
+  let fromNFD = from.decomposedStringWithCanonicalMapping
+  let toNFD = to.decomposedStringWithCanonicalMapping
+  let fromScalars = Array(fromNFD.unicodeScalars)
+  let toScalars = Array(toNFD.unicodeScalars)
+  // common prefix in NFD scalar space ...
+  let backspaceCount = fromScalars.count - commonPrefixLength
+  var remainingScalars = String.UnicodeScalarView()
+  for s in toScalars.dropFirst(commonPrefixLength) {
+    remainingScalars.append(s)
+  }
+  return (backspaceCount, Array(String(remainingScalars)))
+}
+```
+
+Áp dụng cho `FixAutocompleteApps` (browsers, Google services) ở 2 chỗ:
+- [`handleTextChar`](vkey/App/InputProcessor.swift) — typing-time diff.
+- [`applySpellDecisionOnCommit`](vkey/App/InputProcessor.swift) — commit-time `restoreRawEnglish` diff.
+
+Apple apps (Notes, TextEdit, Mail) **giữ nguyên** grapheme diff (chuẩn NSTextView).
+
+### 📚 Bonus: English instant-restore lexicon
+
+Thêm common English words vào [`EmbeddedLexiconData.englishWords`](vkey/Lexicon/EmbeddedLexiconData.swift) để spell decision restore raw English đúng hơn tại commit time:
+
+- **Tech/brands**: google, youtube, facebook, twitter, instagram, yahoo, amazon, outlook, linkedin, tools, tool, sheet, sheets, docs, doc, spreadsheet, spreadsheets.
+- **Common "oo" words**: good, goods, wood, woods, look, looks, looking, book, books, cook, took, noon, soon, moon, boot, shoot, root, tooth, teeth, smooth, school, food, mood, loop, scoop.
+- **Common "ee" words**: feed, need, seed, feet, meet, week, weekend, screen, queen, green, feel, wheel, three, agree, between, cheese, freeze, free, tree.
+
+Cũng add check `isInstantRestoreEnglish` trong recovery branch của [`WordBuffer.push`](vkey/App/InputProcessor.swift) — khi keysStr match English mid-recovery, mark `stoppedByEnglishWord=true` để commit time + replay logic xử lý đúng.
+
+### 📊 Trace ví dụ (Chrome NFD storage, "google")
+
+| Step | Char | NFD diff | Action | Display |
+|---|---|---|---|---|
+| 1 | g | append | pass-through | `g` |
+| 2 | o | append | pass-through | `go` |
+| 3 | o (3rd) | 0 bs + `◌̂` (combining) | append U+0302 | `gô` ✓ |
+| 4 | g | append | pass-through | `gôg` |
+| 5 | l | 2 bs + `"ogl"` | Shift+Left×2 select `[◌̂,g]`, replace | `googl` ✓ |
+| 6 | e | append | pass-through | `google` ✓ |
+
+Trước fix step 5 dùng grapheme diff: 2 bs + `"oogl"` (4 chars) → trong NFD storage chỉ select `[◌̂,g]` (2 scalars) nhưng `to` của diff được tính ở NFC nên thừa 1 'o' → `gooogl`.
+
+### 🛡️ Không bị ảnh hưởng
+
+- **Apple apps (Notes, TextEdit, Mail, Pages…)**: vẫn dùng grapheme diff. NSTextView/NSTextField xử lý graphemes đúng. Không thay đổi behavior.
+- **Vietnamese typing legitimate**: vd `tôi`, `chương`, `tiếng` — Telex chuẩn vẫn ra đúng trong Chrome (test bằng tay). NFD diff dùng cùng chiều, chỉ thay đổi count selection.
+- **Edge cases khác**: 217/217 test pass.
+
+### 🧪 Test
+
+217/217 pass. Test mới [`testCalcKeyStrokesNFDForCombiningDiacritic`](vkeyTests/vkeyTests.swift) pin:
+- NFC vs NFD diff cho `gôg → googl` (chính của bug).
+- NFD diff cho `go → gô` (chỉ thêm combining mark, 0 backspace).
+- ASCII baseline: NFD ≡ NFC khi không có combining.
+- Common prefix qua "ô": NFC=1 grapheme, NFD=1 scalar diff (̂).
+
+### Bump
+
+`2.3.7 → 2.3.8` / `20307 → 20308`. DMG 8780785 bytes, sig `A+SkdrowGWVGkRI9PRx7nIJg58S7XaprnFj5v7MutOUb+g+3sNqysAqaSVaHYPQzP9oQcqeLKRDWB23aBuJWDA==`.
+
+---
+
 ## [2.3.7] - 2026-05-25 — "Universal Anywhere-DD"
 
 **Sửa lỗi không thể gõ `QĐ`, `BCTĐ`, `vcđ`… (anywhere-DD toggle bị Free Mark Mode block)** — user report: "gõ Q và DD liền nhau sẽ được là QĐ, cả BCTĐ".

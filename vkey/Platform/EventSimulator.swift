@@ -141,6 +141,43 @@ class EventSimulator {
     return (backspaceCount, diffChars)
   }
 
+  /// v2.3.8: NFD scalar-aware diff cho `FixAutocompleteApps` (Chrome, Google
+  /// Docs, Google Sheets) — apps có thể store Vietnamese text dạng decomposed
+  /// (NFD: o + combining ̂) trong khi vkey send NFC (precomposed ô).
+  /// Khi đó Shift+Left của browser đếm theo UTF-16 scalar (NFD = 2 cho "ô"),
+  /// trong khi grapheme-based diff đếm 1 → selectLeftCount thiếu → replace
+  /// sai → bug "google → gooogle" (extra 'o' do combining mark còn sót).
+  ///
+  /// Fix: compute diff trong NFD scalar space. selectLeft match đúng số scalar
+  /// mà browser storage cần Shift+Left.
+  ///
+  /// Trace ví dụ "gôg" → "googl":
+  /// - from NFD: [g, o, ◌̂, g] (4 scalars)
+  /// - to   NFD: [g, o, o, g, l] (5 scalars)
+  /// - common prefix: 2 (g, o)
+  /// - backspaceCount = 4 - 2 = 2
+  /// - remaining = [o, g, l] → "ogl"
+  /// - Shift+Left ×2 selects [◌̂, g] (NFD storage) → replace "ogl" → "googl" ✓
+  static func calcKeyStrokesNFD(from: String, to: String) -> (Int, [Character]) {
+    let fromNFD = from.decomposedStringWithCanonicalMapping
+    let toNFD = to.decomposedStringWithCanonicalMapping
+    let fromScalars = Array(fromNFD.unicodeScalars)
+    let toScalars = Array(toNFD.unicodeScalars)
+    var commonPrefixLength = 0
+    let minLength = min(fromScalars.count, toScalars.count)
+    while commonPrefixLength < minLength
+      && fromScalars[commonPrefixLength] == toScalars[commonPrefixLength]
+    {
+      commonPrefixLength += 1
+    }
+    let backspaceCount = fromScalars.count - commonPrefixLength
+    var remainingScalars = String.UnicodeScalarView()
+    for s in toScalars.dropFirst(commonPrefixLength) {
+      remainingScalars.append(s)
+    }
+    return (backspaceCount, Array(String(remainingScalars)))
+  }
+
   @discardableResult
   static func sendBackspace(
     _ count: Int,

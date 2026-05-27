@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.7 — "Universal Anywhere-DD"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.8 — "NFD-aware Chrome Diff"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.8** — Sửa lỗi "google → gooogle" (extra 'o') khi gõ trong Chrome, Google Docs, Google Sheets. Root cause: Chrome store Vietnamese text dạng NFD (o + combining ◌̂) trong khi vkey send NFC (precomposed ô). Shift+Left của Chrome đếm UTF-16 scalar, không phải grapheme → selectLeftCount thiếu → replace bỏ sót 'o'. Fix: thêm `calcKeyStrokesNFD` compute diff trong NFD scalar space, dùng riêng cho `FixAutocompleteApps` (browsers, Google). Apple apps (Notes, TextEdit) vẫn dùng grapheme diff. Bonus: thêm common English words vào instant-restore lexicon (google, youtube, facebook, sheets, docs, spreadsheet, good, wood, look, book, food, week, screen, feed, free, tree…). 217/217 test pass.
 
 > **2.3.7** — Sửa lỗi không thể gõ `QĐ`, `BCTĐ`, `vcđ`… khi Free Mark Mode đang bật. Anywhere-DD toggle (v1.9.7) trước đây bị gate bởi `stopProcessing` — chỉ fire khi validator trả về `needsRecovery=true`. Free Mark Mode bypass validator → `stopProcessing` không set → toggle không fire. Fix: thêm universal pre-check ở đầu `WordBuffer.push`, fire bất kể recovery state. Conflict avoidance: gate bằng `ddToggleStage == 0` + second-to-last không phải d/D (giữ toggle-off/frozen state machine). Initial Telex `dd → đ` không đổi. 216/216 test pass.
 

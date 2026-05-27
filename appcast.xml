@@ -6,6 +6,61 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.8 — "NFD-aware Chrome Diff"</title>
+      <sparkle:version>20308</sparkle:version>
+      <sparkle:shortVersionString>2.3.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 00:25:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.8/vkey-2.3.8.dmg"
+        sparkle:edSignature="A+SkdrowGWVGkRI9PRx7nIJg58S7XaprnFj5v7MutOUb+g+3sNqysAqaSVaHYPQzP9oQcqeLKRDWB23aBuJWDA=="
+        length="8780785"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.8 — "NFD-aware Chrome Diff":</h2>
+        <p><em>Sửa lỗi "google → gooogle" (extra 'o') khi gõ trong Chrome, Google Docs, Google Sheets. Root cause: Chrome store text Vietnamese ở dạng NFD (o + combining ◌̂) trong khi vkey send NFC (precomposed ô). Shift+Left của Chrome đếm UTF-16 scalar, không phải grapheme → selectLeftCount thiếu → replace bỏ sót 'o'.</em></p>
+
+        <h3>🐛 Triệu chứng</h3>
+        <ul>
+          <li>Gõ "google" trong Chrome address bar / Google search → ra "gooogle" (3 o's thay vì 2).</li>
+          <li>Cùng pattern trong Google Docs, Google Sheets khi mở ở Chrome.</li>
+          <li>Notes/TextEdit không bị (Apple text views dùng NFC).</li>
+        </ul>
+
+        <h3>🔍 Nguyên nhân</h3>
+        <p>Telex áp <code>oo → ô</code> ở step 3 (gõ 'o' thứ 3). vkey gửi <code>Shift+Left × 1 + 'ô'</code> qua <code>sendSelectAndReplace</code>. Chrome decompose "ô" thành NFD ('o' + combining ◌̂), store 2 scalars.</p>
+        <p>Khi gõ tới 'l' (step 5), recovery fires (buffer không hợp lệ tiếng Việt). vkey diff <code>"gôg" → "googl"</code> theo grapheme count → <code>Shift+Left × 2 + "oogl"</code>. Nhưng Chrome đếm scalar (NFD storage có 4 scalar cho "gôg"): Shift+Left × 2 chỉ select scalar 2-4 = "◌̂g" (combining + g), bỏ sót 'o' của "ô". Replace "oogl" → "g,o" + "oogl" = "gooogl". Bug.</p>
+
+        <h3>✅ Fix</h3>
+        <ul>
+          <li>Thêm <code>EventSimulator.calcKeyStrokesNFD</code> — compute diff trong NFD scalar space.</li>
+          <li>Dùng NFD diff cho <code>FixAutocompleteApps</code> (Chrome, browsers, Google services).</li>
+          <li>Apple apps (Notes, TextEdit, Mail…) vẫn dùng grapheme diff (chuẩn NSTextView).</li>
+          <li>Áp dụng cho cả typing-time (handleTextChar) lẫn commit-time restore (restoreRawEnglish).</li>
+        </ul>
+
+        <h3>📚 Bonus: English instant-restore lexicon</h3>
+        <p>Thêm common English words vào instant-restore list để bypass Telex sớm:</p>
+        <ul>
+          <li>Tech/brands: google, youtube, facebook, twitter, instagram, yahoo, amazon, outlook, linkedin, tools, sheets, docs, spreadsheet…</li>
+          <li>Common "oo" words: good, wood, look, book, cook, food, mood, noon, soon, moon, boot, shoot, root, tooth, smooth, school, food, mood, loop, scoop…</li>
+          <li>Common "ee" words: feed, need, seed, feet, meet, week, weekend, screen, queen, green, feel, wheel, three, agree, between, free, tree…</li>
+        </ul>
+        <p>Hệ quả: spell decision tại commit time restore raw đúng hơn cho các từ này.</p>
+
+        <h3>📊 Trace ví dụ (Chrome NFD storage)</h3>
+        <ul>
+          <li>Step 3 ('o' thứ 3): trước = Shift+Left ×1 + 'ô' (mismatch). Sau = Shift+Left ×0 + '◌̂' (append combining mark, match scalar).</li>
+          <li>Step 5 ('l'): trước = Shift+Left ×2 + "oogl" (mismatch → "gooogl"). Sau = Shift+Left ×2 + "ogl" (match → "googl").</li>
+          <li>Step 6 ('e'): pass-through → "google" ✓</li>
+        </ul>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass. Test mới <code>testCalcKeyStrokesNFDForCombiningDiacritic</code> pin NFC vs NFD behavior cho ô, NFD-only common prefix, ASCII baseline.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.7 — "Universal Anywhere-DD"</title>
       <sparkle:version>20307</sparkle:version>
       <sparkle:shortVersionString>2.3.7</sparkle:shortVersionString>

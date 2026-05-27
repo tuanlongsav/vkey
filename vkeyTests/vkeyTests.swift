@@ -529,6 +529,45 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "ddi"), "đi")
   }
 
+  /// v2.3.8 — NFD scalar-aware diff cho autocomplete apps (Chrome).
+  /// Bug: "google" trong Chrome ra "gooogle" do Chrome store "ô" decomposed
+  /// (o + ̂) — Shift+Left grapheme count thiếu so với scalar storage.
+  /// Fix: `calcKeyStrokesNFD` compute diff trong NFD scalar space.
+  func testCalcKeyStrokesNFDForCombiningDiacritic() throws {
+    // Test 1: "gôg" → "googl" (case chính của bug "google → gooogle")
+    // NFC: from=3 chars, to=5 chars, common prefix=1 (chỉ 'g').
+    //   backspace=2, diff="oogl" (4 chars).
+    // NFD: from=4 scalars (g,o,◌̂,g), to=5 scalars (g,o,o,g,l), common=2 (g,o).
+    //   backspace=2, diff="ogl" (3 scalars).
+    let (nfcBs, nfcDiff) = EventSimulator.calcKeyStrokes(from: "gôg", to: "googl")
+    XCTAssertEqual(nfcBs, 2)
+    XCTAssertEqual(String(nfcDiff), "oogl")
+
+    let (nfdBs, nfdDiff) = EventSimulator.calcKeyStrokesNFD(from: "gôg", to: "googl")
+    XCTAssertEqual(nfdBs, 2, "NFD backspace count khớp với Chrome scalar storage")
+    XCTAssertEqual(String(nfdDiff), "ogl", "NFD diff không chứa 'o' thừa")
+
+    // Test 2: "go" → "gô" (step thêm dấu mũ). NFD chỉ cần append combining mark.
+    let (gôBs, gôDiff) = EventSimulator.calcKeyStrokesNFD(from: "go", to: "gô")
+    XCTAssertEqual(gôBs, 0, "0 backspace — chỉ thêm combining mark")
+    XCTAssertEqual(gôDiff.count, 1, "1 char (combining mark) thêm vào")
+    XCTAssertEqual(String(gôDiff).unicodeScalars.first?.value, 0x0302,
+                   "Diff là combining circumflex U+0302")
+
+    // Test 3: ASCII-only — NFD bằng NFC khi không có combining marks.
+    let (a1, d1) = EventSimulator.calcKeyStrokes(from: "hello", to: "hello world")
+    let (a2, d2) = EventSimulator.calcKeyStrokesNFD(from: "hello", to: "hello world")
+    XCTAssertEqual(a1, a2)
+    XCTAssertEqual(String(d1), String(d2))
+
+    // Test 4: Common prefix với "ô" — NFD vs NFC khác nhau.
+    // "gô" → "go": NFC common=1, NFD common=2.
+    let (nfcBs2, _) = EventSimulator.calcKeyStrokes(from: "gô", to: "go")
+    let (nfdBs2, _) = EventSimulator.calcKeyStrokesNFD(from: "gô", to: "go")
+    XCTAssertEqual(nfcBs2, 1, "NFC: backspace 1 grapheme 'ô'")
+    XCTAssertEqual(nfdBs2, 1, "NFD: backspace 1 scalar (combining ̂)")
+  }
+
   /// v2.3.7 — Universal anywhere-DD: hoạt động ngay cả khi Free Mark Mode bật.
   /// Free Mark Mode bypass `needsRecovery` → `stopProcessing` không được set →
   /// existing anywhere-DD (gated bởi stopProcessing) không fire. Universal rule

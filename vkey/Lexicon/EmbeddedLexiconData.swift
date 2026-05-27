@@ -7252,6 +7252,27 @@ bửa
     "bono",
     // 'a' + cons + 'a' (rare but possible)
     "data", "java", "lava",
+    // v2.3.8: Common tech/brand + "oo"-pattern English words bị Telex áp
+    // `oo → ô` (vd "google → gô" intermediate → "gooogle" final do scalar
+    // mismatch trong Chrome NFD storage). Match đầy đủ vào instantRestore
+    // để engine bypass Telex transformation NGAY khi nhận diện full word.
+    // Tech brands + Google services (user report: "google", "google docs",
+    // "google sheets" trong Chrome).
+    "google", "youtube", "facebook", "twitter", "instagram", "yahoo",
+    "amazon", "outlook", "linkedin", "tools", "tool", "sheet", "sheets",
+    "docs", "doc", "spreadsheet", "spreadsheets",
+    // Common "oo" English words mid-typing dễ trigger Telex mu.
+    "good", "goods", "wood", "woods", "look", "looks", "looking",
+    "book", "books", "cook", "cooks", "took", "noon", "soon", "moon",
+    "moons", "boot", "boots", "shoot", "shoots", "root", "roots",
+    "tooth", "teeth", "smooth", "school", "schools", "food", "foods",
+    "mood", "moods", "loop", "loops", "scoop", "scoops",
+    // Common "ee" English words mid-typing dễ trigger Telex mu.
+    "feed", "feeds", "need", "needs", "seed", "seeds", "feet", "meet",
+    "meets", "meeting", "meetings", "week", "weeks", "weekend", "weekends",
+    "screen", "screens", "queen", "queens", "green", "greens", "feel",
+    "feels", "feeling", "feelings", "wheel", "wheels", "three", "agree",
+    "between", "cheese", "freeze", "free", "tree", "trees",
   ])
 
   /// 1.9.7: từ EN thông dụng có "ow"/"aw"/"ew" mid-word — Telex skip mark
