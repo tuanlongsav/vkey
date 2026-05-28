@@ -2,6 +2,64 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.14] - 2026-05-28 — "Revert to Stable Baseline"
+
+**Revert v2.3.13's NFD diff. Cascade v2.3.8 → v2.3.13 thử nhiều hypothesis đều thất bại. Quay về grapheme diff stable, chờ thông tin diagnostic chi tiết từ user.**
+
+### 🐛 Bug status
+
+`google → gooogle` và `footer → foooter` trong **Claude desktop** / Chromium / Electron apps **vẫn chưa fix**.
+
+### 🔍 Lý do revert
+
+Cascade fix attempts đều dựa hypothesis về Chromium text engine internals. Tất cả thất bại:
+
+| Version | Approach | Kết quả |
+|---|---|---|
+| v2.3.8 | NFD diff cho FixAutocompleteApps | Phá Google Docs |
+| v2.3.9 | Revert v2.3.8 | OK baseline |
+| v2.3.10 | NFD diff chỉ cho AXSearchField | Fix Google Docs, URL bar vẫn lỗi |
+| v2.3.11 | Backspace-only (no Shift+Left) | URL bar vẫn lỗi |
+| v2.3.12 | NFD diff cho search fields | URL bar vẫn lỗi |
+| v2.3.13 | NFD diff cho mọi non-Apple app | Claude desktop vẫn lỗi |
+
+Mỗi version thử khớp với một combo (NFC/NFD storage × grapheme/scalar backspace). User report sau mỗi version cho thấy hypothesis sai. Cần dừng đoán và lấy thông tin empirical.
+
+### ✅ v2.3.14 plan
+
+- Revert về grapheme diff cho mọi app (giống v2.3.11 stable).
+- Giữ [`calcKeyStrokesNFD`](vkey/Platform/EventSimulator.swift) + [`usesNFCGraphemeStorage`](vkey/App/InputProcessor.swift) functions làm dead code (để research/test sau).
+- Chờ user feedback diagnostic chi tiết để tìm đúng root cause.
+
+### 📝 Workaround tạm thời
+
+Khi gõ English ngắn trong Chromium/Electron apps (Claude desktop, Chrome URL bar, Slack, Discord, Notion…):
+
+1. **Tắt vkey** (⇧⌥ shortcut) → gõ raw English → bật lại.
+2. **Copy-paste** từ source khác.
+3. **Gõ chậm**, từng char một (đôi khi giúp OS process kịp).
+
+### 🔬 Cần diagnostic từ user
+
+Để tìm đúng root cause, cần user test SPECIFIC steps và report visible output ở MỖI step:
+
+1. Mở **Notes** (Apple native, NFC). Gõ chậm `g`, `o`, `o`. Quan sát từng bước. Kết quả: ?
+2. Tiếp `g`, `l`, `e`. Quan sát. Final: ?
+3. Lặp lại trong **Claude desktop**. Final: ?
+4. Lặp lại trong **Chrome URL bar**. Final: ?
+
+So sánh kết quả Notes vs Claude desktop sẽ giúp identify chính xác hành vi text engine của Claude desktop.
+
+### 🧪 Test
+
+217/217 pass. Behavior giống v2.3.11 stable.
+
+### Bump
+
+`2.3.13 → 2.3.14` / `20313 → 20314`. DMG 8759848 bytes, sig `Ygh/cbCNgx26ZpKvdPI0AEKswVUVyjksxxgoUQ+PzNC2FOHuAZDP3hxORZqPrlVpdmdkCq6XhlRP+hU/KM2PCw==`.
+
+---
+
 ## [2.3.13] - 2026-05-28 — "NFD Diff for Non-Apple Apps"
 
 **Mở rộng NFD diff (v2.3.12 chỉ cho search fields) ra TẤT CẢ non-Apple apps: Chromium, Electron, Claude desktop, browsers, web inputs…**

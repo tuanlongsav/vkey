@@ -6,6 +6,57 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.14 — "Revert to Stable Baseline"</title>
+      <sparkle:version>20314</sparkle:version>
+      <sparkle:shortVersionString>2.3.14</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 08:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.14/vkey-2.3.14.dmg"
+        sparkle:edSignature="Ygh/cbCNgx26ZpKvdPI0AEKswVUVyjksxxgoUQ+PzNC2FOHuAZDP3hxORZqPrlVpdmdkCq6XhlRP+hU/KM2PCw=="
+        length="8759848"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.14 — "Revert to Stable Baseline":</h2>
+        <p><em>Revert v2.3.13's NFD diff approach. User confirm bug "gooogle, foooter" vẫn còn ở Claude desktop kể cả v2.3.13. Hypothesis "Chromium = NFD scalar backspace" SAI.</em></p>
+
+        <h3>🐛 Bug status</h3>
+        <p>"google → gooogle" và "footer → foooter" trong Claude desktop / Chromium / Electron apps VẪN CHƯA FIX.</p>
+
+        <h3>🔍 Lý do revert</h3>
+        <p>Cascade v2.3.8 → v2.3.13 thử nhiều hypothesis về NFC vs NFD storage + grapheme vs scalar backspace của Chromium apps. Tất cả thất bại:</p>
+        <ul>
+          <li><strong>v2.3.8</strong> NFD diff cho FixAutocompleteApps → phá Google Docs.</li>
+          <li><strong>v2.3.9</strong> revert.</li>
+          <li><strong>v2.3.10</strong> NFD diff chỉ cho AXSearchField → fix Google Docs nhưng URL bar vẫn lỗi.</li>
+          <li><strong>v2.3.11</strong> backspace-only.</li>
+          <li><strong>v2.3.12</strong> NFD diff cho search fields → URL bar vẫn lỗi.</li>
+          <li><strong>v2.3.13</strong> NFD diff cho mọi non-Apple app → Claude desktop vẫn lỗi.</li>
+        </ul>
+        <p>Mỗi version thử khớp với một combo (NFC/NFD × grapheme/scalar BS). User report sau v2.3.13 cho thấy hypothesis sai → cần thông tin empirical thay vì đoán.</p>
+
+        <h3>✅ v2.3.14 plan</h3>
+        <ul>
+          <li>Revert về grapheme diff cho mọi app (giống v2.3.11).</li>
+          <li>Stable baseline để tiếp tục debug.</li>
+          <li>Giữ <code>calcKeyStrokesNFD</code> + <code>usesNFCGraphemeStorage</code> functions làm dead code.</li>
+          <li>Chờ user feedback diagnostic chi tiết.</li>
+        </ul>
+
+        <h3>📝 Workaround tạm thời</h3>
+        <p>Khi gõ English ngắn trong Chromium/Electron apps:</p>
+        <ul>
+          <li>Tắt vkey (⇧⌥) → gõ raw → bật lại.</li>
+          <li>Gõ chậm để OS process từng keystroke.</li>
+          <li>Hoặc copy-paste từ source khác.</li>
+        </ul>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass. Behavior giống v2.3.11.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.13 — "NFD Diff for Non-Apple Apps"</title>
       <sparkle:version>20313</sparkle:version>
       <sparkle:shortVersionString>2.3.13</sparkle:shortVersionString>

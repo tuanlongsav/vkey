@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.13 — "NFD Diff for Non-Apple Apps"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.14 — "Revert to Stable Baseline"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.14** — Revert v2.3.13 NFD diff. User confirm "gooogle, foooter" vẫn còn trong Claude desktop kể cả v2.3.13. Cascade v2.3.8–v2.3.13 thử nhiều hypothesis (NFC/NFD storage × grapheme/scalar backspace) đều thất bại. v2.3.14 quay về grapheme diff stable cho mọi app (giống v2.3.11). Bug "gooogle" trong Chromium/Electron VẪN CHƯA FIX — cần thông tin diagnostic chi tiết từ user. Workaround tạm: tắt vkey (⇧⌥) khi gõ English ngắn. 217/217 test pass.
 
 > **2.3.13** — User report bug "gooogle, foooter ở claude desktop hay bất kỳ đâu". v2.3.12 chỉ áp NFD diff cho search fields → không đủ. v2.3.13 mở rộng: NFD diff cho TẤT CẢ non-Apple apps (Chromium, Electron, Claude desktop, browsers, web inputs…). Whitelist NFC+grapheme: `com.apple.*`, iWork, Microsoft Office native (Word/Excel/Powerpoint/Outlook/OneNote). Mọi thứ khác mặc định NFD. 217/217 test pass.
 

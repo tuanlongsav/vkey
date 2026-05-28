@@ -949,26 +949,21 @@ class InputProcessor {
     }
 
     push(char: newChar)
-    // v2.3.13: dùng NFD-aware diff cho TẤT CẢ non-Apple/non-Office apps.
-    // User report: "google → gooogle" và "footer → foooter" xảy ra ở
-    // Chrome URL bar, Claude desktop (Electron), và "bất kỳ đâu" Chromium-
-    // based apps. Theory: Chromium engines (Chrome, Electron, web inputs)
-    // store text dạng NFD scalar + đếm backspace theo SCALAR.
+    // v2.3.14: revert v2.3.13 NFD diff. User confirmed still bug
+    // "gooogle, foooter ở claude desktop hay bất kỳ đâu" ngay cả v2.3.13
+    // → hypothesis "Chromium NFD scalar backspace" SAI.
     //
-    // Vd "gôg" (3 graphemes / 3 NFC scalars / 4 NFD scalars):
-    //   - Grapheme diff "gôg"→"googl": (2 bs, "oogl"). backspace × 2 trong
-    //     Chromium NFD đếm scalar → chỉ xóa [◌̂, g] → còn "go". + "oogl"
-    //     → "gooogl". + 'e' (step 6) → "gooogle". BUG.
-    //   - NFD diff: (2 bs, "ogl"). backspace × 2 xóa 2 scalars [◌̂, g] →
-    //     "go". + "ogl" → "googl". + 'e' → "google". ✓
+    // Bug "gooogle" do CGEvent round-trip mismatch (vkey buffer state đúng
+    // nhưng actual display divergent). Không có fix universal vì mỗi app
+    // text engine khác (NFC vs NFD storage × grapheme vs scalar backspace
+    // — 4 combos, mỗi combo cần diff strategy khác). Revert về grapheme
+    // diff như v2.3.11 — stable cho NFC apps, accept bug trong Chromium
+    // apps cho đến khi có giải pháp đúng.
     //
-    // Apple native apps (NSTextView) + Microsoft Office native dùng NFC
-    // grapheme storage + grapheme backspace. NFD diff sẽ under-type ở đó
-    // (vd "gogl" thay vì "googl" do replacement string thiếu chars).
-    let useNFDDiff = !InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
-    let (numBackspaces, diffChars) = useNFDDiff
-      ? EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
-      : EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
+    // Workaround tạm: user tắt vkey (⇧⌥) khi gõ English ngắn trong
+    // Chromium apps; hoặc gõ 3 'o' để cancel mu trước rồi tiếp tục.
+    let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+      from: lastTransformed, to: transformed)
 
     // If the only change is the new character itself, let it pass through
     if let firstDiffChar = diffChars.first,
@@ -1190,11 +1185,9 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
-      // v2.3.13: NFD diff cho non-Apple/non-Office apps. Match handleTextChar.
-      let useNFDDiff = !InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
-      let (numBackspaces, diffChars) = useNFDDiff
-        ? EventSimulator.calcKeyStrokesNFD(from: current, to: target)
-        : EventSimulator.calcKeyStrokes(from: current, to: target)
+      // v2.3.14: revert NFD diff. Match handleTextChar.
+      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+        from: current, to: target)
       let telemetry = EventSimulator.sendReplacement(
         backspaceCount: numBackspaces,
         diffChars: diffChars,
