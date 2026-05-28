@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.17 — "Short-Circuit Restore When Not Needed"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.18 — "Universal Short-Circuit When No Transform"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.18** — User confirm v2.3.17 (short-circuit chỉ restoreRawEnglish) vẫn lỗi. Bug có thể fire qua .suggest hoặc decision path khác. v2.3.18 short-circuit UNIVERSAL ở ENTRY của `applySpellDecisionOnCommit`: nếu `current == rawInput` (vkey chưa transform gì), bypass entire spell decision logic. Real cases (Vietnamese typing với diacritics, English-with-Telex-tones như "text"→"tẽt") vẫn fire spell decision bình thường (current != rawInput). 217/217 test pass.
 
 > **2.3.17** — User diagnostic CHÌA KHÓA: bug "gooogle" CHỈ xảy ra khi bật spell check, tắt thì không bug. Root cause: cho "google" typing, recovery đã set `transformed="google"` (raw đúng). Tại space, spell decision returns `.restoreRawEnglish("google")` (rawIsEnglish=true). Code chạy Option+Backspace + sendString "google " để restore raw — nhưng `current == restoredWord` rồi (không cần restore). Việc fire restoration gây side-effect → bug. Fix: short-circuit `return false` khi `current == restoredWord`. Để endingChar pass-through như khi spell check OFF (đã proved không bug). Restoration vẫn work cho real cases (vd "text"→"tẽt"→"text"). 217/217 test pass.
 

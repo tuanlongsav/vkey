@@ -6,6 +6,64 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.18 — "Universal Short-Circuit When No Transform"</title>
+      <sparkle:version>20318</sparkle:version>
+      <sparkle:shortVersionString>2.3.18</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 14:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.18/vkey-2.3.18.dmg"
+        sparkle:edSignature="mkLb2lQU72c0QL7VyfVtbh9OqqCxJDNLUwhr/Ytal4fzMa8Mx+IobGJRdIokafRgLlF2GOkZVXMC9RzrqYN2Cg=="
+        length="8761010"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.18 — "Universal Short-Circuit When No Transform":</h2>
+        <p><em>User confirm v2.3.17 vẫn lỗi. v2.3.17 short-circuit chỉ trong .restoreRawEnglish path — không đủ. Bug có thể fire qua .suggest hoặc decision path khác. v2.3.18 short-circuit ở ENTRY của applySpellDecisionOnCommit.</em></p>
+
+        <h3>🐛 Bug pattern</h3>
+        <p>User confirm:</p>
+        <ul>
+          <li>Spell check ON: "google" → "gooogle".</li>
+          <li>Spell check OFF: "google" → "google" ✓.</li>
+          <li>v2.3.17 (short-circuit chỉ restoreRawEnglish) vẫn lỗi.</li>
+        </ul>
+        <p>→ Bug có thể đến từ .suggest path (với autoApplyHighConfidenceSuggestion default=TRUE) hoặc decision path nào đó tôi chưa identify.</p>
+
+        <h3>✅ Fix v2.3.18: Universal short-circuit</h3>
+        <p>Thay vì short-circuit trong từng decision case, short-circuit ngay ĐẦU <code>applySpellDecisionOnCommit</code>:</p>
+        <pre>
+guard Defaults[.spellCheckEnabled], !ruleOverrides.disableSpellCheck else { return false }
+
+// v2.3.18 UNIVERSAL SHORT-CIRCUIT
+if current == rawInput {
+  lastSuggestions = []
+  return false  // Skip entire spell decision logic
+}
+
+// Continue normal flow only if vkey transformed something
+let needsRecovery = ...
+let decision = evaluate(...)
+...
+        </pre>
+
+        <h3>📊 Hiệu lực</h3>
+        <table>
+          <tr><th>Case</th><th>current</th><th>rawInput</th><th>Action</th></tr>
+          <tr><td>"google" + space</td><td>"google"</td><td>"google"</td><td>Short-circuit (bypass spell)</td></tr>
+          <tr><td>"footer" + space</td><td>"footer"</td><td>"footer"</td><td>Short-circuit</td></tr>
+          <tr><td>"tieengs" + space (Telex)</td><td>"tiếng"</td><td>"tieengs"</td><td>Run evaluate → keepVietnamese</td></tr>
+          <tr><td>"text" + space (e+x tone)</td><td>"tẽt"</td><td>"text"</td><td>Run evaluate → restoreRawEnglish</td></tr>
+        </table>
+
+        <h3>⚠️ Trade-off</h3>
+        <p>Khi short-circuit fires, không record UsageStatistics + PredictionEngine learnTransition cho commit này. Mất stats/prediction cho English typing đã pure (không có Telex transform). Acceptable trade-off để fix bug-class.</p>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.17 — "Short-Circuit Restore When Not Needed"</title>
       <sparkle:version>20317</sparkle:version>
       <sparkle:shortVersionString>2.3.17</sparkle:shortVersionString>

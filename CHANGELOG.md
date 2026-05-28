@@ -2,6 +2,69 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.18] - 2026-05-28 — "Universal Short-Circuit When No Transform"
+
+**User confirm v2.3.17 (short-circuit chỉ restoreRawEnglish) vẫn lỗi. v2.3.18 short-circuit ở ENTRY của applySpellDecisionOnCommit, bypass entire spell decision khi current==rawInput.**
+
+### 🐛 Tại sao v2.3.17 không đủ?
+
+v2.3.17 chỉ add `if current == restoredWord { return false }` trong case `.restoreRawEnglish`. Nhưng bug "gooogle" có thể fire qua các decision path khác:
+- `.suggest` (với `autoApplyHighConfidenceSuggestion` default=TRUE).
+- Hoặc fallback decisions trong evaluate.
+
+Khi `current == rawInput` (vkey chưa transform gì), spell decision không CẦN làm gì cả. Bất kỳ side-effect nào (Option+Backspace, sendString, sendReplacement) đều có thể gây bug.
+
+### ✅ Fix v2.3.18
+
+Universal short-circuit ngay ENTRY của [`applySpellDecisionOnCommit`](vkey/App/InputProcessor.swift):
+
+```swift
+guard Defaults[.spellCheckEnabled], !ruleOverrides.disableSpellCheck else {
+  return false
+}
+
+// v2.3.18 UNIVERSAL SHORT-CIRCUIT
+if current == rawInput {
+  lastSuggestions = []
+  return false  // Skip ENTIRE spell decision logic
+}
+
+// Normal flow only if vkey transformed something
+let needsRecovery = ...
+let decision = evaluate(...)
+...
+```
+
+### 📊 Behavior matrix
+
+| Case | current | rawInput | Action |
+|---|---|---|---|
+| "google" + space | "google" | "google" | Short-circuit (bypass spell) |
+| "footer" + space | "footer" | "footer" | Short-circuit |
+| "tools" + space | "tools" | "tools" | Short-circuit |
+| "tieengs" + space (Telex VN) | "tiếng" | "tieengs" | Run evaluate → keepVietnamese |
+| "text" + space (e+x = nga) | "tẽt" | "text" | Run evaluate → restoreRawEnglish |
+| "theme" + space (mu) | "thême" | "theme" | Run evaluate → restoreRawEnglish |
+
+### ⚠️ Trade-off
+
+Khi short-circuit fires:
+- KHÔNG record `UsageStatistics.shared.recordCommit` cho commit này.
+- KHÔNG `PredictionEngine.shared.learnTransition`.
+- HUD prediction không update.
+
+Acceptable trade-off — chỉ ảnh hưởng pure English typing (rare for vkey users). Vietnamese typing và Telex-transformed English vẫn record đầy đủ.
+
+### 🧪 Test
+
+217/217 pass.
+
+### Bump
+
+`2.3.17 → 2.3.18` / `20317 → 20318`. DMG 8761010 bytes, sig `mkLb2lQU72c0QL7VyfVtbh9OqqCxJDNLUwhr/Ytal4fzMa8Mx+IobGJRdIokafRgLlF2GOkZVXMC9RzrqYN2Cg==`.
+
+---
+
 ## [2.3.17] - 2026-05-28 — "Short-Circuit Restore When Not Needed"
 
 **User diagnostic chìa khóa: bug `gooogle/foooter` CHỈ xảy ra khi bật "sửa lỗi chính tả". Tắt → không bug. Fix: short-circuit `restoreRawEnglish` khi không cần restore.**

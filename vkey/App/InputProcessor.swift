@@ -1117,6 +1117,26 @@ class InputProcessor {
       return false
     }
 
+    // v2.3.18: UNIVERSAL SHORT-CIRCUIT — nếu vkey chưa transform input (current
+    // == rawInput), bỏ qua ENTIRE spell decision logic. Trả về false để
+    // endingChar pass-through (như khi spell check OFF).
+    //
+    // User report: "google → gooogle" CHỈ xảy ra khi bật spell check, tắt
+    // thì không bug. v2.3.17 thử short-circuit restoreRawEnglish (chỉ 1 case)
+    // không fix được — chứng tỏ bug có thể ở .suggest hoặc decision path khác.
+    //
+    // Universal short-circuit ở đây bypass MỌI spell decision path khi không
+    // có gì để restore. Trade-off: mất prediction learning + usage stats cho
+    // commit này, nhưng giải quyết bug-class.
+    //
+    // Vẫn áp dụng full spell decision cho real cases (current != rawInput):
+    // - Vietnamese typing: "tieengs" → "tiếng" (transformed có dấu, khác raw).
+    // - English with Telex tones: "text" → "tẽt" (e+x = nga tone, khác raw).
+    if current == rawInput {
+      lastSuggestions = []
+      return false
+    }
+
     let needsRecovery = wordBuffer.wordState.needsRecovery || wordBuffer.stopProcessing
     let decision = spellDecisionEngine.evaluate(
       rawInput: rawInput,
