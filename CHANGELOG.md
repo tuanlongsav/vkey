@@ -2,6 +2,92 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.12] - 2026-05-28 — "NFD Backspace for Search Fields"
+
+**Sửa nốt "google → gooogle" và "footer → foooter" trong Chrome URL bar / Google search. KHÔNG phải tính năng tự sửa mà do scalar/grapheme mismatch trong backspace count.**
+
+### 🐛 User question
+
+> "vẫn lỗi gooogle, xem lại có phải do tính năng tự sửa hay do tính năng gì? foooter cũng vậy"
+
+### 🔍 Root cause (đúng lần này)
+
+**Không** phải auto-correct feature. Bug do **scalar/grapheme mismatch trong backspace count**:
+
+- Chrome URL bar (và similar search fields) store Vietnamese text dạng **NFD**:
+  - "ô" precomposed (NFC) = U+00F4 (1 scalar)
+  - vkey send NFC qua `keyboardSetUnicodeString`
+  - Chrome decompose & store NFD: 'o' + combining ◌̂ = 2 scalars
+
+- Chrome URL bar's **backspace cũng đếm theo scalar**, không grapheme:
+  - "gôg" stored NFD = [g, o, ◌̂, g] (4 scalars, 3 graphemes)
+  - vkey tính grapheme diff "gôg"→"googl" = (backspace=2, diff="oogl")
+  - Backspace × 2 trong Chrome URL bar: xóa 2 SCALARS [◌̂, g] thay vì 2 GRAPHEMES [ô, g]
+  - Còn lại "go" thay vì "g"
+  - + sendString "oogl" → "go" + "oogl" = "gooogl"
+  - + 'e' (next step) → "gooogle"
+
+Tương tự "footer → foooter": Telex áp `oo→ô` ở step 3, recovery ở step 5 trả về raw, backspace count thiếu trong NFD storage → 'o' thừa.
+
+### ✅ Fix
+
+Dùng `EventSimulator.calcKeyStrokesNFD` (compute diff trong NFD scalar space) cho search fields:
+
+```swift
+let useNFDDiff = isFixAutocompleteApp()  // chỉ true cho AXSearchField/AXComboBox
+let (numBackspaces, diffChars) = useNFDDiff
+  ? EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
+  : EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
+```
+
+NFD diff đếm backspace theo scalar, khớp với Chrome URL bar's scalar-based backspace.
+
+Áp dụng cho cả 2 chỗ trong [`InputProcessor.swift`](vkey/App/InputProcessor.swift):
+- `handleTextChar` typing-time diff.
+- `applySpellDecisionOnCommit` commit-time `restoreRawEnglish` diff.
+
+Backspace path (từ v2.3.11) giữ nguyên — không dùng Shift+Left. NFD chỉ thay đổi cách đếm.
+
+### 📊 Trace "google" trong Chrome URL bar sau v2.3.12
+
+| Step | Char | NFD diff | Action | Display |
+|---|---|---|---|---|
+| 1 | g | append | pass-through | `g` |
+| 2 | o | append | pass-through | `go` |
+| 3 | o (3rd) | (0 bs, `◌̂`) | sendString combining mark | `gô` ✓ |
+| 4 | g | append | pass-through | `gôg` |
+| 5 | l (recovery) | (2 bs, `"ogl"`) | backspace × 2 (scalars `◌̂g`) + "ogl" | `googl` ✓ |
+| 6 | e | append | pass-through | `google` ✓ |
+
+### 📊 Trace "footer" tương tự
+
+| Step | Char | NFD diff | Action | Display |
+|---|---|---|---|---|
+| 3 | o (3rd) | (0 bs, `◌̂`) | sendString combining mark | `fô` ✓ |
+| 4 | t | append | pass-through | `fôt` |
+| 5 | e (recovery) | (2 bs, `"ote"`) | backspace × 2 (scalars `◌̂t`) + "ote" | `foote` ✓ |
+| 6 | r | append | pass-through | `footer` ✓ |
+
+### 🛡️ Không bị ảnh hưởng
+
+- **Apple apps** (Notes, TextEdit, Mail, Pages): AX role = AXTextField/AXTextArea (không phải AXSearchField) → fall through `calcKeyStrokes` (grapheme diff). NFC storage + grapheme backspace → đúng như cũ.
+- **Google Docs / Sheets**: AX role = AXTextArea → grapheme diff. Đã proved hoạt động ở v2.3.10.
+- **Microsoft Office**: không phải search field → grapheme diff.
+
+### 🧪 Test
+
+217/217 pass. Pure unit test [`testCalcKeyStrokesNFDForCombiningDiacritic`](vkeyTests/vkeyTests.swift) verify NFD function. Integration cần manual test:
+- Chrome URL bar: gõ "google", "tools", "footer", "facebook" → kỳ vọng không còn extra char.
+- Google search box: same.
+- Google Docs (regression): gõ tiếng Việt → vẫn ổn.
+- Notes/TextEdit (regression): vẫn ổn.
+
+### Bump
+
+`2.3.11 → 2.3.12` / `20311 → 20312`. DMG 8760675 bytes, sig `hYll8Cw3QtDfErPv2kWTaq02Z1ynAzZUFrjQYtspfRwxgiF5tr2gSuwhGiyvJWrfWyhziSCdP/BBWg1VFBJuCw==`.
+
+---
+
 ## [2.3.11] - 2026-05-28 — "Backspace-only Path"
 
 **Sửa nốt "google → gooogle" trong Chrome URL bar / Google search box. Đơn giản hóa: dùng backspace + retype cho mọi app.**

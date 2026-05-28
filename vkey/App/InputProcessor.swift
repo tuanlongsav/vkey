@@ -949,13 +949,18 @@ class InputProcessor {
     }
 
     push(char: newChar)
-    // v2.3.11: chỉ dùng grapheme diff + backspace path cho MỌI app.
-    // v2.3.10 thử Shift+Left + NFD diff cho search fields nhưng vẫn không
-    // fix được "google → gooogle" trong Chrome URL bar — Shift+Left không
-    // tương tác đúng với autocomplete của URL bar. Backspace path đơn giản
-    // và deterministic hơn — đã proved hoạt động đúng ở Google Docs v2.3.10.
-    let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-      from: lastTransformed, to: transformed)
+    // v2.3.12: backspace path cho mọi app (giữ từ v2.3.11), nhưng dùng
+    // NFD-aware diff cho search fields. Chrome URL bar / Google search box
+    // store text dạng NFD scalar (vd "ô" = o + combining ̂ = 2 scalars).
+    // Backspace của Chrome URL bar đếm theo SCALAR. Grapheme-based count
+    // thiếu → "gôg" backspace × 2 chỉ xóa `̂g` (2 scalars) thay vì `ôg`
+    // (2 graphemes) → để lại 'o' thừa → "go" + "oogl" = "gooogl" → +'e' = "gooogle".
+    // NFD diff khớp scalar count → backspace đúng số scalar → fix.
+    // Apple text views (Notes, TextEdit) store NFC + grapheme backspace.
+    let useNFDDiff = isFixAutocompleteApp()
+    let (numBackspaces, diffChars) = useNFDDiff
+      ? EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
+      : EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
 
     // If the only change is the new character itself, let it pass through
     if let firstDiffChar = diffChars.first,
@@ -1177,9 +1182,12 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
-      // v2.3.11: chỉ dùng backspace path. Match handleTextChar.
-      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-        from: current, to: target)
+      // v2.3.12: NFD diff cho search fields (commit-time restore cũng cần
+      // match scalar count nếu app store NFD).
+      let useNFDDiff = isFixAutocompleteApp()
+      let (numBackspaces, diffChars) = useNFDDiff
+        ? EventSimulator.calcKeyStrokesNFD(from: current, to: target)
+        : EventSimulator.calcKeyStrokes(from: current, to: target)
       let telemetry = EventSimulator.sendReplacement(
         backspaceCount: numBackspaces,
         diffChars: diffChars,

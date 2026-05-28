@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.11 — "Backspace-only Path"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.12 — "NFD Backspace for Search Fields"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.12** — Sửa nốt "google → gooogle" + "footer → foooter" trong Chrome URL bar / Google search. KHÔNG phải tính năng auto-correct mà do **scalar/grapheme mismatch**: Chrome URL bar store "ô" dạng NFD (`o` + combining `̂` = 2 scalars) và backspace cũng đếm scalar. Grapheme-based `backspaceCount=2` chỉ xóa 2 scalars `̂g` thay vì 2 graphemes `ôg` → còn 'o' thừa → "gooogl". Fix: dùng `calcKeyStrokesNFD` (đếm scalar) cho search fields. Apple text views + Google Docs vẫn dùng grapheme diff. 217/217 test pass.
 
 > **2.3.11** — Sửa nốt "google → gooogle" trong Chrome URL bar / Google search. v2.3.10 fix được Google Docs nhưng URL bar vẫn lỗi (Shift+Left + NFD diff không tương tác đúng với autocomplete). v2.3.11 đơn giản hóa: dùng backspace + retype cho **mọi app**. Drop `sendSelectAndReplace` path. Trade-off: v1.8.3 introduce Shift+Left để fix "footer → foooter" trong browsers — nếu bug đó quay lại trong v2.3.11, sẽ cần fix khác. 217/217 test pass.
 

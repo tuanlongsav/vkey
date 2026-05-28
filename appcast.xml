@@ -6,6 +6,64 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.12 — "NFD Backspace for Search Fields"</title>
+      <sparkle:version>20312</sparkle:version>
+      <sparkle:shortVersionString>2.3.12</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 02:50:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.12/vkey-2.3.12.dmg"
+        sparkle:edSignature="hYll8Cw3QtDfErPv2kWTaq02Z1ynAzZUFrjQYtspfRwxgiF5tr2gSuwhGiyvJWrfWyhziSCdP/BBWg1VFBJuCw=="
+        length="8760675"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.12 — "NFD Backspace for Search Fields":</h2>
+        <p><em>Sửa nốt "google → gooogle" và "footer → foooter" trong Chrome URL bar / Google search. Bug KHÔNG do tính năng auto-correct mà do scalar/grapheme mismatch trong backspace count cho NFD-storing apps.</em></p>
+
+        <h3>🐛 User question</h3>
+        <p>"vẫn lỗi gooogle, xem lại có phải do tính năng tự sửa hay do tính năng gì? foooter cũng vậy"</p>
+
+        <h3>🔍 Root cause</h3>
+        <p>Không phải tính năng tự sửa. Chrome URL bar (và similar search fields) store text Vietnamese dạng <strong>NFD</strong> (vd "ô" = 'o' + combining ◌̂ = 2 unicode scalars), và <strong>backspace cũng đếm theo scalar</strong>, không theo grapheme.</p>
+        <ul>
+          <li>vkey tính diff "gôg" → "googl" theo grapheme: backspace 2, type "oogl".</li>
+          <li>Backspace × 2 trong Chrome URL bar NFD: xóa 2 SCALAR (◌̂ + g) thay vì 2 GRAPHEME (ôg). Còn lại "go" thay vì "g".</li>
+          <li>+ sendString "oogl" → "go" + "oogl" = "gooogl". + 'e' = "gooogle".</li>
+        </ul>
+        <p>Tương tự "footer → foooter" (vkey applies Telex oo→ô at "fo|o", recovery later trả về raw "foote" + 'r').</p>
+
+        <h3>✅ Fix</h3>
+        <ul>
+          <li>Dùng <code>calcKeyStrokesNFD</code> cho search fields (AX role = AXSearchField/AXComboBox).</li>
+          <li>NFD diff đếm backspace theo scalar, khớp với Chrome URL bar's scalar-based backspace.</li>
+          <li>Apple text views (Notes, TextEdit) vẫn dùng grapheme diff (NFC + grapheme backspace).</li>
+          <li>Google Docs (AXTextArea) cũng dùng grapheme diff (đã proved work ở v2.3.10).</li>
+          <li>Backspace path (giữ từ v2.3.11) — không dùng Shift+Left.</li>
+        </ul>
+
+        <h3>📊 Trace "google" trong Chrome URL bar sau fix</h3>
+        <ul>
+          <li>Step 3 (gõ 'o' thứ 3): NFD diff = (0 bs, ◌̂). Append combining mark vào "go" → "g,o,◌̂" (3 scalars). Visible "gô" ✓</li>
+          <li>Step 5 ('l' recovery): NFD diff "gôg" → "googl" = (2 bs, "ogl"). Backspace × 2 xóa scalars [◌̂, g] → "go". + "ogl" → "googl" ✓</li>
+          <li>Step 6 ('e'): pass-through → "google" ✓</li>
+        </ul>
+
+        <h3>📊 Trace "footer" tương tự</h3>
+        <ul>
+          <li>Step 3 ('o' 3rd): NFD diff (0 bs, ◌̂) → "fô" ✓</li>
+          <li>Step 5 ('e' recovery): NFD diff "fôt" → "foote" = (2 bs, "ote"). Backspace 2 scalars + "ote" → "foote" ✓</li>
+          <li>Step 6 ('r'): pass-through → "footer" ✓</li>
+        </ul>
+
+        <h3>🛡️ Notes/TextEdit/Mail không bị ảnh hưởng</h3>
+        <p>AX role = AXTextField / AXTextArea (không phải AXSearchField) → fall through grapheme diff (như cũ). NFC storage + grapheme backspace → match.</p>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass. Behavior change cần manual test ở Chrome URL bar.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.11 — "Backspace-only Path"</title>
       <sparkle:version>20311</sparkle:version>
       <sparkle:shortVersionString>2.3.11</sparkle:shortVersionString>
