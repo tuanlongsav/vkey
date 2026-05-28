@@ -133,6 +133,22 @@ final class SpellDecisionEngine {
 
       // 1. If transformed output is NOT a valid Vietnamese word
       if !isVietnameseWord {
+        // v2.3.20 ROOT-CAUSE FIX: nếu transformed IS English word, GIỮ nó.
+        // Trace bug "gooogle": user gõ 3 o's intentionally để cancel Telex mu.
+        // Engine produces:
+        //   - rawInput = "gooogle" (7 chars, user's keystrokes).
+        //   - transformed = "google" (6 chars, after Telex mu-cancel + recovery).
+        // Trước v2.3.20: line 136 check rawToken != transformedToken → return
+        // restoreRawEnglish(rawInput) → restore RAW "gooogle" với 3 o's.
+        // BUG: restoring USER'S TYPO instead of valid English word vkey produced.
+        //
+        // v2.3.20: nếu transformed là English word hợp lệ (vkey đã chuyển raw
+        // qua engine ra English đúng), GIỮ transformed. Không restore raw vì
+        // raw có thể là user's typo (vd "gooogle" → vkey produce "google" ✓).
+        let transformedIsEnglish = lexiconManager.isEnglishWord(transformed)
+        if transformedIsEnglish {
+          return .keepRaw  // Keep transformed display as-is.
+        }
         if rawToken.isASCIIAlphabeticWord, rawToken != transformedToken {
           return .restoreRawEnglish(rawInput)
         }

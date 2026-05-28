@@ -2,6 +2,98 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.20] - 2026-05-28 — "Keep English Transformed (Root Cause Fix)"
+
+**ROOT CAUSE FIX dựa trên v2.3.19 diagnostic logs từ runtime. Bug fundamentally khác với mọi hypothesis từ v2.3.7→v2.3.18.**
+
+### 🔬 Diagnosis từ runtime log
+
+v2.3.19 logged actual state trong khi user gõ. Trace bug case:
+
+```
+14:13:24 char=g     new=g       keys=g
+14:13:25 char=o     new=go      keys=go
+14:13:25 char=o     new=gô      keys=goo       ← Telex mu apply
+14:13:25 char=o     new=goo     keys=gooo      ← Mu cancel + J2 raw append
+14:13:26 char=g     new=goog    keys=gooog
+14:13:26 char=l     new=googl   keys=gooogl
+14:13:26 char=e     new=google  keys=gooogle   ← transformed="google" (6 chars) but keys="gooogle" (7)
+14:13:27 SpellCommit: rawInput=gooogle current=google
+14:13:27 decision=restoreRawEnglish("gooogle")  ← BUG!
+```
+
+**User gõ "gooogle" intentionally** (3 o's để cancel Telex mu, mong tiếng Anh). vkey engine xử lý đúng → `transformed="google"` (English). Nhưng spell decision line 136 returns `.restoreRawEnglish(rawInput="gooogle")` → restores USER'S TYPO "gooogle" với 3 o's.
+
+### 🔍 Code analysis
+
+[`SpellDecisionEngine.swift:134-141`](vkey/Input/SpellDecisionEngine.swift) (pre-fix):
+
+```swift
+// 1. If transformed output is NOT a valid Vietnamese word
+if !isVietnameseWord {
+  if rawToken.isASCIIAlphabeticWord, rawToken != transformedToken {
+    return .restoreRawEnglish(rawInput)  // ← BUG: restores raw typo
+  }
+  if needsRecovery && rawIsEnglish {
+    return .restoreRawEnglish(rawInput)
+  }
+}
+```
+
+Cho case "gooogle":
+- `rawToken="gooogle"`, `transformedToken="google"`. ASCII ✓, != ✓ → returns `.restoreRawEnglish("gooogle")`.
+- Restoration replaces vkey's correct "google" với user's typo "gooogle".
+
+### ✅ Fix v2.3.20
+
+Thêm check TRƯỚC line 136 — nếu `transformed` ĐÃ là English word hợp lệ, GIỮ nó:
+
+```swift
+if !isVietnameseWord {
+  // v2.3.20: if transformed is already valid English, keep it.
+  let transformedIsEnglish = lexiconManager.isEnglishWord(transformed)
+  if transformedIsEnglish {
+    return .keepRaw  // Keep transformed ("google"), don't restore raw ("gooogle")
+  }
+  if rawToken.isASCIIAlphabeticWord, rawToken != transformedToken {
+    return .restoreRawEnglish(rawInput)
+  }
+  if needsRecovery && rawIsEnglish {
+    return .restoreRawEnglish(rawInput)
+  }
+}
+```
+
+### 📊 Sau fix
+
+| Case | rawInput | transformed | transformedIsEnglish | Decision |
+|---|---|---|---|---|
+| "google" (2 o's) + space | "google" | "google" | TRUE | (short-circuit via current==rawInput at line 1135) |
+| "gooogle" (3 o's) + space | "gooogle" | "google" | TRUE | **keepRaw → display "google"** ✓ |
+| "foooter" (3 o's) + space | "foooter" | "footer" | TRUE | **keepRaw → display "footer"** ✓ |
+| "text" + space | "text" | "tẽt" | FALSE | restoreRawEnglish → "text" ✓ |
+| "theme" + space | "theme" | "thẽme" | FALSE | restoreRawEnglish → "theme" ✓ |
+
+### 🧹 Cleanup
+
+Remove debug logs từ v2.3.19 (`TypeChar:`, `SpellCommit:` os_log statements). Performance baseline restored.
+
+### 💡 Insight
+
+Sau 12 versions (v2.3.7→v2.3.19) đoán hypothesis về CGEvent/NFC/NFD/scalar/grapheme/AX/modifier/short-circuit — TẤT CẢ SAI. Root cause hóa ra ở SPELL DECISION LOGIC: chose user's raw typo over vkey-produced valid English word.
+
+**Bài học**: Khi user observation cho hint chính xác ("ON gây bug, OFF không"), hãy IMMEDIATELY add diagnostic logging để xem actual data, thay vì đoán technical hypothesis. Diagnostic log v2.3.19 chỉ thẳng vào root cause trong 1 commit.
+
+### 🧪 Test
+
+217/217 pass.
+
+### Bump
+
+`2.3.19 → 2.3.20` / `20319 → 20320`. DMG 8761089 bytes, sig `INa6+P3CaelE8a3v2fDeBaoL4hv1r36n8+0A7lWb/ydDZ1FzwZFDVQvsrET7m4QukO01CHl0Oc9Vs6MFlxg8AQ==`.
+
+---
+
 ## [2.3.19] - 2026-05-28 — "Diagnostic Logging"
 
 **User confirm v2.3.18 vẫn lỗi. Tất cả hypothesis từ v2.3.7→v2.3.18 SAI. Cần dữ liệu empirical từ user để chẩn đoán đúng.**

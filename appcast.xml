@@ -6,6 +6,68 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.20 — "Keep English Transformed (Root Cause Fix)"</title>
+      <sparkle:version>20320</sparkle:version>
+      <sparkle:shortVersionString>2.3.20</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 14:15:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.20/vkey-2.3.20.dmg"
+        sparkle:edSignature="INa6+P3CaelE8a3v2fDeBaoL4hv1r36n8+0A7lWb/ydDZ1FzwZFDVQvsrET7m4QukO01CHl0Oc9Vs6MFlxg8AQ=="
+        length="8761089"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.3.20 — ROOT CAUSE FIX (confirmed từ runtime log)</h2>
+        <p><em>v2.3.19 diagnostic capture được trace thực sự từ vkey runtime. Bug fundamentally khác hypothesis từ v2.3.7→v2.3.18.</em></p>
+
+        <h3>🔬 Root cause (confirmed)</h3>
+        <p>User gõ "gooogle" intentionally (3 o's để cancel Telex mu, mong gõ tiếng Anh "google"). vkey processing:</p>
+        <ul>
+          <li>Telex apply mu ở 2 o's → "gô".</li>
+          <li>3rd 'o' → cancel mu + J2 fix append raw → "goo".</li>
+          <li>Tiếp 'g', 'l', 'e' → transformed = "google" (6 chars, RAW không mu).</li>
+          <li>keys = "gooogle" (7 chars, user's actual typing).</li>
+        </ul>
+        <p>Tại commit, evaluate:</p>
+        <ul>
+          <li>transformed="google", rawInput="gooogle". rawToken != transformedToken.</li>
+          <li>Line 136: <code>if rawToken.isASCIIAlphabeticWord, rawToken != transformedToken { return .restoreRawEnglish(rawInput) }</code> → returns <code>.restoreRawEnglish("gooogle")</code>.</li>
+          <li>→ vkey restores user's TYPO "gooogle" với 3 o's, thay vì giữ "google" English mà engine produced.</li>
+        </ul>
+
+        <h3>✅ Fix v2.3.20</h3>
+        <p>Trước line 136, check nếu <code>transformed</code> đã LÀ English word hợp lệ → giữ nó, không restore raw:</p>
+        <pre>
+if !isVietnameseWord {
+  // v2.3.20: nếu transformed đã LÀ English, GIỮ nó
+  let transformedIsEnglish = lexiconManager.isEnglishWord(transformed)
+  if transformedIsEnglish {
+    return .keepRaw  // Keep transformed display as-is
+  }
+  if rawToken.isASCIIAlphabeticWord, rawToken != transformedToken {
+    return .restoreRawEnglish(rawInput)  // Only restore raw if transformed isn't English
+  }
+  ...
+}
+        </pre>
+
+        <h3>📊 Sau fix</h3>
+        <ul>
+          <li>User gõ "gooogle" (3 o's): transformed="google" English. <code>.keepRaw</code> → display "google" ✓</li>
+          <li>User gõ "footer" → "foooter" same: display "footer" ✓</li>
+          <li>"text" + space: transformed="tẽt" NOT English → restore raw "text" ✓ (vẫn work)</li>
+          <li>"theme" → "thẽme" same → restore "theme" ✓</li>
+        </ul>
+
+        <h3>📝 Diagnostic logs đã remove</h3>
+        <p>v2.3.19 logs (TypeChar, SpellCommit) đã remove khỏi v2.3.20. Performance baseline.</p>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.19 — "Diagnostic Logging"</title>
       <sparkle:version>20319</sparkle:version>
       <sparkle:shortVersionString>2.3.19</sparkle:shortVersionString>

@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.19 — "Diagnostic Logging"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.20 — "Keep English Transformed (Root Cause Fix)"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.20** — **ROOT CAUSE FIX** confirmed từ v2.3.19 runtime logs. Bug "google → gooogle" thực ra do user gõ "gooogle" (3 o's intentionally để cancel Telex mu). vkey engine produces transformed="google" (raw không mu). At commit, evaluate's line 136 (`if rawToken != transformedToken → return .restoreRawEnglish(rawInput)`) sai vì restoreRawEnglish dùng RAW INPUT ("gooogle") thay vì keep transformed ("google" English). Fix: thêm check `if transformedIsEnglish { return .keepRaw }` TRƯỚC line 136. Giữ transformed khi đã là English word hợp lệ. Real cases ("text"→"tẽt"→restore "text") vẫn work (transformed="tẽt" không phải English → restore raw). Remove debug logs từ v2.3.19. 217/217 test pass.
 
 > **2.3.19** — User confirm v2.3.18 vẫn lỗi. Tất cả hypothesis từ trước SAI. Phiên bản này KHÔNG fix bug — thêm `os_log` để capture state thực tại runtime. User chạy Console.app, filter `subsystem:dev.longht.vkey category:SpellCommit`, gõ "google" + space, gửi log lines lại để chẩn đoán đúng root cause. 217/217 test pass.
 
