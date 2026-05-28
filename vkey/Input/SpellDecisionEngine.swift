@@ -39,6 +39,34 @@ final class SpellDecisionEngine {
     return word.lowercased().contains { vnDiacriticChars.contains($0) }
   }
 
+  /// v2.3.21: detect Telex mu cancellation pattern.
+  /// User gõ 3 nguyên âm liên tiếp (`ooo`, `aaa`, `eee`, `uuu`, `iii`) để
+  /// cancel Telex mu (1 vowel với mu → 2 vowels raw). Engine processes:
+  /// - 2nd vowel: apply mu (`oo` → `ô`).
+  /// - 3rd vowel: toggle mu off + J2 raw append.
+  /// - Result: transformed có 2 vowels (vd "google"), rawInput có 3 (vd "gooogle").
+  ///
+  /// Pattern detect: nếu rawInput có triple vowel AND collapse triple→double
+  /// cho ra transformed → user dùng pattern này, keep transformed.
+  ///
+  /// Cover các English words không có trong lexicon (vd "footer", "noose",
+  /// "smooth"…) khi user dùng pattern này.
+  static func isLikelyTelexCancellation(rawInput: String, transformed: String) -> Bool {
+    let raw = rawInput.lowercased()
+    let trans = transformed.lowercased()
+    let vowelTriples = ["ooo", "aaa", "eee", "uuu", "iii"]
+    for triple in vowelTriples {
+      if raw.contains(triple) {
+        let doubled = String(triple.prefix(2))
+        let collapsed = raw.replacingOccurrences(of: triple, with: doubled)
+        if collapsed == trans {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
   /// 1.7.4: detect English acronym pattern (e.g. ARM, USA, API, OK) ở
   /// rawInput. Khi user gõ all-caps short word không có double-letter
   /// Telex signal (dd/aa/oo/ee/uw/ow/aw) và không kết bằng tone key
@@ -133,21 +161,19 @@ final class SpellDecisionEngine {
 
       // 1. If transformed output is NOT a valid Vietnamese word
       if !isVietnameseWord {
-        // v2.3.20 ROOT-CAUSE FIX: nếu transformed IS English word, GIỮ nó.
-        // Trace bug "gooogle": user gõ 3 o's intentionally để cancel Telex mu.
-        // Engine produces:
-        //   - rawInput = "gooogle" (7 chars, user's keystrokes).
-        //   - transformed = "google" (6 chars, after Telex mu-cancel + recovery).
-        // Trước v2.3.20: line 136 check rawToken != transformedToken → return
-        // restoreRawEnglish(rawInput) → restore RAW "gooogle" với 3 o's.
-        // BUG: restoring USER'S TYPO instead of valid English word vkey produced.
-        //
-        // v2.3.20: nếu transformed là English word hợp lệ (vkey đã chuyển raw
-        // qua engine ra English đúng), GIỮ transformed. Không restore raw vì
-        // raw có thể là user's typo (vd "gooogle" → vkey produce "google" ✓).
+        // v2.3.20: nếu transformed IS English word, GIỮ.
         let transformedIsEnglish = lexiconManager.isEnglishWord(transformed)
         if transformedIsEnglish {
           return .keepRaw  // Keep transformed display as-is.
+        }
+        // v2.3.21: detect Telex mu cancellation pattern.
+        // User gõ 3 nguyên âm liên tiếp (vd "ooo", "aaa", "eee", "uuu") để
+        // cancel Telex mu. Engine collapse thành 2 → "footer" / "google" /…
+        // Nếu rawInput có triple vowel và transformed collapse thành double
+        // tại đúng vị trí (rest unchanged), giữ transformed.
+        // Catches "foooter→footer", "noooose→noose", v.v. không cần lexicon.
+        if Self.isLikelyTelexCancellation(rawInput: rawInput, transformed: transformed) {
+          return .keepRaw
         }
         if rawToken.isASCIIAlphabeticWord, rawToken != transformedToken {
           return .restoreRawEnglish(rawInput)

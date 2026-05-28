@@ -568,6 +568,33 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(nfdBs2, 1, "NFD: backspace 1 scalar (combining ̂)")
   }
 
+  /// v2.3.21 — Telex mu cancellation pattern detect.
+  /// User gõ 3 nguyên âm liên tiếp để cancel Telex mu → engine produces 2-vowel
+  /// English-like word. Pattern detection cho phép keep transformed mà không
+  /// cần word trong English lexicon (catches "foooter→footer", etc.).
+  func testTelexCancellationPatternDetect() throws {
+    // Match cases
+    XCTAssertTrue(SpellDecisionEngine.isLikelyTelexCancellation(
+      rawInput: "gooogle", transformed: "google"))
+    XCTAssertTrue(SpellDecisionEngine.isLikelyTelexCancellation(
+      rawInput: "foooter", transformed: "footer"))
+    XCTAssertTrue(SpellDecisionEngine.isLikelyTelexCancellation(
+      rawInput: "nooose", transformed: "noose"))
+    XCTAssertTrue(SpellDecisionEngine.isLikelyTelexCancellation(
+      rawInput: "aaab", transformed: "aab"))
+    // Case-insensitive
+    XCTAssertTrue(SpellDecisionEngine.isLikelyTelexCancellation(
+      rawInput: "GOOOGLE", transformed: "GOOGLE"))
+
+    // Non-match cases
+    XCTAssertFalse(SpellDecisionEngine.isLikelyTelexCancellation(
+      rawInput: "google", transformed: "google"))  // No triple
+    XCTAssertFalse(SpellDecisionEngine.isLikelyTelexCancellation(
+      rawInput: "gooogle", transformed: "googlo"))  // Triple but not the collapse
+    XCTAssertFalse(SpellDecisionEngine.isLikelyTelexCancellation(
+      rawInput: "abc", transformed: "abc"))
+  }
+
   /// v2.3.7 — Universal anywhere-DD: hoạt động ngay cả khi Free Mark Mode bật.
   /// Free Mark Mode bypass `needsRecovery` → `stopProcessing` không được set →
   /// existing anywhere-DD (gated bởi stopProcessing) không fire. Universal rule

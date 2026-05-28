@@ -6,6 +6,48 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.21 — "Telex Cancellation Pattern Detect"</title>
+      <sparkle:version>20321</sparkle:version>
+      <sparkle:shortVersionString>2.3.21</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 14:45:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.21/vkey-2.3.21.dmg"
+        sparkle:edSignature="UvS2hBrocQplLTVeIvmJDOwrAMrkjLkPhtOAhvJUQtMJLH4swyqGaWXy7ZV5rRo4b+N6iVGTehoCNeLh0EmHDw=="
+        length="8761821"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.3.21 — Catch words ngoài lexicon</h2>
+        <p><em>v2.3.20 fix "google" thành công vì "google" trong English lexicon. Nhưng "footer" KHÔNG trong lexicon → check `transformedIsEnglish` fail → bug "foooter" vẫn còn.</em></p>
+
+        <h3>✅ Fix v2.3.21: Pattern detection</h3>
+        <p>Detect Telex mu cancellation pattern: nếu <code>rawInput</code> có 3 nguyên âm liên tiếp (ooo/aaa/eee/uuu/iii) AND collapse triple→double ra <code>transformed</code> → keep transformed.</p>
+        <pre>
+static func isLikelyTelexCancellation(rawInput, transformed) -> Bool {
+  for triple in ["ooo", "aaa", "eee", "uuu", "iii"] {
+    if raw.contains(triple) {
+      let collapsed = raw.replacingOccurrences(of: triple, with: triple.prefix(2))
+      if collapsed == transformed { return true }
+    }
+  }
+  return false
+}
+        </pre>
+
+        <h3>📊 Coverage</h3>
+        <ul>
+          <li>"foooter" → "footer" (3 o's → 2 o's): pattern match ✓</li>
+          <li>"gooogle" → "google": pattern match ✓ (cũng cover bởi lexicon check v2.3.20)</li>
+          <li>"nooose" → "noose": pattern match ✓ (word ngoài lexicon)</li>
+          <li>"baaad" → "baad": pattern match ✓ (general for 'a' triples)</li>
+        </ul>
+
+        <h3>🧪 Test</h3>
+        <p>218/218 pass. New test <code>testTelexCancellationPatternDetect</code>.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.20 — "Keep English Transformed (Root Cause Fix)"</title>
       <sparkle:version>20320</sparkle:version>
       <sparkle:shortVersionString>2.3.20</sparkle:shortVersionString>

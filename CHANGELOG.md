@@ -2,6 +2,62 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.21] - 2026-05-28 — "Telex Cancellation Pattern Detect"
+
+**v2.3.20 fix "google" thành công nhưng "footer" vẫn lỗi vì "footer" không có trong English lexicon. v2.3.21 fix triệt để bằng pattern detection.**
+
+### 🐛 v2.3.20 không đủ
+
+v2.3.20 fix: nếu `transformed` là English word (theo lexicon), keep nó. Cho "gooogle" → "google" ✓ (google trong lexicon).
+
+Nhưng "footer" KHÔNG trong English lexicon (chỉ ~126 embedded + package EN có thể không có). `transformedIsEnglish` returns FALSE → fix không fire → bug "foooter" vẫn còn.
+
+### ✅ Fix v2.3.21: Pattern detection
+
+Detect Telex mu cancellation pattern: rawInput có 3 nguyên âm liên tiếp (`ooo/aaa/eee/uuu/iii`) AND collapse triple→double ra transformed → keep transformed.
+
+```swift
+static func isLikelyTelexCancellation(rawInput: String, transformed: String) -> Bool {
+  let raw = rawInput.lowercased()
+  let trans = transformed.lowercased()
+  let vowelTriples = ["ooo", "aaa", "eee", "uuu", "iii"]
+  for triple in vowelTriples {
+    if raw.contains(triple) {
+      let doubled = String(triple.prefix(2))
+      let collapsed = raw.replacingOccurrences(of: triple, with: doubled)
+      if collapsed == trans {
+        return true
+      }
+    }
+  }
+  return false
+}
+```
+
+Logic: nếu user gõ 3 vowels liên tiếp (Telex mu cancel pattern) và engine sản xuất raw với 2 vowels (cancel result), keep transformed bất kể có trong lexicon hay không.
+
+### 📊 Coverage
+
+| rawInput | transformed | Pattern match | Decision |
+|---|---|---|---|
+| "gooogle" | "google" | ✓ (ooo→oo) | keepRaw → "google" |
+| "foooter" | "footer" | ✓ (ooo→oo) | **keepRaw → "footer" ✓** |
+| "nooose" | "noose" | ✓ | keepRaw → "noose" |
+| "smooooth" | "smooth" | ✓ | keepRaw → "smooth" |
+| "baaad" | "baad" | ✓ (aaa→aa) | keepRaw → "baad" |
+| "google" | "google" | ✗ (no triple) | short-circuit (other path) |
+| "text" | "tẽt" | ✗ | restoreRawEnglish → "text" ✓ |
+
+### 🧪 Test
+
+218/218 pass. New test `testTelexCancellationPatternDetect`.
+
+### Bump
+
+`2.3.20 → 2.3.21` / `20320 → 20321`. DMG 8761821 bytes, sig `UvS2hBrocQplLTVeIvmJDOwrAMrkjLkPhtOAhvJUQtMJLH4swyqGaWXy7ZV5rRo4b+N6iVGTehoCNeLh0EmHDw==`.
+
+---
+
 ## [2.3.20] - 2026-05-28 — "Keep English Transformed (Root Cause Fix)"
 
 **ROOT CAUSE FIX dựa trên v2.3.19 diagnostic logs từ runtime. Bug fundamentally khác với mọi hypothesis từ v2.3.7→v2.3.18.**
