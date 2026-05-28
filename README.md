@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.12 — "NFD Backspace for Search Fields"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.13 — "NFD Diff for Non-Apple Apps"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.13** — User report bug "gooogle, foooter ở claude desktop hay bất kỳ đâu". v2.3.12 chỉ áp NFD diff cho search fields → không đủ. v2.3.13 mở rộng: NFD diff cho TẤT CẢ non-Apple apps (Chromium, Electron, Claude desktop, browsers, web inputs…). Whitelist NFC+grapheme: `com.apple.*`, iWork, Microsoft Office native (Word/Excel/Powerpoint/Outlook/OneNote). Mọi thứ khác mặc định NFD. 217/217 test pass.
 
 > **2.3.12** — Sửa nốt "google → gooogle" + "footer → foooter" trong Chrome URL bar / Google search. KHÔNG phải tính năng auto-correct mà do **scalar/grapheme mismatch**: Chrome URL bar store "ô" dạng NFD (`o` + combining `̂` = 2 scalars) và backspace cũng đếm scalar. Grapheme-based `backspaceCount=2` chỉ xóa 2 scalars `̂g` thay vì 2 graphemes `ôg` → còn 'o' thừa → "gooogl". Fix: dùng `calcKeyStrokesNFD` (đếm scalar) cho search fields. Apple text views + Google Docs vẫn dùng grapheme diff. 217/217 test pass.
 

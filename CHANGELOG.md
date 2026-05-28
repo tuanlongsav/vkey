@@ -2,6 +2,99 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.13] - 2026-05-28 — "NFD Diff for Non-Apple Apps"
+
+**Mở rộng NFD diff (v2.3.12 chỉ cho search fields) ra TẤT CẢ non-Apple apps: Chromium, Electron, Claude desktop, browsers, web inputs…**
+
+### 🐛 User report
+
+> "gooogle, foooter vẫn bị lỗi, tôi đang gõ trực tiếp ở claude desktop hay. bất kỳ đâu đều bị lỗi này"
+
+v2.3.12 fix Chrome URL bar (AXSearchField) qua NFD diff. Nhưng bug vẫn còn ở Claude desktop (Electron text area, không phải search field) và "bất kỳ đâu" Chromium-based.
+
+### 🔍 Nguyên nhân
+
+Chromium engines (Chrome, Edge, Brave, Arc, Electron-based apps như Claude desktop, Slack, Discord, Notion, VSCode, Figma…) **store Vietnamese text dạng NFD** và **đếm backspace theo SCALAR**, không grapheme.
+
+Trace "google" trong Claude desktop với grapheme diff (cũ):
+- Step 3 ('o' 3rd): vkey transforms "go" → "gô" (Telex mu). Diff (1 bs, "ô"). Backspace × 1 (1 scalar in NFD = 1 char 'o'). + "ô" (NFC sent, Claude decomposes to NFD = 'o' + ◌̂). Stored "g,o,◌̂" (3 scalars). Visible "gô" ✓ (works because 1 scalar = 1 char for ASCII).
+- Step 4 'g': pass-through. Stored "g,o,◌̂,g" (4 scalars).
+- Step 5 'l' (recovery): vkey diffs "gôg" → "googl" = (2 bs, "oogl"). Claude backspace × 2 = xóa 2 SCALARS = [◌̂, g]. Stored = "g,o" (2 scalars). + sendString "oogl" (4 chars) → "g,o,o,o,g,l" (6 scalars). Visible "gooogl" ❌
+- Step 6 'e': pass-through → "gooogle" (7 chars). BUG.
+
+### ✅ Fix
+
+Bundle-ID whitelist approach trong [`InputProcessor.swift`](vkey/App/InputProcessor.swift):
+
+```swift
+static func usesNFCGraphemeStorage(bundleId: String) -> Bool {
+  if bundleId.isEmpty { return true }
+  if bundleId.hasPrefix("com.apple.") { return true }
+  if bundleId.hasPrefix("com.apple.iWork.") { return true }
+  let officeNative: Set<String> = [
+    "com.microsoft.Word",
+    "com.microsoft.Excel",
+    "com.microsoft.Powerpoint",
+    "com.microsoft.Outlook",
+    "com.microsoft.onenote.mac",
+    "com.microsoft.Office.Word",
+    "com.microsoft.Office.Excel",
+  ]
+  return officeNative.contains(bundleId)
+}
+```
+
+Trong `handleTextChar` + `restoreRawEnglish`:
+```swift
+let useNFDDiff = !InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
+let (numBackspaces, diffChars) = useNFDDiff
+  ? EventSimulator.calcKeyStrokesNFD(...)
+  : EventSimulator.calcKeyStrokes(...)
+```
+
+### 📊 Trace sau fix
+
+**Claude desktop / Chrome / Chromium "google"**:
+- Step 3: NFD diff (0 bs, ◌̂) → append combining mark → stored "g,o,◌̂" → "gô" ✓
+- Step 5: NFD diff (2 bs scalars, "ogl") → xóa 2 scalars `[◌̂,g]` → "g,o" + "ogl" → "g,o,o,g,l" → "googl" ✓
+- Step 6: pass-through → "google" ✓
+
+**Claude desktop "footer"**:
+- Step 3: NFD diff (0 bs, ◌̂) → "fô" ✓
+- Step 5: NFD diff (2 bs, "ote") → "f,o" + "ote" → "foote" ✓
+- Step 6: pass-through → "footer" ✓
+
+### 🛡️ Không thay đổi (NFC whitelist)
+
+| App category | Bundle ID prefix | Diff |
+|---|---|---|
+| Apple native | `com.apple.*`, `com.apple.iWork.*` | Grapheme |
+| Microsoft Office native | Word, Excel, Powerpoint, Outlook, OneNote | Grapheme |
+| Mọi thứ khác (default) | (default) | NFD |
+
+Notes, TextEdit, Mail, Pages, Numbers, Keynote, Word, Excel… đều giữ grapheme diff như cũ. Vietnamese typing không đổi.
+
+### ⚠️ Risk
+
+Nếu một app **NFC native** không nằm trong whitelist (vd app viết bằng AppKit của bên thứ 3 ít phổ biến), sẽ bị NFD diff → có thể under-type khi gõ tiếng Việt (vd "gôg" → "gogl" thay vì "googl"). Báo lại nếu gặp — tôi sẽ add vào whitelist.
+
+Apps điển hình cần kiểm tra: BBEdit, TextMate, Sublime Text, MacVim, Logseq, Bear, iA Writer. Nếu Vietnamese typing trong các app này có bug, add bundle ID vào whitelist.
+
+### 🧪 Test
+
+217/217 pass. Manual test:
+1. **Claude desktop**: gõ "google", "footer", "tools" → kỳ vọng đúng.
+2. **Chrome URL bar / Google search**: same.
+3. **Google Docs** (regression): "trình bày" → đúng.
+4. **Notes/TextEdit** (NFC regression): "tiếng việt" → đúng.
+5. **Word/Excel** (NFC regression): tiếng Việt → đúng.
+
+### Bump
+
+`2.3.12 → 2.3.13` / `20312 → 20313`. DMG 8761860 bytes, sig `BpGflLMIvsuMiQxdQX+HWFtnuMVkdZC3qyBZeGBDuz/PzyLIsvohGQ64tWGFdrR+11H4/3Xhl9X8yHbAqHxaDw==`.
+
+---
+
 ## [2.3.12] - 2026-05-28 — "NFD Backspace for Search Fields"
 
 **Sửa nốt "google → gooogle" và "footer → foooter" trong Chrome URL bar / Google search. KHÔNG phải tính năng tự sửa mà do scalar/grapheme mismatch trong backspace count.**

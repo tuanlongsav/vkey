@@ -949,15 +949,23 @@ class InputProcessor {
     }
 
     push(char: newChar)
-    // v2.3.12: backspace path cho mọi app (giữ từ v2.3.11), nhưng dùng
-    // NFD-aware diff cho search fields. Chrome URL bar / Google search box
-    // store text dạng NFD scalar (vd "ô" = o + combining ̂ = 2 scalars).
-    // Backspace của Chrome URL bar đếm theo SCALAR. Grapheme-based count
-    // thiếu → "gôg" backspace × 2 chỉ xóa `̂g` (2 scalars) thay vì `ôg`
-    // (2 graphemes) → để lại 'o' thừa → "go" + "oogl" = "gooogl" → +'e' = "gooogle".
-    // NFD diff khớp scalar count → backspace đúng số scalar → fix.
-    // Apple text views (Notes, TextEdit) store NFC + grapheme backspace.
-    let useNFDDiff = isFixAutocompleteApp()
+    // v2.3.13: dùng NFD-aware diff cho TẤT CẢ non-Apple/non-Office apps.
+    // User report: "google → gooogle" và "footer → foooter" xảy ra ở
+    // Chrome URL bar, Claude desktop (Electron), và "bất kỳ đâu" Chromium-
+    // based apps. Theory: Chromium engines (Chrome, Electron, web inputs)
+    // store text dạng NFD scalar + đếm backspace theo SCALAR.
+    //
+    // Vd "gôg" (3 graphemes / 3 NFC scalars / 4 NFD scalars):
+    //   - Grapheme diff "gôg"→"googl": (2 bs, "oogl"). backspace × 2 trong
+    //     Chromium NFD đếm scalar → chỉ xóa [◌̂, g] → còn "go". + "oogl"
+    //     → "gooogl". + 'e' (step 6) → "gooogle". BUG.
+    //   - NFD diff: (2 bs, "ogl"). backspace × 2 xóa 2 scalars [◌̂, g] →
+    //     "go". + "ogl" → "googl". + 'e' → "google". ✓
+    //
+    // Apple native apps (NSTextView) + Microsoft Office native dùng NFC
+    // grapheme storage + grapheme backspace. NFD diff sẽ under-type ở đó
+    // (vd "gogl" thay vì "googl" do replacement string thiếu chars).
+    let useNFDDiff = !InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
     let (numBackspaces, diffChars) = useNFDDiff
       ? EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
       : EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
@@ -1182,9 +1190,8 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
-      // v2.3.12: NFD diff cho search fields (commit-time restore cũng cần
-      // match scalar count nếu app store NFD).
-      let useNFDDiff = isFixAutocompleteApp()
+      // v2.3.13: NFD diff cho non-Apple/non-Office apps. Match handleTextChar.
+      let useNFDDiff = !InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
       let (numBackspaces, diffChars) = useNFDDiff
         ? EventSimulator.calcKeyStrokesNFD(from: current, to: target)
         : EventSimulator.calcKeyStrokes(from: current, to: target)
@@ -1244,6 +1251,37 @@ class InputProcessor {
   /// (vd nếu một browser không expose AX role đúng — chưa thấy case nào).
   func isFixAutocompleteApp() -> Bool {
     return isSearchOrComboFocused
+  }
+
+  /// v2.3.13: Phân biệt apps theo text storage model để chọn diff algorithm:
+  /// - **NFC + grapheme backspace** (Apple native, Microsoft Office native):
+  ///   Backspace xóa 1 grapheme. NFC precomposed Vietnamese (`ô` = 1 char).
+  ///   Cần grapheme-based diff (`calcKeyStrokes`).
+  /// - **NFD + scalar backspace** (Chromium, Electron, web inputs, default):
+  ///   Backspace xóa 1 unicode scalar. NFD decomposed (`ô` = `o` + combining `̂`).
+  ///   Cần NFD scalar-based diff (`calcKeyStrokesNFD`).
+  ///
+  /// Whitelist NFC apps theo bundle prefix. Mọi thứ khác giả định NFD.
+  /// Lý do whitelist (conservative): NFC chỉ ở Apple + Office native — đếm được.
+  /// Chromium/Electron app vô số, không enum nổi → default NFD.
+  static func usesNFCGraphemeStorage(bundleId: String) -> Bool {
+    if bundleId.isEmpty { return true }  // fallback safe (Apple native)
+    // Apple native apps (NSTextView/NSTextField/UITextView based)
+    if bundleId.hasPrefix("com.apple.") { return true }
+    // Microsoft Office native (NOT Edge which is Chromium)
+    let officeNative: Set<String> = [
+      "com.microsoft.Word",
+      "com.microsoft.Excel",
+      "com.microsoft.Powerpoint",
+      "com.microsoft.Outlook",
+      "com.microsoft.onenote.mac",
+      "com.microsoft.Office.Word",
+      "com.microsoft.Office.Excel",
+    ]
+    if officeNative.contains(bundleId) { return true }
+    // iWork
+    if bundleId.hasPrefix("com.apple.iWork.") { return true }
+    return false
   }
 
   static func macroReplacement(

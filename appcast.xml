@@ -6,6 +6,67 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.13 — "NFD Diff for Non-Apple Apps"</title>
+      <sparkle:version>20313</sparkle:version>
+      <sparkle:shortVersionString>2.3.13</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 03:30:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.13/vkey-2.3.13.dmg"
+        sparkle:edSignature="BpGflLMIvsuMiQxdQX+HWFtnuMVkdZC3qyBZeGBDuz/PzyLIsvohGQ64tWGFdrR+11H4/3Xhl9X8yHbAqHxaDw=="
+        length="8761860"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.13 — "NFD Diff for Non-Apple Apps":</h2>
+        <p><em>User report: "gooogle, foooter vẫn lỗi… gõ ở claude desktop hay bất kỳ đâu". v2.3.12 chỉ áp NFD diff cho search fields → không đủ. v2.3.13 mở rộng: áp NFD diff cho TẤT CẢ non-Apple apps (Chromium, Electron, Claude desktop, browsers, web inputs…). Apple native + Microsoft Office native vẫn grapheme diff.</em></p>
+
+        <h3>🐛 Bug</h3>
+        <ul>
+          <li>Claude desktop, Chrome (URL bar + bất kỳ đâu): gõ "google" → "gooogle", "footer" → "foooter".</li>
+        </ul>
+
+        <h3>🔍 Nguyên nhân</h3>
+        <p>Chromium/Electron text inputs **store text dạng NFD** (`ô` = `o` + combining `̂` = 2 scalars) và **đếm backspace theo SCALAR**.</p>
+        <p>vkey trước đây tính grapheme diff "gôg"→"googl" = (2 bs, "oogl"). Chromium đếm scalar: backspace × 2 xóa `[◌̂, g]` (2 scalars) thay vì `[ô, g]` (2 graphemes). Còn lại "go" thay vì "g". + "oogl" → "gooogl". + 'e' = "gooogle".</p>
+        <p>v2.3.12 chỉ áp NFD cho search fields (AX role). Không cover Claude desktop / Chrome content area / Electron.</p>
+
+        <h3>✅ Fix</h3>
+        <ul>
+          <li>Thêm helper <code>InputProcessor.usesNFCGraphemeStorage(bundleId:)</code> — whitelist apps dùng NFC+grapheme.</li>
+          <li>NFC whitelist (cần grapheme diff): <code>com.apple.*</code>, <code>com.apple.iWork.*</code>, Microsoft Office native (Word, Excel, Powerpoint, Outlook, OneNote).</li>
+          <li>Mọi app khác (Chrome, Edge, Brave, Arc, Claude desktop, Slack, Discord, Notion, VSCode, Figma…): mặc định NFD diff.</li>
+          <li>Áp dụng cho cả <code>handleTextChar</code> typing-time và <code>restoreRawEnglish</code> commit-time.</li>
+        </ul>
+
+        <h3>📊 Trace sau fix</h3>
+        <ul>
+          <li>Claude desktop "google": NFD diff (2 bs scalars, "ogl") → backspace 2 NFD scalars + "ogl" → "googl" + 'e' → "google" ✓</li>
+          <li>Claude desktop "footer": NFD diff (2 bs scalars, "ote") → "foote" + 'r' → "footer" ✓</li>
+          <li>Chrome URL bar "google": same → "google" ✓</li>
+        </ul>
+
+        <h3>🛡️ Không thay đổi (NFC apps)</h3>
+        <ul>
+          <li>Notes, TextEdit, Mail, Pages, Numbers, Keynote: vẫn grapheme diff. Vietnamese typing không đổi.</li>
+          <li>Word, Excel, Powerpoint, Outlook, OneNote: vẫn grapheme diff.</li>
+        </ul>
+
+        <h3>⚠️ Risk</h3>
+        <p>Nếu một app **NFC native** không nằm trong whitelist (vd app ít phổ biến viết bằng AppKit), sẽ bị NFD diff → có thể under-type khi gõ tiếng Việt (vd "gôg" → "gogl" thay vì "googl"). Báo lại nếu gặp — tôi sẽ add vào whitelist.</p>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass. Manual test cần ở:</p>
+        <ul>
+          <li>Claude desktop: gõ "google", "footer" → kỳ vọng đúng.</li>
+          <li>Chrome URL bar: same.</li>
+          <li>Google Docs (regression): "trình bày" → đúng.</li>
+          <li>Notes/TextEdit (NFC regression): "tiếng việt" → đúng.</li>
+          <li>Word/Excel (NFC regression): tiếng Việt → đúng.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.12 — "NFD Backspace for Search Fields"</title>
       <sparkle:version>20312</sparkle:version>
       <sparkle:shortVersionString>2.3.12</sparkle:shortVersionString>
