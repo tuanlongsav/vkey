@@ -6,6 +6,58 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.16 — "Proper Modifier Sequence for Option+Backspace"</title>
+      <sparkle:version>20316</sparkle:version>
+      <sparkle:shortVersionString>2.3.16</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 09:15:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.16/vkey-2.3.16.dmg"
+        sparkle:edSignature="Ss8QH7+iHTAN/wDq1qr9mHsOgMiQZuPQFx0t444DRC334FU5aB5TcN/ohuy3ywEcUfDxg9Ayx/zC3pyeqXgKDw=="
+        length="8760468"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.16 — "Proper Modifier Sequence for Option+Backspace":</h2>
+        <p><em>User confirm v2.3.15 vẫn lỗi "gooogle, foooter". Hypothesis: Option+Backspace của v2.3.15 chỉ set flag <code>.maskAlternate</code> trên Backspace event — không đủ với nhiều app (Notes, Claude desktop). Cần proper modifier press/release sequence.</em></p>
+
+        <h3>🔍 Nguyên nhân v2.3.15 fail</h3>
+        <p>v2.3.15 dùng CGEvent với flags=<code>.maskAlternate</code> trên Backspace key event:</p>
+        <pre>
+downEvent.flags = [.maskAlternate, .maskNonCoalesced]
+downEvent.post(...)
+        </pre>
+        <p>Một số app (Notes, Claude desktop) check actual modifier state qua <code>NSEvent.modifierFlags</code> (hardware-level), không react với synthesized flag. Kết quả: sendOptionBackspace KHÔNG xóa word → sendString append → "gooogle" + " " + "google " = "gooogle google" → user vẫn thấy "gooogle".</p>
+
+        <h3>✅ Fix v2.3.16: proper modifier sequence</h3>
+        <p>Thay vì chỉ set flag, gửi đầy đủ event sequence như user thực sự nhấn keyboard:</p>
+        <pre>
+1. Option key DOWN  (flagsChanged event)
+2. Backspace DOWN   (with flags=.maskAlternate)
+3. Backspace UP     (with flags=.maskAlternate)
+4. Option key UP    (flagsChanged event)
+        </pre>
+        <p>Cũng tăng usleep từ 2ms → 10ms giữa Option+Backspace và sendString để app có đủ thời gian process word deletion.</p>
+
+        <h3>📊 Trace</h3>
+        <p>"google" + space trong Notes (v2.3.16):</p>
+        <ul>
+          <li>Display before space: "gooogle" (do round-trip bug).</li>
+          <li>Option key DOWN.</li>
+          <li>Backspace (Option held): delete word "gooogle" → "".</li>
+          <li>Backspace UP, Option UP.</li>
+          <li>10ms delay.</li>
+          <li>sendString "google ": → "google ".</li>
+        </ul>
+
+        <h3>⚠️ If still doesn't work</h3>
+        <p>Nếu v2.3.16 vẫn lỗi, có nghĩa Option+Backspace via CGEvent không reliable trong app đó. Sẽ cần thử AX API write (set selection programmatically) hoặc approach khác.</p>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.15 — "Option+Backspace Commit Restore"</title>
       <sparkle:version>20315</sparkle:version>
       <sparkle:shortVersionString>2.3.15</sparkle:shortVersionString>

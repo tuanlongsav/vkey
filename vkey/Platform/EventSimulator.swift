@@ -216,24 +216,42 @@ class EventSimulator {
     return true
   }
 
-  /// v2.3.15: Option+Backspace = delete word (macOS standard). Dùng tại
-  /// commit-time restore để wipe toàn bộ word khỏi display, sau đó retype.
-  /// Bypass diff calculation entirely — đúng bất kể display state ở mức nào
-  /// (CGEvent round-trip có thể đã thêm extra chars trong intermediate steps).
+  /// v2.3.15 → v2.3.16: Option+Backspace = delete word (macOS standard).
+  /// v2.3.15 chỉ set `.maskAlternate` trên key event — không work ở Notes/
+  /// Claude desktop vì app check actual modifier state qua NSEvent. Một số
+  /// app chỉ react khi nhận đầy đủ event sequence: Option down → Backspace
+  /// down → Backspace up → Option up.
+  ///
+  /// v2.3.16: gửi proper modifier press/release sequence để simulate đúng
+  /// hành vi keyboard thực.
   @discardableResult
   static func sendOptionBackspace(source: CGEventSource? = nil) -> Bool {
     let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
-    guard
-      let source = eventSource,
-      let downEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: true),
-      let upEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: false)
-    else {
-      return false
+    guard let source = eventSource else { return false }
+    let leftOptionKey: CGKeyCode = 0x3A  // 58 = Left Option
+
+    // 1. Press Option key (modifier down)
+    if let optionDown = CGEvent(keyboardEventSource: source, virtualKey: leftOptionKey, keyDown: true) {
+      optionDown.flags = .maskAlternate
+      optionDown.post(tap: .cgSessionEventTap)
     }
-    downEvent.flags = [.maskAlternate, .maskNonCoalesced]
-    upEvent.flags = [.maskAlternate, .maskNonCoalesced]
-    downEvent.post(tap: .cgSessionEventTap)
-    upEvent.post(tap: .cgSessionEventTap)
+
+    // 2. Press + release Backspace with Option held
+    if let bsDown = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: true) {
+      bsDown.flags = [.maskAlternate, .maskNonCoalesced]
+      bsDown.post(tap: .cgSessionEventTap)
+    }
+    if let bsUp = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: false) {
+      bsUp.flags = [.maskAlternate, .maskNonCoalesced]
+      bsUp.post(tap: .cgSessionEventTap)
+    }
+
+    // 3. Release Option key (modifier up)
+    if let optionUp = CGEvent(keyboardEventSource: source, virtualKey: leftOptionKey, keyDown: false) {
+      optionUp.flags = []
+      optionUp.post(tap: .cgSessionEventTap)
+    }
+
     return true
   }
 

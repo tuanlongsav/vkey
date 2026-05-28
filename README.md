@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.15 — "Option+Backspace Commit Restore"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.16 — "Proper Modifier Sequence for Option+Backspace"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.16** — User confirm v2.3.15 vẫn lỗi. Hypothesis: Option+Backspace v2.3.15 chỉ set flag `.maskAlternate` không đủ với Notes/Claude desktop (apps check actual modifier state qua NSEvent, không react với synthesized flag). v2.3.16 gửi đầy đủ event sequence như user thực sự nhấn: Option DOWN → Backspace → Backspace UP → Option UP. Tăng usleep 2ms → 10ms để app process kịp word deletion. 217/217 test pass.
 
 > **2.3.15** — Cách tiếp cận MỚI dựa trên user diagnostic. Bug "google → gooogle" xảy ra ngay cả Notes (Apple native), diverge tại commit-time (sau space). Trước đây hypothesis NFC/NFD đều sai. Root cause: display BEFORE space đã có extra 'o' (CGEvent round-trip ở intermediate steps), vkey buffer "google" đúng nhưng diff (0, " ") chỉ send space, không sửa được. Fix: dùng **Option+Backspace** (macOS standard "delete word") + sendString full word tại `restoreRawEnglish` commit. Bypass diff calc, wipe entire word + retype. 217/217 test pass.
 

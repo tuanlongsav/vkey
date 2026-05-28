@@ -2,6 +2,76 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.16] - 2026-05-28 — "Proper Modifier Sequence for Option+Backspace"
+
+**User confirm v2.3.15 vẫn lỗi "gooogle, foooter". Fix: proper modifier press/release sequence cho Option+Backspace.**
+
+### 🔍 Nguyên nhân v2.3.15 fail
+
+v2.3.15 dùng:
+```swift
+downEvent.flags = [.maskAlternate, .maskNonCoalesced]
+downEvent.post(...)
+```
+
+Một số app (Notes, Claude desktop) check actual modifier state qua `NSEvent.modifierFlags` (hardware-level), không react với synthesized flag trên key event. Kết quả: sendOptionBackspace KHÔNG xóa word → sendString append "google " sau "gooogle" → display thành "gooogle google " — user vẫn thấy "gooogle".
+
+### ✅ Fix v2.3.16
+
+Proper modifier sequence trong [`EventSimulator.sendOptionBackspace`](vkey/Platform/EventSimulator.swift):
+
+```swift
+let leftOptionKey: CGKeyCode = 0x3A  // Left Option
+
+// 1. Option key DOWN
+let optionDown = CGEvent(keyboardEventSource: source, virtualKey: leftOptionKey, keyDown: true)
+optionDown?.flags = .maskAlternate
+optionDown?.post(tap: .cgSessionEventTap)
+
+// 2. Backspace DOWN + UP with Option flag
+let bsDown = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: true)
+bsDown?.flags = [.maskAlternate, .maskNonCoalesced]
+bsDown?.post(tap: .cgSessionEventTap)
+let bsUp = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: false)
+bsUp?.flags = [.maskAlternate, .maskNonCoalesced]
+bsUp?.post(tap: .cgSessionEventTap)
+
+// 3. Option key UP
+let optionUp = CGEvent(keyboardEventSource: source, virtualKey: leftOptionKey, keyDown: false)
+optionUp?.flags = []
+optionUp?.post(tap: .cgSessionEventTap)
+```
+
+4 events thay vì 2. Simulates đúng hành vi user nhấn keyboard.
+
+Cũng tăng usleep từ 2ms → 10ms trong [`InputProcessor`](vkey/App/InputProcessor.swift) restoreRawEnglish để app process word deletion kịp trước sendString.
+
+### 📊 Trace expected
+
+"google" + space trong Notes / Claude desktop:
+1. Display before space: "gooogle" (do CGEvent round-trip bug ở intermediate).
+2. Option key DOWN (modifier press).
+3. Backspace (Option held): app sees "delete word" → xóa "gooogle".
+4. Backspace UP, Option UP.
+5. 10ms delay.
+6. sendString "google ": → "google ".
+
+Final: "google ".
+
+### ⚠️ Nếu vẫn lỗi
+
+Có nghĩa Option+Backspace via CGEvent vẫn không reliable trong app đó. Sẽ cần thử AX API write (programmatically set selection range) hoặc approach khác.
+
+### 🧪 Test
+
+217/217 pass.
+
+### Bump
+
+`2.3.15 → 2.3.16` / `20315 → 20316`. DMG 8760468 bytes, sig `Ss8QH7+iHTAN/wDq1qr9mHsOgMiQZuPQFx0t444DRC334FU5aB5TcN/ohuy3ywEcUfDxg9Ayx/zC3pyeqXgKDw==`.
+
+---
+
 ## [2.3.15] - 2026-05-28 — "Option+Backspace Commit Restore"
 
 **Cách tiếp cận MỚI dựa trên user diagnostic empirical. Bug "google → gooogle" trong Notes (Apple native) + Claude desktop + Chromium, diverge tại commit-time (sau space).**

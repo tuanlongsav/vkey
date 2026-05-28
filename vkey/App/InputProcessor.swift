@@ -1202,7 +1202,7 @@ class InputProcessor {
       EventSimulator.simulationQueueAsync {
         _ = EventSimulator.withAdaptiveFlush {
           EventSimulator.sendOptionBackspace(source: source)
-          usleep(2000)  // small delay for app to process word deletion
+          usleep(10_000)  // 10ms delay — đủ cho app process word deletion
           EventSimulator.sendString(target, source: source)
         }
       }
