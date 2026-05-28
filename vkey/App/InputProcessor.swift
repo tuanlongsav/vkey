@@ -1185,15 +1185,33 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
-      // v2.3.14: revert NFD diff. Match handleTextChar.
-      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-        from: current, to: target)
-      let telemetry = EventSimulator.sendReplacement(
-        backspaceCount: numBackspaces,
-        diffChars: diffChars,
-        strategy: strategyTracker.currentStrategy
-      )
-      observeTelemetry(telemetry, appLikelySensitive: false)
+      // v2.3.15: Option+Backspace + sendString để wipe entire word + retype.
+      // Lý do: trong các app có round-trip CGEvent issues (Chromium / Claude
+      // desktop / thậm chí Notes với combining diacritic), display có thể
+      // diverge khỏi vkey buffer state trong intermediate steps. Diff-based
+      // approach (BS + retype diff chars) không sửa được vì vkey không biết
+      // display thực tế. Option+Backspace là macOS standard "delete word"
+      // shortcut — xóa từ cursor về đầu word, regardless of display state.
+      // Sau khi xóa word, sendString target để retype toàn bộ word + endingChar.
+      //
+      // Trace "google" trong Notes / Claude desktop:
+      // - Display before space (có thể bị bug): "gooogle" hoặc "google".
+      // - Option+Backspace: delete word "gooogle" hoặc "google" → "".
+      // - sendString "google ": insert correct word + space → "google ". ✓
+      let source = CGEventSource(stateID: .privateState)
+      EventSimulator.simulationQueueAsync {
+        _ = EventSimulator.withAdaptiveFlush {
+          EventSimulator.sendOptionBackspace(source: source)
+          usleep(2000)  // small delay for app to process word deletion
+          EventSimulator.sendString(target, source: source)
+        }
+      }
+      observeTelemetry(EventSendTelemetry(
+        attemptedTransform: true,
+        createdEvents: true,
+        usedAsyncQueue: true,
+        touchedCharacters: current.count + target.count
+      ), appLikelySensitive: false)
       return true
 
     case .suggest(let suggestions):

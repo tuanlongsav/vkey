@@ -2,6 +2,90 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.15] - 2026-05-28 — "Option+Backspace Commit Restore"
+
+**Cách tiếp cận MỚI dựa trên user diagnostic empirical. Bug "google → gooogle" trong Notes (Apple native) + Claude desktop + Chromium, diverge tại commit-time (sau space).**
+
+### 🔬 User diagnostic
+
+User test cụ thể với v2.3.13/14:
+- **Notes**: gõ "google" → "gooogle". Gõ "gôgle" trực tiếp → "google" ✓
+- **Claude desktop**: gõ "google" → "gooogle"
+- **Bước diverge đầu tiên**: sau khi ấn space
+
+→ Bug ở **commit-time**, không phải typing-time. Hypothesis NFC/NFD storage SAI vì Notes (NFC) cũng có bug.
+
+### 🔍 Root cause
+
+Display BEFORE space đã có extra 'o' do CGEvent round-trip issues ở intermediate steps (vkey backspace+retype không hoàn hảo trong một số contexts). vkey buffer state đúng ("google" 6 chars).
+
+Tại commit (space): vkey diff `current="google"` (buffer) → `target="google "` = (0 bs, " "). Chỉ send space. Display thực tế "gooogle" + " " = "gooogle " (không sửa được vì vkey không biết display thực).
+
+### ✅ Fix v2.3.15
+
+Tại commit-time `restoreRawEnglish` trong [`InputProcessor.swift`](vkey/App/InputProcessor.swift):
+
+```swift
+// Bypass diff. Wipe word via Option+Backspace + retype.
+let source = CGEventSource(stateID: .privateState)
+EventSimulator.simulationQueueAsync {
+  _ = EventSimulator.withAdaptiveFlush {
+    EventSimulator.sendOptionBackspace(source: source)
+    usleep(2000)  // small delay for app to process word deletion
+    EventSimulator.sendString(target, source: source)
+  }
+}
+```
+
+`sendOptionBackspace` là helper mới trong [`EventSimulator.swift`](vkey/Platform/EventSimulator.swift):
+
+```swift
+static func sendOptionBackspace(source: CGEventSource? = nil) -> Bool {
+  ...
+  downEvent.flags = [.maskAlternate, .maskNonCoalesced]  // Option+Backspace
+  ...
+}
+```
+
+Option+Backspace = macOS standard "delete word" shortcut → xóa entire word từ cursor về đầu word, **regardless of display state**.
+
+### 📊 Trace
+
+"google" trong Notes / Claude desktop sau v2.3.15:
+
+| State | Action | Display |
+|---|---|---|
+| Before space | (có thể bug) | `gooogle` hoặc `google` |
+| Option+Backspace | delete word | `` (empty hoặc previous content) |
+| sendString "google " | retype + space | `google ` ✓ |
+
+### ⚠️ Limitations
+
+- Option+Backspace cần app support macOS standard shortcut. Hầu hết text apps support.
+- Nếu cursor không ở cuối word (giữa câu hoặc trong selection), behavior phụ thuộc app.
+- Áp dụng CHỈ cho `restoreRawEnglish` path (commit-time English restore). Vietnamese typing path không đụng.
+- Áp dụng cho MỌI app uniformly — đơn giản hóa logic, không cần whitelist.
+
+### 🛡️ Không thay đổi
+
+- Vietnamese typing (Telex/VNI realtime): không đụng. Vẫn dùng diff-based BS+retype.
+- Apple apps mà English restoreRawEnglish hoạt động đúng trước đây: vẫn đúng sau fix (Option+Backspace + retype = idempotent).
+- Spell decision logic không thay đổi.
+
+### 🧪 Test
+
+217/217 pass. Manual test cần ở:
+1. **Notes**: gõ "google" + space → kỳ vọng "google ".
+2. **Claude desktop**: gõ "google" + space → "google ".
+3. **Chrome URL bar**: gõ "google" + space → "google ".
+4. **Word/Slack/Discord/Notion**: same.
+
+### Bump
+
+`2.3.14 → 2.3.15` / `20314 → 20315`. DMG 8759892 bytes, sig `UamQRbjGbOUDauGWtJCHhhnyDn6SslS+m16TFMyHnyqDY1WcEjiuqQfmbY5l05y3QwajP9jmVFvAEJpTkNPgDw==`.
+
+---
+
 ## [2.3.14] - 2026-05-28 — "Revert to Stable Baseline"
 
 **Revert v2.3.13's NFD diff. Cascade v2.3.8 → v2.3.13 thử nhiều hypothesis đều thất bại. Quay về grapheme diff stable, chờ thông tin diagnostic chi tiết từ user.**

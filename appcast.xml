@@ -6,6 +6,62 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.15 — "Option+Backspace Commit Restore"</title>
+      <sparkle:version>20315</sparkle:version>
+      <sparkle:shortVersionString>2.3.15</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 08:45:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.15/vkey-2.3.15.dmg"
+        sparkle:edSignature="UamQRbjGbOUDauGWtJCHhhnyDn6SslS+m16TFMyHnyqDY1WcEjiuqQfmbY5l05y3QwajP9jmVFvAEJpTkNPgDw=="
+        length="8759892"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.15 — "Option+Backspace Commit Restore":</h2>
+        <p><em>Cách tiếp cận MỚI dựa trên user diagnostic: bug "gooogle" xảy ra ngay cả Notes (Apple native), và diverge tại commit (sau space). Fix: dùng Option+Backspace + sendString tại commit để wipe entire word + retype, bypass mọi diff calculation issues.</em></p>
+
+        <h3>🔬 User diagnostic</h3>
+        <p>User confirm test:</p>
+        <ul>
+          <li>Notes: gõ "google" → "gooogle"; gõ "gôgle" trực tiếp → "google" ✓</li>
+          <li>Claude desktop: gõ "google" → "gooogle"</li>
+          <li>Diverge tại bước: <strong>sau khi ấn space</strong></li>
+        </ul>
+        <p>Điều này phá vỡ hypothesis NFC/NFD storage trước đây. Bug ở commit-time, không phải typing-time.</p>
+
+        <h3>🔍 Root cause analysis</h3>
+        <p>Display BEFORE space đã có extra 'o' (do CGEvent round-trip issues ở intermediate steps — vkey backspace+retype không hoàn hảo). vkey buffer state đúng ("google" 6 chars).</p>
+        <p>Tại commit (space): vkey diff <code>current="google"</code> → <code>target="google "</code> = (0 bs, " "). Chỉ send space. Display "gooogle" + " " = "gooogle " (không sửa được vì vkey không biết display thực).</p>
+
+        <h3>✅ Fix v2.3.15</h3>
+        <p>Tại commit-time <code>restoreRawEnglish</code>:</p>
+        <ul>
+          <li>Send <strong>Option+Backspace</strong> (macOS standard "delete word" shortcut) → xóa entire word từ cursor về đầu word, regardless of display state.</li>
+          <li>Then <code>sendString(target)</code> → retype correct word + endingChar.</li>
+          <li>Bypass diff calculation entirely — đúng bất kể display có extra chars hay không.</li>
+        </ul>
+
+        <h3>📊 Trace</h3>
+        <p>"google" trong Notes / Claude desktop:</p>
+        <ul>
+          <li>Display before space (có thể bị bug): "gooogle" hoặc "google" hoặc khác.</li>
+          <li>Option+Backspace: delete word → "" (cursor at word start).</li>
+          <li>sendString "google ": → "google " ✓</li>
+        </ul>
+
+        <h3>⚠️ Limitations</h3>
+        <ul>
+          <li>Option+Backspace cần app support macOS standard shortcut. Hầu hết text apps support.</li>
+          <li>Nếu cursor không ở cuối word (giữa câu), Option+Backspace xóa từ cursor về đầu word hiện tại — vẫn đúng.</li>
+          <li>Áp dụng CHỈ cho <code>restoreRawEnglish</code> path (commit-time English restore). Vietnamese typing không đụng.</li>
+        </ul>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass. Manual test cần ở Notes, Claude desktop, Chrome URL bar, Word, Slack, Discord — xem có còn "gooogle" không.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.14 — "Revert to Stable Baseline"</title>
       <sparkle:version>20314</sparkle:version>
       <sparkle:shortVersionString>2.3.14</sparkle:shortVersionString>

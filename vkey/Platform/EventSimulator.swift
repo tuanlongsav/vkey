@@ -46,6 +46,12 @@ class EventSimulator {
   /// occasionally be blocked long enough to trigger `tapDisabledByTimeout`.
   private static let simulationQueue = DispatchQueue(label: "dev.longht.vkey.eventSimulator", qos: .userInteractive)
 
+  /// v2.3.15: expose dispatch helper for callers (vd InputProcessor commit
+  /// path) cần đặt CGEvent posts vào simulationQueue serial.
+  static func simulationQueueAsync(_ block: @escaping () -> Void) {
+    simulationQueue.async(execute: block)
+  }
+
   /// 2.0 (C4): adaptive flush delay (ms) áp dụng SAU mỗi batch inject —
   /// updated bởi `InputProcessor.changeActiveApp` từ Window Title Rule
   /// `flushDelayMs`. 0 = no delay. Range hợp lệ: 0..500ms.
@@ -207,6 +213,27 @@ class EventSimulator {
         usleep(delayMicroseconds)
       }
     }
+    return true
+  }
+
+  /// v2.3.15: Option+Backspace = delete word (macOS standard). Dùng tại
+  /// commit-time restore để wipe toàn bộ word khỏi display, sau đó retype.
+  /// Bypass diff calculation entirely — đúng bất kể display state ở mức nào
+  /// (CGEvent round-trip có thể đã thêm extra chars trong intermediate steps).
+  @discardableResult
+  static func sendOptionBackspace(source: CGEventSource? = nil) -> Bool {
+    let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
+    guard
+      let source = eventSource,
+      let downEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: true),
+      let upEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: false)
+    else {
+      return false
+    }
+    downEvent.flags = [.maskAlternate, .maskNonCoalesced]
+    upEvent.flags = [.maskAlternate, .maskNonCoalesced]
+    downEvent.post(tap: .cgSessionEventTap)
+    upEvent.post(tap: .cgSessionEventTap)
     return true
   }
 
