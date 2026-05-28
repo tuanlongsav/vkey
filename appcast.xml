@@ -6,6 +6,52 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.19 — "Diagnostic Logging"</title>
+      <sparkle:version>20319</sparkle:version>
+      <sparkle:shortVersionString>2.3.19</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 14:30:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.19/vkey-2.3.19.dmg"
+        sparkle:edSignature="AWNnJ02wtnbg9ZVVZ83cJub+hRZQihbMOHZlnrr5ZNxO2rv5bOX1KoU0t2NCmTZ8jIWH930Qo4VncVfjSG4cBw=="
+        length="8764889"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.3.19 — Diagnostic version</h2>
+        <p><em>User confirm v2.3.18 vẫn lỗi. Hypothesis về spell decision commit path SAI. Cần thấy thực tế dữ liệu để chẩn đoán đúng.</em></p>
+
+        <h3>📝 Diagnostic build</h3>
+        <p>Phiên bản này KHÔNG fix bug — chỉ thêm <code>os_log</code> để capture state thực tại trong production. User chạy Console.app, filter theo subsystem để xem actual values của <code>current</code>, <code>rawInput</code>, decision tại commit-time và transformations tại typing-time.</p>
+
+        <h3>🔍 Cách dùng</h3>
+        <ol>
+          <li>Update vkey lên v2.3.19 qua Sparkle.</li>
+          <li>Mở <strong>Console.app</strong> (Applications → Utilities → Console).</li>
+          <li>Filter: nhập <code>subsystem:dev.longht.vkey</code> vào search box, hoặc click "Action → Include Info Messages".</li>
+          <li>Gõ "google" + space vào ô bất kỳ. Quan sát log dòng <code>SpellCommit:</code> và <code>TypeChar:</code>.</li>
+          <li>Copy các log lines hoặc screenshot, gửi lại để chẩn đoán.</li>
+        </ol>
+
+        <h3>📊 Log format</h3>
+        <p>Sample expected output cho "google" + space:</p>
+        <pre>
+TypeChar: char=g pre= lastT= new=g keys=g
+TypeChar: char=o pre=g lastT=g new=go keys=go
+TypeChar: char=o pre=go lastT=go new=gô keys=goo
+TypeChar: char=g pre=gô lastT=gô new=gôg keys=goog
+TypeChar: char=l pre=gôg lastT=gôg new=googl keys=googl
+TypeChar: char=e pre=googl lastT=googl new=google keys=google
+SpellCommit: rawInput=google current=google endingChar=  spellOn=true
+SpellCommit: SHORT-CIRCUIT (current==rawInput)
+        </pre>
+        <p>Nếu thấy <code>SpellCommit: SHORT-CIRCUIT</code> mà bug vẫn xảy ra → bug ở chỗ khác (typing path). Nếu KHÔNG thấy SHORT-CIRCUIT → current != rawInput, sẽ thấy decision được chọn.</p>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.18 — "Universal Short-Circuit When No Transform"</title>
       <sparkle:version>20318</sparkle:version>
       <sparkle:shortVersionString>2.3.18</sparkle:shortVersionString>

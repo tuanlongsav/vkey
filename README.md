@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.18 — "Universal Short-Circuit When No Transform"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.19 — "Diagnostic Logging"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.3.19** — User confirm v2.3.18 vẫn lỗi. Tất cả hypothesis từ trước SAI. Phiên bản này KHÔNG fix bug — thêm `os_log` để capture state thực tại runtime. User chạy Console.app, filter `subsystem:dev.longht.vkey category:SpellCommit`, gõ "google" + space, gửi log lines lại để chẩn đoán đúng root cause. 217/217 test pass.
 
 > **2.3.18** — User confirm v2.3.17 (short-circuit chỉ restoreRawEnglish) vẫn lỗi. Bug có thể fire qua .suggest hoặc decision path khác. v2.3.18 short-circuit UNIVERSAL ở ENTRY của `applySpellDecisionOnCommit`: nếu `current == rawInput` (vkey chưa transform gì), bypass entire spell decision logic. Real cases (Vietnamese typing với diacritics, English-with-Telex-tones như "text"→"tẽt") vẫn fire spell decision bình thường (current != rawInput). 217/217 test pass.
 

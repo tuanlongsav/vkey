@@ -9,6 +9,11 @@ import AppKit
 import CoreGraphics
 import Defaults
 import Foundation
+import os.log
+
+// v2.3.19: debug log cho spell-commit decisions để diagnose "gooogle" bug.
+// User Console.app: filter `subsystem:dev.longht.vkey category:SpellCommit`.
+private let spellCommitLog = OSLog(subsystem: "dev.longht.vkey", category: "SpellCommit")
 
 // MARK: - Spellcheck & Lexicon Core
 //
@@ -948,7 +953,19 @@ class InputProcessor {
       sentenceJustEnded = false
     }
 
+    let preTransformedLog = transformed
     push(char: newChar)
+    // v2.3.19 DEBUG: log typing-time transformations.
+    os_log(
+      "TypeChar: char=%{public}@ pre=%{public}@ lastT=%{public}@ new=%{public}@ keys=%{public}@",
+      log: spellCommitLog,
+      type: .info,
+      String(newChar),
+      preTransformedLog,
+      lastTransformed,
+      transformed,
+      String(wordBuffer.keys)
+    )
     // v2.3.14: revert v2.3.13 NFD diff. User confirmed still bug
     // "gooogle, foooter ở claude desktop hay bất kỳ đâu" ngay cả v2.3.13
     // → hypothesis "Chromium NFD scalar backspace" SAI.
@@ -1103,6 +1120,17 @@ class InputProcessor {
   ) -> Bool {
     let rawInput = String(wordBuffer.keys)
     let current = wordBuffer.transformed
+    // v2.3.19 DEBUG: log values để diagnose "google → gooogle" bug.
+    // User Console.app filter: subsystem:dev.longht.vkey category:SpellCommit
+    os_log(
+      "SpellCommit: rawInput=%{public}@ current=%{public}@ endingChar=%{public}@ spellOn=%{public}@",
+      log: spellCommitLog,
+      type: .info,
+      rawInput,
+      current,
+      String(endingChar),
+      String(Defaults[.spellCheckEnabled])
+    )
     guard !rawInput.isEmpty, !current.isEmpty else {
       lastSuggestions = []
       return false
@@ -1133,6 +1161,7 @@ class InputProcessor {
     // - Vietnamese typing: "tieengs" → "tiếng" (transformed có dấu, khác raw).
     // - English with Telex tones: "text" → "tẽt" (e+x = nga tone, khác raw).
     if current == rawInput {
+      os_log("SpellCommit: SHORT-CIRCUIT (current==rawInput)", log: spellCommitLog, type: .info)
       lastSuggestions = []
       return false
     }
@@ -1142,6 +1171,13 @@ class InputProcessor {
       rawInput: rawInput,
       transformed: current,
       needsRecovery: needsRecovery
+    )
+    os_log(
+      "SpellCommit: needsRecovery=%{public}@ decision=%{public}@",
+      log: spellCommitLog,
+      type: .info,
+      String(needsRecovery),
+      String(describing: decision)
     )
 
     // 1.5.0: feed every committed word into UsageStatistics. No-op when the

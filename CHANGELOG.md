@@ -2,6 +2,64 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.19] - 2026-05-28 — "Diagnostic Logging"
+
+**User confirm v2.3.18 vẫn lỗi. Tất cả hypothesis từ v2.3.7→v2.3.18 SAI. Cần dữ liệu empirical từ user để chẩn đoán đúng.**
+
+### 🔬 Approach
+
+Phiên bản này KHÔNG fix bug. Thêm `os_log` để capture actual state tại runtime:
+- **Typing time** (`TypeChar`): char nhận, transformed trước/sau push, keys array.
+- **Commit time** (`SpellCommit`): rawInput, current, decision, short-circuit hit.
+
+User chạy Console.app, capture log, gửi lại. Tôi xem actual values và xác định nguyên lý đúng.
+
+### 🔍 Hướng dẫn user
+
+1. Update vkey lên v2.3.19 (Sparkle).
+2. Mở **Console.app** (Applications → Utilities → Console).
+3. Click "Start streaming" + filter subsystem:
+   - Search bar: `subsystem:dev.longht.vkey`
+   - Hoặc Action menu → "Include Info Messages".
+4. Trong app bất kỳ (Notes, Claude desktop…), gõ "google" + space.
+5. Quay lại Console.app, copy hoặc screenshot các dòng log `TypeChar:` và `SpellCommit:`.
+6. Gửi lại để chẩn đoán.
+
+### 📊 Sample log
+
+Expected output cho "google" + space (no bug case):
+
+```
+TypeChar: char=g  pre=     lastT=     new=g       keys=g
+TypeChar: char=o  pre=g    lastT=g    new=go      keys=go
+TypeChar: char=o  pre=go   lastT=go   new=gô      keys=goo
+TypeChar: char=g  pre=gô   lastT=gô   new=gôg     keys=goog
+TypeChar: char=l  pre=gôg  lastT=gôg  new=googl   keys=googl
+TypeChar: char=e  pre=googl lastT=googl new=google keys=google
+SpellCommit: rawInput=google current=google endingChar=  spellOn=true
+SpellCommit: SHORT-CIRCUIT (current==rawInput)
+```
+
+Nếu thấy `SHORT-CIRCUIT` mà bug vẫn xảy ra → typing path đã có corruption. Cần kiểm tra display thực tế qua AX.
+
+Nếu KHÔNG thấy `SHORT-CIRCUIT` → `current != rawInput`, log sẽ cho thấy chính xác giá trị nào khác.
+
+### Trade-off
+
+- KHÔNG fix bug ở v2.3.19.
+- Log output có thể spam Console khi user gõ nhiều — bình thường vì only Info-level và filter dễ.
+- Sẽ remove logs ở next stable version (v2.3.20+) sau khi xác định root cause.
+
+### 🧪 Test
+
+217/217 pass. Logging không thay đổi logic — chỉ thêm `os_log`.
+
+### Bump
+
+`2.3.18 → 2.3.19` / `20318 → 20319`. DMG 8764889 bytes, sig `AWNnJ02wtnbg9ZVVZ83cJub+hRZQihbMOHZlnrr5ZNxO2rv5bOX1KoU0t2NCmTZ8jIWH930Qo4VncVfjSG4cBw==`.
+
+---
+
 ## [2.3.18] - 2026-05-28 — "Universal Short-Circuit When No Transform"
 
 **User confirm v2.3.17 (short-circuit chỉ restoreRawEnglish) vẫn lỗi. v2.3.18 short-circuit ở ENTRY của applySpellDecisionOnCommit, bypass entire spell decision khi current==rawInput.**
