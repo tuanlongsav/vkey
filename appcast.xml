@@ -6,6 +6,64 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.17 — "Short-Circuit Restore When Not Needed"</title>
+      <sparkle:version>20317</sparkle:version>
+      <sparkle:shortVersionString>2.3.17</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 28 May 2026 13:30:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.17/vkey-2.3.17.dmg"
+        sparkle:edSignature="QYn0DHwmAemgIcZO9xyNO06HHGySt9N9pHnOfYchsSG51hQmEX9lrK4mQrzuPD0ahixuBz+7giN3lEIZgB1SBw=="
+        length="8760705"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>Có gì mới trong 2.3.17 — "Short-Circuit Restore When Not Needed":</h2>
+        <p><em>User diagnostic CHÌA KHÓA: "nếu không bật sửa lỗi chính tả thì không bị lỗi google footer, bật thì sẽ bị gooogle foooter". Bug xảy ra CHỈ khi spell check ON. Khi OFF không bug → typing path đúng. Spell check commit path mới gây sai.</em></p>
+
+        <h3>🔬 Root cause</h3>
+        <p>Cho "google" typing:</p>
+        <ul>
+          <li>Typing path: Telex áp "oo→ô" intermediate, recovery khi gặp 'l', cuối cùng <code>transformed = "google"</code> (raw 6 chars).</li>
+          <li>Display ở các bước: "go" → "gô" → "gôg" → recovery → "googl" → "google". ĐÚNG (per user OFF case).</li>
+          <li>Tại space + spell check ON: <code>applySpellDecisionOnCommit</code> fires.</li>
+          <li>evaluate("google", "google", needsRecovery=true) returns <code>.restoreRawEnglish("google")</code> (vì rawIsEnglish=true).</li>
+          <li>vkey chạy Option+Backspace + sendString "google " để "restore raw".</li>
+          <li>NHƯNG current=="google" == restoredWord. Không cần restore!</li>
+          <li>Việc fire restoration logic gây side-effect trong nhiều app → bug "gooogle".</li>
+        </ul>
+
+        <h3>✅ Fix v2.3.17</h3>
+        <p>Short-circuit khi <code>current == restoredWord</code> (đã raw rồi):</p>
+        <pre>
+case .restoreRawEnglish(let restoredWord):
+  if current == restoredWord {
+    return false  // No restoration needed, let endingChar pass through
+  }
+  // Otherwise: do restoration (Option+Backspace + sendString)
+        </pre>
+        <p>Cho "google" + space: current=="google" == restoredWord → return false → handleTaskKey passes through space → display "google " ✓ (same as spell check OFF).</p>
+
+        <h3>🛡️ Restoration vẫn work cho real cases</h3>
+        <ul>
+          <li>"text" Telex → "tẽt" intermediate (e+x = nga tone). Recovery may or may not fire.</li>
+          <li>current="tẽt", restoredWord="text". DIFFERENT → restoration fires → "text".</li>
+          <li>"theme" → "thẽme" → restore → "theme". ✓</li>
+        </ul>
+
+        <h3>📊 So sánh</h3>
+        <table>
+          <tr><th>Case</th><th>current</th><th>restoredWord</th><th>Action</th></tr>
+          <tr><td>"google" + space</td><td>"google"</td><td>"google"</td><td>Short-circuit (no restore needed)</td></tr>
+          <tr><td>"footer" + space</td><td>"footer"</td><td>"footer"</td><td>Short-circuit</td></tr>
+          <tr><td>"text" + space</td><td>"tẽt"</td><td>"text"</td><td>Restore via Option+Backspace</td></tr>
+        </table>
+
+        <h3>🧪 Test</h3>
+        <p>217/217 pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.16 — "Proper Modifier Sequence for Option+Backspace"</title>
       <sparkle:version>20316</sparkle:version>
       <sparkle:shortVersionString>2.3.16</sparkle:shortVersionString>

@@ -2,6 +2,80 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.17] - 2026-05-28 — "Short-Circuit Restore When Not Needed"
+
+**User diagnostic chìa khóa: bug `gooogle/foooter` CHỈ xảy ra khi bật "sửa lỗi chính tả". Tắt → không bug. Fix: short-circuit `restoreRawEnglish` khi không cần restore.**
+
+### 🔬 User diagnostic
+
+> "nếu không bật sửa lỗi chính tả thì không bị lỗi google footer, bật thì sẽ bị gooogle foooter"
+
+→ Bug ở **spell check commit path**, KHÔNG phải typing path hay CGEvent round-trip như tôi đoán trước đây.
+
+### 🔍 Root cause
+
+Cho user typing "google":
+1. **Typing path** (giống nhau bất kể spell check):
+   - Step 3 'o': Telex mu → display "gô".
+   - Step 4 'g': → "gôg".
+   - Step 5 'l': recovery (gôgl không valid Vietnamese) → display "googl", `transformed="googl"`.
+   - Step 6 'e': recovery branch → `transformed="google"` ✓.
+   - **Display khi typing xong: "google"** (per user OFF case).
+
+2. **Commit path** (space):
+   - Spell check OFF: `applySpellDecisionOnCommit` return false → space pass-through → "google ". ✓
+   - Spell check ON: `evaluate("google", "google", needsRecovery=true)`:
+     - rawIsEnglish=true (google in lexicon).
+     - Returns `.restoreRawEnglish("google")`.
+   - vkey chạy Option+Backspace + sendString "google " để "restore raw".
+   - **NHƯNG `current=="google" == restoredWord` rồi**. Không có gì để restore!
+   - Restoration logic vẫn fire → side-effect → bug "gooogle".
+
+### ✅ Fix v2.3.17
+
+Short-circuit khi `current == restoredWord`:
+
+```swift
+case .restoreRawEnglish(let restoredWord):
+  lastSuggestions = []
+  if current == restoredWord {
+    return false  // No restore needed. Let endingChar pass-through.
+  }
+  // Otherwise: do restoration via Option+Backspace + sendString
+  ...
+```
+
+Effect:
+- "google" + space: current=="google" == restoredWord → return false → space pass-through → "google ". ✓
+- Same behavior as spell check OFF.
+
+### 🛡️ Restoration vẫn work cho real cases
+
+Vẫn cần restore khi `current != restoredWord` — như "text" Telex tạo intermediate "tẽt" (e+x = ngã tone). Engine recovery may not always undo. Spell decision fires restoreRawEnglish.
+
+| Case | current | restoredWord | Action |
+|---|---|---|---|
+| "google" + space | "google" | "google" | Short-circuit (no restore) |
+| "footer" + space | "footer" | "footer" | Short-circuit |
+| "text" + space | "tẽt" | "text" | Restore via Option+Backspace |
+| "theme" + space | "thẽme" | "theme" | Restore |
+
+### 📝 Insight
+
+Sau 10+ versions thử các approach về CGEvent injection, NFC/NFD, AX detection, modifier sequences — tất cả failed. **Root cause hóa ra đơn giản hơn nhiều**: code đang chạy restoration khi không cần. User's diagnostic ("spell check ON gây bug, OFF không") đã chỉ thẳng vào commit path.
+
+Bài học: lắng nghe user observation cụ thể trước khi đoán hypothesis kỹ thuật.
+
+### 🧪 Test
+
+217/217 pass.
+
+### Bump
+
+`2.3.16 → 2.3.17` / `20316 → 20317`. DMG 8760705 bytes, sig `QYn0DHwmAemgIcZO9xyNO06HHGySt9N9pHnOfYchsSG51hQmEX9lrK4mQrzuPD0ahixuBz+7giN3lEIZgB1SBw==`.
+
+---
+
 ## [2.3.16] - 2026-05-28 — "Proper Modifier Sequence for Option+Backspace"
 
 **User confirm v2.3.15 vẫn lỗi "gooogle, foooter". Fix: proper modifier press/release sequence cho Option+Backspace.**

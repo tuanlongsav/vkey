@@ -1180,6 +1180,23 @@ class InputProcessor {
 
     case .restoreRawEnglish(let restoredWord):
       lastSuggestions = []
+      // v2.3.17: short-circuit khi current == restoredWord (đã raw rồi, không
+      // cần restore). User confirm bug "google → gooogle" CHỈ xảy ra khi spell
+      // check ON. Trace: cho "google" typing, recovery đã set transformed=
+      // "google" (raw). Tại commit, evaluate returns .restoreRawEnglish("google").
+      // current=="google" == restoredWord → không có gì để restore.
+      //
+      // Vẫn fire restoration logic (Option+Backspace + sendString) gây side-
+      // effect trong nhiều app → bug. Khi current==restoredWord, return false
+      // để space/endingChar pass-through như khi spell check OFF (đã proved
+      // không bug).
+      //
+      // Vẫn giữ restoration cho real cases (vd "text" Telex → "tẽt" → restore
+      // raw "text"). Những case này current != restoredWord nên đi qua path
+      // cũ.
+      if current == restoredWord {
+        return false  // Let endingChar pass through via handleTaskKey/handleTextChar.
+      }
       let target = Self.commitReplacementTarget(
         word: restoredWord,
         endingChar: endingChar,
