@@ -39,6 +39,13 @@ class EventHook {
   var modifierArmedMask: UInt64 = 0  // current latched target, 0 = not armed
   var modifierKeyUsedDuringArm = false
 
+  /// PID of the app that owns the currently active system-wide secure input,
+  /// recorded at the off→on transition. `CGSIsSecureEventInputSet` is global,
+  /// so when a background app keeps a focused password field the flag stays on
+  /// even after the user switches apps. We scope private mode to this owner so
+  /// vkey resumes normal typing in other apps. `nil` while secure input is off.
+  var secureInputOwnerPID: pid_t?
+
   init(inputProcessor: InputProcessor) {
     self.keyLayout = KeyboardUS()
     self.inputProcessor = inputProcessor
@@ -214,7 +221,42 @@ func eventTapCallback(
   // so the user can type their password normally and the app doesn't appear to "eat"
   // keystrokes. We also reset the word buffer at the false→true transition so we don't
   // resume processing with stale state when secure input ends.
-  let isSecureInput = CGSIsSecureEventInputSet()
+  // `CGSIsSecureEventInputSet` is a *system-wide* flag: it stays on while ANY
+  // app (even a background one) keeps a focused password field. Treating that
+  // raw flag as "be private" left vkey stuck in private mode after the user
+  // switched away from the app holding the password window. Instead we scope
+  // private mode to whoever actually owns the secure input right now:
+  //   • record the owning app at the off→on transition;
+  //   • stay private only while that owner is frontmost, OR the frontmost app's
+  //     focused element is itself a secure field (front app opened its own
+  //     password box, so ownership moves to it).
+  // This keeps Terminal `sudo` working (owner == Terminal, exposes no secure
+  // subrole) while following the active app everywhere else.
+  let rawSecureInput = CGSIsSecureEventInputSet()
+  let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+
+  let isSecureInput: Bool
+  if rawSecureInput {
+    if eventHook.secureInputOwnerPID == nil {
+      // First event after secure input turned on (or it was already on at
+      // launch): the frontmost app is the owner.
+      eventHook.secureInputOwnerPID = frontmostPID
+    }
+    if eventHook.secureInputOwnerPID == frontmostPID {
+      isSecureInput = true
+    } else if Focused.isSecureField() {
+      // Front app has its own password field focused — ownership moves to it.
+      eventHook.secureInputOwnerPID = frontmostPID
+      isSecureInput = true
+    } else {
+      // Secure input belongs to a background app; keep typing here.
+      isSecureInput = false
+    }
+  } else {
+    eventHook.secureInputOwnerPID = nil
+    isSecureInput = false
+  }
+
   if let appState = eventHook.appState, appState.secureInputActive != isSecureInput {
     if isSecureInput {
       // Entering secure input: drop any in-progress Vietnamese word so the next

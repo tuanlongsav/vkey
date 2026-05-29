@@ -2,6 +2,35 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.3.22] - 2026-05-29 — "Private Mode Per-App"
+
+**Sửa lỗi chế độ riêng tư (biểu tượng khoá) không bám theo app đang dùng: khi một app có cửa sổ nhập mật khẩu, chuyển sang app khác mà cửa sổ đó vẫn mở thì vkey vẫn kẹt ở chế độ riêng tư, không gõ được tiếng Việt.**
+
+### 🐛 Nguyên nhân
+
+`CGSIsSecureEventInputSet()` là cờ **toàn hệ thống**. Khi một app (kể cả app nền) giữ ô nhập mật khẩu đang focus, cờ này vẫn `true` ngay cả sau khi người dùng chuyển sang app khác. vkey dùng trực tiếp cờ raw này nên kẹt ở chế độ riêng tư.
+
+### ✅ Fix v2.3.22
+
+Gắn chế độ riêng tư vào **app thực sự đang sở hữu** secure input:
+
+- Ghi nhớ PID của app sở hữu (`secureInputOwnerPID`) ngay tại thời điểm cờ bật (off→on).
+- Chỉ giữ chế độ riêng tư khi:
+  - App sở hữu đó đang là **foreground**, **hoặc**
+  - Ô đang focus của app foreground bản thân là ô mật khẩu (subrole `AXSecureTextField`) → quyền sở hữu chuyển sang app mới.
+- Khi cờ tắt → reset owner.
+
+### 📊 Hành vi theo tình huống
+
+- App A mở cửa sổ mật khẩu → khoá. Chuyển sang app B (mật khẩu A vẫn mở) → **vkey gõ lại bình thường ở B**. Quay lại A → khoá lại.
+- App B mở ô mật khẩu riêng → khoá đúng (ownership chuyển sang B).
+- `sudo` trong Terminal vẫn hoạt động đúng (owner = Terminal).
+
+### 📝 Files
+
+- `vkey/Platform/EventHook.swift` — track `secureInputOwnerPID`, scope private mode theo foreground app.
+- `vkey/Platform/Focused.swift` — thêm `Focused.isSecureField()` (kiểm tra subrole `AXSecureTextField`).
+
 ## [2.3.21] - 2026-05-28 — "Telex Cancellation Pattern Detect"
 
 **v2.3.20 fix "google" thành công nhưng "footer" vẫn lỗi vì "footer" không có trong English lexicon. v2.3.21 fix triệt để bằng pattern detection.**

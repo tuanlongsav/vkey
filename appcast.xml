@@ -6,6 +6,34 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.3.22 — "Private Mode Per-App"</title>
+      <sparkle:version>20322</sparkle:version>
+      <sparkle:shortVersionString>2.3.22</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 29 May 2026 17:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.3.22/vkey-2.3.22.dmg"
+        sparkle:edSignature="WEk5CX3zfGBjx9xLUHE/xDPhmANtSNHFSz8/OuxyMPXC9YhL61oiEqvoXuGRT0CLxKLDBs82alLSCS90wTZ1DQ=="
+        length="8780179"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.3.22 — Chế độ riêng tư bám theo app đang dùng</h2>
+        <p><em>Sửa lỗi: vkey vào chế độ riêng tư (biểu tượng khoá) khi có ô nhập mật khẩu, nhưng khi chuyển sang app khác mà cửa sổ mật khẩu vẫn mở thì khoá vẫn giữ — không gõ được tiếng Việt ở app mới.</em></p>
+
+        <h3>🐛 Nguyên nhân</h3>
+        <p><code>CGSIsSecureEventInputSet()</code> là cờ toàn hệ thống: vẫn bật khi một app nền giữ ô mật khẩu đang focus. vkey tưởng vẫn đang trong ô mật khẩu nên kẹt ở chế độ riêng tư.</p>
+
+        <h3>✅ Fix</h3>
+        <ul>
+          <li>Ghi nhớ app sở hữu secure input ngay khi cờ bật.</li>
+          <li>Chỉ giữ chế độ riêng tư khi app đó đang là foreground, hoặc app foreground có ô mật khẩu của chính nó đang focus.</li>
+          <li>Chuyển sang app khác → vkey gõ lại bình thường; quay lại app có ô mật khẩu → khoá lại.</li>
+          <li><code>sudo</code> trong Terminal vẫn hoạt động đúng.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.21 — "Telex Cancellation Pattern Detect"</title>
       <sparkle:version>20321</sparkle:version>
       <sparkle:shortVersionString>2.3.21</sparkle:shortVersionString>

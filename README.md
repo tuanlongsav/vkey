@@ -5,7 +5,7 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.21 — "Telex Cancellation Pattern Detect"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.3.22 — "Private Mode Per-App"** ([CHANGELOG](CHANGELOG.md))
 
 > **2.3.21** — v2.3.20 fix "google" thành công nhưng "footer" vẫn lỗi vì "footer" không có trong English lexicon → `transformedIsEnglish` return false. Fix triệt để hơn: detect Telex mu cancellation pattern (rawInput có 3 nguyên âm liên tiếp `ooo/aaa/eee/uuu/iii` AND collapse triple→double cho ra transformed → keep transformed). Catches mọi English word ngoài lexicon: "foooter→footer", "nooose→noose", "baaad→baad". 218/218 test pass.
 
@@ -120,7 +120,7 @@ Tất cả benchmark hiện tại **dưới ngưỡng** an toàn — engine Swif
 - ✅ Phím tắt linh hoạt: hỗ trợ cả tổ hợp key+modifier (vd `⌃⇧Z`) và **modifier-only** (vd nhấn-thả `⌃⇧` để toggle).
 - ✅ Fix lỗi thanh địa chỉ trình duyệt + Excel autocomplete.
 - ✅ Tương thích Electron / web app (Notion, Slack, Discord…): mặc định dùng **hybrid sending strategy** (backspace delay 800µs) đợi vòng composition. Một số app có per-app override sẵn để chạy ổn định nhất: Claude desktop + terminals (Terminal, iTerm2, Kitty, Ghostty, Warp, Hyper, Tabby, Alacritty) dùng `stepByStep`; Microsoft Office (Word, Excel, PowerPoint, Outlook, OneNote) dùng `hybrid` với backspace delay 1000µs.
-- ✅ Tự bypass khi macOS bật secure input (gõ password an toàn).
+- ✅ Tự bypass khi macOS bật secure input (gõ password an toàn). **v2.3.22+**: chế độ riêng tư (biểu tượng khoá) bám theo app đang dùng — nếu một app giữ ô mật khẩu rồi bạn chuyển sang app khác, vkey gõ lại bình thường ở app mới (chỉ khoá lại khi quay về app có ô mật khẩu, hoặc app hiện tại có ô mật khẩu của riêng nó).
 - ✅ Khởi động cùng macOS (tuỳ chọn).
 - ✅ Hoạt động xuyên QWERTZ / AZERTY / Dvorak (dùng physical key code → mapping QWERTY position cho Telex/VNI).
 - ✅ **Cập nhật trực tiếp (Sparkle Integration)**: Tải và cài đặt trực tiếp bản cập nhật mới nhanh gọn, an toàn. Auto-check khi launch (throttle 1 lần/ngày từ v1.6.0), thông báo banner macOS khi có bản mới.

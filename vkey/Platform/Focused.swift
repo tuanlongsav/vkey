@@ -88,6 +88,25 @@ public struct Focused {
     }
     return false
   }
+
+  /// Whether the currently focused UI element (in the frontmost app) is a
+  /// secure/password text field. Used to decide whether system-wide secure
+  /// input actually belongs to the foreground app — `CGSIsSecureEventInputSet`
+  /// is global and stays on while a *background* app holds a focused password
+  /// field, which would otherwise keep vkey stuck in private mode after the
+  /// user switches away.
+  ///
+  /// Returns `false` when AX can't resolve the focused element. Callers should
+  /// treat that as "front app owns it" only when the front app is already the
+  /// known secure-input owner (e.g. Terminal sudo, which exposes no secure
+  /// subrole) — see `EventHook`.
+  public static func isSecureField() -> Bool {
+    guard let focusedElement = Focused.element() else { return false }
+    if let subrole: String = focusedElement.getAttribute(property: kAXSubroleAttribute) {
+      return subrole == (kAXSecureTextFieldSubrole as String)
+    }
+    return false
+  }
 }
 
 extension AXUIElement {
