@@ -8,20 +8,20 @@ Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự. **
 
 ```
 1.  Implement code changes + build verify clean
-2.  Bump version (MARKETING_VERSION + CURRENT_PROJECT_VERSION trong pbxproj)
+2.  Bump version (MARKETING_VERSION + CURRENT_PROJECT_VERSION trong pbxproj) — **chỉ 2 cấp `MAJOR.MINOR`**, xem quy tắc Section 1
 3.  xcodebuild Release clean build
 4.  Package DMG (hdiutil)
 5.  Sign Sparkle (Tools/sparkle_sign_update.sh) → capture edSignature + length
 6.  Update appcast.xml — thêm item mới ở ĐẦU danh sách (escape `&` → `&amp;` trong title)
 7.  Validate appcast (Tools/validate_appcast.sh) — XML lint pass
-8.  **CHANGELOG.md** — thêm section `## [x.y.z] - YYYY-MM-DD — "Title"` đầu file
+8.  **CHANGELOG.md** — thêm section `## [x.y] - YYYY-MM-DD — "Title"` đầu file
 9.  **🚨 README.md — RÀ SOÁT + CHỈNH SỬA (BLOCKING, BẮT BUỘC từ v1.7.1+)** — xem checklist Section 5b bên dưới
 10. Verify version + signature + length khớp giữa pbxproj ↔ appcast ↔ DMG file size
 11. **Verify README đã update** — `git diff --cached README.md` phải có diff khi version đổi
 12. Commit (`git add -A && git commit`) — message tóm tắt + nhắc đã rà soát README
 13. **Ask user confirm trước khi push** (release là shared action, không tự push)
 14. `git push origin main`
-15. `gh release create vX.Y.Z vkey-X.Y.Z.dmg --title "..." --notes-file <CHANGELOG section>`
+15. `gh release create vX.Y vkey-X.Y.dmg --title "..." --notes-file <CHANGELOG section>`
 16. Verify release asset uploaded với size khớp `length` trong appcast
 ```
 
@@ -38,8 +38,19 @@ Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự. **
 
 ## 1) Nguyên tắc bắt buộc trước khi phát hành
 
-1. `CFBundleVersion` phải **tăng dần tuyệt đối** mỗi release (ví dụ `14100` -> `14200`).
-2. `CFBundleShortVersionString` là version hiển thị (ví dụ `1.4.2`) và phải khớp với appcast.
+### 🔢 Quy tắc đánh version (BẮT BUỘC từ v2.4+): chỉ 2 cấp `MAJOR.MINOR`
+
+- `MARKETING_VERSION` (= `CFBundleShortVersionString`) **chỉ có 2 cấp**: `MAJOR.MINOR` (ví dụ `2.4`, `2.5`, … rồi `3.1`, `3.2`, …).
+- **KHÔNG dùng cấp patch thứ 3** (không `2.4.1`, `2.4.2`, …). Mọi release — kể cả hotfix — đều bump `MINOR` lên 1.
+- Khi sang dòng lớn mới thì bump `MAJOR` và reset `MINOR` về 1 (vd `2.x` → `3.1`).
+- `CURRENT_PROJECT_VERSION` (= `CFBundleVersion`) tính theo công thức **`MAJOR*10000 + MINOR*100`** (patch luôn `00`) để vẫn tăng dần tuyệt đối và liên tục với các build cũ. Ví dụ:
+  - `2.4` → `20400`
+  - `2.5` → `20500`
+  - `3.1` → `30100`
+- Lịch sử trước đây dùng 3 cấp (vd `2.3.22` = build `20322`). Kể từ `2.4` chuyển hẳn sang 2 cấp; build mới (`20400`) vẫn > build cũ (`20322`) nên Sparkle update không bị gãy.
+
+1. `CFBundleVersion` phải **tăng dần tuyệt đối** mỗi release (ví dụ `20322` -> `20400`).
+2. `CFBundleShortVersionString` là version hiển thị **2 cấp** (ví dụ `2.4`) và phải khớp với appcast.
 3. `SUPublicEDKey` trong `vkey/Info.plist` phải khớp với private key dùng để ký update.
 4. File update (`.dmg` hoặc `.zip`) phải có:
    - `sparkle:edSignature` đúng
@@ -71,7 +82,7 @@ Sử dụng script hỗ trợ:
 
 ```bash
 ./Tools/sparkle_sign_update.sh \
-  --archive /path/to/vkey-1.4.2.dmg \
+  --archive /path/to/vkey-2.4.dmg \
   --private-key /Users/longht/Desktop/Claude/vkey/vkey_private_key.key
 ```
 
@@ -97,13 +108,13 @@ Ví dụ:
 
 ```xml
 <item>
-  <title>Version 1.4.2</title>
-  <sparkle:version>14200</sparkle:version>
-  <sparkle:shortVersionString>1.4.2</sparkle:shortVersionString>
+  <title>Version 2.4</title>
+  <sparkle:version>20400</sparkle:version>
+  <sparkle:shortVersionString>2.4</sparkle:shortVersionString>
   <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
   <pubDate>Tue, 19 May 2026 10:00:00 +0700</pubDate>
   <enclosure
-    url="https://github.com/tuanlongsav/vkey/releases/download/v1.4.2/vkey-1.4.2.dmg"
+    url="https://github.com/tuanlongsav/vkey/releases/download/v2.4/vkey-2.4.dmg"
     sparkle:edSignature="..."
     length="..."
     type="application/octet-stream"
@@ -142,16 +153,16 @@ git diff --stat README.md   # Phải có ≥1 dòng
 
 # 4. Commit (message kèm marker "README rà soát ✓"):
 git add -A
-git commit -m "vX.Y.Z ... | README rà soát ✓"
+git commit -m "vX.Y ... | README rà soát ✓"
 
 # 5. Push chỉ sau khi user confirm
 ```
 
 ### Checklist (tick từng dòng)
 
-- [ ] **Version banner** — line ~8: `**Phiên bản hiện tại: X.Y.Z — "Title"**` ↔ MARKETING_VERSION trong pbxproj.
-- [ ] **Lexicon stats** — câu "Bộ từ điển hiện tại (vN — vX.Y.Z+): ... syllables VN + ... từ EN" còn đúng?
-- [ ] **Features list** (section "Chức năng") — tính năng mới của release này đã thêm bullet? Bullet outdated đã sửa/xoá? Version annotation `(vX.Y.Z+)` chính xác?
+- [ ] **Version banner** — line ~8: `**Phiên bản hiện tại: X.Y — "Title"**` ↔ MARKETING_VERSION trong pbxproj.
+- [ ] **Lexicon stats** — câu "Bộ từ điển hiện tại (vN — vX.Y+): ... syllables VN + ... từ EN" còn đúng?
+- [ ] **Features list** (section "Chức năng") — tính năng mới của release này đã thêm bullet? Bullet outdated đã sửa/xoá? Version annotation `(vX.Y+)` chính xác?
 - [ ] **Tab descriptions** — mỗi tab Settings (Chung / Smart Switch / Macro / Chính tả / Thống kê) có khớp UI thực tế? Section reorder/rename đã reflect?
 - [ ] **Button/label rename** — vd "Quản lý từ điển cá nhân" → "Sửa từ điển cá nhân" (v1.7.11), tab labels rút gọn/restore (v1.7.7/v1.7.8). Search README cho tên cũ.
 - [ ] **Menu bar table** — item menu mới? Description khớp wording trong app?
@@ -174,7 +185,7 @@ git commit -m "vX.Y.Z ... | README rà soát ✓"
 1. **Mỗi release commit PHẢI có README diff ≥ 1 dòng** (ít nhất là bump version banner). Nếu không có → STOP, mở README cập nhật.
 2. **Commit message của release** phải kèm chuỗi `README rà soát ✓` để track. Ví dụ:
    ```
-   vX.Y.Z "Title" — short summary
+   vX.Y "Title" — short summary
 
    ... details ...
 
