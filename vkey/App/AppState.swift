@@ -160,6 +160,12 @@ class AppState: ObservableObject, FileMonitorDelegate {
         inputSourceMonitor.start()
     }
 
+    deinit {
+        // Gỡ observer NSWorkspace đã đăng ký trong init để tránh leak nếu
+        // AppState bị tái tạo (observer giữ tham chiếu tới self).
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
+    }
+
     /// 2.0 (B2): xử lý khi user chuyển input source. Khi sang non-Latin IME
     /// (Japanese / Chinese / Korean / Thai / Arabic …) — vkey tự động
     /// disable và nhớ state trước đó. Khi quay về Latin — restore state.

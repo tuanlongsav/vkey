@@ -2,6 +2,28 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.4] - 2026-05-31 — "Gọn nhẹ"
+
+**Tối ưu dung lượng bản cài: tệp chương trình giảm từ ~18 MB xuống ~7 MB, bản tải về (.dmg) giảm ~22% (8.4 MB → 6.6 MB). Không thay đổi tính năng.**
+
+> Từ v2.4, version chuyển sang **2 cấp `MAJOR.MINOR`** theo quy tắc mới trong `RELEASE.md` (build `20400`).
+
+### 📦 Dung lượng
+
+Bản ship trước đây vô tình **không strip symbol** nên binary chứa toàn bộ bảng symbol của thư viện Rust static (`libvkey_core.a`). Đã bật strip cho cấu hình Release:
+
+- `DEPLOYMENT_POSTPROCESSING = YES` + `STRIP_INSTALLED_PRODUCT = YES` + `COPY_PHASE_STRIP = YES` (lưu ý: `COPY_PHASE_STRIP` một mình KHÔNG strip main executable khi `xcodebuild build`).
+- `SWIFT_OPTIMIZATION_LEVEL = -Osize`.
+- Kết quả: binary `vkey` **18.4 MB → ~7.0 MB**; bộ cài `.app` **~22 MB → ~13 MB**. Vẫn sinh `dSYM` nên crash vẫn symbolicate được; Swift runtime metadata + cả 2 kiến trúc (x86_64 + arm64) nguyên vẹn.
+
+### 🐛 Sửa lỗi
+
+- `AppState`: thêm `deinit` gỡ observer `NSWorkspace.didActivateApplication` (trước đây đăng ký trong `init` nhưng không gỡ) — tránh rò rỉ nếu `AppState` bị tái tạo.
+
+### 🔧 Nội bộ
+
+- Rà soát toàn bộ engine gõ (InputProcessor / Rust FFI / TiengVietState) cho loạt nghi vấn bug — xác minh trên code thật đều **an toàn, không cần sửa**. Toàn bộ **218 test pass**.
+
 ## [2.3.22] - 2026-05-29 — "Private Mode Per-App"
 
 **Sửa lỗi chế độ riêng tư (biểu tượng khoá) không bám theo app đang dùng: khi một app có cửa sổ nhập mật khẩu, chuyển sang app khác mà cửa sổ đó vẫn mở thì vkey vẫn kẹt ở chế độ riêng tư, không gõ được tiếng Việt.**

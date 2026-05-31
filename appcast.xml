@@ -6,6 +6,40 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.4 — "Gọn nhẹ"</title>
+      <sparkle:version>20400</sparkle:version>
+      <sparkle:shortVersionString>2.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 31 May 2026 23:55:51 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.4/vkey-2.4.dmg"
+        sparkle:edSignature="izyuRPwsF0lRZDemDKgL2INc8vUCr34T0EhTz4hGyeNUvz2vFp6lv+r6zQOlaRaymRNF5occqYv1BZK+VvCTCQ=="
+        length="6875678"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.4 — Bản cài gọn nhẹ hơn</h2>
+        <p><em>Tối ưu dung lượng bản cài: tệp chương trình giảm từ ~18 MB xuống ~7 MB, bản tải về (.dmg) giảm ~22%. Không thay đổi tính năng — bạn gõ y như cũ, chỉ nhẹ hơn.</em></p>
+
+        <h3>📦 Dung lượng</h3>
+        <ul>
+          <li>Bật strip symbol cho bản Release (bản trước vô tình không strip nên chứa toàn bộ symbol của thư viện Rust).</li>
+          <li>Tối ưu kích thước mã Swift (<code>-Osize</code>).</li>
+          <li>Binary <code>vkey</code>: 18.4 MB → ~7.0 MB; bộ cài .app: ~22 MB → ~13 MB. Vẫn sinh dSYM để chẩn đoán crash.</li>
+        </ul>
+
+        <h3>🐛 Sửa lỗi</h3>
+        <ul>
+          <li>Gỡ một rò rỉ observer nhỏ trong <code>AppState</code> (thêm <code>deinit</code> gỡ NSWorkspace observer).</li>
+        </ul>
+
+        <h3>🔧 Nội bộ</h3>
+        <ul>
+          <li>Rà soát toàn bộ engine gõ (InputProcessor / Rust FFI / TiengVietState) — xác minh an toàn, 218 test pass.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.3.22 — "Private Mode Per-App"</title>
       <sparkle:version>20322</sparkle:version>
       <sparkle:shortVersionString>2.3.22</sparkle:shortVersionString>

@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.3.22 — "Private Mode Per-App"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.4 — "Gọn nhẹ"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.4** — Bản cài gọn nhẹ hơn: bật strip symbol cho cấu hình Release (bản trước vô tình **không** strip nên binary mang theo toàn bộ symbol của thư viện Rust) + `-Osize`. Binary `vkey` **18.4 MB → ~7.0 MB**, bản tải .dmg giảm ~22% (8.4 MB → 6.6 MB). Không đổi tính năng. Thêm `deinit` gỡ NSWorkspace observer trong `AppState` (fix rò rỉ nhỏ). 218/218 test pass. Từ bản này version dùng 2 cấp `MAJOR.MINOR`.
 
 > **2.3.21** — v2.3.20 fix "google" thành công nhưng "footer" vẫn lỗi vì "footer" không có trong English lexicon → `transformedIsEnglish` return false. Fix triệt để hơn: detect Telex mu cancellation pattern (rawInput có 3 nguyên âm liên tiếp `ooo/aaa/eee/uuu/iii` AND collapse triple→double cho ra transformed → keep transformed). Catches mọi English word ngoài lexicon: "foooter→footer", "nooose→noose", "baaad→baad". 218/218 test pass.
 
