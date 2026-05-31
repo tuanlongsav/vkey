@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.4 — "Gọn nhẹ"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.5 — "Không che ô gõ"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.5** — Sửa lỗi HUD gợi ý đoán từ **đè lên dòng đang gõ** (che ô nhập) khi để offset nhỏ / cỡ chữ HUD lớn: ép đáy HUD luôn cách đỉnh caret tối thiểu 6px nên không còn che dòng văn bản. (Với app web/Electron, caret từ Accessibility API có thể lệch ngang — hạn chế riêng của app.)
 
 > **2.4** — Bản cài gọn nhẹ hơn: bật strip symbol cho cấu hình Release (bản trước vô tình **không** strip nên binary mang theo toàn bộ symbol của thư viện Rust) + `-Osize`. Binary `vkey` **18.4 MB → ~7.0 MB**, bản tải .dmg giảm ~22% (8.4 MB → 6.6 MB). Không đổi tính năng. Thêm `deinit` gỡ NSWorkspace observer trong `AppState` (fix rò rỉ nhỏ). 218/218 test pass. Từ bản này version dùng 2 cấp `MAJOR.MINOR`.
 

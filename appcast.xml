@@ -6,6 +6,30 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.5 — "Không che ô gõ"</title>
+      <sparkle:version>20500</sparkle:version>
+      <sparkle:shortVersionString>2.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 01 Jun 2026 00:31:33 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.5/vkey-2.5.dmg"
+        sparkle:edSignature="Lhqxhku9aGzukhHvtFB7TZ7yWLymrUagkUMtY3On+e36gokTVQt75/Rn9krIPQ2lzznh9doXNYStNQrxZNJaCg=="
+        length="6879478"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.5 — HUD đoán từ không còn che ô gõ</h2>
+        <p><em>Sửa lỗi HUD gợi ý đoán từ đè lên dòng đang gõ (che mất ô nhập) khi đặt khoảng cách (offset) nhỏ hoặc dùng cỡ chữ HUD lớn.</em></p>
+
+        <h3>🐛 Sửa lỗi</h3>
+        <ul>
+          <li>Khi đặt HUD phía trên con trỏ, khoảng hở có thể bị tính ra âm → đáy HUD tụt xuống dưới dòng văn bản, che chữ đang gõ. Nay ép HUD luôn cách dòng tối thiểu 6px nên không bao giờ che ô gõ.</li>
+        </ul>
+
+        <p>⚠️ Với một số app web/Electron, tọa độ con trỏ từ Accessibility API có thể không chính xác (HUD lệch ngang) — đó là hạn chế riêng của app, không nằm trong phạm vi fix này.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.4 — "Gọn nhẹ"</title>
       <sparkle:version>20400</sparkle:version>
       <sparkle:shortVersionString>2.4</sparkle:shortVersionString>

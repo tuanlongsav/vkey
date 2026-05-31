@@ -196,6 +196,14 @@ final class PredictionHUDWindow {
       let axTopY = caret.minY
       var hudCocoaBottomY = mainHeight - axTopY + separation - height
 
+      // FIX (che ô gõ): `separation - height` có thể ÂM khi offset nhỏ hoặc
+      // font HUD lớn → đáy HUD tụt xuống DƯỚI đỉnh caret, đè lên dòng đang gõ.
+      // Ép đáy HUD luôn nằm trên đỉnh caret tối thiểu `minCaretGap` px để HUD
+      // không bao giờ che dòng văn bản. (Offset lớn giữ nguyên hành vi cũ.)
+      let caretTopCocoa = mainHeight - axTopY
+      let minCaretGap: CGFloat = 6
+      hudCocoaBottomY = max(hudCocoaBottomY, caretTopCocoa + minCaretGap)
+
       // Flip xuống dưới nếu HUD top edge vượt screen.maxY.
       let hudCocoaTopY = hudCocoaBottomY + height
       if hudCocoaTopY > screen.frame.maxY - 8 {
