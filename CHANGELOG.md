@@ -2,6 +2,19 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.6] - 2026-06-01 — "Đồng bộ ranh giới"
+
+**Sửa lỗi: sau khi nhấn Enter (xuống dòng) rồi nhấn Backspace, vkey có thể khôi phục nhầm từ của dòng trước, gây sai lệch. Nay lịch sử từ được xoá đúng ở ranh giới Enter/Tab.**
+
+### 🐛 Sửa lỗi
+
+- `InputProcessor.handleTaskKey`: trước đây MỌI phím commit (Space/Enter/Tab) đều gọi `newWord(storePrevious: true)`, giữ `previousWordState` cả sau Enter → Backspace-sau-Enter khôi phục từ dòng trước, vượt qua ranh giới xuống dòng (desync). Nay **chỉ Space** giữ history để re-edit; **Enter/Tab** xoá history. Đối chiếu fix của xkey (build 20260504 "clear history after Enter") và gonhanh.org (v1.0.131 "chained restore").
+
+### 🔧 Nội bộ
+
+- **Đối chiếu bản vá upstream**: rà soát release notes gonhanh.org (125 bản) và xkey (42 bản) so với vkey. Phần lớn bug liên quan vkey **đã xử lý sẵn**: watchdog event tap khi macOS vô hiệu hoá (`EventHook`), clear buffer khi nhấn Cmd/Ctrl/Alt, auto-capitalize đầu câu, AX query async ngoài callback, dọn observer (v2.4). Chỉ phát hiện 1 gap thật (ranh giới Enter, ở trên).
+- Thêm 3 test chống hồi quy (nguyên âm lặp toto/mama/papa; Space giữ history; Enter xoá history). **221 test pass** (218 → 221).
+
 ## [2.5] - 2026-06-01 — "Không che ô gõ"
 
 **Sửa lỗi HUD gợi ý đoán từ đè lên dòng đang gõ (che mất ô nhập) khi đặt khoảng cách (offset) nhỏ hoặc dùng cỡ chữ HUD lớn.**

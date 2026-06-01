@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.5 — "Không che ô gõ"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.6 — "Đồng bộ ranh giới"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.6** — Sửa lỗi sau khi nhấn **Enter** (xuống dòng) rồi **Backspace** có thể khôi phục nhầm từ của dòng trước (desync): nay chỉ Space mới giữ lịch sử từ để sửa lại; Enter/Tab xoá lịch sử ở ranh giới. Đối chiếu bản vá của xkey & gonhanh.org — phần lớn lỗi khác vkey đã xử lý sẵn. 221 test pass.
 
 > **2.5** — Sửa lỗi HUD gợi ý đoán từ **đè lên dòng đang gõ** (che ô nhập) khi để offset nhỏ / cỡ chữ HUD lớn: ép đáy HUD luôn cách đỉnh caret tối thiểu 6px nên không còn che dòng văn bản. (Với app web/Electron, caret từ Accessibility API có thể lệch ngang — hạn chế riêng của app.)
 

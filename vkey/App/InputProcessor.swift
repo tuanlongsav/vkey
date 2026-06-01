@@ -873,7 +873,11 @@ class InputProcessor {
         newWord(storePrevious: true)
         return nil
       }
-      newWord(storePrevious: true)
+      // FIX (upstream parity — xkey 20260504 / gonhanh v1.0.131): chỉ Space mới
+      // giữ `previousWordState` để cho phép Backspace re-edit từ vừa commit.
+      // Enter/Tab tạo ranh giới (xuống dòng / chuyển field) → KHÔNG giữ history,
+      // tránh Backspace-sau-Enter khôi phục từ dòng trước gây desync.
+      newWord(storePrevious: taskKey == .Space)
     } else if taskKey == .Escape {
       let orig = String(wordBuffer.keys)
       let currentTransformed = wordBuffer.transformed

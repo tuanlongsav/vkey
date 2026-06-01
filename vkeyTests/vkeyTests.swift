@@ -3120,3 +3120,49 @@ final class UserDataMigrationTests: XCTestCase {
     }
   }
 }
+
+// MARK: - ===========================================
+// MARK: - Upstream Regression Suite (gonhanh.org & xkey)
+// MARK: - ===========================================
+
+/// Đối chiếu các bug fix của gonhanh.org (khaphanspace) & xkey (xmannv) để
+/// chống hồi quy trên vkey. Đặt trong vkeyTests.swift vì project liệt kê file
+/// test thủ công (không synchronized group) — file .swift riêng sẽ KHÔNG được
+/// biên dịch vào target.
+final class UpstreamRegressionTests: XCTestCase {
+
+  private func telex(_ input: String) -> String {
+    let p = InputProcessor(method: .Telex)
+    p.newWord()
+    for c in input { p.push(char: c) }
+    return p.transformed
+  }
+
+  // ③ gonhanh v1.0.144: từ nguyên âm lặp (TOTO, MAMA, PAPA...) bị dư ký tự khi
+  // auto-restore. Phải giữ nguyên, không sinh ký tự thừa.
+  func testRepeatedSyllableWordsNoExtraChar() throws {
+    XCTAssertEqual(telex("toto"), "toto")
+    XCTAssertEqual(telex("lili"), "lili")
+    XCTAssertEqual(telex("haha"), "haha")
+  }
+
+  // ⑦ xkey 20260504 / gonhanh v1.0.131: lịch sử từ phải bị xoá ở ranh giới
+  // (Enter/Tab); chỉ Space mới giữ previousWordState cho re-edit.
+  func testSpaceKeepsHistoryForReedit() throws {
+    var buffer = WordBuffer()
+    let engine = Telex()
+    for c in "chaof" { buffer.push(char: c, engine: engine) }
+    buffer.newWord(storePrevious: true)
+    XCTAssertNotNil(buffer.previousWordState,
+      "Space phải giữ history để Backspace re-edit từ vừa gõ")
+  }
+
+  func testEnterClearsHistoryNoCrossBoundaryRestore() throws {
+    var buffer = WordBuffer()
+    let engine = Telex()
+    for c in "chaof" { buffer.push(char: c, engine: engine) }
+    buffer.newWord(storePrevious: false)
+    XCTAssertNil(buffer.previousWordState,
+      "Enter phải xoá history — tránh Backspace khôi phục từ dòng trước (desync)")
+  }
+}

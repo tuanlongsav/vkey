@@ -6,6 +6,31 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.6 — "Đồng bộ ranh giới"</title>
+      <sparkle:version>20600</sparkle:version>
+      <sparkle:shortVersionString>2.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 01 Jun 2026 08:02:48 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.6/vkey-2.6.dmg"
+        sparkle:edSignature="QxVubJBSYbds0PxU3ni2vTKdERTM/aiX8YtroCEKNXF0IjlbePSFMDN+yEzKhRrzFbtHGK/bLaRcBPYN9h5RCg=="
+        length="6875735"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.6 — Đồng bộ ranh giới câu/dòng</h2>
+        <p><em>Sửa lỗi: sau khi nhấn Enter (xuống dòng) rồi nhấn Backspace, vkey có thể khôi phục nhầm từ của dòng trước. Nay lịch sử từ được xoá đúng ở ranh giới Enter/Tab.</em></p>
+        <h3>🐛 Sửa lỗi</h3>
+        <ul>
+          <li>Chỉ phím Space mới giữ lịch sử từ vừa gõ (để Backspace sửa lại được). Enter/Tab tạo ranh giới mới nên không giữ — tránh khôi phục nhầm từ vượt ranh giới. (Đối chiếu xkey &amp; gonhanh.org.)</li>
+        </ul>
+        <h3>🔧 Nội bộ</h3>
+        <ul>
+          <li>Đối chiếu bản vá gonhanh.org &amp; xkey với vkey — phần lớn vkey đã xử lý sẵn (watchdog event tap, clear buffer khi Cmd, auto-capitalize). Thêm 3 test chống hồi quy. 221 test pass.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.5 — "Không che ô gõ"</title>
       <sparkle:version>20500</sparkle:version>
       <sparkle:shortVersionString>2.5</sparkle:shortVersionString>
