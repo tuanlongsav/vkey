@@ -3166,3 +3166,31 @@ final class UpstreamRegressionTests: XCTestCase {
       "Enter phải xoá history — tránh Backspace khôi phục từ dòng trước (desync)")
   }
 }
+
+// MARK: - ===========================================
+// MARK: - App Sending Strategy Tests
+// MARK: - ===========================================
+
+/// Đảm bảo các app có input model "khó" được map đúng strategy gửi event.
+final class AppSendingStrategyTests: XCTestCase {
+
+  private func isStepByStep(_ bundleId: String) -> Bool {
+    if case .stepByStep = EventSimulator.getStrategy(for: bundleId) { return true }
+    return false
+  }
+
+  // Launchpad / Spotlight search field chạy trong tiến trình Dock
+  // (com.apple.dock). Phải dùng stepByStep — batch/hybrid khiến gõ tiếng Việt
+  // bị loạn (lặp/mất chữ, dấu sai).
+  func testLaunchpadDockUsesStepByStep() throws {
+    XCTAssertTrue(isStepByStep("com.apple.dock"),
+      "Launchpad/Dock search phải dùng stepByStep để gõ tiếng Việt không loạn")
+  }
+
+  // Regression: terminal vẫn stepByStep; app thường vẫn dùng default (không stepByStep).
+  func testTerminalStepByStepAndDefaultUnaffected() throws {
+    XCTAssertTrue(isStepByStep("com.apple.Terminal"))
+    XCTAssertFalse(isStepByStep("com.apple.TextEdit"),
+      "App native thường KHÔNG nên rơi vào stepByStep")
+  }
+}

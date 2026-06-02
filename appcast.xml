@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.7 — "Gõ được trong Launchpad"</title>
+      <sparkle:version>20700</sparkle:version>
+      <sparkle:shortVersionString>2.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 02 Jun 2026 22:54:33 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.7/vkey-2.7.dmg"
+        sparkle:edSignature="XKzfjgmzZdbf5art4BHGAZy4CLeSrmGL55pXiWgrsLU7WT1GqverYRiCzCgTEI5+3ojoDSVstxM8bkN5GuTdCg=="
+        length="6875704"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.7 — Gõ tiếng Việt được trong Launchpad</h2>
+        <p><em>Sửa lỗi gõ tiếng Việt bị loạn (lặp/mất chữ, sai dấu) trong ô tìm kiếm của Launchpad.</em></p>
+        <h3>🐛 Sửa lỗi</h3>
+        <ul>
+          <li>Ô tìm kiếm Launchpad chạy trong tiến trình Dock. vkey nay dùng chiến lược gửi phím "từng phím một" (stepByStep) cho Dock để đồng bộ đúng — không còn loạn chữ.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.6 — "Đồng bộ ranh giới"</title>
       <sparkle:version>20600</sparkle:version>
       <sparkle:shortVersionString>2.6</sparkle:shortVersionString>

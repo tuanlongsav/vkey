@@ -114,6 +114,13 @@ class EventSimulator {
     // Electron apps thường cần stepByStep vì input model phức tạp (composition events
     // không sync với CGEvent injection thông thường).
     AppSendingConfig(bundlePrefix: "com.anthropic.claudefordesktop", strategy: .stepByStep, name: "Claude"),
+
+    // Launchpad / Spotlight search field chạy trong tiến trình Dock. Ô tìm kiếm
+    // này có input model nhạy: batch/hybrid backspace+replace không sync → gõ
+    // tiếng Việt bị loạn (lặp/mất chữ, dấu sai). stepByStep gửi từng phím nên
+    // đồng bộ đúng. (com.apple.Spotlight = tiến trình Spotlight overlay riêng,
+    // mặc định auto English qua Smart Switch; Dock thì không nên vẫn cần fix này.)
+    AppSendingConfig(bundlePrefix: "com.apple.dock", strategy: .stepByStep, name: "Launchpad/Dock"),
   ]
 
   static func getStrategy(for bundleId: String) -> SendingStrategy {

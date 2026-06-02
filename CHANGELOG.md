@@ -2,6 +2,15 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.7] - 2026-06-01 — "Gõ được trong Launchpad"
+
+**Sửa lỗi gõ tiếng Việt bị loạn (lặp/mất chữ, sai dấu) trong ô tìm kiếm của Launchpad.**
+
+### 🐛 Sửa lỗi
+
+- Ô tìm kiếm Launchpad chạy trong tiến trình **Dock** (`com.apple.dock`). vkey trước đây dùng chiến lược gửi phím mặc định (`.hybrid`, gửi cả cụm + delay backspace) — không đồng bộ với input model của Dock nên backspace/thay thế lệch nhịp, gõ tiếng Việt bị loạn. Nay map `com.apple.dock` sang chiến lược **`.stepByStep`** (gửi từng phím một, tương thích nhất — giống Terminal/Electron).
+- Thêm 2 test (`AppSendingStrategyTests`): xác nhận Dock → stepByStep, regression Terminal vẫn stepByStep và app native thường không bị ảnh hưởng. **223 test pass**.
+
 ## [2.6] - 2026-06-01 — "Đồng bộ ranh giới"
 
 **Sửa lỗi: sau khi nhấn Enter (xuống dòng) rồi nhấn Backspace, vkey có thể khôi phục nhầm từ của dòng trước, gây sai lệch. Nay lịch sử từ được xoá đúng ở ranh giới Enter/Tab.**
