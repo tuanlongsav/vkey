@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.9 — "chuyên môn không thành chuyên moon"</title>
+      <sparkle:version>20900</sparkle:version>
+      <sparkle:shortVersionString>2.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 03 Jun 2026 12:42:57 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.9/vkey-2.9.dmg"
+        sparkle:edSignature="bopRkQoGy7u/toxoAmfA+D6XRoZkrHc434J4bW59Ryro21FR/851DWL9uK8B9Kmh+sE8KngW1lQSQQhQbHAFDw=="
+        length="6875768"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.9 — Gõ "chuyên môn" không bị thành "chuyên moon"</h2>
+        <p><em>Mở rộng fix v2.8: rà soát toàn bộ danh sách từ tiếng Anh tự khôi phục, loại thêm các từ mà Telex ra từ tiếng Việt hợp lệ &amp; phổ biến.</em></p>
+        <h3>🐛 Sửa lỗi</h3>
+        <ul>
+          <li>Loại 18 từ: moon→môn, moons, noon→nôn, soon→sôn, meeting→miêng, meetings→miếng, meets→mết, theme→thêm, boots/boost→bốt, loops→lốp, roots→rốt, tee→tê, tree→trê, beer→bể, bono→bôn, cheese→ché, docs→dóc.</li>
+          <li>Giữ lại các từ tiếng Anh phổ biến (this/these/there/see/list/if/of/three…) để gõ Anh xen kẽ vẫn tiện.</li>
+        </ul>
+        <p>Cần gõ các từ tiếng Anh trên dạng raw, thêm vào Personal Dictionary (Allow words) hoặc đổi Restore Policy.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.8 — "quên không thành queen"</title>
       <sparkle:version>20800</sparkle:version>
       <sparkle:shortVersionString>2.8</sparkle:shortVersionString>

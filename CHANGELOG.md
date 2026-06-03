@@ -2,6 +2,20 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.9] - 2026-06-01 — "chuyên môn không thành chuyên moon"
+
+**Mở rộng fix v2.8: rà soát toàn bộ danh sách từ tiếng Anh tự khôi phục, loại thêm các từ mà Telex biến đổi ra từ tiếng Việt hợp lệ & phổ biến (vd "moon"→"môn", "theme"→"thêm").**
+
+### 🐛 Sửa lỗi
+
+- Audit tự động (chạy toàn bộ danh sách instant-restore qua engine Telex thuần, đối chiếu lexicon tiếng Việt) phát hiện 31 từ cùng lớp lỗi với "queen"→"quên" của v2.8. Đã loại **18 từ** mà từ tiếng Việt rõ ràng thông dụng hơn:
+  - `moon→môn` (chuyên môn), `moons→mốn`, `noon→nôn`, `soon→sôn`
+  - `meeting→miêng`, `meetings→miếng`, `meets→mết`, `theme→thêm`
+  - `boots/boost→bốt`, `loops→lốp`, `roots→rốt`, `tee→tê`, `tree→trê`
+  - `beer→bể`, `bono→bôn`, `cheese→ché`, `docs→dóc`
+- **Giữ lại** các từ tiếng Anh phổ biến (this/these/there/see/list/if/of/three) và một số từ Việt hiếm (horses/house/pass…) — để gõ tiếng Anh xen kẽ vẫn tiện. Cần gõ chúng dạng tiếng Việt thì dùng Personal Dictionary hoặc Restore Policy.
+- Thêm test `testCommonVietnameseWordsNotShadowedByEnglish` (10 ca) + regression giữ nhóm tiếng Anh. **226 test pass**.
+
 ## [2.8] - 2026-06-01 — "quên không thành queen"
 
 **Sửa lỗi: ở mode tiếng Việt, gõ Telex "queen" (qu-e-e-n) ra "queen" thay vì "quên".**

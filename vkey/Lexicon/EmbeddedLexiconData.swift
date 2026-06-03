@@ -7221,16 +7221,16 @@ bửa
   }()
 
   static let englishWords: Set<String> = Set([
-    "of", "if", "see", "tee", "text", "expect", "choose", "business", "address", "email",
+    "of", "if", "see", "text", "expect", "choose", "business", "address", "email",
     "long", "example", "com", "view", "list", "about", "keep", "deep", "sleep", "risk",
-    "desk", "disk", "boost", "cursor", "param", "career", "beer", "peer", "sax", "toto",
+    "desk", "disk", "cursor", "param", "career", "peer", "sax", "toto",
     "nurses", "horses", "house", "metric", "off", "class", "pass", "staff",
     "ass", "aff", "arr", "axx", "ajj",
     "they", "them", "their", "then", "there", "these", "this", "that", "those", "than",
     // v2.2.0: vowel-consonant-vowel English words misfiring Telex mũ rule.
     // Pattern: 'e..e', 'a..a', 'o..o' where the second vowel triggers mũ
     // application even though syllable already closed by final consonant.
-    "theme", "themes", "scheme", "schemes", "scene", "scenes",
+    "themes", "scheme", "schemes", "scene", "scenes",
     "phone", "phones", "tone", "tones", "stone", "stones", "throne", "thrones",
     "type", "types", "hype", "ripe", "pipe", "wipe", "wine", "vine", "line", "lines",
     "mine", "fine", "dine", "nine", "prime", "time", "times", "lime", "dime",
@@ -7249,7 +7249,6 @@ bửa
     // E-mid words: 'e' + cons + 'e'
     "here", "where", "there",
     // O-mid words: 'o' + cons + 'o'
-    "bono",
     // 'a' + cons + 'a' (rare but possible)
     "data", "java", "lava",
     // v2.3.8: Common tech/brand + "oo"-pattern English words bị Telex áp
@@ -7260,22 +7259,23 @@ bửa
     // "google sheets" trong Chrome).
     "google", "youtube", "facebook", "twitter", "instagram", "yahoo",
     "amazon", "outlook", "linkedin", "tools", "tool", "sheet", "sheets",
-    "docs", "doc", "spreadsheet", "spreadsheets",
+    "doc", "spreadsheet", "spreadsheets",
     // Common "oo" English words mid-typing dễ trigger Telex mu.
     "good", "goods", "wood", "woods", "look", "looks", "looking",
-    "book", "books", "cook", "cooks", "took", "noon", "soon", "moon",
-    "moons", "boot", "boots", "shoot", "shoots", "root", "roots",
-    "tooth", "teeth", "smooth", "school", "schools", "food", "foods",
-    "mood", "moods", "loop", "loops", "scoop", "scoops",
+    "book", "books", "cook", "cooks", "took", "boot", "shoot", "shoots", "root", "tooth", "teeth", "smooth", "school", "schools", "food", "foods",
+    "mood", "moods", "loop", "scoop", "scoops",
     // Common "ee" English words mid-typing dễ trigger Telex mu.
     "feed", "feeds", "need", "needs", "seed", "seeds", "feet", "meet",
-    "meets", "meeting", "meetings", "week", "weeks", "weekend", "weekends",
-    // "queen"/"queens" đã bỏ khỏi danh sách instant-restore: Telex `queen` →
-    // "quên" là từ tiếng Việt hợp lệ & phổ biến, nên không được đè raw English
-    // khi đang gõ tiếng Việt. (green→grên, screen→scrên… không phải từ VN nên giữ.)
+    "week", "weeks", "weekend", "weekends",
+    // v2.8/v2.9: đã loại các từ EN mà Telex thuần biến đổi ra MỘT TỪ VIỆT HỢP
+    // LỆ & phổ biến — instant-restore không được đè khi đang gõ tiếng Việt:
+    //   queen→quên, queens, moon→môn, moons, noon→nôn, soon→sôn, tee→tê,
+    //   tree→trê, theme→thêm, boots/boost→bốt, beer→bể, bono→bôn, cheese→ché,
+    //   docs→dóc, loops→lốp, roots→rốt, meeting→miêng, meetings→miếng, meets→mết.
+    // Các từ -een khác (green→grên, screen→scrên…) KHÔNG ra từ VN nên giữ.
     "screen", "screens", "green", "greens", "feel",
     "feels", "feeling", "feelings", "wheel", "wheels", "three", "agree",
-    "between", "cheese", "freeze", "free", "tree", "trees",
+    "between", "freeze", "free", "trees",
   ])
 
   /// 1.9.7: từ EN thông dụng có "ow"/"aw"/"ew" mid-word — Telex skip mark

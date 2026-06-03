@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.8 — "quên không thành queen"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.9 — "chuyên môn không thành chuyên moon"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.9** — Mở rộng fix v2.8: rà soát toàn bộ danh sách từ tiếng Anh tự khôi phục, loại thêm 18 từ mà Telex ra **từ tiếng Việt hợp lệ & phổ biến** (moon→môn, theme→thêm, tree→trê, beer→bể…). Giữ lại các từ Anh phổ biến (this/these/three…). 226 test pass.
 
 > **2.8** — Sửa lỗi ở mode tiếng Việt gõ Telex "queen" ra "queen" thay vì **"quên"**: bỏ "queen"/"queens" khỏi danh sách từ tiếng Anh tự khôi phục (vì "quên" là từ tiếng Việt hợp lệ). 225 test pass.
 

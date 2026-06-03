@@ -672,13 +672,14 @@ final class vkeyTests: XCTestCase {
   // combining diacritic (cùng grapheme count nhưng NFD scalar count tăng).
   // Fix: dùng `WordBuffer.shouldAppendRawKey(...)` so sánh NFD scalars.
 
-  /// v2.2.0: bug "theme" → "themee".
-  /// Đầu vào "theme" gõ Telex (English word) → output phải = "theme",
-  /// KHÔNG thừa ký tự. Cùng pattern với "tools" → "toools" — engine
-  /// có thể leak raw key khi `isInstantRestoreEnglish` hit ở mid-word.
+  /// v2.2.0: bug "theme" → "themee" (thừa ký tự). Bản chất bug là engine LEAK
+  /// raw key khi `isInstantRestoreEnglish` hit ở mid-word → output dài hơn input.
+  /// Test này canh giữ điều đó: output KHÔNG được dài hơn input.
+  /// (v2.9: "theme" đã được bỏ khỏi instant-restore → Telex ra "thêm" — vẫn
+  /// thoả ≤ input.count. "scheme/scene/phone/type" vẫn giữ raw English.)
   func testTelex_2_2_0_theme_no_extra_char() throws {
-    XCTAssertEqual(transform_text_telex(for: "theme"), "theme")
-    // Sibling words có pattern e-vowel + consonant + e:
+    XCTAssertEqual(transform_text_telex(for: "theme"), "thêm")  // v2.9: từ VN
+    XCTAssertEqual(transform_text_telex(for: "scheme"), "scheme")
     for input in ["theme", "scheme", "scene", "phone", "type"] {
       let output = transform_text_telex(for: input)
       XCTAssertLessThanOrEqual(
@@ -3218,10 +3219,27 @@ final class EnglishRestoreCollisionTests: XCTestCase {
       "Gõ Telex 'queen' ở mode tiếng Việt phải ra 'quên', không bị đè English")
   }
 
-  // Regression: các từ "-een" khác (transform KHÔNG ra từ VN hợp lệ) vẫn giữ raw
-  // English đúng — không bị ảnh hưởng bởi việc bỏ queen.
+  // v2.9: audit toàn bộ danh sách instant-restore phát hiện thêm 18 từ EN mà
+  // Telex thuần ra từ VIỆT hợp lệ & phổ biến. Đã loại khỏi instant-restore.
+  func testCommonVietnameseWordsNotShadowedByEnglish() throws {
+    XCTAssertEqual(telex("moon"), "môn")       // chuyên môn
+    XCTAssertEqual(telex("noon"), "nôn")
+    XCTAssertEqual(telex("soon"), "sôn")
+    XCTAssertEqual(telex("theme"), "thêm")
+    XCTAssertEqual(telex("meeting"), "miêng")
+    XCTAssertEqual(telex("meets"), "mết")
+    XCTAssertEqual(telex("boots"), "bốt")
+    XCTAssertEqual(telex("tree"), "trê")
+    XCTAssertEqual(telex("beer"), "bể")
+    XCTAssertEqual(telex("loops"), "lốp")
+  }
+
+  // Regression: các từ EN mà transform KHÔNG ra từ VN hợp lệ vẫn giữ raw English.
   func testOtherEenWordsStillRestoreEnglish() throws {
     XCTAssertEqual(telex("green"), "green")
     XCTAssertEqual(telex("screen"), "screen")
+    // Nhóm 2 (giữ lại theo quyết định — từ Anh phổ biến): vẫn restore English.
+    XCTAssertEqual(telex("three"), "three")
+    XCTAssertEqual(telex("these"), "these")
   }
 }
