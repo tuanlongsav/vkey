@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.7 — "Gõ được trong Launchpad"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.8 — "quên không thành queen"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.8** — Sửa lỗi ở mode tiếng Việt gõ Telex "queen" ra "queen" thay vì **"quên"**: bỏ "queen"/"queens" khỏi danh sách từ tiếng Anh tự khôi phục (vì "quên" là từ tiếng Việt hợp lệ). 225 test pass.
 
 > **2.7** — Sửa lỗi gõ tiếng Việt bị loạn (lặp/mất chữ, sai dấu) trong ô tìm kiếm **Launchpad**: ô này chạy trong tiến trình Dock, nay dùng chiến lược gửi phím `stepByStep` (từng phím một) để đồng bộ đúng. 223 test pass.
 

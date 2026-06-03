@@ -2,6 +2,17 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.8] - 2026-06-01 — "quên không thành queen"
+
+**Sửa lỗi: ở mode tiếng Việt, gõ Telex "queen" (qu-e-e-n) ra "queen" thay vì "quên".**
+
+### 🐛 Sửa lỗi
+
+- `"queen"` / `"queens"` nằm trong danh sách 126 từ tiếng Anh **instant-restore** (cùng họ "screen/green/feel"). Telex `queen` → `quên` (ee→ê) — mà **"quên" là từ tiếng Việt hợp lệ & phổ biến** — nhưng instant-restore đè raw "queen" lên. Đã loại `queen`/`queens` khỏi danh sách instant-restore. Các từ "-een" khác (green/screen…) không ra từ Việt hợp lệ nên giữ nguyên.
+- Thêm 2 test: `telex("queen") == "quên"`; regression green/screen vẫn restore English. **225 test pass**.
+
+> Lưu ý: nếu cần gõ từ tiếng Anh "queen", thêm vào Personal Dictionary (Allow words) hoặc đổi Restore Policy.
+
 ## [2.7] - 2026-06-01 — "Gõ được trong Launchpad"
 
 **Sửa lỗi gõ tiếng Việt bị loạn (lặp/mất chữ, sai dấu) trong ô tìm kiếm của Launchpad.**

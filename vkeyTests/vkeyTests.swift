@@ -3194,3 +3194,34 @@ final class AppSendingStrategyTests: XCTestCase {
       "App native thường KHÔNG nên rơi vào stepByStep")
   }
 }
+
+// MARK: - ===========================================
+// MARK: - English Instant-Restore Collision Tests
+// MARK: - ===========================================
+
+/// Đảm bảo danh sách 126 từ instant-restore không "ăn" mất các từ tiếng Việt
+/// hợp lệ khi đang gõ tiếng Việt.
+final class EnglishRestoreCollisionTests: XCTestCase {
+
+  private func telex(_ input: String) -> String {
+    let p = InputProcessor(method: .Telex)
+    p.newWord()
+    for c in input { p.push(char: c) }
+    return p.transformed
+  }
+
+  // BUG: gõ Telex "queen" ở mode tiếng Việt trước đây ra "queen" (instant-restore
+  // English) thay vì "quên" (từ VN hợp lệ). "queen"/"queens" đã bị loại khỏi
+  // danh sách 126 từ instant-restore.
+  func testQueenTypesAsVietnameseQuen() throws {
+    XCTAssertEqual(telex("queen"), "quên",
+      "Gõ Telex 'queen' ở mode tiếng Việt phải ra 'quên', không bị đè English")
+  }
+
+  // Regression: các từ "-een" khác (transform KHÔNG ra từ VN hợp lệ) vẫn giữ raw
+  // English đúng — không bị ảnh hưởng bởi việc bỏ queen.
+  func testOtherEenWordsStillRestoreEnglish() throws {
+    XCTAssertEqual(telex("green"), "green")
+    XCTAssertEqual(telex("screen"), "screen")
+  }
+}

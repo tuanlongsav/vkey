@@ -7270,7 +7270,10 @@ bửa
     // Common "ee" English words mid-typing dễ trigger Telex mu.
     "feed", "feeds", "need", "needs", "seed", "seeds", "feet", "meet",
     "meets", "meeting", "meetings", "week", "weeks", "weekend", "weekends",
-    "screen", "screens", "queen", "queens", "green", "greens", "feel",
+    // "queen"/"queens" đã bỏ khỏi danh sách instant-restore: Telex `queen` →
+    // "quên" là từ tiếng Việt hợp lệ & phổ biến, nên không được đè raw English
+    // khi đang gõ tiếng Việt. (green→grên, screen→scrên… không phải từ VN nên giữ.)
+    "screen", "screens", "green", "greens", "feel",
     "feels", "feeling", "feelings", "wheel", "wheels", "three", "agree",
     "between", "cheese", "freeze", "free", "tree", "trees",
   ])

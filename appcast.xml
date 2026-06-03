@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.8 — "quên không thành queen"</title>
+      <sparkle:version>20800</sparkle:version>
+      <sparkle:shortVersionString>2.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 03 Jun 2026 09:35:57 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.8/vkey-2.8.dmg"
+        sparkle:edSignature="JRIpZXP9WbuEupz5sFQ2c72c8JqvxrrtEri4KacZTxZqdv/yOBTJbnYqM1oTS80glCKuvG+H05xYatAU3ypkAQ=="
+        length="6875782"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.8 — Gõ "quên" không bị thành "queen"</h2>
+        <p><em>Sửa lỗi: ở mode tiếng Việt, gõ Telex "queen" (qu-e-e-n) ra "queen" thay vì "quên".</em></p>
+        <h3>🐛 Sửa lỗi</h3>
+        <ul>
+          <li>Bỏ "queen"/"queens" khỏi danh sách từ tiếng Anh tự khôi phục, vì "quên" là từ tiếng Việt hợp lệ &amp; phổ biến. (Các từ -een khác như green/screen không bị ảnh hưởng.)</li>
+        </ul>
+        <p>Nếu cần gõ từ tiếng Anh "queen", thêm vào Personal Dictionary (Allow words) hoặc đổi Restore Policy.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.7 — "Gõ được trong Launchpad"</title>
       <sparkle:version>20700</sparkle:version>
       <sparkle:shortVersionString>2.7</sparkle:shortVersionString>
