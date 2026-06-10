@@ -2,6 +2,22 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.13] - 2026-06-10 — "w là ư"
+
+**Sửa lỗi: khi TẮT "cho phép âm tiết đầu w/z/j/f", gõ `w` vẫn ra "w" thay vì "ư" (Telex cổ điển).**
+
+### 🐛 Nguyên nhân (2 tầng)
+
+1. Engine Telex chỉ xử lý `w` khi syllable **đã có nguyên âm** (uw→ư, aw→ă, ow→ơ) — thiếu nhánh "w đứng không = ư" của Telex cổ điển.
+2. Bảng impossible-prefix khoá cứng `tw/dw/sw/wr` thành raw English — nên kể cả có nhánh trên, gõ `tw` cũng bị chặn trước khi engine kịp xử lý.
+
+### ✅ Fix v2.13
+
+- Khi `allowedZWJF` TẮT: `w` chưa có nguyên âm → đẩy `u + dấu móc` (cùng đường với `uw`→ư): **`w`→ư, `tw`→tư, `nhw`→như, `twf`→từ, `dwa`→dưa**, `W`→Ư.
+- Các prefix chứa `w` không còn bị coi là "impossible" khi ZWJF tắt (w lúc đó là phím dấu, không phải phụ âm).
+- Khi `allowedZWJF` BẬT (mặc định): không đổi gì — `w` vẫn giữ nguyên để gõ loanword ("web", "word"…).
+- **229 test pass** (+2 test: classic-Telex w khi tắt, regression loanword khi bật).
+
 ## [2.12] - 2026-06-10 — "Spotlight: ghi thẳng, không gửi phím"
 
 **Fix triệt để lỗi ký tự đôi trong Spotlight bằng cách đổi hẳn phương pháp: ghi thẳng nội dung ô text qua Accessibility API thay vì gửi phím giả lập.**

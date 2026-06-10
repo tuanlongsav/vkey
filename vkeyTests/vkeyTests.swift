@@ -3256,3 +3256,47 @@ final class EnglishRestoreCollisionTests: XCTestCase {
     XCTAssertEqual(telex("these"), "these")
   }
 }
+
+// MARK: - ===========================================
+// MARK: - ZWJF-Off Classic Telex Tests (v2.13)
+// MARK: - ===========================================
+
+/// Khi TẮT "cho phép âm tiết đầu w/z/j/f" (`allowedZWJF=false`), w trở thành
+/// phím dấu Telex cổ điển: "w"→ư, "tw"→tư, "nhw"→như. Trước v2.13 w vẫn bị
+/// giữ nguyên là "w" (engine thiếu nhánh w-không-nguyên-âm, và bảng
+/// impossible-prefix khoá "tw/dw/sw/wr" thành raw English).
+final class ZWJFOffTelexTests: XCTestCase {
+
+  private func telex(_ input: String) -> String {
+    let p = InputProcessor(method: .Telex)
+    p.newWord()
+    for c in input { p.push(char: c) }
+    return p.transformed
+  }
+
+  private func withZWJF(_ enabled: Bool, run: () throws -> Void) rethrows {
+    let old = Defaults[.allowedZWJF]
+    Defaults[.allowedZWJF] = enabled
+    defer { Defaults[.allowedZWJF] = old }
+    try run()
+  }
+
+  func testClassicTelexW_whenZWJFOff() throws {
+    try withZWJF(false) {
+      XCTAssertEqual(telex("w"), "ư", "w đứng không phải ra ư khi ZWJF tắt")
+      XCTAssertEqual(telex("W"), "Ư")
+      XCTAssertEqual(telex("tw"), "tư", "tw phải ra tư — prefix 'tw' không được khoá raw")
+      XCTAssertEqual(telex("nhw"), "như")
+      XCTAssertEqual(telex("twf"), "từ")
+      XCTAssertEqual(telex("dwa"), "dưa")
+    }
+  }
+
+  // Regression: ZWJF BẬT (mặc định) → w giữ nguyên cho loanword.
+  func testWStaysRawForLoanwords_whenZWJFOn() throws {
+    try withZWJF(true) {
+      XCTAssertEqual(telex("web"), "web")
+      XCTAssertEqual(telex("w"), "w")
+    }
+  }
+}

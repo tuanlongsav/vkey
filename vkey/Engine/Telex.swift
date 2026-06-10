@@ -5,6 +5,8 @@
 //  Created by KhanhIceTea on 17/02/2024.
 //
 
+import Defaults
+
 /// Telex - Kiểu gõ tiếng Việt phổ biến nhất
 ///
 /// Bảng phím Telex:
@@ -154,6 +156,19 @@ class Telex: TypingMethod {
       default:
         break
       }
+    }
+
+    // v2.13: Telex cổ điển khi allowedZWJF TẮT — w không còn là phụ âm đầu
+    // loanword nên "w" đứng không (chưa có nguyên âm) = ư: "w"→ư, "tw"→tư,
+    // "nhw"→như. Khi allowedZWJF BẬT giữ nguyên w để gõ loanword ("web").
+    // Implement bằng push("u") + muMoc — cùng đường với "uw"→ư nên mọi
+    // transform/validate phía sau hoạt động y hệt.
+    if (char == "w" || char == "W"),
+      thanhPhan.nguyenAm.isEmpty,
+      !Defaults[.allowedZWJF]
+    {
+      let base: Character = (char == "W") ? "U" : "u"
+      return (state.push(base).withMu(.muMoc), true)
     }
 
     // Không áp dụng dấu, thêm ký tự như bình thường

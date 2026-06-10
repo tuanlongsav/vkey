@@ -94,7 +94,13 @@ struct WordBuffer {
     // Rule 2: Impossible 2-letter prefixes
     if keys.count >= 2 {
       let prefix2 = String(keys.prefix(2)).lowercased()
-      if Self.impossible2LetterPrefixes.contains(prefix2) {
+      // v2.13: khi allowedZWJF TẮT (Telex), w là PHÍM DẤU (w→ư, tw→tư, wr→ử)
+      // chứ không phải phụ âm — các cluster chứa w ("tw","dw","sw","wr") không
+      // còn "impossible", phải để engine xử lý thay vì khoá raw English.
+      let wIsTelexMarkKey = !Defaults[.allowedZWJF] && !(engine is VNI)
+      if Self.impossible2LetterPrefixes.contains(prefix2),
+        !(wIsTelexMarkKey && prefix2.contains("w"))
+      {
         return true
       }
     }

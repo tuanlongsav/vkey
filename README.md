@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.12 — "Spotlight: ghi thẳng, không gửi phím"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.13 — "w là ư"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.13** — Khi TẮT "cho phép âm tiết đầu w/z/j/f", `w` giờ hoạt động đúng kiểu Telex cổ điển: **`w`→ư, `tw`→tư, `nhw`→như, `twf`→từ** (trước đây vẫn ra "w" do engine thiếu nhánh w-đứng-không và bảng impossible-prefix khoá `tw/dw/sw/wr`). Khi BẬT (mặc định) không đổi gì — vẫn gõ "web" bình thường. 229 test pass.
 
 > **2.12** — Fix triệt để Spotlight: hoá ra Spotlight **nuốt synthetic backspace bất kể tốc độ** (inline-autocomplete) nên mọi chiến lược gửi phím đều thất bại. Nay vkey **ghi thẳng nội dung ô text qua Accessibility API** (`axDirect` — cùng cách gonhanh.org & xkey dùng): không phím giả lập nào được gửi, retry khi Spotlight bận, fallback an toàn. 227 test pass.
 
