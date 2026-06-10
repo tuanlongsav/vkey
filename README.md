@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.14 — "Spotlight: học từ PHTV"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.15 — "Spotlight gõ được + sửa Opus"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.15** — (1) **Gõ tiếng Việt trong Spotlight cuối cùng đã chuẩn** (hết "goõ tieếng việt"): phát hiện ô Spotlight qua AX role thật rồi ghi thẳng qua Accessibility API (axDirect), không phụ thuộc `eventTargetUnixProcessID` (vốn sai trên macOS 26). (2) **Sửa bug "Opus"→"uOs"** ảnh hưởng mọi app: luật tự-sửa-gõ-nhầm "ou→uo" không còn nuốt phụ âm giữa. 235 test pass.
 
 > **2.14** — Gia cố đường ghi AX-direct cho Spotlight theo kỹ thuật của [PHTV](https://github.com/PhamHungTien/PHTV): verify sau khi ghi (app trả success nhưng không áp), xử lý selection/suffix autocomplete chuẩn, lùi caret theo cụm grapheme (an toàn NFD), fallback post vào HID tap, vá auto-switch đè strategy. Kèm log chẩn đoán. 232 test pass.
 

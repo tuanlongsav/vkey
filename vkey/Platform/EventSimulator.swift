@@ -5,6 +5,7 @@
 //  Created by KhanhIceTea on 27/3/24.
 //
 
+import AppKit
 import ApplicationServices
 import CoreGraphics
 import Defaults
@@ -359,28 +360,96 @@ class EventSimulator {
   ///   với "ari" được select) — phần đó không phải text user gõ, loại bỏ.
   /// - AX trả offset UTF-16; engine đếm grapheme → quy đổi cẩn thận.
   /// - Trả false nếu element không đọc/ghi được → caller fallback synthetic.
-  static func axDirectReplace(backspaceCount: Int, insert: String) -> Bool {
-    let systemWide = AXUIElementCreateSystemWide()
-    // Giới hạn thời gian AX (theo gonhanh v1.0.150) — app đích bận thì fail
-    // nhanh để retry/fallback, không treo simulationQueue.
-    AXUIElementSetMessagingTimeout(systemWide, 0.1)
+  /// v2.15: PID của app đích (đọc từ event.eventTargetUnixProcessID trong
+  /// EventHook). Cần thiết vì trên macOS 26 Tahoe, Spotlight KHÔNG expose
+  /// focused element qua `AXUIElementCreateSystemWide()` (trả nil) — phải đọc
+  /// trực tiếp qua `AXUIElementCreateApplication(pid)`. Verified bằng probe:
+  /// systemwide=nil nhưng app-element cho role=AXTextField, AXValue settable.
+  nonisolated(unsafe) static var axTargetPID: pid_t = 0
 
-    var focusedRef: CFTypeRef?
+  /// v2.15: bundle id các overlay luôn-chạy mà `eventTargetUnixProcessID`
+  /// KHÔNG trả đúng PID trên macOS 26 (verified: Spotlight gửi PID app nền,
+  /// không phải 844). Khi systemwide focus = nil ta tự duyệt các tiến trình
+  /// này, tìm ô search đang focus + ghi được.
+  private static let overlayBundleIds = [
+    "com.apple.Spotlight",
+    "com.apple.systemuiserver",
+    "com.apple.dock",
+  ]
+
+  /// Element focus đọc qua app-element của 1 pid (timeout ngắn, không treo).
+  private static func focusedElement(ofPID pid: pid_t) -> AXUIElement? {
+    guard pid > 0 else { return nil }
+    let appEl = AXUIElementCreateApplication(pid)
+    AXUIElementSetMessagingTimeout(appEl, 0.1)
+    var ref: CFTypeRef?
     guard
-      AXUIElementCopyAttributeValue(
-        systemWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
-      let ref = focusedRef, CFGetTypeID(ref) == AXUIElementGetTypeID()
-    else {
-      os_log("axDirect: no focused element", log: axLog, type: .info)
+      AXUIElementCopyAttributeValue(appEl, kAXFocusedUIElementAttribute as CFString, &ref)
+        == .success,
+      let r = ref, CFGetTypeID(r) == AXUIElementGetTypeID()
+    else { return nil }
+    return (r as! AXUIElement)
+  }
+
+  /// True nếu element là ô text/search nhập được (có AXValue settable).
+  private static func isEditableTextElement(_ el: AXUIElement) -> Bool {
+    var roleRef: CFTypeRef?
+    AXUIElementCopyAttributeValue(el, kAXRoleAttribute as CFString, &roleRef)
+    let role = (roleRef as? String) ?? ""
+    guard role == "AXTextField" || role == "AXTextArea" || role == "AXSearchField"
+            || role == "AXComboBox" else { return false }
+    var settable: DarwinBoolean = false
+    AXUIElementIsAttributeSettable(el, kAXValueAttribute as CFString, &settable)
+    return settable.boolValue
+  }
+
+  /// Lấy focused element để ghi AX:
+  /// 1. system-wide (app thường, nhanh nhất),
+  /// 2. app-element của `axTargetPID` (nếu event cho PID hợp lệ),
+  /// 3. DUYỆT overlay đã biết (Spotlight/Dock/SystemUIServer) — đường CHÍNH cho
+  ///    Spotlight Tahoe vì systemwide=nil và eventTargetPID sai.
+  private static func axFocusedElement() -> AXUIElement? {
+    let systemWide = AXUIElementCreateSystemWide()
+    AXUIElementSetMessagingTimeout(systemWide, 0.1)
+    var focusedRef: CFTypeRef?
+    if AXUIElementCopyAttributeValue(
+         systemWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
+       let ref = focusedRef, CFGetTypeID(ref) == AXUIElementGetTypeID() {
+      return (ref as! AXUIElement)
+    }
+
+    // (2) PID đích từ event — nếu hợp lệ và là ô nhập được.
+    if axTargetPID > 0, let el = focusedElement(ofPID: axTargetPID), isEditableTextElement(el) {
+      os_log("axDirect: focus via target pid=%d", log: axLog, type: .info, axTargetPID)
+      return el
+    }
+
+    // (3) Duyệt overlay đã biết: tìm tiến trình có focused element là ô nhập.
+    for bundleId in overlayBundleIds {
+      for app in NSRunningApplication.runningApplications(withBundleIdentifier: bundleId) {
+        let pid = app.processIdentifier
+        if let el = focusedElement(ofPID: pid), isEditableTextElement(el) {
+          os_log("axDirect: focus via overlay %{public}@ pid=%d",
+                 log: axLog, type: .info, bundleId, pid)
+          return el
+        }
+      }
+    }
+    return nil
+  }
+
+  static func axDirectReplace(backspaceCount: Int, insert: String) -> Bool {
+    guard let element = axFocusedElement() else {
+      os_log("axDirect: no focused element (systemwide + app pid both nil)",
+             log: axLog, type: .default)
       return false
     }
-    let element = ref as! AXUIElement
 
     var valueRef: CFTypeRef?
     guard
       AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueRef) == .success
     else {
-      os_log("axDirect: AXValue unreadable", log: axLog, type: .info)
+      os_log("axDirect: AXValue unreadable", log: axLog, type: .default)
       return false
     }
     let valueStr = (valueRef as? String) ?? ""
@@ -427,7 +496,7 @@ class EventSimulator {
       AXUIElementSetAttributeValue(element, kAXValueAttribute as CFString, newValue as CFTypeRef)
         == .success
     else {
-      os_log("axDirect: AXValue write REFUSED", log: axLog, type: .info)
+      os_log("axDirect: AXValue write REFUSED", log: axLog, type: .default)
       return false
     }
 
@@ -452,7 +521,7 @@ class EventSimulator {
       }
       if attempt == 0 { usleep(2000) }
     }
-    os_log("axDirect: verify FAILED (write not applied)", log: axLog, type: .info)
+    os_log("axDirect: verify FAILED (write not applied)", log: axLog, type: .default)
     return false
   }
 
@@ -479,7 +548,7 @@ class EventSimulator {
     backspaceCount: Int, diffChars: [Character], source: CGEventSource
   ) {
     os_log("axDirect: fallback synthetic (HID tap), bs=%d diff=%d",
-           log: axLog, type: .info, backspaceCount, diffChars.count)
+           log: axLog, type: .default, backspaceCount, diffChars.count)
     func postHID(_ event: CGEvent?) {
       guard let event else { return }
       event.flags = .maskNonCoalesced
@@ -507,6 +576,35 @@ class EventSimulator {
     }
   }
 
+  /// v2.15 (đơn giản hoá): true khi systemwide AX KHÔNG thấy focused element.
+  /// Trên macOS, app thường luôn cho systemwide focus → false (không đụng).
+  /// Spotlight/overlay làm systemwide trả nil → true → ép axDirect; bên trong
+  /// `axDirectReplace` tự duyệt overlay tìm ô search + ghi (có verify + fallback
+  /// HID nên app thường lỡ nil cũng an toàn). Rẻ: chỉ 1 AX call.
+  /// v2.15 (CHỐT): override axDirect khi focused element (system-wide) là ô
+  /// SEARCH/TEXT của overlay nuốt synthetic backspace (Spotlight).
+  /// FACT (file-diag trên máy thật): trong vkey, `AXUIElementCreateSystemWide`
+  /// + focused TRẢ VỀ AXTextField của Spotlight (err=0) — KHÔNG nil như script
+  /// ngoài. Nên không thể gate theo "systemwide nil"; phải kiểm tra: focused
+  /// element thuộc tiến trình overlay đã biết + role text/search.
+  private static func overlaySearchIsFocused() -> Bool {
+    let systemWide = AXUIElementCreateSystemWide()
+    AXUIElementSetMessagingTimeout(systemWide, 0.05)
+    var ref: CFTypeRef?
+    guard AXUIElementCopyAttributeValue(
+            systemWide, kAXFocusedUIElementAttribute as CFString, &ref) == .success,
+          let r = ref, CFGetTypeID(r) == AXUIElementGetTypeID()
+    else { return false }
+    let el = r as! AXUIElement
+    // PID của focused element → có phải overlay đã biết (Spotlight/Dock…)?
+    var pid: pid_t = 0
+    guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return false }
+    let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
+    let isOverlay = overlayBundleIds.contains { bundle == $0 || bundle.hasPrefix($0) }
+    guard isOverlay else { return false }
+    return isEditableTextElement(el)
+  }
+
   static func sendReplacement(
     backspaceCount: Int,
     diffChars: [Character],
@@ -522,7 +620,16 @@ class EventSimulator {
       )
     }
 
-    switch strategy {
+    // v2.15: nếu strategy KHÔNG phải axDirect nhưng ô đang focus là search/text
+    // field của overlay (Spotlight…) — vốn nuốt synthetic backspace → ép
+    // axDirect. Phát hiện qua AX role+bundle thật (không phụ thuộc
+    // eventTargetUnixProcessID, vốn không trả đúng PID Spotlight trên macOS 26).
+    var effectiveStrategy = strategy
+    if case .axDirect = strategy {} else if overlaySearchIsFocused() {
+      effectiveStrategy = .axDirect
+    }
+
+    switch effectiveStrategy {
     case .batch:
       // 1.5.0: even .batch now dispatches to simulationQueue so the event tap
       // callback never blocks. Ordering with the user's next keystroke is

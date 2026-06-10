@@ -1104,9 +1104,9 @@ class InputProcessor {
   /// For tiny diffs (common during Telex tone mutation), force immediate batch sending
   /// to avoid async reordering with the next keystroke (e.g. "push" -> "pussh").
   private func effectiveTypingStrategy(backspaceCount: Int, diffCharCount: Int) -> SendingStrategy {
-    // v2.12: axDirect KHÔNG được downgrade — đa số transform dấu tiếng Việt là
-    // bs=1+diff=1 (vd "go"+x → xoá "o", chèn "õ"); downgrade về .batch sẽ gửi
-    // synthetic event vào Spotlight và loạn chữ trở lại.
+    // axDirect (set qua bundle-id getStrategy) KHÔNG được downgrade — đa số
+    // transform dấu là bs=1+diff=1; downgrade về .batch sẽ gửi synthetic event
+    // vào Spotlight và loạn chữ trở lại.
     if case .axDirect = strategyTracker.currentStrategy {
       return .axDirect
     }

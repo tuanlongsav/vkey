@@ -144,6 +144,7 @@ enum TiengVietParser {
     // Gate: không áp cho loanword-initial (w/z/j/f) — vd "weight" KHÔNG nên thành "wieght".
     if result.nguyenAm.count == 1,
       result.nguyenAm[0].lowercased() == "e",
+      result.phuAmCuoi.isEmpty,
       let firstLeftover = result.conLai.first,
       firstLeftover.lowercased() == "i",
       !startsWithForeignConsonant(result.phuAmDau)
@@ -167,8 +168,12 @@ enum TiengVietParser {
     // "ou" is not a valid Vietnamese vowel group, so vowel trie parses "o"
     // leaving "u" in conLai.
     // Gate: không áp cho loanword (vd "four", "journey" KHÔNG nên thành "fuor", "juorney").
+    // v2.15 FIX: chỉ áp khi KHÔNG có phụ âm cuối chen giữa. Gõ "opu" → parser
+    // cho o=nguyênÂm, p=phụÂmCuối, u=conLai; nếu reparse "uo" sẽ NUỐT mất 'p'
+    // → "opu" thành "uo" (bug "Opus"→"uOs"). "bous" thì phuAmCuoi rỗng nên OK.
     if result.nguyenAm.count == 1,
       result.nguyenAm[0].lowercased() == "o",
+      result.phuAmCuoi.isEmpty,
       let firstLeftover = result.conLai.first,
       firstLeftover.lowercased() == "u",
       !startsWithForeignConsonant(result.phuAmDau)
@@ -191,6 +196,7 @@ enum TiengVietParser {
     if result.nguyenAm.count == 2,
       result.nguyenAm[0].lowercased() == "a",
       result.nguyenAm[1].lowercased() == "o",
+      result.phuAmCuoi.isEmpty,
       let firstLeftover = result.conLai.first,
       firstLeftover.lowercased() == "i",
       !startsWithForeignConsonant(result.phuAmDau)

@@ -3239,7 +3239,10 @@ final class EnglishRestoreCollisionTests: XCTestCase {
     XCTAssertEqual(telex("noon"), "nôn")
     XCTAssertEqual(telex("soon"), "sôn")
     XCTAssertEqual(telex("theme"), "thêm")
-    XCTAssertEqual(telex("meeting"), "miêng")
+    // v2.15: "meeting" giờ ra "meeting" (giữ tiếng Anh) thay vì "miêng" —
+    // fix typo-correction "ei→ie" không còn nuốt phụ âm cuối "t" (cùng class
+    // bug "Opus→uOs"). "miêng" vốn không phải từ Việt chuẩn nên đây là cải thiện.
+    XCTAssertEqual(telex("meeting"), "meeting")
     XCTAssertEqual(telex("meets"), "mết")
     XCTAssertEqual(telex("boots"), "bốt")
     XCTAssertEqual(telex("tree"), "trê")
@@ -3326,5 +3329,40 @@ final class AXDeleteStartTests: XCTestCase {
   func testClampsAtZeroAndHandlesEmptyValue() throws {
     XCTAssertEqual(EventSimulator.axDeleteStart("", caretUTF16: 0, backspaceCount: 3), 0)
     XCTAssertEqual(EventSimulator.axDeleteStart("ab", caretUTF16: 2, backspaceCount: 99), 0)
+  }
+}
+
+
+// MARK: - ===========================================
+// MARK: - Vowel Typo-Correction Final-Consonant Guard (v2.15)
+// MARK: - ===========================================
+
+/// Typo-correction "ou→uo" / "ei→ie" / "aoi→oai" KHÔNG được nuốt phụ âm cuối.
+/// Bug "Opus"→"uOs": gõ "opu" cho o=nguyênÂm, p=phụÂmCuối, u=conLai; reparse
+/// "uo" nuốt mất 'p'. Fix: chỉ reparse khi phuAmCuoi rỗng.
+final class VowelTypoFinalConsonantTests: XCTestCase {
+  private func telex(_ s: String) -> String {
+    let p = InputProcessor(method: .Telex); p.newWord()
+    for c in s { p.push(char: c) }
+    return p.transformed
+  }
+
+  func testOpusNotMangled() throws {
+    XCTAssertEqual(telex("opu"), "opu", "o + phụ âm cuối p + u: KHÔNG được thành 'uo'")
+    XCTAssertEqual(telex("opus"), "opus")
+    XCTAssertEqual(telex("Opus"), "Opus")
+    XCTAssertEqual(telex("OPUS"), "OPUS")
+  }
+
+  // Regression: "bous"→"buốt" path (phuAmCuoi rỗng) PHẢI vẫn hoạt động.
+  func testBuosStillWorks() throws {
+    // "buoocs" = buôc + sắc → "buốc"; "bous" reparse uo cho phép gõ "buốt"
+    XCTAssertEqual(telex("buoojt"), "buột", "uo + mũ + nặng + t = buột (path uo vẫn sống)")
+    XCTAssertEqual(telex("muoons"), "muốn")
+  }
+
+  // Regression: "veit"→"việt" path (phuAmCuoi rỗng khi reparse) vẫn hoạt động.
+  func testVeitStillWorks() throws {
+    XCTAssertEqual(telex("vieetj"), "việt")
   }
 }

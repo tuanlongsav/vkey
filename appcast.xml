@@ -6,6 +6,31 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.15 — "Spotlight gõ được + sửa Opus"</title>
+      <sparkle:version>21500</sparkle:version>
+      <sparkle:shortVersionString>2.15</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 10 Jun 2026 22:59:09 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.15/vkey-2.15.dmg"
+        sparkle:edSignature="TFJ3x757bOQamX0Vmc9h/lSsnASSSzFcaWXIYy/uY2nejJENfBRKd3OsqZLSlwsUb7lWrJHYPPnIH4Mvs6ceAg=="
+        length="6890835"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.15 — Gõ tiếng Việt trong Spotlight + sửa lỗi "Opus"</h2>
+        <h3>🐛 Spotlight</h3>
+        <ul>
+          <li>Gõ tiếng Việt trong ô tìm kiếm Spotlight cuối cùng đã chuẩn (hết "goõ tieếng việt"). Giải pháp: ghi thẳng vào ô qua Accessibility API, nhận diện ô Spotlight qua role thật thay vì PID (vốn sai trên macOS 26).</li>
+        </ul>
+        <h3>🐛 Bug "Opus" → "uOs" (mọi app)</h3>
+        <ul>
+          <li>Gõ "Opus" / "opu" trước đây bị nuốt phụ âm giữa thành "uOs"/"uo". Đã sửa luật tự-sửa-gõ-nhầm để không nuốt phụ âm cuối. Các từ tiếng Việt thật (buột, muốn, việt) giữ nguyên.</li>
+        </ul>
+        <p>⚠️ Sau update, nếu vkey hiện cảnh báo quyền Trợ năng: System Settings → Privacy &amp; Security → Accessibility → tắt/bật lại vkey.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.14 — "Spotlight: học từ PHTV"</title>
       <sparkle:version>21400</sparkle:version>
       <sparkle:shortVersionString>2.14</sparkle:shortVersionString>

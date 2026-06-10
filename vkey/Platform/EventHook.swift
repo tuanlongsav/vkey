@@ -348,15 +348,13 @@ func eventTapCallback(
     if type == .keyDown || type == .leftMouseDown || type == .rightMouseDown {
       let targetPID = pid_t(event.getIntegerValueField(.eventTargetUnixProcessID))
       if targetPID > 0 {
+        // v2.15: cập nhật PID đích cho axDirect (đường fallback khi system-wide
+        // không cho focused element).
+        EventSimulator.axTargetPID = targetPID
         if targetPID != eventHook.lastEventTargetPID {
           eventHook.lastEventTargetPID = targetPID
           eventHook.lastEventTargetBundleId =
             NSRunningApplication(processIdentifier: targetPID)?.bundleIdentifier
-          // v2.14: log chẩn đoán — xác minh PID detection nhận diện đúng
-          // overlay (Spotlight) trên máy thật qua `log stream`.
-          os_log("event target → %{public}@ (pid %d)",
-                 log: hookLog, type: .info,
-                 eventHook.lastEventTargetBundleId ?? "(nil)", targetPID)
         }
         if let bid = eventHook.lastEventTargetBundleId, bid != input.activeApp {
           input.changeActiveApp(bid)
