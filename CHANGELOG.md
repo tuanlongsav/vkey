@@ -2,6 +2,22 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.14] - 2026-06-10 — "Spotlight: học từ PHTV"
+
+**Gia cố đường ghi AX-direct cho Spotlight theo các kỹ thuật của [PHTV](https://github.com/PhamHungTien/PHTV) (Phạm Hùng Tiến) — cảm ơn dự án mã nguồn mở.**
+
+> Lưu ý: nếu bạn báo "vẫn lỗi Spotlight" khi đang ở v2.11 — bản đó CHƯA có fix AX-direct (v2.12+). Hãy cập nhật và thử lại.
+
+### 🛠 Gia cố (theo PHTV)
+
+- **Verify sau khi ghi**: một số app trả success nhưng áp thay đổi async hoặc âm thầm bỏ — nay đọc lại giá trị và so sánh (chuẩn hoá NFC, 2 lần) trước khi coi là thành công; fail → retry/fallback.
+- **Xử lý selection chuẩn**: phân biệt bôi đen giữa text (thay đúng vùng chọn) vs **suffix autocomplete ở cuối** (Spotlight tự select phần gợi ý — xoá luôn trong cùng một lần replace).
+- **Lùi caret theo cụm grapheme** (`rangeOfComposedCharacterSequence`) — an toàn với app lưu NFD (ô = o + dấu rời).
+- **Fallback post vào HID tap** (`.cghidEventTap`) thay vì session tap — Spotlight xử lý event mức HID đáng tin hơn.
+- Vá lỗ hổng auto-switch strategy có thể đè `axDirect` → `stepByStep` (vô hiệu hoá fix).
+- Thêm log chẩn đoán (`log stream --predicate 'subsystem == "dev.longht.vkey"' --info`) để soi trực tiếp khi cần.
+- **232 test pass** (+3 test grapheme-safe delete).
+
 ## [2.13] - 2026-06-10 — "w là ư"
 
 **Sửa lỗi: khi TẮT "cho phép âm tiết đầu w/z/j/f", gõ `w` vẫn ra "w" thay vì "ư" (Telex cổ điển).**

@@ -9,6 +9,11 @@ import ApplicationServices
 import CoreGraphics
 import Defaults
 import Foundation
+import os.log
+
+/// v2.14: log chẩn đoán đường AX-direct (Spotlight) — xem bằng:
+/// `log stream --predicate 'subsystem == "dev.longht.vkey"' --info`
+private let axLog = OSLog(subsystem: "dev.longht.vkey", category: "AXDirect")
 
 /// Strategy for sending keyboard events to replace text.
 enum SendingStrategy {
@@ -365,75 +370,141 @@ class EventSimulator {
       AXUIElementCopyAttributeValue(
         systemWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
       let ref = focusedRef, CFGetTypeID(ref) == AXUIElementGetTypeID()
-    else { return false }
+    else {
+      os_log("axDirect: no focused element", log: axLog, type: .info)
+      return false
+    }
     let element = ref as! AXUIElement
 
     var valueRef: CFTypeRef?
     guard
       AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueRef) == .success
-    else { return false }
-    let fullText = (valueRef as? String) ?? ""
+    else {
+      os_log("axDirect: AXValue unreadable", log: axLog, type: .info)
+      return false
+    }
+    let valueStr = (valueRef as? String) ?? ""
+    let valueNS = valueStr as NSString
+    let valueLength = valueNS.length
 
+    // Caret + selection (offset UTF-16). Thiếu range → coi caret ở cuối.
+    var caret = valueLength
+    var selLen = 0
     var rangeRef: CFTypeRef?
-    guard
-      AXUIElementCopyAttributeValue(
-        element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
-      let rangeValue = rangeRef, CFGetTypeID(rangeValue) == AXValueGetTypeID()
-    else { return false }
-    var range = CFRange()
-    guard AXValueGetValue(rangeValue as! AXValue, .cfRange, &range), range.location >= 0
-    else { return false }
+    if AXUIElementCopyAttributeValue(
+         element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
+       let rv = rangeRef, CFGetTypeID(rv) == AXValueGetTypeID() {
+      var sel = CFRange()
+      if AXValueGetValue(rv as! AXValue, .cfRange, &sel), sel.location >= 0 {
+        caret = min(sel.location, valueLength)
+        selLen = max(0, sel.length)
+      }
+    }
 
-    let utf16 = Array(fullText.utf16)
-    let cursorUTF16 = min(range.location, utf16.count)
-
-    // Text user đã gõ = phần trước con trỏ. Suffix giữ lại = phần sau con trỏ
-    // KHÔNG được select (selection > 0 nghĩa là suggestion autocomplete → bỏ).
-    let beforeCursor = String(decoding: utf16[..<cursorUTF16], as: UTF16.self)
-    let suffix: String
-    if range.length > 0 {
-      suffix = ""
+    // Vùng thay thế (theo PHTV PHTVAccessibilityService):
+    // - selection GIỮA text (user bôi đen) → thay đúng vùng select.
+    // - selection Ở CUỐI (suffix autocomplete Spotlight, vd "saf|ari") →
+    //   xoá [deleteStart, caret) + cả suffix trong cùng một lần replace.
+    var start = caret
+    var len = 0
+    let selectionAtEnd = selLen > 0 && (caret + selLen == valueLength)
+    if selLen > 0 && !selectionAtEnd {
+      start = caret
+      len = selLen
     } else {
-      suffix = String(decoding: utf16[cursorUTF16...], as: UTF16.self)
+      let deleteStart = axDeleteStart(valueStr, caretUTF16: caret, backspaceCount: backspaceCount)
+      start = deleteStart
+      len = (caret - deleteStart) + (selectionAtEnd ? selLen : 0)
     }
+    if start + len > valueLength { len = valueLength - start }
+    if len < 0 { len = 0 }
 
-    let keepCount = max(0, beforeCursor.count - backspaceCount)
-    let prefixEnd = beforeCursor.index(beforeCursor.startIndex, offsetBy: keepCount)
-    let prefix = String(beforeCursor[..<prefixEnd])
+    let insertNFC = insert.precomposedStringWithCanonicalMapping
+    let newValue = valueNS.replacingCharacters(
+      in: NSRange(location: start, length: len), with: insertNFC)
 
-    let newText = (prefix + insert + suffix).precomposedStringWithCanonicalMapping
     guard
-      AXUIElementSetAttributeValue(element, kAXValueAttribute as CFString, newText as CFTypeRef)
+      AXUIElementSetAttributeValue(element, kAXValueAttribute as CFString, newValue as CFTypeRef)
         == .success
-    else { return false }
-
-    // Đặt con trỏ ngay sau text vừa chèn (offset UTF-16).
-    var newCursor = CFRange(
-      location: prefix.utf16.count + insert.precomposedStringWithCanonicalMapping.utf16.count,
-      length: 0)
-    if let newRange = AXValueCreate(.cfRange, &newCursor) {
-      AXUIElementSetAttributeValue(
-        element, kAXSelectedTextRangeAttribute as CFString, newRange)
+    else {
+      os_log("axDirect: AXValue write REFUSED", log: axLog, type: .info)
+      return false
     }
-    return true
+
+    // Đặt con trỏ ngay sau text vừa chèn.
+    var newSel = CFRange(location: start + (insertNFC as NSString).length, length: 0)
+    if let newRange = AXValueCreate(.cfRange, &newSel) {
+      AXUIElementSetAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, newRange)
+    }
+
+    // v2.14 (theo PHTV): VERIFY khi có xoá — một số app trả success nhưng áp
+    // async hoặc âm thầm bỏ. Không verify thì tưởng thành công trong khi field
+    // không đổi → "vẫn lỗi" mà không có dấu vết.
+    guard backspaceCount > 0 else { return true }
+    let wantNFC = newValue.precomposedStringWithCanonicalMapping
+    for attempt in 0..<2 {
+      var vRef: CFTypeRef?
+      if AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &vRef) == .success {
+        let gotNFC = ((vRef as? String) ?? "").precomposedStringWithCanonicalMapping
+        if gotNFC == wantNFC { return true }
+        // Spotlight có thể đã gắn lại suffix autocomplete mới sau khi ghi.
+        if selectionAtEnd && gotNFC.hasPrefix(wantNFC) { return true }
+      }
+      if attempt == 0 { usleep(2000) }
+    }
+    os_log("axDirect: verify FAILED (write not applied)", log: axLog, type: .info)
+    return false
   }
 
-  /// Fallback khi AX ghi fail 3 lần (port `injectViaAutocomplete` của gonhanh):
-  /// ForwardDelete xoá suggestion đang auto-select → backspace chậm → text.
+  /// Lùi từ caret `backspaceCount` "phím xoá" trong không gian UTF-16, coi mỗi
+  /// cụm grapheme (base + combining marks, surrogate pair) là MỘT đơn vị —
+  /// an toàn với app lưu text dạng NFD (ô = o + ◌̂).
+  static func axDeleteStart(_ value: String, caretUTF16: Int, backspaceCount: Int) -> Int {
+    guard backspaceCount > 0, caretUTF16 > 0 else { return max(0, caretUTF16) }
+    let ns = value as NSString
+    var idx = min(caretUTF16, ns.length)
+    for _ in 0..<backspaceCount {
+      guard idx > 0 else { break }
+      idx = ns.rangeOfComposedCharacterSequence(at: idx - 1).location
+    }
+    return idx
+  }
+
+  /// Fallback khi AX fail 3 lần: ForwardDelete xoá suggestion đang auto-select
+  /// (gonhanh) → backspace chậm → text từng ký tự. v2.14: post vào HID TAP
+  /// (`.cghidEventTap`, theo PHTV `postToHIDTapEnabled`) — Spotlight xử lý
+  /// event mức HID đáng tin hơn session tap. Event dùng `.privateState` nên
+  /// vẫn bị tap của vkey bỏ qua (eventSourceStateID != 1), không loop.
   private static func sendSpotlightFallback(
     backspaceCount: Int, diffChars: [Character], source: CGEventSource
   ) {
-    if let dn = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.forwardDelete, keyDown: true),
-       let up = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.forwardDelete, keyDown: false) {
-      dn.flags = .maskNonCoalesced
-      up.flags = .maskNonCoalesced
-      dn.post(tap: .cgSessionEventTap)
-      up.post(tap: .cgSessionEventTap)
+    os_log("axDirect: fallback synthetic (HID tap), bs=%d diff=%d",
+           log: axLog, type: .info, backspaceCount, diffChars.count)
+    func postHID(_ event: CGEvent?) {
+      guard let event else { return }
+      event.flags = .maskNonCoalesced
+      event.post(tap: .cghidEventTap)
     }
+    postHID(CGEvent(keyboardEventSource: source, virtualKey: KeyCode.forwardDelete, keyDown: true))
+    postHID(CGEvent(keyboardEventSource: source, virtualKey: KeyCode.forwardDelete, keyDown: false))
     usleep(3000)
-    sendBackspace(backspaceCount, source: source, delayMicroseconds: 1000)
+    for _ in 0..<backspaceCount {
+      postHID(CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: true))
+      postHID(CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: false))
+      usleep(1000)
+    }
     if backspaceCount > 0 { usleep(5000) }
-    sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 1000)
+    for ch in diffChars {
+      let units = unicodeUnits(for: ch)
+      guard !units.isEmpty else { continue }
+      let dn = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true)
+      let up = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
+      dn?.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)
+      up?.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)
+      postHID(dn)
+      postHID(up)
+      usleep(1000)
+    }
   }
 
   static func sendReplacement(

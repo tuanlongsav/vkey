@@ -3300,3 +3300,31 @@ final class ZWJFOffTelexTests: XCTestCase {
     }
   }
 }
+
+// MARK: - ===========================================
+// MARK: - AX-Direct Delete-Start Tests (v2.14)
+// MARK: - ===========================================
+
+/// `axDeleteStart` lùi từ caret theo CỤM grapheme trong không gian UTF-16 —
+/// an toàn với app lưu NFD (ô = o + combining ◌̂) như Spotlight.
+final class AXDeleteStartTests: XCTestCase {
+
+  func testNFCSimple() throws {
+    // "gõ" NFC: g(1) + õ(1) = length 2; xoá 1 → lùi về sau 'g'
+    let s = "g\u{00F5}"
+    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 2, backspaceCount: 1), 1)
+    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 2, backspaceCount: 2), 0)
+  }
+
+  func testNFDCombiningMark() throws {
+    // "gõ" NFD: g(1) + o(1) + ◌̃(1) = length 3; xoá 1 phải lùi NGUYÊN cụm o+◌̃ → 1
+    let s = "go\u{0303}"
+    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 1), 1)
+    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 2), 0)
+  }
+
+  func testClampsAtZeroAndHandlesEmptyValue() throws {
+    XCTAssertEqual(EventSimulator.axDeleteStart("", caretUTF16: 0, backspaceCount: 3), 0)
+    XCTAssertEqual(EventSimulator.axDeleteStart("ab", caretUTF16: 2, backspaceCount: 99), 0)
+  }
+}

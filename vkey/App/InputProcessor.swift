@@ -648,6 +648,12 @@ struct TransformationTracker {
 
     // Don't auto-switch if already using step-by-step
     if case .stepByStep = currentStrategy { return }
+
+    // v2.14: axDirect là strategy ĐẶC CHỦNG cho app nuốt synthetic event
+    // (Spotlight) — auto-switch sang stepByStep sẽ vô hiệu hoá nó và loạn
+    // chữ trở lại. Telemetry "fail" ở đây thường là false positive (Spotlight
+    // là search field → bị đánh dấu nhạy cảm).
+    if case .axDirect = currentStrategy { return }
     // v2.12: axDirect là strategy chuyên biệt (Spotlight) — không bao giờ
     // auto-switch khỏi nó; fallback synthetic đã nằm trong chính axDirect.
     if case .axDirect = currentStrategy { return }

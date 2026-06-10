@@ -6,6 +6,31 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.14 — "Spotlight: học từ PHTV"</title>
+      <sparkle:version>21400</sparkle:version>
+      <sparkle:shortVersionString>2.14</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 10 Jun 2026 20:21:20 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.14/vkey-2.14.dmg"
+        sparkle:edSignature="KWsWIolLnU4JjiuYZfsylMDSzZmuCQsGlha7jtIwYeS6vIsL4j5gZusTCX05DtiYGhg7MFqXcmx00S9Jn5kKCw=="
+        length="6888006"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.14 — Gia cố gõ tiếng Việt trong Spotlight</h2>
+        <p><em>Áp dụng các kỹ thuật từ dự án mã nguồn mở PHTV (Phạm Hùng Tiến) cho đường ghi trực tiếp vào ô tìm kiếm Spotlight.</em></p>
+        <h3>🛠 Cải thiện</h3>
+        <ul>
+          <li><strong>Xác minh sau khi ghi</strong>: phát hiện app nhận lệnh nhưng không áp thay đổi → tự thử lại/chuyển cách khác.</li>
+          <li>Xử lý đúng phần gợi ý autocomplete Spotlight tự bôi đen ở cuối.</li>
+          <li>Xoá ký tự an toàn với mọi dạng lưu Unicode (NFD/NFC).</li>
+          <li>Đường dự phòng gửi phím qua HID tap (đáng tin hơn với Spotlight).</li>
+        </ul>
+        <p>⚠️ Nếu bạn còn ở v2.11: các fix Spotlight chính nằm ở v2.12+ — hãy cập nhật rồi thử lại. Sau update, nếu hiện cảnh báo quyền Trợ năng: System Settings → Privacy &amp; Security → Accessibility → tắt/bật lại vkey.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.13 — "w là ư"</title>
       <sparkle:version>21300</sparkle:version>
       <sparkle:shortVersionString>2.13</sparkle:shortVersionString>

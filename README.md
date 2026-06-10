@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.13 — "w là ư"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.14 — "Spotlight: học từ PHTV"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.14** — Gia cố đường ghi AX-direct cho Spotlight theo kỹ thuật của [PHTV](https://github.com/PhamHungTien/PHTV): verify sau khi ghi (app trả success nhưng không áp), xử lý selection/suffix autocomplete chuẩn, lùi caret theo cụm grapheme (an toàn NFD), fallback post vào HID tap, vá auto-switch đè strategy. Kèm log chẩn đoán. 232 test pass.
 
 > **2.13** — Khi TẮT "cho phép âm tiết đầu w/z/j/f", `w` giờ hoạt động đúng kiểu Telex cổ điển: **`w`→ư, `tw`→tư, `nhw`→như, `twf`→từ** (trước đây vẫn ra "w" do engine thiếu nhánh w-đứng-không và bảng impossible-prefix khoá `tw/dw/sw/wr`). Khi BẬT (mặc định) không đổi gì — vẫn gõ "web" bình thường. 229 test pass.
 
