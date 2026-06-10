@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.11 — "Spotlight, lần này thật"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.12 — "Spotlight: ghi thẳng, không gửi phím"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.12** — Fix triệt để Spotlight: hoá ra Spotlight **nuốt synthetic backspace bất kể tốc độ** (inline-autocomplete) nên mọi chiến lược gửi phím đều thất bại. Nay vkey **ghi thẳng nội dung ô text qua Accessibility API** (`axDirect` — cùng cách gonhanh.org & xkey dùng): không phím giả lập nào được gửi, retry khi Spotlight bận, fallback an toàn. 227 test pass.
 
 > **2.11** — Fix lại lỗi ký tự đôi Spotlight: v2.10 thêm đúng chiến lược nhưng Spotlight trên macOS 26 là UIElement (không phát notification đổi app) nên chiến lược không bao giờ được kích hoạt. Nay vkey đọc **PID app đích trực tiếp từ mỗi event** — nhận diện chính xác từng phím, mọi overlay; Smart Switch per-app cũng hoạt động đúng trong overlay. 227 test pass.
 

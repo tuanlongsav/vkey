@@ -5,6 +5,7 @@
 //  Created by KhanhIceTea on 27/3/24.
 //
 
+import ApplicationServices
 import CoreGraphics
 import Defaults
 import Foundation
@@ -17,6 +18,11 @@ enum SendingStrategy {
   case stepByStep
   /// Send as batch but with delays between backspaces (balanced approach).
   case hybrid(backspaceDelayMicroseconds: UInt32)
+  /// v2.12: ghi thẳng giá trị ô text qua Accessibility API thay vì gửi event.
+  /// Spotlight (inline autocomplete) nuốt/đảo synthetic backspace nên MỌI
+  /// strategy event-based đều loạn chữ; ghi AXValue thì nguyên tử, không đụng
+  /// event pipeline. Tham khảo gonhanh.org `InjectionMethod.axDirect`.
+  case axDirect
 }
 
 /// Configuration for per-app event sending strategies.
@@ -90,6 +96,7 @@ class EventSimulator {
   private enum KeyCode {
     static let delete: CGKeyCode = 0x33      // Backspace / Delete-Left
     static let leftArrow: CGKeyCode = 0x7B
+    static let forwardDelete: CGKeyCode = 0x75  // v2.12: xoá suggestion auto-select
   }
 
   /// Per-app sending strategy configuration.
@@ -122,10 +129,11 @@ class EventSimulator {
     // mặc định auto English qua Smart Switch; Dock thì không nên vẫn cần fix này.)
     AppSendingConfig(bundlePrefix: "com.apple.dock", strategy: .stepByStep, name: "Launchpad/Dock"),
 
-    // v2.10: Spotlight search field — cùng lớp với Launchpad/Dock: batch/hybrid
-    // backspace bị nuốt → bản thay thế bị APPEND thay vì replace ("goõ tieếng
-    // viiệt"). stepByStep gửi từng phím nên đồng bộ đúng.
-    AppSendingConfig(bundlePrefix: "com.apple.Spotlight", strategy: .stepByStep, name: "Spotlight"),
+    // v2.12: Spotlight — synthetic backspace bị inline-autocomplete nuốt/đảo
+    // bất kể delay (v2.10 stepByStep vẫn lỗi) → ghi thẳng AXValue (axDirect).
+    // systemuiserver: các ô text trong menu bar, cùng hành vi (theo gonhanh).
+    AppSendingConfig(bundlePrefix: "com.apple.Spotlight", strategy: .axDirect, name: "Spotlight"),
+    AppSendingConfig(bundlePrefix: "com.apple.systemuiserver", strategy: .axDirect, name: "SystemUIServer"),
   ]
 
   static func getStrategy(for bundleId: String) -> SendingStrategy {
@@ -338,6 +346,96 @@ class EventSimulator {
     String(char).utf16.map { UniChar($0) }
   }
 
+  // MARK: - AX-direct injection (v2.12, tham khảo gonhanh.org)
+
+  /// Ghi thẳng giá trị ô text của focused element qua Accessibility API:
+  /// xoá `backspaceCount` ký tự (grapheme) TRƯỚC con trỏ rồi chèn `insert`.
+  /// - Spotlight auto-select phần suggestion SAU con trỏ (gõ "saf" → "saf|ari"
+  ///   với "ari" được select) — phần đó không phải text user gõ, loại bỏ.
+  /// - AX trả offset UTF-16; engine đếm grapheme → quy đổi cẩn thận.
+  /// - Trả false nếu element không đọc/ghi được → caller fallback synthetic.
+  static func axDirectReplace(backspaceCount: Int, insert: String) -> Bool {
+    let systemWide = AXUIElementCreateSystemWide()
+    // Giới hạn thời gian AX (theo gonhanh v1.0.150) — app đích bận thì fail
+    // nhanh để retry/fallback, không treo simulationQueue.
+    AXUIElementSetMessagingTimeout(systemWide, 0.1)
+
+    var focusedRef: CFTypeRef?
+    guard
+      AXUIElementCopyAttributeValue(
+        systemWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
+      let ref = focusedRef, CFGetTypeID(ref) == AXUIElementGetTypeID()
+    else { return false }
+    let element = ref as! AXUIElement
+
+    var valueRef: CFTypeRef?
+    guard
+      AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueRef) == .success
+    else { return false }
+    let fullText = (valueRef as? String) ?? ""
+
+    var rangeRef: CFTypeRef?
+    guard
+      AXUIElementCopyAttributeValue(
+        element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
+      let rangeValue = rangeRef, CFGetTypeID(rangeValue) == AXValueGetTypeID()
+    else { return false }
+    var range = CFRange()
+    guard AXValueGetValue(rangeValue as! AXValue, .cfRange, &range), range.location >= 0
+    else { return false }
+
+    let utf16 = Array(fullText.utf16)
+    let cursorUTF16 = min(range.location, utf16.count)
+
+    // Text user đã gõ = phần trước con trỏ. Suffix giữ lại = phần sau con trỏ
+    // KHÔNG được select (selection > 0 nghĩa là suggestion autocomplete → bỏ).
+    let beforeCursor = String(decoding: utf16[..<cursorUTF16], as: UTF16.self)
+    let suffix: String
+    if range.length > 0 {
+      suffix = ""
+    } else {
+      suffix = String(decoding: utf16[cursorUTF16...], as: UTF16.self)
+    }
+
+    let keepCount = max(0, beforeCursor.count - backspaceCount)
+    let prefixEnd = beforeCursor.index(beforeCursor.startIndex, offsetBy: keepCount)
+    let prefix = String(beforeCursor[..<prefixEnd])
+
+    let newText = (prefix + insert + suffix).precomposedStringWithCanonicalMapping
+    guard
+      AXUIElementSetAttributeValue(element, kAXValueAttribute as CFString, newText as CFTypeRef)
+        == .success
+    else { return false }
+
+    // Đặt con trỏ ngay sau text vừa chèn (offset UTF-16).
+    var newCursor = CFRange(
+      location: prefix.utf16.count + insert.precomposedStringWithCanonicalMapping.utf16.count,
+      length: 0)
+    if let newRange = AXValueCreate(.cfRange, &newCursor) {
+      AXUIElementSetAttributeValue(
+        element, kAXSelectedTextRangeAttribute as CFString, newRange)
+    }
+    return true
+  }
+
+  /// Fallback khi AX ghi fail 3 lần (port `injectViaAutocomplete` của gonhanh):
+  /// ForwardDelete xoá suggestion đang auto-select → backspace chậm → text.
+  private static func sendSpotlightFallback(
+    backspaceCount: Int, diffChars: [Character], source: CGEventSource
+  ) {
+    if let dn = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.forwardDelete, keyDown: true),
+       let up = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.forwardDelete, keyDown: false) {
+      dn.flags = .maskNonCoalesced
+      up.flags = .maskNonCoalesced
+      dn.post(tap: .cgSessionEventTap)
+      up.post(tap: .cgSessionEventTap)
+    }
+    usleep(3000)
+    sendBackspace(backspaceCount, source: source, delayMicroseconds: 1000)
+    if backspaceCount > 0 { usleep(5000) }
+    sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 1000)
+  }
+
   static func sendReplacement(
     backspaceCount: Int,
     diffChars: [Character],
@@ -390,6 +488,30 @@ class EventSimulator {
           usleep(3000)
           sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
           usleep(3000)
+        }
+      }
+      return EventSendTelemetry(
+        attemptedTransform: true,
+        createdEvents: true,
+        usedAsyncQueue: true,
+        touchedCharacters: touchedCharacters
+      )
+
+    case .axDirect:
+      simulationQueue.async {
+        _ = withAdaptiveFlush {
+          // Spotlight có thể đang bận search → AX call fail thoáng qua; retry
+          // 3 lần (5ms/lần, theo gonhanh) rồi mới fallback synthetic.
+          for attempt in 0..<3 {
+            if attempt > 0 { usleep(5000) }
+            if axDirectReplace(backspaceCount: backspaceCount, insert: String(diffChars)) {
+              return
+            }
+          }
+          if let source = CGEventSource(stateID: .privateState) {
+            sendSpotlightFallback(
+              backspaceCount: backspaceCount, diffChars: diffChars, source: source)
+          }
         }
       }
       return EventSendTelemetry(
@@ -508,6 +630,34 @@ class EventSimulator {
             sendBackspace(1, source: source)
           }
           usleep(3000)
+        }
+      }
+      return EventSendTelemetry(
+        attemptedTransform: true,
+        createdEvents: true,
+        usedAsyncQueue: true,
+        touchedCharacters: touchedCharacters
+      )
+
+    case .axDirect:
+      // v2.12: selection-replace ≡ xoá selectLeftCount ký tự trước con trỏ +
+      // chèn diff — đúng semantics của axDirectReplace. Fallback Shift+Left.
+      simulationQueue.async {
+        _ = withAdaptiveFlush {
+          for attempt in 0..<3 {
+            if attempt > 0 { usleep(5000) }
+            if axDirectReplace(backspaceCount: selectLeftCount, insert: String(diffChars)) {
+              return
+            }
+          }
+          guard let source = CGEventSource(stateID: .privateState) else { return }
+          sendShiftLeft(selectLeftCount, source: source)
+          usleep(3000)
+          if !diffChars.isEmpty {
+            sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
+          } else if selectLeftCount > 0 {
+            sendBackspace(1, source: source)
+          }
         }
       }
       return EventSendTelemetry(

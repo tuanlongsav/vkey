@@ -3195,11 +3195,17 @@ final class AppSendingStrategyTests: XCTestCase {
       "App native thường KHÔNG nên rơi vào stepByStep")
   }
 
-  // v2.10: Spotlight search field — batch/hybrid bị Spotlight nuốt backspace →
-  // bản thay thế bị append ("goõ tieếng viiệt"). Phải dùng stepByStep.
-  func testSpotlightUsesStepByStep() throws {
-    XCTAssertTrue(isStepByStep("com.apple.Spotlight"),
-      "Spotlight phải dùng stepByStep để gõ tiếng Việt không bị ký tự đôi")
+  private func isAxDirect(_ bundleId: String) -> Bool {
+    if case .axDirect = EventSimulator.getStrategy(for: bundleId) { return true }
+    return false
+  }
+
+  // v2.12: Spotlight — synthetic backspace bị inline-autocomplete nuốt/đảo bất
+  // kể delay (v2.10 stepByStep vẫn lỗi) → phải ghi thẳng AXValue (axDirect).
+  func testSpotlightUsesAxDirect() throws {
+    XCTAssertTrue(isAxDirect("com.apple.Spotlight"),
+      "Spotlight phải dùng axDirect — mọi strategy event-based đều bị nuốt backspace")
+    XCTAssertTrue(isAxDirect("com.apple.systemuiserver"))
   }
 }
 

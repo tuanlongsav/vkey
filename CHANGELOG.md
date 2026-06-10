@@ -2,6 +2,25 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.12] - 2026-06-10 — "Spotlight: ghi thẳng, không gửi phím"
+
+**Fix triệt để lỗi ký tự đôi trong Spotlight bằng cách đổi hẳn phương pháp: ghi thẳng nội dung ô text qua Accessibility API thay vì gửi phím giả lập.**
+
+### 🐛 Vì sao v2.10/v2.11 chưa đủ
+
+- v2.10: chiến lược đúng nhưng không bao giờ được kích hoạt (Spotlight là UIElement, không phát notification).
+- v2.11: nhận diện app đích đã chuẩn (PID-per-event) — nhưng hoá ra **Spotlight nuốt/đảo synthetic backspace bất kể tốc độ gửi** do inline-autocomplete, nên mọi chiến lược dựa trên phím giả lập đều thất bại.
+
+### ✅ Fix v2.12 — chiến lược `axDirect` (tham khảo gonhanh.org & xkey)
+
+Cả hai bộ gõ mã nguồn mở **gonhanh.org** và **xkey** đều xử lý Spotlight bằng cùng một cách — vkey nay làm theo:
+
+- **Ghi thẳng giá trị ô text** qua Accessibility API (`AXValue`): đọc text + vị trí con trỏ → tính chuỗi mới (xoá N ký tự trước con trỏ, chèn bản thay thế, bỏ phần suggestion đang auto-select) → ghi lại nguyên tử + đặt con trỏ. Không một phím giả lập nào được gửi → không gì để Spotlight nuốt.
+- Retry 3 lần khi Spotlight bận search; fallback ForwardDelete + gửi chậm nếu AX bị từ chối.
+- Giới hạn thời gian truy vấn AX (100ms) để không treo hàng đợi gõ.
+- Miễn trừ `axDirect` khỏi cơ chế "downgrade diff nhỏ về batch" — đa số transform dấu (1 backspace + 1 ký tự) trước đây bị downgrade nên đi đường phím giả lập.
+- Áp dụng cho `com.apple.Spotlight` + `com.apple.systemuiserver`. **227 test pass**.
+
 ## [2.11] - 2026-06-10 — "Spotlight, lần này thật"
 
 **Fix lại lỗi ký tự đôi trong Spotlight — v2.10 thêm đúng chiến lược nhưng nó không bao giờ được kích hoạt trên macOS 26 (Tahoe).**

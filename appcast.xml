@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.12 — "Spotlight: ghi thẳng, không gửi phím"</title>
+      <sparkle:version>21200</sparkle:version>
+      <sparkle:shortVersionString>2.12</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 10 Jun 2026 18:04:22 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.12/vkey-2.12.dmg"
+        sparkle:edSignature="w0Zon+GnPmPz5P0DSWkasABVGo4RzJUo44jZOSzjIU9sG33mosLxs9brPdra4b7OAVF7kZXQEbCNNv+qi9X4Bw=="
+        length="6885572"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.12 — Spotlight: ghi thẳng nội dung, không gửi phím giả lập</h2>
+        <p><em>Fix triệt để lỗi ký tự đôi trong Spotlight. Hoá ra Spotlight nuốt/đảo phím backspace giả lập bất kể tốc độ gửi (do autocomplete) — mọi cách gửi phím đều thất bại.</em></p>
+        <h3>✅ Fix (cùng phương pháp với gonhanh.org &amp; xkey)</h3>
+        <ul>
+          <li>vkey nay <strong>ghi thẳng nội dung ô tìm kiếm qua Accessibility API</strong>: đọc text + vị trí con trỏ → tính chuỗi mới (bỏ cả phần suggestion đang auto-select) → ghi lại nguyên tử + đặt con trỏ. Không phím giả lập nào được gửi.</li>
+          <li>Tự thử lại khi Spotlight đang bận tìm kiếm; có đường dự phòng an toàn.</li>
+        </ul>
+        <p>⚠️ Sau update, nếu vkey hiện cảnh báo quyền Trợ năng: System Settings → Privacy &amp; Security → Accessibility → tắt/bật lại vkey.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.11 — "Spotlight, lần này thật"</title>
       <sparkle:version>21100</sparkle:version>
       <sparkle:shortVersionString>2.11</sparkle:shortVersionString>

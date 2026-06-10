@@ -642,6 +642,9 @@ struct TransformationTracker {
 
     // Don't auto-switch if already using step-by-step
     if case .stepByStep = currentStrategy { return }
+    // v2.12: axDirect là strategy chuyên biệt (Spotlight) — không bao giờ
+    // auto-switch khỏi nó; fallback synthetic đã nằm trong chính axDirect.
+    if case .axDirect = currentStrategy { return }
 
     // Switch to step-by-step for this session
     #if DEBUG
@@ -1089,6 +1092,12 @@ class InputProcessor {
   /// For tiny diffs (common during Telex tone mutation), force immediate batch sending
   /// to avoid async reordering with the next keystroke (e.g. "push" -> "pussh").
   private func effectiveTypingStrategy(backspaceCount: Int, diffCharCount: Int) -> SendingStrategy {
+    // v2.12: axDirect KHÔNG được downgrade — đa số transform dấu tiếng Việt là
+    // bs=1+diff=1 (vd "go"+x → xoá "o", chèn "õ"); downgrade về .batch sẽ gửi
+    // synthetic event vào Spotlight và loạn chữ trở lại.
+    if case .axDirect = strategyTracker.currentStrategy {
+      return .axDirect
+    }
     if backspaceCount <= 1 && diffCharCount <= 1 {
       return .batch
     }
