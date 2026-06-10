@@ -2,6 +2,26 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.0] - 2026-06-11 — "Giao diện mới: Tonal & Liquid Glass"
+
+**Đại tu toàn bộ cửa sổ Cài đặt + hệ thống theme. Engine gõ không đổi.**
+
+### ✨ Giao diện mới (UI redesign)
+
+- **Cửa sổ Cài đặt dựng lại** bằng `NavigationSplitView`: sidebar 232pt (ô tìm, thẻ nhận diện, 6 mục) + detail pane. Thay `TabView`/gói Settings cũ.
+- **6 tab**: Chung · Smart Switch · Macro · Chính tả · Thống kê & Sao lưu · **Quản lý giao diện** (mới).
+- **Hai theme**: **Mặc định** (Tonal — phẳng, paper/ink) và **Liquid Glass** (trong mờ + blur khúc xạ, macOS Tahoe). Chọn ở tab Quản lý giao diện hoặc đổi nhanh trên menu bar ("Chuyển giao diện" → xổ phải).
+- **Tab Quản lý giao diện**: màu nhấn (5 màu), phông chữ (Hệ thống/Be Vietnam Pro/Noto Sans Display/Lora/Carter One/JetBrains Mono — nhúng sẵn), độ bo góc (sắc/vừa/tròn), mật độ dòng (gọn/vừa/thoáng), độ trong suốt (Liquid Glass). **Lưu riêng theo từng theme.**
+- **HUD** chuyển VI/EN + đoán từ và **biểu tượng** đổi theo theme (viên kính nổi + tile tinted khi Liquid Glass).
+- Header gọn (tên tab giữa, 3 nút Sáng/Tối/Hệ thống bên phải); chế độ sáng/tối đổi tức thì.
+
+### 🔧 Khác
+
+- Tab **Thống kê** bù đầy đủ chi tiết như bản cũ: top từ tiếng Việt, top cụm 2-3 từ, top từ ngoài tiếng Việt (gợi ý từ điển), top app, các tuần đã đóng, xuất chẩn đoán.
+- **Smart Switch** thêm lại "Quy tắc theo cửa sổ" (override theo bundle ID + window title regex).
+- **Dọn sạch theme cũ**: xoá classic, Liquid Glass cũ, `AppTheme`/icon-style 3D/emoji, `ThemeManager`, `GlassTile` (−~2.500 dòng) + asset icon classic.
+- Thêm 4 font nhúng (Be Vietnam Pro, Lora, JetBrains Mono) bên cạnh Noto/Carter có sẵn.
+
 ## [2.15] - 2026-06-10 — "Spotlight gõ được + sửa Opus"
 
 **Hai sửa lỗi lớn: (1) gõ tiếng Việt trong Spotlight cuối cùng đã chuẩn (hết "goõ tieếng việt"), (2) bug "Opus" ra "uOs" ảnh hưởng mọi app.**

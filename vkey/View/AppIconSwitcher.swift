@@ -17,16 +17,10 @@ import AppKit
 
 enum AppIconSwitcher {
     @MainActor
-    static func apply(theme: UITheme) {
-        // Both imagesets ship at full size in the asset catalog and are
-        // loadable by name. The "Cficon" family is a regular imageset (not
-        // an .appiconset), so NSImage(named:) is reliable.
-        let imageName: String
-        switch theme {
-        case .tonal, .liquidGlass: imageName = "Cficon"
-        case .classic:              imageName = "CficonClassic"
-        }
-        guard let img = NSImage(named: imageName) else { return }
+    static func apply() {
+        // 2.16: chỉ còn Tonal — luôn dùng "Cficon" (regular imageset, load
+        // bằng NSImage(named:) ổn định).
+        guard let img = NSImage(named: "Cficon") else { return }
         NSApplication.shared.applicationIconImage = img
     }
 }

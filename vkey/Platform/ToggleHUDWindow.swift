@@ -151,21 +151,53 @@ private class ToggleHUDViewModel: ObservableObject {
 
 private struct ToggleHUDView: View {
     @ObservedObject var viewModel: ToggleHUDViewModel
-    @Environment(\.colorScheme) var colorScheme
-    @Default(.uiTheme) private var uiTheme
     @Default(.typingMethod) private var typingMethod
     @Default(.newStyleTonePlacement) private var newStyleTonePlacement
     @Default(.modifierOnlyToggleHotkey) private var modifierOnlyToggleHotkey
+    @Default(.uiTheme) private var uiTheme
 
     var body: some View {
         Group {
-            switch uiTheme {
-            case .tonal:        tonalBody
-            case .liquidGlass:  liquidGlassBody
-            case .classic:      classicBody
-            }
+            if uiTheme == .glass { glassBody } else { tonalBody }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
+    }
+
+    // MARK: - Liquid Glass HUD — viên kính nổi (per design `.hud-glass`)
+
+    private var glassBody: some View {
+        HStack(spacing: 14) {
+            HUDFlag(viewModel.isEnabled)
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.5), lineWidth: 1))
+                .shadow(color: .black.opacity(0.35), radius: 8, x: 0, y: 3)
+                .vkeySymbolReplacementTransition()
+
+            Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
+                .font(VKeyDesign.display(18, weight: .bold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            if !hotkeyGlyphs.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(hotkeyGlyphs, id: \.self) { glyph in Keycap(glyph, size: .md) }
+                }
+            }
+
+            Text(viewModel.isEnabled ? "VI" : "EN")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 11).padding(.vertical, 6)
+                .background(Capsule().fill(VK.Color.brand))
+                .overlay(Capsule().strokeBorder(.white.opacity(0.35), lineWidth: 0.5))
+        }
+        .padding(EdgeInsets(top: 11, leading: 11, bottom: 11, trailing: 16))
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.25), lineWidth: 1))
+        .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 0.5).blendMode(.screen))
+        .shadow(color: .black.opacity(0.40), radius: 24, x: 0, y: 12)
     }
 
     // MARK: - Sub-title + keycap helpers (v2.3.0)
@@ -191,103 +223,7 @@ private struct ToggleHUDView: View {
         return formatted.map { String($0) }
     }
 
-    // MARK: - Liquid Glass (v2.3.0) — handoff horizontal layout
-
-    private var liquidGlassBody: some View {
-        HStack(alignment: .center, spacing: 14) {
-            HUDFlag(viewModel.isEnabled)
-                .vkeySymbolReplacementTransition()
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                    .font(VKeyDesign.display(17, weight: .bold))
-                    .foregroundStyle(Color(hex: 0xF2EFE8))
-                    .shadow(color: .black.opacity(0.45), radius: 0.5, x: 0, y: 0.5)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-
-                Text(subTitle)
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(Color.white.opacity(0.70))
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-            }
-
-            if !hotkeyGlyphs.isEmpty {
-                HStack(spacing: 6) {
-                    ForEach(hotkeyGlyphs, id: \.self) { glyph in
-                        Keycap(glyph, size: .md)
-                    }
-                }
-            }
-        }
-        .padding(.vertical, 18)
-        .padding(.horizontal, 24)
-        .refractiveGlassBackground(radius: 28, scrimOpacity: liquidGlassScrimOpacity)
-    }
-
-    private var liquidGlassScrimOpacity: Double {
-        // Multi-layer glass — primary scrim baseline 0.55, scale with opacity setting.
-        0.30 + 0.32 * viewModel.backgroundStrength
-    }
-
-    // MARK: - Classic (v2.0.2 look)
-
-    private var classicBody: some View {
-        VStack(spacing: 6) {
-            ThemedSymbol(name: viewModel.isEnabled ? "character.bubble.fill" : "keyboard")
-                .font(.system(size: 40, weight: .semibold))
-                .foregroundStyle(
-                    viewModel.isEnabled
-                    ? AnyShapeStyle(Color.accentColor.gradient)
-                    : AnyShapeStyle(Color.secondary.gradient)
-                )
-                .frame(width: 48, height: 48)
-                .vkeySymbolReplacementTransition()
-
-            Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
-
-            Text(viewModel.isEnabled ? "VI" : "EN")
-                .font(.system(size: 11, weight: .black, design: .rounded))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 2)
-                .background(
-                    viewModel.isEnabled
-                    ? Color.accentColor.opacity(0.18)
-                    : Color.secondary.opacity(0.18)
-                )
-                .foregroundStyle(viewModel.isEnabled ? Color.accentColor : Color.secondary)
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-        }
-        .frame(width: 130)
-        .padding(.vertical, 14)
-        .padding(.horizontal, 8)
-        .background(
-            Color.black.opacity(classicScrimOpacity),
-            in: RoundedRectangle(cornerRadius: 18)
-        )
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .strokeBorder(
-                    .white.opacity(colorScheme == .dark ? 0.16 : 0.28),
-                    lineWidth: 0.6
-                )
-        )
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.10), radius: 10, x: 0, y: 3)
-    }
-
-    private var classicScrimOpacity: Double {
-        let base = colorScheme == .dark ? 0.10 : 0.03
-        let range = colorScheme == .dark ? 0.16 : 0.07
-        return base + range * viewModel.backgroundStrength
-    }
-
-    // MARK: - Tonal (v2.3.0+) — handoff horizontal layout, deep-ink scrim
+    // MARK: - Tonal HUD — horizontal layout, deep-ink scrim
 
     private var tonalBody: some View {
         HStack(alignment: .center, spacing: 14) {

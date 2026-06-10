@@ -353,7 +353,6 @@ struct PredictionHUDView: View {
   let fontSize: Int
   let backgroundStrength: Double
   let contentSize: CGSize
-  @Environment(\.colorScheme) private var colorScheme
 
   init(prediction: String, fontSize: Int, backgroundStrength: Double, contentSize: CGSize) {
     self.prediction = prediction
@@ -366,79 +365,35 @@ struct PredictionHUDView: View {
 
   var body: some View {
     Group {
-      switch uiTheme {
-      case .tonal:        tonalBody
-      case .liquidGlass:  liquidGlassBody
-      case .classic:      classicBody
-      }
+      if uiTheme == .glass { glassBody } else { tonalBody }
     }
     .frame(width: contentSize.width, height: contentSize.height)
   }
 
-  // MARK: - Liquid Glass (v2.3.0) — handoff format `→ <pred> · Tab(keycap)`
+  // MARK: - Liquid Glass HUD — viên kính pill `→ <pred> · Tab`
 
-  private var liquidGlassBody: some View {
+  private var glassBody: some View {
     HStack(spacing: 6) {
       Text("→")
         .font(.system(size: CGFloat(fontSize), weight: .heavy, design: .rounded))
-        .foregroundStyle(LinearGradient(
-          colors: [Color.white, VKeyDesign.red300],
-          startPoint: .top, endPoint: .bottom
-        ))
-        .shadow(color: VKeyDesign.red500.opacity(0.35), radius: 3, x: 0, y: 1)
-
+        .foregroundStyle(VK.Color.brand)
       Text(prediction)
         .font(.system(size: CGFloat(fontSize), weight: .semibold))
-        .foregroundStyle(Color(hex: 0xF2EFE8))
-        .shadow(color: .black.opacity(0.30), radius: 0.5, x: 0, y: 0.5)
-
+        .foregroundStyle(.primary)
       Text("·")
         .font(.system(size: CGFloat(fontSize), weight: .regular))
-        .foregroundStyle(Color.white.opacity(0.40))
-
+        .foregroundStyle(.primary.opacity(0.4))
       Keycap("Tab", size: .sm)
     }
     .padding(.horizontal, 14)
     .padding(.vertical, 9)
-    .refractiveGlassBackground(radius: 12, scrimOpacity: liquidGlassScrimOpacity)
+    .background(.ultraThinMaterial, in: Capsule())
+    .overlay(Capsule().strokeBorder(Color.white.opacity(0.22), lineWidth: 1))
+    .overlay(Capsule().strokeBorder(Color.white.opacity(0.45), lineWidth: 0.5).blendMode(.screen))
+    .shadow(color: .black.opacity(0.30), radius: 12, x: 0, y: 6)
   }
 
-  private var liquidGlassScrimOpacity: Double {
-    0.30 + 0.32 * backgroundStrength
-  }
-
-  // MARK: - Classic (v2.0.2 look)
-
-  private var classicBody: some View {
-    Text("→ \(prediction)   ⇥ Tab")
-      .font(.system(size: CGFloat(fontSize), weight: .semibold, design: .rounded))
-      .foregroundStyle(.primary)
-      .shadow(color: .black.opacity(0.15), radius: 0.5, x: 0, y: 0.5)
-      .padding(.horizontal, 16)
-      .padding(.vertical, 10)
-      .background(
-        Color.black.opacity(classicScrimOpacity),
-        in: RoundedRectangle(cornerRadius: 16)
-      )
-      .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-      .overlay(
-        RoundedRectangle(cornerRadius: 16)
-          .strokeBorder(Color.white.opacity(classicStrokeOpacity), lineWidth: 0.6)
-      )
-      .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
-  }
-
-  private var classicScrimOpacity: Double {
-    let base = colorScheme == .dark ? 0.10 : 0.03
-    let range = colorScheme == .dark ? 0.16 : 0.07
-    return base + range * backgroundStrength
-  }
-
-  private var classicStrokeOpacity: Double {
-    colorScheme == .dark ? 0.18 : 0.28
-  }
-
-  // MARK: - Tonal (v2.3.0+) — handoff format `→ <pred> · Tab(keycap)`
+  // MARK: - Tonal HUD — format `→ <pred> · Tab(keycap)`
 
   private var tonalBody: some View {
     HStack(spacing: 6) {

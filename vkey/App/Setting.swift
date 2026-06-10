@@ -9,6 +9,7 @@ import AppKit
 import Defaults
 import Foundation
 import KeyboardShortcuts
+import SwiftUI
 
 extension Bundle {
   public var appName: String { getInfo("CFBundleName") }
@@ -160,38 +161,161 @@ struct AppSmartSwitchConfig: Codable, Hashable, Defaults.Serializable {
 /// - `.emoji`: thay SF Symbol bằng Unicode emoji tương ứng (vd
 ///   `gearshape` → ⚙️, `lightbulb` → 💡) — vui tươi, dễ phân biệt.
 /// Không ảnh hưởng menu bar state flag (vn-flag/us-flag) và AppIcon.
-enum AppTheme: String, CaseIterable, Defaults.Serializable {
-  case `default`
-  case threeD
-  case emoji
+/// 2.16: lựa chọn màu accent cho giao diện redesign (5 màu của design).
+/// Mã hex resolve trong `VK.Color.accentChoice` (VKDesign).
+enum AccentColorChoice: String, CaseIterable, Codable, Defaults.Serializable {
+  case red       // #E04434 (mặc định)
+  case gold      // #E5AE1C
+  case green     // #2BB673
+  case blue      // #2D89E5
+  case purple    // #8B5CF6
+
+  var hex: String {
+    switch self {
+    case .red:    return "#E04434"
+    case .gold:   return "#E5AE1C"
+    case .green:  return "#2BB673"
+    case .blue:   return "#2D89E5"
+    case .purple: return "#8B5CF6"
+    }
+  }
+  var displayName: String {
+    switch self {
+    case .red:    return "Đỏ Saigon"
+    case .gold:   return "Vàng"
+    case .green:  return "Xanh lá"
+    case .blue:   return "Xanh dương"
+    case .purple: return "Tím"
+    }
+  }
+}
+
+/// 2.16: chế độ sáng/tối cho cửa sổ Settings.
+enum AppearanceMode: String, CaseIterable, Defaults.Serializable {
+  case auto, light, dark
+
+  var colorScheme: ColorScheme? {
+    switch self {
+    case .auto:  return nil
+    case .light: return .light
+    case .dark:  return .dark
+    }
+  }
 }
 
 /// v2.1.1+: UI theme — diện mạo toàn cục cho app.
 /// v2.2.2: thay Sơn Mài bằng Liquid Glass (refractive, glossy macOS Tahoe
 /// aesthetic — glass multi-layer + edge highlights + refractive tints).
 /// Default `.tonal`.
+/// 2.16: theme diện mạo. `.tonal` = mặc định (phẳng, paper/ink); `.glass` =
+/// Liquid Glass (trong mờ, blur, specular — macOS Tahoe). User chọn ở tab
+/// "Quản lý giao diện".
 enum UITheme: String, CaseIterable, Defaults.Serializable {
-  case classic       // v2.0.2 — accent system blue, HUD đơn giản
-  case tonal         // v2.1.0+ — brand red Saigon, glass tối deep-ink, wordmark
-  case liquidGlass   // v2.2.2 — refractive glass (Tahoe/visionOS), brand red
+  case tonal
+  case glass
 
   var displayName: String {
     switch self {
-    case .classic:     return "Classic"
-    case .tonal:       return "Tonal"
-    case .liquidGlass: return "Liquid Glass"
+    case .tonal: return "Mặc định"
+    case .glass: return "Liquid Glass"
     }
   }
-
   var caption: String {
     switch self {
-    case .classic:
-      return "Diện mạo gốc của vkey 2.0.2: accent system blue, HUD đơn giản, biểu tượng macOS native."
-    case .tonal:
-      return "Design system Tonal: accent đỏ Saigon, HUD glass tối deep-ink, wordmark vkey."
-    case .liquidGlass:
-      return "Liquid Glass — refractive, glossy multi-layer (macOS Tahoe / visionOS), brand red #E04434 + glass edge highlights."
+    case .tonal: return "Phẳng, tương phản rõ — nền giấy ấm / mực sâu."
+    case .glass: return "Trong mờ, blur khúc xạ — kính nổi macOS Tahoe."
     }
+  }
+}
+
+/// 2.16: độ bo góc toàn cục — tuỳ chỉnh ở tab Quản lý giao diện.
+enum ThemeRadius: String, CaseIterable, Codable, Defaults.Serializable {
+  case sharp, medium, round
+  var displayName: String {
+    switch self {
+    case .sharp:  return "Sắc"
+    case .medium: return "Vừa"
+    case .round:  return "Tròn"
+    }
+  }
+  /// Hệ số nhân lên thang bo góc gốc.
+  var scale: CGFloat {
+    switch self {
+    case .sharp:  return 0.45
+    case .medium: return 1.0
+    case .round:  return 1.7
+    }
+  }
+}
+
+/// 2.16: mật độ dòng menu cài đặt — gọn / vừa / thoáng.
+enum ThemeDensity: String, CaseIterable, Codable, Defaults.Serializable {
+  case compact, regular, comfy
+  var displayName: String {
+    switch self {
+    case .compact: return "Gọn"
+    case .regular: return "Vừa"
+    case .comfy:   return "Thoáng"
+    }
+  }
+  /// Padding dọc mỗi hàng (pt).
+  var rowPaddingV: CGFloat {
+    switch self {
+    case .compact: return 7
+    case .regular: return 11
+    case .comfy:   return 15
+    }
+  }
+  /// Khoảng cách giữa các section.
+  var sectionGap: CGFloat {
+    switch self {
+    case .compact: return 18
+    case .regular: return 24
+    case .comfy:   return 30
+    }
+  }
+}
+
+/// 2.16: font chữ giao diện. `.system` = SF; còn lại là font nhúng kèm app.
+enum ThemeFont: String, CaseIterable, Codable, Defaults.Serializable {
+  case system, beVietnam, notoSans, lora, carterOne, jetBrains
+  var displayName: String {
+    switch self {
+    case .system:     return "Hệ thống (SF)"
+    case .beVietnam:  return "Be Vietnam Pro"
+    case .notoSans:   return "Noto Sans Display"
+    case .lora: return "Lora (serif)"
+    case .carterOne:  return "Carter One"
+    case .jetBrains:  return "JetBrains Mono"
+    }
+  }
+  /// PostScript name của font nhúng; nil = dùng SF system.
+  var postScriptName: String? {
+    switch self {
+    case .system:     return nil
+    case .beVietnam:  return "BeVietnamPro-Regular"
+    case .notoSans:   return "NotoSansDisplay-Regular"
+    case .lora: return "Lora-Regular"
+    case .carterOne:  return "CarterOne"
+    case .jetBrains:  return "JetBrainsMono-Regular"
+    }
+  }
+}
+
+/// 2.16: cấu hình chi tiết LƯU THEO TỪNG THEME (font, bo góc, mật độ, độ trong).
+/// Đổi theme sẽ khôi phục đúng cấu hình của theme đó.
+struct ThemeConfig: Codable, Defaults.Serializable, Equatable {
+  var font: ThemeFont
+  var radius: ThemeRadius
+  var density: ThemeDensity
+  var clarity: Double          // chỉ dùng cho Liquid Glass
+  var accent: AccentColorChoice = .red   // màu nhấn per-theme
+
+  static let tonalDefault = ThemeConfig(font: .system, radius: .medium, density: .regular, clarity: 0.5, accent: .red)
+  static let glassDefault = ThemeConfig(font: .system, radius: .round, density: .regular, clarity: 0.55, accent: .red)
+
+  static func defaultFor(_ theme: UITheme) -> ThemeConfig {
+    theme == .glass ? glassDefault : tonalDefault
   }
 }
 
@@ -199,6 +323,18 @@ extension Defaults.Keys {
   /// v2.1.1: UI theme toàn cục. Switch không cần restart — HUD/Settings/icon
   /// đều đọc qua `Defaults.observe(.uiTheme)`.
   static let uiTheme = Key<UITheme>("ui-theme", default: .tonal)
+
+  /// 2.16: màu accent (brand) cho giao diện redesign — user chọn 1 trong 5.
+  static let accentColorChoice = Key<AccentColorChoice>("accent-color-choice", default: .red)
+
+  /// 2.16: chế độ sáng/tối cho cửa sổ Settings — auto theo hệ thống / sáng / tối.
+  static let appearanceMode = Key<AppearanceMode>("appearance-mode", default: .auto)
+
+  /// 2.16: cấu hình tuỳ chỉnh theo từng theme (font/bo góc/mật độ/độ trong).
+  static let themeConfigs = Key<[String: ThemeConfig]>("theme-configs", default: [
+    UITheme.tonal.rawValue: .tonalDefault,
+    UITheme.glass.rawValue: .glassDefault,
+  ])
 
   static let currentVersion = Key<String>("current-version", default: "0.1")
   static let typingMethod = Key<TypingMethods>("typing-method", default: .Telex)
@@ -422,12 +558,6 @@ extension Defaults.Keys {
   ///
   /// **Deprecated 1.7.x:** xem ghi chú `userBigrams`.
   static let userTrigrams = Key<[String: [String: Int]]>("user-trigrams", default: [:])
-
-  /// Giao diện ứng dụng — `.threeD` là default mới ở 1.5.4 (gradient +
-  /// shadow + multicolor trên SF Symbol). UI picker tạm thời ẩn — sẽ
-  /// mở lại khi có bộ artwork bitmap PDF cho `Icons3D/` (designer làm
-  /// theo template `Tools/icon-set-templates/`).
-  static let appTheme = Key<AppTheme>("app-theme", default: .threeD)
 
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value

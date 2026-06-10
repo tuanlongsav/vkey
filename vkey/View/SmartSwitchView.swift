@@ -448,7 +448,8 @@ struct SmartSwitchView_Previews: PreviewProvider {
 // DisclosureGroup gập được. Mặc định collapsed vì power-user feature.
 // Port từ WindowRulesView.swift (2.0) — file gốc đã xoá.
 
-private struct WindowRulesSection: View {
+// 2.16: dùng lại ở VKSmartTab (redesign). Bỏ `private`.
+struct WindowRulesSection: View {
   @Default(.windowTitleRules) private var rules
   @State private var expanded: Bool = false
 
@@ -522,7 +523,7 @@ private struct WindowRulesSection: View {
   }
 }
 
-private struct WindowRuleRow: View {
+struct WindowRuleRow: View {
   @Binding var rule: WindowTitleRule
   let onDelete: () -> Void
 

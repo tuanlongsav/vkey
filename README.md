@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.15 — "Spotlight gõ được + sửa Opus"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.0 — "Giao diện mới: Tonal & Liquid Glass"** ([CHANGELOG](CHANGELOG.md))
+
+> **3.0** — **Đại tu cửa sổ Cài đặt**: dựng lại bằng NavigationSplitView (sidebar + 6 tab, thêm tab **Quản lý giao diện**). Hai theme **Mặc định** (Tonal) và **Liquid Glass** (trong mờ, blur khúc xạ — macOS Tahoe), đổi nhanh trên menu bar. Tab Quản lý giao diện cho chỉnh **màu nhấn, phông chữ (6 font nhúng), bo góc, mật độ dòng, độ trong suốt** — lưu riêng theo từng theme. HUD + biểu tượng đổi theo theme. Bù đầy đủ thống kê chi tiết + quy tắc Smart Switch theo cửa sổ. Dọn sạch theme cũ. Engine gõ không đổi.
 
 > **2.15** — (1) **Gõ tiếng Việt trong Spotlight cuối cùng đã chuẩn** (hết "goõ tieếng việt"): phát hiện ô Spotlight qua AX role thật rồi ghi thẳng qua Accessibility API (axDirect), không phụ thuộc `eventTargetUnixProcessID` (vốn sai trên macOS 26). (2) **Sửa bug "Opus"→"uOs"** ảnh hưởng mọi app: luật tự-sửa-gõ-nhầm "ou→uo" không còn nuốt phụ âm giữa. 235 test pass.
 

@@ -310,7 +310,7 @@ enum UserDataMigration {
       macrosSeeded: Defaults[.macrosSeeded],
       defaultMacrosVersion: Defaults[.defaultMacrosVersion],
 
-      appTheme: Defaults[.appTheme].rawValue,
+      appTheme: nil, // 2.16: AppTheme đã xoá — giữ field để backup cũ vẫn decode
 
       autoPersonalDictFeedback: Defaults[.autoPersonalDictFeedback],
 
@@ -518,13 +518,7 @@ enum UserDataMigration {
     applyScalar(.defaultMacrosVersion, export.defaultMacrosVersion,
                 label: "Default macros version")
 
-    // Theme (1.5.3+)
-    if let raw = export.appTheme,
-       let parsed = AppTheme(rawValue: raw),
-       Defaults[.appTheme] != parsed {
-      Defaults[.appTheme] = parsed
-      changes.append("Giao diện ← \(raw)")
-    }
+    // 2.16: AppTheme đã xoá — bỏ qua field appTheme trong backup cũ.
 
     // 1.5.5+: auto-feedback toggle
     applyScalar(.autoPersonalDictFeedback, export.autoPersonalDictFeedback,

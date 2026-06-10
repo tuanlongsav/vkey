@@ -35,15 +35,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // Hide dock icon since we use MenuBarExtra
     NSApp.setActivationPolicy(.accessory)
 
-    // v2.2.2 migration: theme "3D bóng bẩy" đã bị xoá khỏi menu —
-    // user đang chọn .threeD sẽ tự reset về .default. Idempotent.
-    if Defaults[.appTheme] == .threeD {
-      Defaults[.appTheme] = .default
-    }
-
-    // v2.1.1: apply icon for the currently saved theme. This sets the
-    // notification-banner / alert-dialog icon to match the active theme.
-    AppIconSwitcher.apply(theme: Defaults[.uiTheme])
+    // v2.1.1: set notification-banner / alert-dialog icon (luôn Tonal).
+    AppIconSwitcher.apply()
 
     // 1.6.0: setup UN center delegate + xin permission cho update banner.
     UNUserNotificationCenter.current().delegate = self
