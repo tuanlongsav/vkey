@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.9 — "chuyên môn không thành chuyên moon"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.10 — "Gõ được trong Spotlight"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.10** — Sửa lỗi gõ tiếng Việt bị **ký tự đôi trong Spotlight** ("goõ tieếng viiệt"): dùng chiến lược gửi từng phím như fix Launchpad v2.7, kèm đồng bộ chiến lược theo focus thật (bắt cả overlay mở bằng ⌘Space). Thêm: khi macOS thu hồi quyền Accessibility (sau update), vkey **tự hiện cảnh báo hướng dẫn cấp lại** thay vì chết im lặng. 227 test pass.
 
 > **2.9** — Mở rộng fix v2.8: rà soát toàn bộ danh sách từ tiếng Anh tự khôi phục, loại thêm 18 từ mà Telex ra **từ tiếng Việt hợp lệ & phổ biến** (moon→môn, theme→thêm, tree→trê, beer→bể…). Giữ lại các từ Anh phổ biến (this/these/three…). 226 test pass.
 

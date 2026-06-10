@@ -31,6 +31,14 @@ class EventHook {
   /// Tracks how many times the tap has been auto-recovered
   var tapRecoveryCount = 0
 
+  /// v2.10: số lần retry tạo tap khi `tapCreate` fail dù app tưởng có quyền
+  /// (TCC mismatch sau update đổi chữ ký). Trước đây fail im lặng → user thấy
+  /// "bật V" mà không gõ được ở mọi app.
+  private var tapSetupRetries = 0
+  /// v2.10: callback khi tap vẫn fail sau khi retry — AppDelegate hiện alert
+  /// hướng dẫn re-grant Accessibility (tái dùng `showAccessibilityHelpAlert`).
+  var onTapSetupFailed: (() -> Void)?
+
   /// State for modifier-only hotkey detection (e.g. press Shift+Control then
   /// release without any key in between → toggle Vi/En). Tracking is done
   /// inside the event tap so it works while another app has focus and
@@ -157,9 +165,22 @@ class EventHook {
       )
     else {
       print("Failed to create event tap")
+      // v2.10: tap fail dù `isTrusted()` có thể vẫn true (TCC entry cũ sau khi
+      // update đổi chữ ký). Retry vài lần (TCC có thể đang settle) rồi báo user
+      // thay vì chết im lặng với toggle "bật".
+      if tapSetupRetries < 3 {
+        tapSetupRetries += 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+          self?.setupEventTap(give: appState)
+        }
+      } else {
+        tapSetupRetries = 0
+        onTapSetupFailed?()
+      }
       return
     }
 
+    tapSetupRetries = 0
     let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
     CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
     CGEvent.tapEnable(tap: eventTap, enable: true)
@@ -318,8 +339,23 @@ func eventTapCallback(
       }
     }
 
-    if type == .leftMouseDown || type == .rightMouseDown || isFocusShiftingKey {
+    // v2.10: ⌘-combo (⌘Space mở Spotlight, ⌘Tab đổi app…) cũng có thể chuyển
+    // focus sang overlay không fire NSWorkspace notification → trigger refresh.
+    let isCommandCombo = type == .keyDown && event.flags.contains(.maskCommand)
+
+    if type == .leftMouseDown || type == .rightMouseDown || isFocusShiftingKey
+      || isCommandCombo {
       appState.refreshFocusedBundleIdAsync()
+    }
+
+    // v2.10: đồng bộ sending strategy theo FOCUSED bundle — overlay (Spotlight)
+    // có thể không kích hoạt activeApplicationDidChange nên strategy bị kẹt ở
+    // app cũ → backspace/replace sai. Guard `!=` nên chỉ chạy khi focus đổi
+    // thật, không reset tracker mỗi phím.
+    if type == .keyDown,
+       let focusedBundleId = appState.currentFocusedBundleId,
+       focusedBundleId != input.activeApp {
+      input.changeActiveApp(focusedBundleId)
     }
 
     if Defaults[.smartSwitchEnabled],

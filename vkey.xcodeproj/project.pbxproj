@@ -567,7 +567,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\"${BUILT_PRODUCTS_DIR}/LaunchAtLogin_LaunchAtLogin.bundle/Contents/Resources/copy-helper-swiftpm.sh\"\nif [ -d \"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/Sparkle.framework\" ]; then\n  codesign --force --sign - --timestamp=none \"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/Sparkle.framework\"\nfi\nif [ -d \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Library/LoginItems/LaunchAtLoginHelper.app\" ]; then\n  codesign --force --sign - --timestamp=none \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Library/LoginItems/LaunchAtLoginHelper.app\"\nelif [ -d \"${BUILT_PRODUCTS_DIR}/vkey.app/Contents/Library/LoginItems/LaunchAtLoginHelper.app\" ]; then\n  codesign --force --sign - --timestamp=none \"${BUILT_PRODUCTS_DIR}/vkey.app/Contents/Library/LoginItems/LaunchAtLoginHelper.app\"\nfi\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\"${BUILT_PRODUCTS_DIR}/LaunchAtLogin_LaunchAtLogin.bundle/Contents/Resources/copy-helper-swiftpm.sh\"\n# v2.10: identity-aware re-sign. Ad-hoc khi build dev (identity rong/\"-\");\n# Developer ID khi release. Truoc day ep --sign - --timestamp=none vo dieu kien\n# -> ghi de chu ky Developer ID va lam notarization FAIL.\nSIGN_ID=\"${EXPANDED_CODE_SIGN_IDENTITY:--}\"\nif [ \"$SIGN_ID\" = \"-\" ]; then TS=\"--timestamp=none\"; else TS=\"--timestamp\"; fi\n# Sparkle.framework: chi re-sign OUTER bundle. KHONG BAO GIO --deep — XPC\n# services/Autoupdate/Updater.app ben trong giu chu ky goc cua Sparkle project\n# (hardened runtime + entitlements rieng).\nif [ -d \"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/Sparkle.framework\" ]; then\n  codesign --force --sign \"$SIGN_ID\" $TS \"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/Sparkle.framework\"\nfi\n# LaunchAtLoginHelper: copy-helper-swiftpm.sh da ky dung bang\n# EXPANDED_CODE_SIGN_IDENTITY_NAME + --options=runtime khi co identity that.\n# Chi re-sign ad-hoc khi build khong identity (giu hanh vi dev cu).\nif [ \"$SIGN_ID\" = \"-\" ]; then\n  if [ -d \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Library/LoginItems/LaunchAtLoginHelper.app\" ]; then\n    codesign --force --sign - --timestamp=none \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Library/LoginItems/LaunchAtLoginHelper.app\"\n  elif [ -d \"${BUILT_PRODUCTS_DIR}/vkey.app/Contents/Library/LoginItems/LaunchAtLoginHelper.app\" ]; then\n    codesign --force --sign - --timestamp=none \"${BUILT_PRODUCTS_DIR}/vkey.app/Contents/Library/LoginItems/LaunchAtLoginHelper.app\"\n  fi\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -804,7 +804,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 20900;
+				CURRENT_PROJECT_VERSION = 21000;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -827,7 +827,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.9;
+				MARKETING_VERSION = 2.10;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -846,7 +846,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 20900;
+				CURRENT_PROJECT_VERSION = 21000;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
@@ -870,7 +870,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.9;
+				MARKETING_VERSION = 2.10;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;

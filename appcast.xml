@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.10 — "Gõ được trong Spotlight"</title>
+      <sparkle:version>21000</sparkle:version>
+      <sparkle:shortVersionString>2.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 10 Jun 2026 10:50:35 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.10/vkey-2.10.dmg"
+        sparkle:edSignature="jE/cE8evo6vTgvZQCCmvN1ApsT5BADR7OIS1O1eEL6ENsfFLaqWKZ5CdnHprIh+Q6mKcoebul9KV80LOrFcNCQ=="
+        length="6878018"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.10 — Gõ tiếng Việt được trong Spotlight</h2>
+        <p><em>Sửa lỗi gõ tiếng Việt bị ký tự đôi trong ô tìm kiếm Spotlight ("goõ tieếng viiệt").</em></p>
+        <h3>🐛 Sửa lỗi</h3>
+        <ul>
+          <li>Spotlight nuốt backspace khi vkey gửi kiểu cụm → bản thay thế bị chèn thêm. Nay gửi từng phím một (như fix Launchpad v2.7), kèm tự đồng bộ theo focus thật (bắt cả overlay mở bằng ⌘Space).</li>
+          <li>Khi macOS thu hồi quyền Accessibility (thường sau update), vkey nay <strong>tự hiện cảnh báo hướng dẫn cấp lại quyền</strong> thay vì im lặng không gõ được.</li>
+        </ul>
+        <p>⚠️ Sau update, nếu vkey hiện cảnh báo quyền Trợ năng: mở System Settings → Privacy &amp; Security → Accessibility → tắt/bật lại vkey. Bản ký Developer ID (hết cảnh này) sẽ đến trong bản sau.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.9 — "chuyên môn không thành chuyên moon"</title>
       <sparkle:version>20900</sparkle:version>
       <sparkle:shortVersionString>2.9</sparkle:shortVersionString>

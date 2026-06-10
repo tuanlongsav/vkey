@@ -121,6 +121,11 @@ class EventSimulator {
     // đồng bộ đúng. (com.apple.Spotlight = tiến trình Spotlight overlay riêng,
     // mặc định auto English qua Smart Switch; Dock thì không nên vẫn cần fix này.)
     AppSendingConfig(bundlePrefix: "com.apple.dock", strategy: .stepByStep, name: "Launchpad/Dock"),
+
+    // v2.10: Spotlight search field — cùng lớp với Launchpad/Dock: batch/hybrid
+    // backspace bị nuốt → bản thay thế bị APPEND thay vì replace ("goõ tieếng
+    // viiệt"). stepByStep gửi từng phím nên đồng bộ đúng.
+    AppSendingConfig(bundlePrefix: "com.apple.Spotlight", strategy: .stepByStep, name: "Spotlight"),
   ]
 
   static func getStrategy(for bundleId: String) -> SendingStrategy {

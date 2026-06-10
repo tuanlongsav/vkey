@@ -3194,6 +3194,13 @@ final class AppSendingStrategyTests: XCTestCase {
     XCTAssertFalse(isStepByStep("com.apple.TextEdit"),
       "App native thường KHÔNG nên rơi vào stepByStep")
   }
+
+  // v2.10: Spotlight search field — batch/hybrid bị Spotlight nuốt backspace →
+  // bản thay thế bị append ("goõ tieếng viiệt"). Phải dùng stepByStep.
+  func testSpotlightUsesStepByStep() throws {
+    XCTAssertTrue(isStepByStep("com.apple.Spotlight"),
+      "Spotlight phải dùng stepByStep để gõ tiếng Việt không bị ký tự đôi")
+  }
 }
 
 // MARK: - ===========================================

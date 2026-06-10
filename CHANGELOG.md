@@ -2,6 +2,23 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.10] - 2026-06-01 — "Gõ được trong Spotlight"
+
+**Sửa lỗi gõ tiếng Việt bị ký tự đôi trong ô tìm kiếm Spotlight ("goõ tieếng viiệt") + app tự báo khi mất quyền Accessibility thay vì chết im lặng.**
+
+### 🐛 Sửa lỗi
+
+- **Spotlight**: ô tìm kiếm Spotlight (`com.apple.Spotlight`) nuốt backspace khi vkey gửi kiểu batch/hybrid → bản thay thế bị **chèn thêm** thay vì thay thế → "goõ tieếng viiệt". Nay dùng chiến lược `stepByStep` (từng phím một) — cùng cách đã fix Launchpad ở v2.7.
+- **Đồng bộ chiến lược theo focus thật**: overlay (Spotlight…) có thể không phát notification đổi app → vkey bị kẹt chiến lược của app cũ. Nay tự đồng bộ khi focus đổi (kèm refresh khi nhấn tổ hợp ⌘ như ⌘Space).
+- **Hết "bật V mà không gõ được" im lặng**: khi macOS thu hồi quyền Accessibility (thường sau khi update), event tap tạo thất bại nhưng app trước đây chỉ ghi log rồi thôi. Nay tự thử lại 3 lần rồi **hiện cảnh báo hướng dẫn cấp lại quyền**.
+
+### 🔧 Nội bộ
+
+- Build phase ký Sparkle/LaunchAtLoginHelper chuyển sang **identity-aware** (chuẩn bị cho việc ký Developer ID + notarization ở bản sau — hiện hoãn chờ tài khoản Apple Developer). Hành vi bản ad-hoc không đổi.
+- **227 test pass** (226 + test Spotlight strategy).
+
+> ⚠️ Bản này vẫn ký ad-hoc: sau khi update, nếu macOS thu hồi quyền Accessibility thì vkey sẽ **tự hiện cảnh báo** — làm theo hướng dẫn (System Settings → Privacy & Security → Accessibility → bật lại vkey). Bản ký Developer ID (hết cảnh re-grant) sẽ đến khi tài khoản developer sẵn sàng.
+
 ## [2.9] - 2026-06-01 — "chuyên môn không thành chuyên moon"
 
 **Mở rộng fix v2.8: rà soát toàn bộ danh sách từ tiếng Anh tự khôi phục, loại thêm các từ mà Telex biến đổi ra từ tiếng Việt hợp lệ & phổ biến (vd "moon"→"môn", "theme"→"thêm").**

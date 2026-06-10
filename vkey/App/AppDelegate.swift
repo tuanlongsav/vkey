@@ -112,6 +112,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       object: nil
     )
 
+    // v2.10: event tap fail sau retry (vd TCC entry cũ sau khi update đổi chữ
+    // ký → isTrusted true nhưng tapCreate bị từ chối) → hiện alert hướng dẫn
+    // re-grant Accessibility thay vì chết im lặng với toggle "bật".
+    appState.eventHook.onTapSetupFailed = { [weak self] in
+      self?.showAccessibilityHelpAlert()
+    }
+
     checkTrustStatus()
 
     if isTrusted {
