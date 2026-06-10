@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 2.11 — "Spotlight, lần này thật"</title>
+      <sparkle:version>21100</sparkle:version>
+      <sparkle:shortVersionString>2.11</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 10 Jun 2026 16:48:08 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v2.11/vkey-2.11.dmg"
+        sparkle:edSignature="59ywefdjWQ3f15bWvvW3N2djqPc9p/2uDE518/d3r1S9q8oqjN3n2hl/0D7GBqCnkBI3VQmu+1PIuDeO3MlsCA=="
+        length="6877468"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v2.11 — Fix lại Spotlight (lần này thật)</h2>
+        <p><em>v2.10 thêm đúng chiến lược gõ cho Spotlight nhưng nó không bao giờ được kích hoạt trên macOS 26: Spotlight là tiến trình UIElement — không phát thông báo đổi app khi nhận focus.</em></p>
+        <h3>✅ Fix</h3>
+        <ul>
+          <li>vkey nay đọc <strong>PID của app đích trực tiếp từ mỗi phím</strong> (WindowServer điền sẵn trên event) — nhận diện chính xác từng phím, không phụ thuộc notification, bắt chuẩn mọi overlay (Spotlight, ⌘Space).</li>
+          <li>Smart Switch per-app giờ hoạt động đúng trong overlay (Spotlight → tiếng Anh theo mặc định, hoặc tiếng Việt nếu bạn cấu hình — với chiến lược gõ đúng).</li>
+        </ul>
+        <p>⚠️ Sau update, nếu vkey hiện cảnh báo quyền Trợ năng: System Settings → Privacy &amp; Security → Accessibility → tắt/bật lại vkey.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 2.10 — "Gõ được trong Spotlight"</title>
       <sparkle:version>21000</sparkle:version>
       <sparkle:shortVersionString>2.10</sparkle:shortVersionString>

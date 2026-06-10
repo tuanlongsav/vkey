@@ -2,6 +2,20 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [2.11] - 2026-06-10 — "Spotlight, lần này thật"
+
+**Fix lại lỗi ký tự đôi trong Spotlight — v2.10 thêm đúng chiến lược nhưng nó không bao giờ được kích hoạt trên macOS 26 (Tahoe).**
+
+### 🐛 Nguyên nhân v2.10 trượt
+
+Spotlight trên Tahoe là tiến trình **UIElement** — không phát `didActivateApplicationNotification` khi nhận focus, còn AX refresh thì bị race (chạy lúc nhấn ⌘Space, trước khi overlay mở). Cả hai đường nhận diện app của vkey đều trượt → chiến lược `stepByStep` cho Spotlight có trong danh sách nhưng **không bao giờ được áp**.
+
+### ✅ Fix v2.11
+
+- Đọc **PID của app đích trực tiếp từ mỗi event** (`eventTargetUnixProcessID` — WindowServer điền sẵn): chính xác từng phím, không phụ thuộc notification/AX, bắt chuẩn mọi overlay. BundleId được cache theo PID nên gần như không tốn chi phí.
+- Đồng bộ luôn cache focused-bundle → **Smart Switch per-app giờ hoạt động đúng trong overlay** (vd cấu hình mặc định Spotlight → tiếng Anh giờ mới thực sự áp dụng; ai cấu hình Spotlight → tiếng Việt thì gõ với chiến lược đúng).
+- **227 test pass**.
+
 ## [2.10] - 2026-06-01 — "Gõ được trong Spotlight"
 
 **Sửa lỗi gõ tiếng Việt bị ký tự đôi trong ô tìm kiếm Spotlight ("goõ tieếng viiệt") + app tự báo khi mất quyền Accessibility thay vì chết im lặng.**

@@ -39,6 +39,12 @@ class EventHook {
   /// hướng dẫn re-grant Accessibility (tái dùng `showAccessibilityHelpAlert`).
   var onTapSetupFailed: (() -> Void)?
 
+  /// v2.11: PID đích của event gần nhất — đọc trực tiếp từ event
+  /// (`.eventTargetUnixProcessID`, WindowServer điền sẵn). Cache bundleId
+  /// để chỉ lookup NSRunningApplication khi PID đổi (rẻ, không AX).
+  var lastEventTargetPID: pid_t = 0
+  var lastEventTargetBundleId: String?
+
   /// State for modifier-only hotkey detection (e.g. press Shift+Control then
   /// release without any key in between → toggle Vi/En). Tracking is done
   /// inside the event tap so it works while another app has focus and
@@ -330,6 +336,29 @@ func eventTapCallback(
   // do AppState cache (cập nhật bởi NSWorkspace.didActivateApplicationNotification).
   // Trên mouse-click hoặc phím chuyển focus, trigger async refresh.
   if let appState = eventHook.appState {
+    // v2.11: xác định app ĐÍCH của event bằng PID đọc TỪ CHÍNH EVENT —
+    // nguồn chính xác duy nhất cho overlay UIElement như Spotlight (Tahoe):
+    // không phát didActivateApplicationNotification, còn AX refresh thì race
+    // (chạy lúc ⌘Space keyDown, TRƯỚC khi overlay mở). v2.10 dựa vào 2 đường
+    // đó nên sending strategy không bao giờ được áp cho Spotlight → ký tự đôi.
+    if type == .keyDown || type == .leftMouseDown || type == .rightMouseDown {
+      let targetPID = pid_t(event.getIntegerValueField(.eventTargetUnixProcessID))
+      if targetPID > 0 {
+        if targetPID != eventHook.lastEventTargetPID {
+          eventHook.lastEventTargetPID = targetPID
+          eventHook.lastEventTargetBundleId =
+            NSRunningApplication(processIdentifier: targetPID)?.bundleIdentifier
+        }
+        if let bid = eventHook.lastEventTargetBundleId, bid != input.activeApp {
+          input.changeActiveApp(bid)
+          // Đồng bộ luôn cache focused-bundle để Smart Switch per-keystroke
+          // (block bên dưới) thấy đúng app đích — vd Spotlight auto-English
+          // theo config mặc định giờ mới thực sự hoạt động trong overlay.
+          appState.noteFocusedBundleId(bid)
+        }
+      }
+    }
+
     var isFocusShiftingKey = false
     if type == .keyDown {
       let keyCode = event.getIntegerValueField(.keyboardEventKeycode)

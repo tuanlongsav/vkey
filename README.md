@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 2.10 — "Gõ được trong Spotlight"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 2.11 — "Spotlight, lần này thật"** ([CHANGELOG](CHANGELOG.md))
+
+> **2.11** — Fix lại lỗi ký tự đôi Spotlight: v2.10 thêm đúng chiến lược nhưng Spotlight trên macOS 26 là UIElement (không phát notification đổi app) nên chiến lược không bao giờ được kích hoạt. Nay vkey đọc **PID app đích trực tiếp từ mỗi event** — nhận diện chính xác từng phím, mọi overlay; Smart Switch per-app cũng hoạt động đúng trong overlay. 227 test pass.
 
 > **2.10** — Sửa lỗi gõ tiếng Việt bị **ký tự đôi trong Spotlight** ("goõ tieếng viiệt"): dùng chiến lược gửi từng phím như fix Launchpad v2.7, kèm đồng bộ chiến lược theo focus thật (bắt cả overlay mở bằng ⌘Space). Thêm: khi macOS thu hồi quyền Accessibility (sau update), vkey **tự hiện cảnh báo hướng dẫn cấp lại** thay vì chết im lặng. 227 test pass.
 

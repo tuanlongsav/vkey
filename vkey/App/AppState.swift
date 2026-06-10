@@ -312,6 +312,13 @@ class AppState: ObservableObject, FileMonitorDelegate {
         }
     }
 
+    /// v2.11: cập nhật cache focused-bundle từ event-target PID — EventHook
+    /// đọc PID đích trực tiếp trên mỗi event nên chính xác hơn AX refresh
+    /// cho overlay UIElement (Spotlight). Gọi trên main run loop (event tap).
+    public func noteFocusedBundleId(_ bid: String) {
+        currentFocusedBundleId = bid
+    }
+
     /// 1.7.x: refresh `currentFocusedBundleId` async — gọi từ EventHook
     /// callback trên mouse-click events. Chạy trên background queue để
     /// không block event tap. NSWorkspace notification đã đủ cho cross-app
