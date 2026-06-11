@@ -78,10 +78,8 @@
 		8DA66064BE4A249CD5C995DA /* Inter-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8DAE37A60471BD596352E583 /* Inter-Variable.ttf */; };
 		A1B2C3D4E5F6A7B8C9D0E1F9 /* GlassTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1B0 /* GlassTile.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1FA /* TonalRowIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1B1 /* TonalRowIcon.swift */; };
-		A3D9716267048D287ABB43E8 /* RustEngineBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D8DA6881CD05014BEE9B779 /* RustEngineBridge.swift */; };
 		A577F31CCB6071AB62F71BD8 /* EmbeddedLexiconData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF27B5F4C4E372971F4466A7 /* EmbeddedLexiconData.swift */; };
 		B5120602CCC5EAE262D73C62 /* SmartSwitchSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */; };
-		B8922497E2121A6FA04CC2A3 /* libvkey_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 51E9B298F908693C818B948F /* libvkey_core.a */; };
 		C2EC9B7D79B25412654504A0 /* VKBarControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D96418BD00F1CCCC026F67 /* VKBarControls.swift */; };
 		CDD99ACF8126FA2BF147D861 /* SuggestionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FF73C92A71721E44ACDE39 /* SuggestionService.swift */; };
 		CE7ABBC5AC69A832A845CE31 /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92721E2546773FF5AAC7672C /* StatisticsView.swift */; };
@@ -118,7 +116,6 @@
 		037F2FB81C8513F799873AE1 /* VKSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKSettingsView.swift; path = ../View/Redesign/VKSettingsView.swift; sourceTree = "<group>"; };
 		22C15A8AB81A235FF54939DC /* Updater.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		252B2D3658BCA8B49784C82E /* VKDesign.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKDesign.swift; path = ../View/Redesign/VKDesign.swift; sourceTree = "<group>"; };
-		2D8DA6881CD05014BEE9B779 /* RustEngineBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RustEngineBridge.swift; sourceTree = "<group>"; };
 		3416A437829EB9F2B9AB6BD4 /* VKThemeTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKThemeTab.swift; path = ../View/Redesign/VKThemeTab.swift; sourceTree = "<group>"; };
 		372FB596601D5DAF3222D95E /* LexiconUpdatePackage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LexiconUpdatePackage.swift; sourceTree = "<group>"; };
 		3F2E2BDF2B87A85A00FE1C97 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -162,7 +159,6 @@
 		3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSimulator.swift; sourceTree = "<group>"; };
 		3FDB83CE2BB468BA00AD6323 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		46CEC38FE55740D55866E6D3 /* VKMenuBar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKMenuBar.swift; path = ../View/Redesign/VKMenuBar.swift; sourceTree = "<group>"; };
-		51E9B298F908693C818B948F /* libvkey_core.a */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = archive.ar; name = libvkey_core.a; path = "rust-core/target/universal/libvkey_core.a"; sourceTree = "<group>"; };
 		521F6BD0B4DB972BC0C580DE /* EmbeddedBigrams.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedBigrams.swift; sourceTree = "<group>"; };
 		558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PredictionHUDWindow.swift; sourceTree = "<group>"; };
 		5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TextConversionService.swift; sourceTree = "<group>"; };
@@ -202,7 +198,6 @@
 		E0316EE5AB4EBE700B533B62 /* UserDataMigration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDataMigration.swift; sourceTree = "<group>"; };
 		E7FF73C92A71721E44ACDE39 /* SuggestionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SuggestionService.swift; sourceTree = "<group>"; };
 		EA0937E79B85F7643A7EC6A8 /* Lexicon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Lexicon.swift; sourceTree = "<group>"; };
-		F3E422CB49C1C850FC80043D /* vkey-Bridging-Header.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "vkey-Bridging-Header.h"; sourceTree = "<group>"; };
 		F5E87049C6C5D5457BEEBEDD /* VKSpellTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKSpellTab.swift; path = ../View/Redesign/VKSpellTab.swift; sourceTree = "<group>"; };
 		FF0A79FB401501E597B689C9 /* EnVnReference.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnVnReference.swift; sourceTree = "<group>"; };
 		FF27B5F4C4E372971F4466A7 /* EmbeddedLexiconData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedLexiconData.swift; sourceTree = "<group>"; };
@@ -217,7 +212,6 @@
 				3F2E85C92B9EDE7900A95282 /* Defaults in Frameworks */,
 				3F2E85D22BA0B53F00A95282 /* KeyboardShortcuts in Frameworks */,
 				3F9FC6D82B9EB6A200659712 /* LaunchAtLogin in Frameworks */,
-				B8922497E2121A6FA04CC2A3 /* libvkey_core.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -304,7 +298,6 @@
 				E832E39C064A0FFEAD964C5B /* Input */,
 				2C5DF9C9207C18B6E3F257BE /* Stats */,
 				B1C2D3E4F5A6B7C8D9E0F1A9 /* Resources */,
-				F3E422CB49C1C850FC80043D /* vkey-Bridging-Header.h */,
 				83038FED62BDD53D1C53983D /* Redesign */,
 			);
 			path = vkey;
@@ -347,7 +340,6 @@
 				3F8A65052B8C69C9009E2AF1 /* Telex.swift */,
 				3F8A65072B8E370B009E2AF1 /* VNI.swift */,
 				3F8A65092B8E3BE8009E2AF1 /* TypingMethod.swift */,
-				2D8DA6881CD05014BEE9B779 /* RustEngineBridge.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -421,7 +413,6 @@
 		68F4C810D280DCBD7029FE77 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				51E9B298F908693C818B948F /* libvkey_core.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -696,7 +687,6 @@
 				F348AD6A8752A1C54FA5C347 /* InputSourceMonitor.swift in Sources */,
 				964199382501358B452A147B /* TextConversionService.swift in Sources */,
 				1C1E141EB16B027B173B8F1F /* WindowTitleRuleEngine.swift in Sources */,
-				A3D9716267048D287ABB43E8 /* RustEngineBridge.swift in Sources */,
 				757DCAEB9D825EC7776C2BEE /* VKDesign.swift in Sources */,
 				0757D78148617667C5D66327 /* VKComponents.swift in Sources */,
 				14863DB76A8C437B6D74D810 /* VKSettingsView.swift in Sources */,
@@ -883,10 +873,6 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/rust-core/include",
-				);
 				INFOPLIST_FILE = vkey/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -895,17 +881,11 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/rust-core/target/universal",
-				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 3.3;
-				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "vkey/vkey-Bridging-Header.h";
 				SWIFT_VERSION = 5.10;
 			};
 			name = Debug;
@@ -926,10 +906,6 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/rust-core/include",
-				);
 				INFOPLIST_FILE = vkey/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -938,18 +914,12 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/rust-core/target/universal",
-				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 3.3;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
-				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "vkey/vkey-Bridging-Header.h";
 				SWIFT_VERSION = 5.10;
 			};
 			name = Release;
@@ -963,10 +933,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/rust-core/include",
-				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.tests;
@@ -986,10 +952,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/rust-core/include",
-				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.tests;

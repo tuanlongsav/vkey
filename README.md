@@ -100,22 +100,6 @@ Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift 
 
 ---
 
-## Kiến trúc Rust Core (v2.0+)
-
-Từ v2.0, phần lõi engine xử lý tiếng Việt được bắt đầu port sang Rust qua C-ABI FFI (xem `rust-core/`). Phase 1 hoàn thành: data types (State + Parser primitives) + 6 FFI symbols. Phase 2-4 (Validator, Transformer + Telex/VNI, retire Swift engine) trong các release tiếp theo.
-
-**Rust core có ảnh hưởng auto-update không?**
-
-> **Không.** Rust core được **link tĩnh** (`libvkey_core.a` universal arm64+x86_64) trực tiếp vào binary của `vkey.app`. Cụ thể:
->
-> - DMG release chứa toàn bộ code Rust **đã compile** thành machine code → không có file `.dylib`/`.so` riêng, không cần Rust runtime trên máy user.
-> - Sparkle EdDSA signature + Apple code signing đều cover binary as-a-whole → cover luôn phần Rust → auto-update hoạt động y hệt 1.x.
-> - User 1.9.7 → 2.0.0: Sparkle download DMG → verify EdDSA → replace `vkey.app` → restart. Không cần action phụ.
-> - Cost: DMG tăng ~6% (7.13 MB → 7.59 MB), executable ~18.9 MB (universal).
-> - Tương lai (Phase 4): khi Swift engine được retire, kích thước binary có thể GIẢM lại do bỏ duplicate code.
-
-**Build từ source khi có thay đổi Rust**: chạy `rust-core/build.sh` trước `xcodebuild`. Xem [`rust-core/README.md`](rust-core/README.md) cho chi tiết.
-
 ## Hiệu năng (v2.0+)
 
 **Mục tiêu** đo bằng XCTest performance baseline (xem `vkeyTests/vkeyTests.swift` → `test_benchmark_*`):
