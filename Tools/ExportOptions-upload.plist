@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Ký Developer ID + nộp notarization qua session Xcode (RELEASE.md Section 2).
+       destination=upload: xcodebuild tự upload lên notary service, sau đó
+       poll bằng `xcodebuild -exportNotarizedApp` để lấy app đã staple. -->
+  <key>method</key>
+  <string>developer-id</string>
+  <key>teamID</key>
+  <string>U4B264GM2B</string>
+  <key>signingStyle</key>
+  <string>automatic</string>
+  <key>destination</key>
+  <string>upload</string>
+</dict>
+</plist>

@@ -2,27 +2,32 @@
 
 Tài liệu này là quy trình đóng gói/release để **không bị lỗi cập nhật qua Sparkle**.
 
-## 0) Tổng quan workflow release (v1.7.1+, hardened v1.7.11+)
+## 0) Tổng quan workflow release (v1.7.1+, hardened v1.7.11+, Developer ID + notarize v3.5+)
 
-Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự. **BƯỚC 9 (README) LÀ BLOCKING** — không được skip, không được push nếu README chưa được rà soát/cập nhật.
+Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự. **BƯỚC 11 (README) LÀ BLOCKING** — không được skip, không được push nếu README chưa được rà soát/cập nhật.
 
 ```
-1.  Implement code changes + build verify clean
+1.  Implement code changes + test suite pass
 2.  Bump version (MARKETING_VERSION + CURRENT_PROJECT_VERSION trong pbxproj) — **chỉ 2 cấp `MAJOR.MINOR`**, xem quy tắc Section 1
-3.  xcodebuild Release clean build
-4.  Package DMG (hdiutil)
-5.  Sign Sparkle (Tools/sparkle_sign_update.sh) → capture edSignature + length
-6.  Update appcast.xml — thêm item mới ở ĐẦU danh sách (escape `&` → `&amp;` trong title)
-7.  Validate appcast (Tools/validate_appcast.sh) — XML lint pass
-8.  **CHANGELOG.md** — thêm section `## [x.y] - YYYY-MM-DD — "Title"` đầu file
-9.  **🚨 README.md — RÀ SOÁT + CHỈNH SỬA (BLOCKING, BẮT BUỘC từ v1.7.1+)** — xem checklist Section 5b bên dưới
-10. Verify version + signature + length khớp giữa pbxproj ↔ appcast ↔ DMG file size
-11. **Verify README đã update** — `git diff --cached README.md` phải có diff khi version đổi
-12. Commit (`git add -A && git commit`) — message tóm tắt + nhắc đã rà soát README
-13. **Ask user confirm trước khi push** (release là shared action, không tự push)
-14. `git push origin main`
-15. `gh release create vX.Y vkey-X.Y.dmg --title "..." --notes-file <CHANGELOG section>`
-16. Verify release asset uploaded với size khớp `length` trong appcast
+3.  Archive Release: xcodebuild archive -allowProvisioningUpdates (Section 2)
+4.  Ký Developer ID + nộp notarization: xcodebuild -exportArchive
+    (method=developer-id, destination=upload — Tools/ExportOptions-upload.plist)
+5.  Poll xcodebuild -exportNotarizedApp (30s/lần, thường 1-5 phút) → app đã
+    staple ticket; verify spctl ("Notarized Developer ID") + stapler validate
+6.  Package DMG (hdiutil) từ app ĐÃ NOTARIZED (không dùng app trong archive!)
+7.  Sign Sparkle (Tools/sparkle_sign_update.sh) → capture edSignature + length
+8.  Update appcast.xml — thêm item mới ở ĐẦU danh sách (escape `&` → `&amp;` trong title)
+9.  Validate appcast (Tools/validate_appcast.sh) — XML lint pass
+10. **CHANGELOG.md** — thêm section `## [x.y] - YYYY-MM-DD — "Title"` đầu file
+11. **🚨 README.md — RÀ SOÁT + CHỈNH SỬA (BLOCKING, BẮT BUỘC từ v1.7.1+)** — xem checklist Section 5b bên dưới
+12. Verify version + signature + length khớp giữa pbxproj ↔ appcast ↔ DMG file size
+13. **Verify README đã update** — `git diff --cached README.md` phải có diff khi version đổi
+14. Commit (`git add -A && git commit`) — message tóm tắt + nhắc đã rà soát README
+15. **Ask user confirm trước khi push** (release là shared action, không tự push;
+    user yêu cầu release/đồng bộ GitHub ngay trong phiên = đã confirm)
+16. `git push origin main`
+17. `gh release create vX.Y vkey-X.Y.dmg --title "..." --notes-file <CHANGELOG section>`
+18. Verify release asset uploaded: size khớp `length` trong appcast + URL download trả HTTP 200
 ```
 
 ### 🚨 Gating rule (v1.7.11+): README diff = release pass
@@ -76,12 +81,10 @@ xcodebuild -project vkey.xcodeproj -scheme vkey -configuration Release archive \
   -allowProvisioningUpdates
 
 # 2. Ký Developer ID + nộp notarization (destination=upload)
-#    ExportOptions: method=developer-id, teamID=U4B264GM2B,
-#    signingStyle=automatic, destination=upload
 xcodebuild -exportArchive \
   -archivePath /tmp/vkey-X.Y.xcarchive \
   -exportPath /tmp/vkey-X.Y-upload \
-  -exportOptionsPlist ExportOptions-upload.plist \
+  -exportOptionsPlist Tools/ExportOptions-upload.plist \
   -allowProvisioningUpdates
 # Lưu ý: bước này thỉnh thoảng fail "The request timed out" — chạy lại là được.
 
@@ -172,6 +175,12 @@ Trước khi publish appcast/release, bắt buộc check:
 4. So sánh `sparkle:edSignature` với output mới từ `sparkle_sign_update.sh`.
 5. Đảm bảo `SUFeedURL` trỏ đúng appcast public.
 6. Đảm bảo release asset đã tồn tại thật (không 404).
+7. **(v3.5+)** App trong DMG phải là bản NOTARIZED:
+   - `spctl --assess --type exec -vv <app>` → `source=Notarized Developer ID`
+   - `xcrun stapler validate <app>` → "The validate action worked!"
+   - `codesign -dvv <app>` → `Authority=Developer ID Application: Long Hoang Tuan (U4B264GM2B)` + `flags=0x10000(runtime)`
+8. **(v3.5+)** Nếu release này ĐỔI chữ ký so với bản trước (đổi cert/team) →
+   release notes + appcast PHẢI có cảnh báo "cấp lại quyền Trợ năng một lần".
 
 ## 5b) 🚨 Checklist README rà soát (v1.7.1+, hardened v1.7.11+)
 
@@ -249,9 +258,41 @@ git commit -m "vX.Y ... | README rà soát ✓"
    - Nguyên nhân: URL release đổi, private, hoặc chưa publish asset.
    - Cách tránh: verify URL truy cập trực tiếp trước khi publish appcast.
 
+5. **(v3.5+) `exportArchive` fail "The request timed out" / "No signing certificate Developer ID Application found"**
+   - Nguyên nhân: request lên dịch vụ cloud signing của Apple bị timeout (cert
+     Developer ID là cloud-managed, mỗi lần export đều gọi Apple).
+   - Cách tránh: chạy lại y nguyên lệnh — thường lần 2 là được. Nếu fail dai
+     dẳng: mở Xcode → Settings → Accounts kiểm tra session Apple ID còn đăng
+     nhập (session hết hạn thì đăng nhập lại) rồi retry.
+
+6. **(v3.5+) `exportNotarizedApp` báo EXPORT FAILED**
+   - Nguyên nhân: Apple CHƯA duyệt xong notarization — đây không phải lỗi.
+   - Cách tránh: poll lại mỗi 30s (thường 1-5 phút). Nếu >30 phút vẫn fail,
+     kiểm tra log distribution trong `/var/folders/.../xcdistributionlogs` —
+     có thể bị reject thật (entitlement/binary issue).
+
+7. **(v3.5+) User báo app đòi cấp lại quyền Trợ năng sau update**
+   - Nguyên nhân: chữ ký app đổi so với bản trước (vd ad-hoc → Developer ID
+     ở v3.5, hoặc tương lai đổi cert/team) → TCC reset entry.
+   - Cách tránh: GIỮ NGUYÊN cert Developer ID hiện tại cho mọi release sau.
+     Nếu buộc phải đổi → cảnh báo rõ trong release notes + appcast.
+
 ## 7) Bảo mật key
+
+### Sparkle EdDSA key (ký update)
 
 - Không commit private key lên git.
 - Nên lưu private key trong nơi an toàn và backup.
 - File gợi ý dùng local: `/Users/longht/Desktop/Claude/vkey/vkey_private_key.key`
 - Nếu đổi key, cần kế hoạch key rotation theo tài liệu Sparkle.
+
+### Developer ID key (ký app, v3.5+)
+
+- Cert **Developer ID Application: Long Hoang Tuan (U4B264GM2B)** là
+  **cloud-managed**: private key nằm trong HSM của Apple, KHÔNG có file key
+  local nào để backup/lộ. Keychain local chỉ có cert Apple Development /
+  Apple Distribution (Xcode tự quản).
+- Điều kiện dùng: Xcode đăng nhập Apple ID của Account Holder. Mất máy không
+  mất key — máy mới chỉ cần đăng nhập Xcode là ký tiếp được.
+- KHÔNG tự tạo thêm Developer ID cert qua portal trừ khi có lý do — đổi cert
+  = đổi chữ ký = user phải cấp lại quyền Trợ năng (xem Section 6.7).
