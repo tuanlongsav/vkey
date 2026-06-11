@@ -91,12 +91,16 @@ struct VKGeneralTab: View {
       VKSection("Phím tắt chuyển chế độ") {
         VKRowGroup {
           VKRow(icon: "command", iconColor: VK.Color.ink200, label: "Chuyển đổi VI / EN") {
+            // Không ép width cứng — NSButton rộng hơn 150 sẽ tràn đè viền card.
+            // fixedSize → nút tự co đúng intrinsic size, nằm gọn trong padding.
             FlexibleShortcutRecorder(name: .toggleInputMode)
-              .frame(width: 150, height: 24)
+              .fixedSize()
+              .frame(height: 26)
           }
           VKRow(icon: "wand.and.stars", iconColor: VK.Color.info, label: "Mở Text Tools") {
             FlexibleShortcutRecorder(name: .openTextConversionMenu)
-              .frame(width: 150, height: 24)
+              .fixedSize()
+              .frame(height: 26)
           }
         }
         VKGroupHint("Nhấn & thả tổ hợp modifier (vd ⌃⇧, ⇧⌥) để chuyển nhanh giữa tiếng Việt và tiếng Anh.")

@@ -2,6 +2,28 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.1] - 2026-06-11 — "Neural AI + hoàn thiện giao diện 3.0"
+
+**Theme thứ ba "Neural AI" + loạt fix cho giao diện 3.0. Engine gõ không đổi.**
+
+### ✨ Theme Neural AI (mới)
+
+- **Neural AI**: aurora tím–cyan trôi trên nền obsidian (dark) / lavender (light), gradient "trí tuệ" `#8B5CF6 → accent → #22D3EE` tô tiêu đề, nav active, nút primary, chip VI/EN. Slider **"Cường độ phát sáng"** điều khiển độ rực aurora + mọi halo.
+- Đồng bộ cả **menu bar** (panel obsidian + nhẫn gradient + hover gradient) và **HUD** (viên kính viền gradient + halo violet).
+
+### 🐛 Sửa lỗi giao diện 3.0
+
+- **Nút Sáng/Tối/Hệ thống bấm được** (3.0 bị titlebar nuốt click) — tách 3 nút, đặt phải header.
+- **Liquid Glass là kính thật**: cửa sổ trong suốt + blur nền sau (trước đây là gradient giả màu đỏ); sáng = frosted trắng, tối = kính tối, độ trong theo slider. Menu bar cũng trong hơn theo slider.
+- **Chọn phông chữ hoạt động** (3.0 chọn không ăn do Picker lồng Menu không bắn selection). Menu font preview bằng chính font đó. Áp toàn bộ nhãn UI.
+- **Layout Settings 2 cột tự dựng**: bỏ NavigationSplitView (nguồn dải trống cao + nút sidebar thừa), bỏ ô tìm kiếm, header mỏng 38pt, titlebar tối thiểu liền màu theme (kể cả khi đóng-mở lại / đổi theme).
+- Khung phím tắt hết đè viền card; sửa crash khi đổi theme Glass ⇄ Mặc định.
+
+### 🔧 Khác
+
+- Thêm font nhúng: Be Vietnam Pro, Lora, JetBrains Mono. Gỡ Carter One (tiếng Việt kém).
+- Cấu hình (màu nhấn / font / bo góc / mật độ / độ trong) lưu **riêng theo từng theme**.
+
 ## [3.0] - 2026-06-11 — "Giao diện mới: Tonal & Liquid Glass"
 
 **Đại tu toàn bộ cửa sổ Cài đặt + hệ thống theme. Engine gõ không đổi.**

@@ -64,12 +64,21 @@ struct VKThemeTab: View {
             }
           }
           VKRow(icon: "textformat", iconColor: VK.Color.brand, label: "Phông chữ") {
+            // Menu + Button thường (Picker lồng Menu không bắn selection —
+            // đây là lý do trước đây chọn font không có tác dụng).
             Menu {
-              Picker("", selection: bind(\.font)) {
-                ForEach(ThemeFont.allCases, id: \.self) { f in
-                  Text(f.displayName).tag(f)
+              ForEach(ThemeFont.allCases, id: \.self) { f in
+                Button {
+                  bind(\.font).wrappedValue = f
+                } label: {
+                  HStack {
+                    Text(f.displayName)
+                      .font(f.postScriptName.map { .custom($0, size: 13) }
+                            ?? .system(size: 13))
+                    if f == cfg.font { Image(systemName: "checkmark") }
+                  }
                 }
-              }.labelsHidden()
+              }
             } label: {
               HStack(spacing: 5) {
                 Text(cfg.font.displayName).font(.vk(.small)).foregroundStyle(VK.Color.fg1)
@@ -93,13 +102,16 @@ struct VKThemeTab: View {
         }
       }
 
-      // Liquid Glass — độ trong suốt
-      if theme == .glass {
-        VKSection("Liquid Glass") {
+      // Liquid Glass: độ trong suốt · Neural AI: cường độ phát sáng (cùng slot clarity)
+      if theme == .glass || theme == .neural {
+        VKSection(theme == .glass ? "Liquid Glass" : "Neural AI") {
           VKRowGroup {
-            VKRow(icon: "drop.halffull", iconColor: VK.Color.brand,
-                  label: "Độ trong suốt",
-                  hint: "Kéo cao = kính trong hơn, thấy nền sau rõ hơn.") {
+            VKRow(icon: theme == .glass ? "drop.halffull" : "sparkles",
+                  iconColor: VK.Color.brand,
+                  label: theme == .glass ? "Độ trong suốt" : "Cường độ phát sáng",
+                  hint: theme == .glass
+                    ? "Kéo cao = kính trong hơn, thấy nền sau rõ hơn."
+                    : "Kéo cao = aurora và halo gradient rực hơn.") {
               HStack(spacing: 8) {
                 Slider(value: bind(\.clarity), in: 0...1)
                   .frame(width: 150)
@@ -111,7 +123,9 @@ struct VKThemeTab: View {
               }
             }
           }
-          VKGroupHint("Liquid Glass dùng nền trong mờ + blur khúc xạ. Trên macOS Tahoe sẽ trong và mượt nhất.")
+          VKGroupHint(theme == .glass
+            ? "Liquid Glass dùng nền trong mờ + blur khúc xạ. Trên macOS Tahoe sẽ trong và mượt nhất."
+            : "Neural AI: aurora tím–cyan trôi trên nền obsidian, gradient trí tuệ tô tiêu đề / nav / nút.")
         }
       }
     }
@@ -127,13 +141,31 @@ struct VKThemeTab: View {
       VStack(alignment: .leading, spacing: 8) {
         // preview swatch
         ZStack {
-          RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(t == .glass
-                  ? AnyShapeStyle(.ultraThinMaterial)
-                  : AnyShapeStyle(VK.Color.bgSunken))
-          RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(t == .glass ? VK.Color.brand.opacity(0.18) : VK.Color.brand.opacity(0.9))
-            .frame(width: 34, height: 12)
+          switch t {
+          case .glass:
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+              .fill(.ultraThinMaterial)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+              .fill(VK.Color.brand.opacity(0.18))
+              .frame(width: 34, height: 12)
+          case .neural:
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+              .fill(Color(vkHex: "#0B0B14"))
+            Circle().fill(Color(vkHex: "#8B5CF6").opacity(0.5))
+              .frame(width: 34).blur(radius: 10).offset(x: -16, y: -6)
+            Circle().fill(Color(vkHex: "#22D3EE").opacity(0.4))
+              .frame(width: 28).blur(radius: 10).offset(x: 18, y: 8)
+            Capsule()
+              .fill(LinearGradient(colors: [Color(vkHex: "#8B5CF6"), Color(vkHex: "#EC4899"), Color(vkHex: "#22D3EE")],
+                                   startPoint: .leading, endPoint: .trailing))
+              .frame(width: 34, height: 12)
+          case .tonal:
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+              .fill(VK.Color.bgSunken)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+              .fill(VK.Color.brand.opacity(0.9))
+              .frame(width: 34, height: 12)
+          }
         }
         .frame(height: 48)
         .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)

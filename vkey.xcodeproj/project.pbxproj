@@ -73,7 +73,6 @@
 		A1B2C3D4E5F6A7B8C9D0E1F5 /* HUDComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F6 /* FontRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A6 /* FontRegistration.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F7 /* NotoSansDisplay-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A7 /* NotoSansDisplay-Variable.ttf */; };
-		A1B2C3D4E5F6A7B8C9D0E1F8 /* CarterOne-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A8 /* CarterOne-Regular.ttf */; };
 		AF2AFB400277D4216834DA63 /* BeVietnamPro-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 89AA7DE2ED2B09A420DFC488 /* BeVietnamPro-Regular.ttf */; };
 		9E05F0ABBD1B4DB14CFE48AD /* Lora-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 34FFCE6BCFCE45A530A2C2AC /* Lora-Variable.ttf */; };
 		659EF489850064B803D1C329 /* JetBrainsMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9F7F048915B48416CA4B7A92 /* JetBrainsMono-Variable.ttf */; };
@@ -190,7 +189,6 @@
 		B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Components/HUDComponents.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A6 /* FontRegistration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FontRegistration.swift; path = ../App/FontRegistration.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A7 /* NotoSansDisplay-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "NotoSansDisplay-Variable.ttf"; sourceTree = "<group>"; };
-		B1C2D3E4F5A6B7C8D9E0F1A8 /* CarterOne-Regular.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "CarterOne-Regular.ttf"; sourceTree = "<group>"; };
 		89AA7DE2ED2B09A420DFC488 /* BeVietnamPro-Regular.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "BeVietnamPro-Regular.ttf"; sourceTree = "<group>"; };
 		34FFCE6BCFCE45A530A2C2AC /* Lora-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Lora-Variable.ttf"; sourceTree = "<group>"; };
 		9F7F048915B48416CA4B7A92 /* JetBrainsMono-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "JetBrainsMono-Variable.ttf"; sourceTree = "<group>"; };
@@ -452,7 +450,6 @@
 			isa = PBXGroup;
 			children = (
 				B1C2D3E4F5A6B7C8D9E0F1A7 /* NotoSansDisplay-Variable.ttf */,
-				B1C2D3E4F5A6B7C8D9E0F1A8 /* CarterOne-Regular.ttf */,
 				89AA7DE2ED2B09A420DFC488 /* BeVietnamPro-Regular.ttf */,
 				34FFCE6BCFCE45A530A2C2AC /* Lora-Variable.ttf */,
 				9F7F048915B48416CA4B7A92 /* JetBrainsMono-Variable.ttf */,
@@ -592,7 +589,6 @@
 				3FAFBB8E2B84A86D0032A55E /* Preview Assets.xcassets in Resources */,
 				3FAFBB8B2B84A86D0032A55E /* Assets.xcassets in Resources */,
 				A1B2C3D4E5F6A7B8C9D0E1F7 /* NotoSansDisplay-Variable.ttf in Resources */,
-				A1B2C3D4E5F6A7B8C9D0E1F8 /* CarterOne-Regular.ttf in Resources */,
 				AF2AFB400277D4216834DA63 /* BeVietnamPro-Regular.ttf in Resources */,
 				9E05F0ABBD1B4DB14CFE48AD /* Lora-Variable.ttf in Resources */,
 				659EF489850064B803D1C329 /* JetBrainsMono-Variable.ttf in Resources */,
@@ -881,7 +877,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 30000;
+				CURRENT_PROJECT_VERSION = 30100;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -904,7 +900,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.0;
+				MARKETING_VERSION = 3.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -923,7 +919,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 30000;
+				CURRENT_PROJECT_VERSION = 30100;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
@@ -947,7 +943,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.0;
+				MARKETING_VERSION = 3.1;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;

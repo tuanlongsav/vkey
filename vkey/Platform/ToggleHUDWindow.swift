@@ -158,9 +158,51 @@ private struct ToggleHUDView: View {
 
     var body: some View {
         Group {
-            if uiTheme == .glass { glassBody } else { tonalBody }
+            switch uiTheme {
+            case .glass:  glassBody
+            case .neural: neuralBody
+            case .tonal:  tonalBody
+            }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
+    }
+
+    // MARK: - Neural AI HUD — viên obsidian + viền gradient trí tuệ + halo violet
+
+    private var neuralBody: some View {
+        HStack(spacing: 14) {
+            HUDFlag(viewModel.isEnabled)
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+                .overlay(Circle().strokeBorder(VK.Color.brandGradient, lineWidth: 1.5))
+                .shadow(color: VK.Color.glow.opacity(0.5 * VK.glowK), radius: 8, x: 0, y: 3)
+                .vkeySymbolReplacementTransition()
+
+            Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
+                .font(VKeyDesign.display(18, weight: .bold))
+                .foregroundStyle(Color(vkHex: "#ECECF7"))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            if !hotkeyGlyphs.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(hotkeyGlyphs, id: \.self) { glyph in Keycap(glyph, size: .md) }
+                }
+            }
+
+            Text(viewModel.isEnabled ? "VI" : "EN")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 11).padding(.vertical, 6)
+                .background(Capsule().fill(VK.Color.brandGradient))
+                .overlay(Capsule().strokeBorder(.white.opacity(0.30), lineWidth: 0.5))
+        }
+        .padding(EdgeInsets(top: 11, leading: 11, bottom: 11, trailing: 16))
+        .background(Capsule().fill(Color(vkHex: "#0F0F18").opacity(0.88)))
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(VK.Color.brandGradient, lineWidth: 1).opacity(0.65))
+        .shadow(color: VK.Color.glow.opacity(0.45 * VK.glowK), radius: 26, x: 0, y: 10)
+        .shadow(color: .black.opacity(0.5), radius: 24, x: 0, y: 14)
     }
 
     // MARK: - Liquid Glass HUD — viên kính nổi (per design `.hud-glass`)

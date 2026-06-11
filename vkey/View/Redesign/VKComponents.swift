@@ -48,6 +48,9 @@ struct VKRowGroup<Content: View>: View {
       if VK.Glass.isOn {
         shape.fill(VK.Glass.card(dark: scheme == .dark))
           .background(.ultraThinMaterial, in: shape)
+      } else if VK.isNeural {
+        // ai.css --ai-card: trắng mờ rất nhạt nổi trên aurora
+        shape.fill(scheme == .dark ? Color.white.opacity(0.045) : Color.white.opacity(0.86))
       } else {
         shape.fill(VK.Color.bgElevated)
       }
@@ -90,9 +93,9 @@ struct VKIconTile: View {
   var size: CGFloat = 32
 
   var body: some View {
-    if VK.Glass.isOn {
-      // Liquid Glass: tile kính tinted — nền màu nhạt + blur + glyph theo màu
-      // + viền specular (per design `.icon-tile` glass).
+    if VK.Glass.isOn || VK.isNeural {
+      // Liquid Glass / Neural: tile tinted — nền màu nhạt + blur + glyph theo
+      // màu + viền specular (per design `.icon-tile`).
       let shape = RoundedRectangle(cornerRadius: 11, style: .continuous)
       shape.fill(color.opacity(0.20))
         .frame(width: size, height: size)
@@ -151,7 +154,7 @@ struct VKRow<Control: View>: View {
       }
       VStack(alignment: .leading, spacing: 2) {
         Text(label)
-          .font(.system(size: 13.5, weight: .medium))
+          .font(VK.Font.sans(13.5, .medium))
           .foregroundStyle(VK.Color.fg1)
           .fixedSize(horizontal: false, vertical: true)
         if let hint {
@@ -216,7 +219,7 @@ struct VKSegmented<T: Hashable>: View {
           withAnimation(VK.Motion.easeOut) { selection = opt.value }
         } label: {
           Text(opt.label)
-            .font(.system(size: 12.5, weight: .medium))
+            .font(VK.Font.sans(12.5, .medium))
             .foregroundStyle(active ? VK.Color.fg1 : VK.Color.fg2)
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
@@ -299,7 +302,7 @@ struct VKBadge: View {
 
   var body: some View {
     Text(text)
-      .font(.system(size: 11, weight: .semibold))
+      .font(VK.Font.sans(11, .semibold))
       .foregroundStyle(fg)
       .padding(.horizontal, 8)
       .padding(.vertical, 3)
@@ -349,7 +352,7 @@ struct VKButton: View {
         if let icon {
           Image(systemName: icon).font(.system(size: size == .sm ? 12 : 14, weight: .semibold))
         }
-        Text(title).font(.system(size: 13.5, weight: .medium))
+        Text(title).font(VK.Font.sans(13.5, .medium))
       }
       .foregroundStyle(fg)
       .frame(maxWidth: fullWidth ? .infinity : nil)
@@ -357,12 +360,16 @@ struct VKButton: View {
       .padding(.horizontal, 14)
       .background(
         RoundedRectangle(cornerRadius: VK.Radius.md, style: .continuous)
-          .fill(bg)
+          .fill(variant == .primary ? AnyShapeStyle(VK.Color.brandGradient) : AnyShapeStyle(bg))
           .overlay(
             RoundedRectangle(cornerRadius: VK.Radius.md, style: .continuous)
               .strokeBorder(border, lineWidth: 1)
           )
       )
+      // Halo gradient cho nút primary ở Neural (ai.css 0.7*k)
+      .shadow(color: (variant == .primary && VK.isNeural)
+                ? VK.Color.glow.opacity(0.5 * VK.glowK) : .clear,
+              radius: 9, x: 0, y: 4)
       .opacity(disabled ? 0.45 : 1)
     }
     .buttonStyle(.plain)

@@ -213,17 +213,20 @@ enum AppearanceMode: String, CaseIterable, Defaults.Serializable {
 enum UITheme: String, CaseIterable, Defaults.Serializable {
   case tonal
   case glass
+  case neural
 
   var displayName: String {
     switch self {
-    case .tonal: return "Mặc định"
-    case .glass: return "Liquid Glass"
+    case .tonal:  return "Mặc định"
+    case .glass:  return "Liquid Glass"
+    case .neural: return "Neural AI"
     }
   }
   var caption: String {
     switch self {
-    case .tonal: return "Phẳng, tương phản rõ — nền giấy ấm / mực sâu."
-    case .glass: return "Trong mờ, blur khúc xạ — kính nổi macOS Tahoe."
+    case .tonal:  return "Phẳng, tương phản rõ — nền giấy ấm / mực sâu."
+    case .glass:  return "Trong mờ, blur khúc xạ — kính nổi macOS Tahoe."
+    case .neural: return "Aurora + gradient trí tuệ tím → cyan, phong cách AI."
     }
   }
 }
@@ -279,13 +282,18 @@ enum ThemeDensity: String, CaseIterable, Codable, Defaults.Serializable {
 /// 2.16: font chữ giao diện. `.system` = SF; còn lại là font nhúng kèm app.
 enum ThemeFont: String, CaseIterable, Codable, Defaults.Serializable {
   case system, beVietnam, notoSans, lora, carterOne, jetBrains
+
+  /// Carter One đã gỡ (hiển thị tiếng Việt kém) — giữ case để config cũ
+  /// decode được, nhưng ẩn khỏi menu và fallback về SF.
+  static var allCases: [ThemeFont] { [.system, .beVietnam, .notoSans, .lora, .jetBrains] }
+
   var displayName: String {
     switch self {
     case .system:     return "Hệ thống (SF)"
     case .beVietnam:  return "Be Vietnam Pro"
     case .notoSans:   return "Noto Sans Display"
-    case .lora: return "Lora (serif)"
-    case .carterOne:  return "Carter One"
+    case .lora:       return "Lora (serif)"
+    case .carterOne:  return "Hệ thống (SF)"   // đã gỡ
     case .jetBrains:  return "JetBrains Mono"
     }
   }
@@ -295,8 +303,8 @@ enum ThemeFont: String, CaseIterable, Codable, Defaults.Serializable {
     case .system:     return nil
     case .beVietnam:  return "BeVietnamPro-Regular"
     case .notoSans:   return "NotoSansDisplay-Regular"
-    case .lora: return "Lora-Regular"
-    case .carterOne:  return "CarterOne"
+    case .lora:       return "Lora-Regular"
+    case .carterOne:  return nil               // font đã xoá khỏi bundle
     case .jetBrains:  return "JetBrainsMono-Regular"
     }
   }
@@ -308,14 +316,19 @@ struct ThemeConfig: Codable, Defaults.Serializable, Equatable {
   var font: ThemeFont
   var radius: ThemeRadius
   var density: ThemeDensity
-  var clarity: Double          // chỉ dùng cho Liquid Glass
+  var clarity: Double          // Liquid Glass: độ trong suốt · Neural: cường độ phát sáng
   var accent: AccentColorChoice = .red   // màu nhấn per-theme
 
-  static let tonalDefault = ThemeConfig(font: .system, radius: .medium, density: .regular, clarity: 0.5, accent: .red)
-  static let glassDefault = ThemeConfig(font: .system, radius: .round, density: .regular, clarity: 0.55, accent: .red)
+  static let tonalDefault  = ThemeConfig(font: .system, radius: .medium, density: .regular, clarity: 0.5, accent: .red)
+  static let glassDefault  = ThemeConfig(font: .system, radius: .round, density: .regular, clarity: 0.55, accent: .red)
+  static let neuralDefault = ThemeConfig(font: .system, radius: .medium, density: .regular, clarity: 0.45, accent: .purple)
 
   static func defaultFor(_ theme: UITheme) -> ThemeConfig {
-    theme == .glass ? glassDefault : tonalDefault
+    switch theme {
+    case .tonal:  return tonalDefault
+    case .glass:  return glassDefault
+    case .neural: return neuralDefault
+    }
   }
 }
 
@@ -334,6 +347,7 @@ extension Defaults.Keys {
   static let themeConfigs = Key<[String: ThemeConfig]>("theme-configs", default: [
     UITheme.tonal.rawValue: .tonalDefault,
     UITheme.glass.rawValue: .glassDefault,
+    UITheme.neural.rawValue: .neuralDefault,
   ])
 
   static let currentVersion = Key<String>("current-version", default: "0.1")

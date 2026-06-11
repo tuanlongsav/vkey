@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.0 — "Giao diện mới: Tonal & Liquid Glass"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.1 — "Neural AI + hoàn thiện giao diện 3.0"** ([CHANGELOG](CHANGELOG.md))
+
+> **3.1** — Theme thứ ba **Neural AI**: aurora tím–cyan + gradient "trí tuệ" (tô tiêu đề / nav / nút / HUD / menu bar), slider cường độ phát sáng. Loạt fix 3.0: nút Sáng/Tối bấm được, **Liquid Glass thành kính thật** (blur nền sau cửa sổ), **chọn phông chữ hoạt động** (5 font nhúng, gỡ Carter One), layout Settings 2 cột tự dựng (bỏ ô tìm kiếm, header mỏng, titlebar liền màu theme), hết crash đổi theme. Cấu hình lưu riêng theo từng theme. Engine gõ không đổi.
 
 > **3.0** — **Đại tu cửa sổ Cài đặt**: dựng lại bằng NavigationSplitView (sidebar + 6 tab, thêm tab **Quản lý giao diện**). Hai theme **Mặc định** (Tonal) và **Liquid Glass** (trong mờ, blur khúc xạ — macOS Tahoe), đổi nhanh trên menu bar. Tab Quản lý giao diện cho chỉnh **màu nhấn, phông chữ (6 font nhúng), bo góc, mật độ dòng, độ trong suốt** — lưu riêng theo từng theme. HUD + biểu tượng đổi theo theme. Bù đầy đủ thống kê chi tiết + quy tắc Smart Switch theo cửa sổ. Dọn sạch theme cũ. Engine gõ không đổi.
 

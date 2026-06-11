@@ -365,9 +365,36 @@ struct PredictionHUDView: View {
 
   var body: some View {
     Group {
-      if uiTheme == .glass { glassBody } else { tonalBody }
+      switch uiTheme {
+      case .glass:  glassBody
+      case .neural: neuralBody
+      case .tonal:  tonalBody
+      }
     }
     .frame(width: contentSize.width, height: contentSize.height)
+  }
+
+  // MARK: - Neural AI HUD — pill obsidian + viền gradient + mũi tên gradient
+
+  private var neuralBody: some View {
+    HStack(spacing: 6) {
+      Text("→")
+        .font(.system(size: CGFloat(fontSize), weight: .heavy, design: .rounded))
+        .foregroundStyle(VK.Color.brandGradient)
+      Text(prediction)
+        .font(.system(size: CGFloat(fontSize), weight: .semibold))
+        .foregroundStyle(Color(vkHex: "#ECECF7"))
+      Text("·")
+        .font(.system(size: CGFloat(fontSize), weight: .regular))
+        .foregroundStyle(Color(vkHex: "#ECECF7").opacity(0.4))
+      Keycap("Tab", size: .sm)
+    }
+    .padding(.horizontal, 14)
+    .padding(.vertical, 9)
+    .background(Capsule().fill(Color(vkHex: "#0F0F18").opacity(0.88)))
+    .background(.ultraThinMaterial, in: Capsule())
+    .overlay(Capsule().strokeBorder(VK.Color.brandGradient, lineWidth: 1).opacity(0.6))
+    .shadow(color: VK.Color.glow.opacity(0.4 * VK.glowK), radius: 14, x: 0, y: 6)
   }
 
   // MARK: - Liquid Glass HUD — viên kính pill `→ <pred> · Tab`

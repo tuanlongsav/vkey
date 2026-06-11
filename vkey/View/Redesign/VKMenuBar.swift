@@ -48,7 +48,8 @@ private struct VKMenuItemStyle: ButtonStyle {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
           RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .fill(hover ? VK.Color.brand : Color.clear))
+            // Neural: hover gradient trí tuệ; theme khác: màu accent phẳng.
+            .fill(hover ? AnyShapeStyle(VK.Color.brandGradient) : AnyShapeStyle(Color.clear)))
         .contentShape(Rectangle())
         .onHover { hover = $0 }
         .opacity(configuration.isPressed ? 0.8 : 1)
@@ -118,13 +119,28 @@ struct VKMenuPanel: View {
     .background(
       ZStack {
         VKMenuBlur()
-        Color.black.opacity(0.34)
+        // Nền panel theo theme đang mở:
+        // Neural → obsidian tím · Liquid Glass → trong hơn (theo độ trong
+        // suốt) · Mặc định → đen mờ chuẩn.
+        if VK.isNeural {
+          Color(vkHex: "#0F0F18").opacity(0.62)
+        } else if VK.Glass.isOn {
+          Color.black.opacity(max(0.08, 0.42 - VK.theme.clarity * 0.34))
+        } else {
+          Color.black.opacity(0.34)
+        }
       }
     )
     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     .overlay(
       RoundedRectangle(cornerRadius: 10, style: .continuous)
-        .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5))
+        .strokeBorder(Color.white.opacity(VK.Glass.isOn ? 0.25 : 0.12),
+                      lineWidth: VK.Glass.isOn ? 1 : 0.5))
+    // Neural: nhẫn gradient trí tuệ quanh panel (ai.css .win::after)
+    .overlay(
+      RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .strokeBorder(VK.Color.brandGradient, lineWidth: 1)
+        .opacity(VK.isNeural ? 0.45 : 0))
     .id(uiTheme.rawValue) // re-render khi đổi theme (màu brand đọc per-theme)
   }
 

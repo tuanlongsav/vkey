@@ -53,7 +53,6 @@ struct VKSettingsView: View {
   @Default(.appearanceMode) private var appearanceMode
   @Default(.uiTheme) private var uiTheme
   @Default(.themeConfigs) private var themeConfigs
-  @State private var search: String = ""
 
   /// Token để ép subtree (detail + sidebar) render lại khi đổi theme/cấu hình.
   /// KHÔNG gồm clarity (để slider mượt) và KHÔNG đặt ở root (tránh teardown
@@ -66,27 +65,36 @@ struct VKSettingsView: View {
   private var selected: VKTab { VKTab(rawValue: selectedRaw) ?? .general }
 
   var body: some View {
-    NavigationSplitView {
-      VKSidebar(selectedRaw: $selectedRaw, search: $search)
-        .id(themeToken)
-        .navigationSplitViewColumnWidth(232)
-    } detail: {
+    // 2 cột TỰ DỰNG (bỏ NavigationSplitView — nó tự cài NSToolbar cao gây dải
+    // trống + nút sidebar thừa). Titlebar = strip mỏng ~28pt trong suốt, nền
+    // các cột tràn lên dưới nó (ignoresSafeArea) nên liền mạch.
+    HStack(spacing: 0) {
+      VKSidebar(selectedRaw: $selectedRaw)
+        .frame(width: 232)
+        .id("side-\(themeToken)")
+
+      Rectangle()
+        .fill(VK.Color.border1)
+        .frame(width: 1)
+        .ignoresSafeArea(.container, edges: .top)
+
       VStack(spacing: 0) {
-        // Header tự vẽ: tên tab CHÍNH GIỮA, 3 nút sáng/tối SÁT PHẢI.
-        // KHÔNG dùng toolbar/navigationTitle native (Tahoe tự bọc pill + trùng).
+        // Header mỏng 42pt: tên tab CHÍNH GIỮA (gradient khi Neural) · 3 nút
+        // sáng/tối SÁT PHẢI. Không nút ẩn sidebar, không ô tìm kiếm.
         ZStack {
           Text(selected.title)
-            .font(.system(size: 16, weight: .bold))
-            .foregroundStyle(VK.Color.fg1)
+            .font(VK.Font.sans(16, .bold))
+            .foregroundStyle(VK.isNeural
+                             ? AnyShapeStyle(VK.Color.brandGradient)
+                             : AnyShapeStyle(VK.Color.fg1))
             .frame(maxWidth: .infinity, alignment: .center)
           HStack {
             Spacer()
             VKAppearanceSegment()
           }
         }
-        .padding(.horizontal, VK.Space.s6)
-        .padding(.top, 6)
-        .frame(height: 52)
+        .padding(.horizontal, VK.Space.s4)
+        .frame(height: 38)
         .overlay(alignment: .bottom) {
           Rectangle().fill(VK.Color.border1).frame(height: 1)
         }
@@ -108,13 +116,12 @@ struct VKSettingsView: View {
           .padding(.vertical, 20)
         }
       }
-      .id(themeToken) // ép detail render lại khi đổi theme/cấu hình
+      .id("detail-\(themeToken)")
       .background(detailBackground)
-      .ignoresSafeArea(.container, edges: .top)
-      .navigationTitle("")
     }
     .frame(minWidth: 820, minHeight: 600)
-    .background(WindowConfigurator())
+    .background(rootBackground)
+    .background(WindowConfigurator(theme: uiTheme))
     .tint(VK.Color.brand)
     // Đổi sáng/tối tức thì: ép NSApp.appearance thay vì .preferredColorScheme
     // (vốn không cập nhật ngay với chế độ "theo hệ thống" trên Settings scene).
@@ -122,13 +129,21 @@ struct VKSettingsView: View {
     .onChange(of: appearanceMode) { _, newValue in applyAppearance(newValue) }
   }
 
-  /// Nền detail: Liquid Glass → gradient ấm để kính có gì khúc xạ; Tonal → đặc.
-  /// KHÔNG đụng thuộc tính cửa sổ (isOpaque) — đó là nguyên nhân crash KVO.
+  /// Nền detail: Glass/Neural → trong suốt (lộ backdrop của cửa sổ); Tonal → đặc.
   @ViewBuilder private var detailBackground: some View {
-    if uiTheme == .glass {
-      VKGlassDesktop().ignoresSafeArea()
+    if uiTheme == .tonal {
+      VK.Color.bg.ignoresSafeArea(.container, edges: .top)
     } else {
-      VK.Color.bg
+      Color.clear
+    }
+  }
+
+  /// Nền cả cửa sổ: Glass = blur nền sau + tint; Neural = aurora; Tonal = đặc.
+  @ViewBuilder private var rootBackground: some View {
+    switch uiTheme {
+    case .glass:  VKGlassBackdrop().ignoresSafeArea()
+    case .neural: VKNeuralBackdrop().ignoresSafeArea()
+    case .tonal:  VK.Color.bg.ignoresSafeArea()
     }
   }
 
@@ -145,42 +160,139 @@ struct VKSettingsView: View {
 
 // MARK: - Window chrome
 
-/// Titlebar trong suốt (header gọn 1 băng, tên tab ở giữa). CHỈ set 1 lần,
-/// idempotent — KHÔNG đụng `isOpaque`/`backgroundColor` (toggle bool gây crash
-/// KVO re-entrancy khi đổi theme). Liquid Glass render bằng nền trong app.
+/// Cấu hình cửa sổ:
+/// - Ẩn NSToolbar mà NavigationSplitView tự cài (thủ phạm dải trống cao ~80pt
+///   trên Tahoe) → titlebar chỉ còn strip mỏng chứa traffic lights.
+/// - Liquid Glass: cửa sổ trong suốt (isOpaque=false + bg clear) để
+///   VisualEffect .behindWindow blur được desktop phía sau — kính THẬT.
+/// - An toàn crash: mọi set đều idempotent (chỉ ghi khi giá trị đổi) và chạy
+///   async ngoài chu kỳ update. KHÔNG đụng `isMovableByWindowBackground` —
+///   SwiftUI (LazyPreventsWindowDragFeature) observe KVO bool này, chính nó
+///   gây SIGSEGV khi đổi theme trước đây.
 private struct WindowConfigurator: NSViewRepresentable {
-  func makeNSView(context: Context) -> NSView {
-    let v = NSView()
-    DispatchQueue.main.async { configure(v.window) }
+  var theme: UITheme
+
+  func makeNSView(context: Context) -> VKWindowHook {
+    let v = VKWindowHook()
+    v.theme = theme
     return v
   }
-  func updateNSView(_ nsView: NSView, context: Context) {}
-  private func configure(_ window: NSWindow?) {
-    guard let window else { return }
-    if !window.titlebarAppearsTransparent { window.titlebarAppearsTransparent = true }
-    if window.titleVisibility != .hidden { window.titleVisibility = .hidden }
-    // Cho nội dung tràn lên dưới titlebar → thu hồi băng trống phía trên.
-    if !window.styleMask.contains(.fullSizeContentView) {
-      window.styleMask.insert(.fullSizeContentView)
-    }
-    window.isMovableByWindowBackground = true
+  func updateNSView(_ nsView: VKWindowHook, context: Context) {
+    nsView.theme = theme
   }
 }
 
-/// Nền "desktop kính" cho Liquid Glass: gradient ấm + lớp frost (ultraThin)
-/// để nội dung đọc được. Là nền vẽ trong app (không cần cửa sổ trong suốt).
-struct VKGlassDesktop: View {
+/// NSView hook configure cửa sổ. Phòng thủ 3 lớp cho strip titlebar:
+/// 1. Apply khi view gắn vào window (`viewDidMoveToWindow`) + retry 0/0.25/1s
+///    (SwiftUI Settings scene có thể set lại style SAU khi attach).
+/// 2. Re-assert mỗi lần cửa sổ thành key (đóng-mở lại Settings).
+/// 3. `window.backgroundColor` đặt theo MÀU THEME — kể cả khi fullSize bị
+///    reset, strip vẫn ăn màu theme thay vì trắng windowBackground.
+private final class VKWindowHook: NSView {
+  var theme: UITheme = .tonal { didSet { scheduleApply() } }
+  private var keyObserver: NSObjectProtocol?
+
+  override func viewDidMoveToWindow() {
+    super.viewDidMoveToWindow()
+    if let o = keyObserver { NotificationCenter.default.removeObserver(o); keyObserver = nil }
+    guard let w = window else { return }
+    keyObserver = NotificationCenter.default.addObserver(
+      forName: NSWindow.didBecomeKeyNotification, object: w, queue: .main
+    ) { [weak self] _ in self?.scheduleApply() }
+    scheduleApply()
+  }
+
+  deinit {
+    if let o = keyObserver { NotificationCenter.default.removeObserver(o) }
+  }
+
+  private func scheduleApply() {
+    guard window != nil else { return }
+    let t = theme
+    for delay in [0.0, 0.25, 1.0] {
+      DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+        Self.configure(self?.window, theme: t)
+      }
+    }
+  }
+
+  private static func configure(_ window: NSWindow?, theme: UITheme) {
+    guard let window else { return }
+    if !window.titlebarAppearsTransparent { window.titlebarAppearsTransparent = true }
+    if window.titleVisibility != .hidden { window.titleVisibility = .hidden }
+    if let toolbar = window.toolbar, toolbar.isVisible { toolbar.isVisible = false }
+    // Nền theme tràn lên strip titlebar (titlebar giữ chiều cao tối thiểu
+    // macOS ~28pt; phần tương tác nằm dưới safe area nên không mất click).
+    if !window.styleMask.contains(.fullSizeContentView) {
+      window.styleMask.insert(.fullSizeContentView)
+    }
+    switch theme {
+    case .glass:
+      if window.isOpaque { window.isOpaque = false }
+      window.backgroundColor = .clear
+    case .neural:
+      if !window.isOpaque { window.isOpaque = true }
+      window.backgroundColor = NSColor(name: nil) { app in
+        app.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+          ? NSColor(srgbRed: 0x0B / 255, green: 0x0B / 255, blue: 0x14 / 255, alpha: 1)
+          : NSColor(srgbRed: 0xF4 / 255, green: 0xF3 / 255, blue: 0xFB / 255, alpha: 1)
+      }
+    case .tonal:
+      if !window.isOpaque { window.isOpaque = true }
+      window.backgroundColor = NSColor(name: nil) { app in
+        app.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+          ? NSColor(srgbRed: 0x13 / 255, green: 0x15 / 255, blue: 0x19 / 255, alpha: 1)
+          : NSColor(srgbRed: 0xFA / 255, green: 0xF8 / 255, blue: 0xF4 / 255, alpha: 1)
+      }
+    }
+  }
+}
+
+/// Kính thật cho Liquid Glass: blur những gì NẰM SAU cửa sổ (.behindWindow)
+/// + lớp tint sáng/tối mờ — alpha theo slider "Độ trong suốt" (VK.Glass.panel).
+private struct VKGlassBackdrop: View {
   @Environment(\.colorScheme) private var scheme
   var body: some View {
     ZStack {
-      if scheme == .dark {
-        LinearGradient(colors: [Color(vkHex: "#3A211B"), Color(vkHex: "#241310"), Color(vkHex: "#0E0807")],
+      VKVisualEffect(material: .hudWindow, blending: .behindWindow)
+      Rectangle().fill(VK.Glass.panel(dark: scheme == .dark))
+    }
+  }
+}
+
+/// Nền Neural AI (ai.css .desktop): không gian tối/lavender + 4 đốm aurora
+/// (tím / cyan / hồng / indigo) blur mạnh, độ rực theo slider glow.
+private struct VKNeuralBackdrop: View {
+  @Environment(\.colorScheme) private var scheme
+  var body: some View {
+    let k = VK.glowK
+    let dark = scheme == .dark
+    ZStack {
+      if dark {
+        LinearGradient(colors: [Color(vkHex: "#0B0B14"), Color(vkHex: "#08080F"), Color(vkHex: "#060609")],
                        startPoint: .topLeading, endPoint: .bottomTrailing)
       } else {
-        LinearGradient(colors: [Color(vkHex: "#EA6B45"), Color(vkHex: "#CE3A22"), Color(vkHex: "#8E2616"), Color(vkHex: "#4A1510")],
+        LinearGradient(colors: [Color(vkHex: "#F4F3FB"), Color(vkHex: "#ECECF6"), Color(vkHex: "#E6E8F4")],
                        startPoint: .topLeading, endPoint: .bottomTrailing)
       }
-      Rectangle().fill(.ultraThinMaterial)
+      GeometryReader { geo in
+        let w = geo.size.width, h = geo.size.height
+        ZStack {
+          Circle().fill(Color(vkHex: "#8B5CF6").opacity(0.42 * k))
+            .frame(width: w * 0.55).blur(radius: 70)
+            .position(x: w * 0.22, y: h * 0.24)
+          Circle().fill(Color(vkHex: "#22D3EE").opacity(0.32 * k))
+            .frame(width: w * 0.45).blur(radius: 70)
+            .position(x: w * 0.80, y: h * 0.28)
+          Circle().fill(Color(vkHex: "#EC4899").opacity(0.24 * k))
+            .frame(width: w * 0.50).blur(radius: 80)
+            .position(x: w * 0.62, y: h * 0.84)
+          Circle().fill(Color(vkHex: "#6366F1").opacity(0.34 * k))
+            .frame(width: w * 0.50).blur(radius: 80)
+            .position(x: w * 0.16, y: h * 0.78)
+        }
+        .opacity(dark ? 0.78 : 0.9)
+      }
     }
   }
 }
@@ -190,31 +302,10 @@ struct VKGlassDesktop: View {
 private struct VKSidebar: View {
   @EnvironmentObject var appState: AppState
   @Binding var selectedRaw: String
-  @Binding var search: String
 
   var body: some View {
     VStack(alignment: .leading, spacing: VK.Space.s3) {
-      // Ô tìm kiếm
-      HStack(spacing: 6) {
-        Image(systemName: "magnifyingglass")
-          .font(.system(size: 13))
-          .foregroundStyle(VK.Color.fgMuted)
-        TextField("Tìm cài đặt", text: $search)
-          .textFieldStyle(.plain)
-          .font(.vk(.body))
-      }
-      .padding(.horizontal, 8)
-      .frame(height: 30)
-      .background(
-        RoundedRectangle(cornerRadius: VK.Radius.sm, style: .continuous)
-          .fill(VK.Color.bgElevated)
-          .overlay(
-            RoundedRectangle(cornerRadius: VK.Radius.sm, style: .continuous)
-              .strokeBorder(VK.Color.border1, lineWidth: 1)
-          )
-      )
-
-      // Thẻ nhận diện
+      // Thẻ nhận diện (đã bỏ ô tìm kiếm theo yêu cầu)
       identityCard
 
       // Nhãn nhóm
@@ -235,10 +326,18 @@ private struct VKSidebar: View {
       Spacer()
     }
     .padding(.horizontal, 12)
-    .padding(.top, 30) // chừa traffic lights khi nội dung tràn full-size
+    .padding(.top, 10)
     .frame(maxHeight: .infinity)
-    .background(VK.Glass.isOn ? AnyView(VKGlassDesktop()) : AnyView(VK.Color.bgSunken))
-    .ignoresSafeArea(.container, edges: .top)
+    .background {
+      Group {
+        if VK.Glass.isOn || VK.isNeural {
+          Color.white.opacity(0.03)
+        } else {
+          VK.Color.bgSunken
+        }
+      }
+      .ignoresSafeArea(.container, edges: .top) // nền tràn lên strip titlebar
+    }
   }
 
   private var identityCard: some View {
@@ -261,8 +360,10 @@ private struct VKSidebar: View {
 
       VStack(alignment: .leading, spacing: 4) {
         Text("vkey")
-          .font(.system(size: 15, weight: .bold))
-          .foregroundStyle(VK.Color.fg1)
+          .font(VK.Font.sans(15, .bold))
+          .foregroundStyle(VK.isNeural
+                           ? AnyShapeStyle(VK.Color.brandGradient)
+                           : AnyShapeStyle(VK.Color.fg1))
         HStack(spacing: 5) {
           Circle()
             .fill(appState.enabled ? VK.Color.success : VK.Color.fgMuted)
@@ -294,7 +395,7 @@ private struct VKSidebar: View {
       HStack(spacing: 9) {
         navTile(tab, active: active)
         Text(tab.title)
-          .font(.system(size: 13.5, weight: .medium))
+          .font(VK.Font.sans(13.5, .medium))
           .foregroundStyle(active ? .white : VK.Color.fg1)
         Spacer(minLength: 0)
       }
@@ -302,17 +403,20 @@ private struct VKSidebar: View {
       .padding(.vertical, 7)
       .background(
         RoundedRectangle(cornerRadius: VK.Radius.sm, style: .continuous)
-          .fill(active ? VK.Color.brand : .clear)
+          .fill(active ? AnyShapeStyle(VK.Color.brandGradient) : AnyShapeStyle(Color.clear))
       )
+      // Halo violet quanh nav active (Neural — ai.css 0.7*k)
+      .shadow(color: (active && VK.isNeural) ? VK.Color.glow.opacity(0.55 * VK.glowK) : .clear,
+              radius: 11, x: 0, y: 5)
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
   }
 
-  /// Tile icon nav: Tonal → vuông đặc; Liquid Glass → tròn tinted kính.
+  /// Tile icon nav: Tonal → vuông đặc; Liquid Glass / Neural → tinted mờ.
   @ViewBuilder
   private func navTile(_ tab: VKTab, active: Bool) -> some View {
-    if VK.Glass.isOn && !active {
+    if (VK.Glass.isOn || VK.isNeural) && !active {
       Circle()
         .fill(tab.tileColor.opacity(0.22))
         .frame(width: 26, height: 26)

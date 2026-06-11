@@ -59,6 +59,13 @@ enum VK {
     return Defaults[.themeConfigs][key] ?? ThemeConfig.defaultFor(Defaults[.uiTheme])
   }
 
+  /// Theme Neural AI đang bật?
+  static var isNeural: Bool { Defaults[.uiTheme] == .neural }
+
+  /// Hệ số glow Neural (ai.css: k = 0.25 + glow/100 * 1.05) — clarity đóng vai
+  /// trò "Cường độ phát sáng" khi theme = neural.
+  static var glowK: Double { 0.25 + theme.clarity * 1.05 }
+
   // MARK: Palette (ramp gốc — ưu tiên dùng token semantic `Color` bên dưới)
   enum Palette {
     typealias Color = SwiftUI.Color
@@ -118,23 +125,73 @@ enum VK {
       C(vkHex: choice.hex)
     }
 
-    // Surfaces
-    static let bg         = C(lightVK: Palette.paper50,  darkVK: Palette.ink500)
-    static let bgElevated = C(lightVK: Palette.paper0,   darkVK: Palette.ink400)
-    static let bgSunken   = C(lightVK: Palette.paper100, darkVK: Palette.ink600)
-    static let bgHover    = C(lightVK: Palette.paper100, darkVK: Palette.ink400)
-    static let bgPress    = C(lightVK: Palette.paper200, darkVK: Palette.ink300)
+    /// Gradient "trí tuệ" của Neural AI (ai.css --ai-grad): tím #8B5CF6 →
+    /// accent (stop giữa) → cyan #22D3EE. Theme khác trả gradient phẳng (1 màu)
+    /// để call-site dùng chung không cần rẽ nhánh.
+    static var brandGradient: LinearGradient {
+      if VK.isNeural {
+        return LinearGradient(
+          colors: [C(vkHex: "#8B5CF6"), C(vkHex: VK.theme.accent.hex), C(vkHex: "#22D3EE")],
+          startPoint: .topLeading, endPoint: .bottomTrailing)
+      }
+      return LinearGradient(colors: [brand, brand], startPoint: .leading, endPoint: .trailing)
+    }
+
+    /// Màu halo violet của Neural (ai.css --ai-glow-rgb 124,92,255).
+    static let glow = C(vkHex: "#7C5CFF")
+
+    // Surfaces — Neural AI có bộ màu riêng (ai.css), còn lại paper/ink Tonal.
+    private static var neural: Bool { VK.isNeural }
+
+    static var bg: C {
+      neural ? C(lightVK: C(vkHex: "#F4F3FB"), darkVK: C(vkHex: "#0B0B14"))
+             : C(lightVK: Palette.paper50, darkVK: Palette.ink500)
+    }
+    static var bgElevated: C {
+      neural ? C(lightVK: C(vkHex: "#FFFFFF"), darkVK: C(vkHex: "#16161F"))
+             : C(lightVK: Palette.paper0, darkVK: Palette.ink400)
+    }
+    static var bgSunken: C {
+      neural ? C(lightVK: C(vkHex: "#ECECF6"), darkVK: C(vkHex: "#08080F"))
+             : C(lightVK: Palette.paper100, darkVK: Palette.ink600)
+    }
+    static var bgHover: C {
+      neural ? C(lightVK: C(vkHex: "#F0EFF9"), darkVK: C(vkHex: "#1A1A26"))
+             : C(lightVK: Palette.paper100, darkVK: Palette.ink400)
+    }
+    static var bgPress: C {
+      neural ? C(lightVK: C(vkHex: "#E6E5F2"), darkVK: C(vkHex: "#20202E"))
+             : C(lightVK: Palette.paper200, darkVK: Palette.ink300)
+    }
 
     // Text
-    static let fg1       = C(lightVK: Palette.ink500, darkVK: C(vkHex: "#F2EFE8"))
-    static let fg2       = C(lightVK: Palette.ink200, darkVK: C(vkHex: "#C7C3B7"))
-    static let fg3       = C(lightVK: Palette.ink100, darkVK: C(vkHex: "#9B978B"))
-    static let fgMuted   = C(lightVK: Palette.paper500, darkVK: C(vkHex: "#7C7768"))
-    static let fgInverse = C(lightVK: Palette.paper0,  darkVK: Palette.ink600)
+    static var fg1: C {
+      neural ? C(lightVK: C(vkHex: "#14141F"), darkVK: C(vkHex: "#ECECF7"))
+             : C(lightVK: Palette.ink500, darkVK: C(vkHex: "#F2EFE8"))
+    }
+    static var fg2: C {
+      neural ? C(lightVK: C(vkHex: "#4B4B63"), darkVK: C(vkHex: "#ADADC8"))
+             : C(lightVK: Palette.ink200, darkVK: C(vkHex: "#C7C3B7"))
+    }
+    static var fg3: C {
+      neural ? C(lightVK: C(vkHex: "#8A8AA6"), darkVK: C(vkHex: "#71718E"))
+             : C(lightVK: Palette.ink100, darkVK: C(vkHex: "#9B978B"))
+    }
+    static var fgMuted: C {
+      neural ? C(lightVK: C(vkHex: "#8A8AA6"), darkVK: C(vkHex: "#71718E"))
+             : C(lightVK: Palette.paper500, darkVK: C(vkHex: "#7C7768"))
+    }
+    static let fgInverse = C(lightVK: Palette.paper0, darkVK: Palette.ink600)
 
     // Borders
-    static let border1 = C(lightVK: Palette.paper200, darkVK: C(vkHex: "#FFFFFF").opacity(0.08))
-    static let border2 = C(lightVK: Palette.paper300, darkVK: C(vkHex: "#FFFFFF").opacity(0.14))
+    static var border1: C {
+      neural ? C(lightVK: C(vkHex: "#141432").opacity(0.07), darkVK: C(vkHex: "#FFFFFF").opacity(0.07))
+             : C(lightVK: Palette.paper200, darkVK: C(vkHex: "#FFFFFF").opacity(0.08))
+    }
+    static var border2: C {
+      neural ? C(lightVK: C(vkHex: "#141432").opacity(0.10), darkVK: C(vkHex: "#FFFFFF").opacity(0.11))
+             : C(lightVK: Palette.paper300, darkVK: C(vkHex: "#FFFFFF").opacity(0.14))
+    }
 
     // Semantic
     static let success = Palette.success
@@ -207,6 +264,15 @@ enum VK {
   }
 
   enum Font {
+    /// Font sans của theme ở cỡ/đậm tuỳ ý — DÙNG THAY `.system(size:weight:)`
+    /// trong các view redesign để lựa chọn "Phông chữ" có tác dụng thật.
+    static func sans(_ size: CGFloat, _ weight: SwiftUI.Font.Weight = .regular) -> SwiftUI.Font {
+      if let name = VK.theme.font.postScriptName {
+        return .custom(name, size: size).weight(weight)
+      }
+      return .system(size: size, weight: weight)
+    }
+
     /// 2.16: font sans đọc từ Defaults.themeFont (SF / Noto Sans / Carter One).
     /// Mono styles luôn giữ SF monospaced.
     static func style(_ s: TypeStyle) -> SwiftUI.Font {
