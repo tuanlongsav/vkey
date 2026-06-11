@@ -35,6 +35,13 @@ class EventHook {
   /// Tracks how many times the tap has been auto-recovered
   var tapRecoveryCount = 0
 
+  /// v3.2: cache trạng thái quyền Accessibility — GHI từ main thread
+  /// (watchdog AppDelegate + handler tapDisabled), ĐỌC trong callback.
+  /// Khi false → callback passthrough ngay, KHÔNG xử lý phím / KHÔNG gọi AX
+  /// (AX call sau khi quyền bị thu hồi sẽ block XPC → tap .defaultTap giữ
+  /// toàn bộ input của session → treo macOS, phải reset cứng).
+  var trustedCache = true
+
   /// v2.10: số lần retry tạo tap khi `tapCreate` fail dù app tưởng có quyền
   /// (TCC mismatch sau update đổi chữ ký). Trước đây fail im lặng → user thấy
   /// "bật V" mà không gõ được ở mọi app.
@@ -149,6 +156,18 @@ class EventHook {
     }
   }
 
+  /// v3.2: quyền Accessibility bị thu hồi khi đang chạy — tháo tap hoàn toàn
+  /// (disable + invalidate) để không còn gì chặn dòng event của hệ thống.
+  /// Khi user cấp lại quyền, AppDelegate watchdog sẽ `setupEventTap` tap MỚI.
+  func suspendAfterRevocation() {
+    trustedCache = false
+    if let eventTap = eventTap {
+      CGEvent.tapEnable(tap: eventTap, enable: false)
+      CFMachPortInvalidate(eventTap)
+      unregisterEventTap(eventTap)
+    }
+  }
+
   deinit {
     destroy()
   }
@@ -197,6 +216,7 @@ class EventHook {
     self.eventTap = eventTap
     self.runLoopSource = runLoopSource
     self.appState = appState
+    self.trustedCache = true
   }
 
   /// Unregisters the event tap from the run loop. Uses the run-loop source
@@ -222,13 +242,25 @@ func eventTapCallback(
   // Auto-recover when macOS disables the event tap
   // This happens when the tap callback takes too long or the system is under load
   if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-    if let eventTap = eventHook.eventTap {
+    // v3.2: hệ thống cũng disable tap khi quyền Accessibility BỊ THU HỒI.
+    // Re-enable vô điều kiện như trước = giằng co với TCC → kẹt input toàn
+    // hệ thống. Chỉ recover khi quyền còn; mất quyền → đánh dấu cache để
+    // mọi event sau passthrough, watchdog ở AppDelegate sẽ tháo tap.
+    let stillTrusted = AXIsProcessTrusted()
+    eventHook.trustedCache = stillTrusted
+    if stillTrusted, let eventTap = eventHook.eventTap {
       CGEvent.tapEnable(tap: eventTap, enable: true)
       eventHook.tapRecoveryCount += 1
       #if DEBUG
       print("[vkey] Event tap was disabled by system (\(type == .tapDisabledByTimeout ? "timeout" : "user input")), auto-recovered (count: \(eventHook.tapRecoveryCount))")
       #endif
     }
+    return Unmanaged.passUnretained(event)
+  }
+
+  // v3.2: quyền Accessibility đã mất → passthrough NGAY, không xử lý phím,
+  // không gọi AX (AX call lúc này block XPC → treo toàn bộ input macOS).
+  if !eventHook.trustedCache {
     return Unmanaged.passUnretained(event)
   }
 

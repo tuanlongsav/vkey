@@ -100,6 +100,10 @@ private struct VKMenuCheck: View {
 
 struct VKMenuPanel: View {
   @ObservedObject var appDelegate: AppDelegate
+  // Observe TRỰC TIẾP AppState — trước đây chỉ observe appDelegate nên khi
+  // enabled/typingMethod đổi, panel không re-render (cờ VN luôn sáng, ✓ Telex
+  // không nhảy).
+  @ObservedObject private var appState: AppState
   @Environment(\.openSettings) private var openSettings
 
   @Default(.smartSwitchEnabled) private var smartSwitchEnabled
@@ -108,7 +112,10 @@ struct VKMenuPanel: View {
   @Default(.uiTheme) private var uiTheme
   @State private var showThemes = false
 
-  private var appState: AppState { appDelegate.appState }
+  init(appDelegate: AppDelegate) {
+    self.appDelegate = appDelegate
+    self.appState = appDelegate.appState
+  }
 
   var body: some View {
     Group {

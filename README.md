@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.1 — "Neural AI + hoàn thiện giao diện 3.0"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.2 — "Hết treo máy khi thu hồi quyền + font mới"** ([CHANGELOG](CHANGELOG.md))
+
+> **3.2** — 🚨 **Fix lỗi nghiêm trọng**: thu hồi quyền Trợ năng khi vkey đang chạy không còn làm **treo toàn bộ macOS** (mọi bản trước đều dính — tap giằng co với hệ thống + AX call block giữ dòng sự kiện). Nay tháo tap trong ~2s, cấp lại quyền là tự chạy lại không cần mở lại app. Kèm: cờ 🇻🇳/🇺🇸 menu bar sáng đúng ngôn ngữ đang bật, ✓ Telex/VNI cập nhật ngay; thêm font **Inter** + **Nunito** (gỡ Carter One, JetBrains Mono). 235 test pass.
 
 > **3.1** — Theme thứ ba **Neural AI**: aurora tím–cyan + gradient "trí tuệ" (tô tiêu đề / nav / nút / HUD / menu bar), slider cường độ phát sáng. Loạt fix 3.0: nút Sáng/Tối bấm được, **Liquid Glass thành kính thật** (blur nền sau cửa sổ), **chọn phông chữ hoạt động** (5 font nhúng, gỡ Carter One), layout Settings 2 cột tự dựng (bỏ ô tìm kiếm, header mỏng, titlebar liền màu theme), hết crash đổi theme. Cấu hình lưu riêng theo từng theme. Engine gõ không đổi.
 

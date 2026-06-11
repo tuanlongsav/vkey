@@ -281,20 +281,22 @@ enum ThemeDensity: String, CaseIterable, Codable, Defaults.Serializable {
 
 /// 2.16: font chữ giao diện. `.system` = SF; còn lại là font nhúng kèm app.
 enum ThemeFont: String, CaseIterable, Codable, Defaults.Serializable {
-  case system, beVietnam, notoSans, lora, carterOne, jetBrains
+  case system, beVietnam, inter, notoSans, lora, nunito, carterOne, jetBrains
 
-  /// Carter One đã gỡ (hiển thị tiếng Việt kém) — giữ case để config cũ
-  /// decode được, nhưng ẩn khỏi menu và fallback về SF.
-  static var allCases: [ThemeFont] { [.system, .beVietnam, .notoSans, .lora, .jetBrains] }
+  /// Carter One (tiếng Việt kém) + JetBrains Mono đã gỡ — giữ case để config
+  /// cũ decode được, nhưng ẩn khỏi menu và fallback về SF.
+  static var allCases: [ThemeFont] { [.system, .beVietnam, .inter, .notoSans, .lora, .nunito] }
 
   var displayName: String {
     switch self {
     case .system:     return "Hệ thống (SF)"
     case .beVietnam:  return "Be Vietnam Pro"
+    case .inter:      return "Inter"
     case .notoSans:   return "Noto Sans Display"
     case .lora:       return "Lora (serif)"
+    case .nunito:     return "Nunito"
     case .carterOne:  return "Hệ thống (SF)"   // đã gỡ
-    case .jetBrains:  return "JetBrains Mono"
+    case .jetBrains:  return "Hệ thống (SF)"   // đã gỡ
     }
   }
   /// PostScript name của font nhúng; nil = dùng SF system.
@@ -302,10 +304,12 @@ enum ThemeFont: String, CaseIterable, Codable, Defaults.Serializable {
     switch self {
     case .system:     return nil
     case .beVietnam:  return "BeVietnamPro-Regular"
+    case .inter:      return "Inter-Regular"
     case .notoSans:   return "NotoSansDisplay-Regular"
     case .lora:       return "Lora-Regular"
+    case .nunito:     return "Nunito-Regular"
     case .carterOne:  return nil               // font đã xoá khỏi bundle
-    case .jetBrains:  return "JetBrainsMono-Regular"
+    case .jetBrains:  return nil               // font đã xoá khỏi bundle
     }
   }
 }

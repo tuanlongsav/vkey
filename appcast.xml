@@ -6,6 +6,35 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.2 — "Hết treo máy khi thu hồi quyền + font mới"</title>
+      <sparkle:version>30200</sparkle:version>
+      <sparkle:shortVersionString>3.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 11 Jun 2026 09:15:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.2/vkey-3.2.dmg"
+        sparkle:edSignature="G2cfp0ejzWyKcwDcXoZwIHjXY5FE3t+uP+cAMVkQJ91zcKTrcuXZueLnT2xKrnZSH+FAK+xFeFuWiMmpHvDvAQ=="
+        length="7688729"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.2 — Hết treo máy khi thu hồi quyền + font mới</h2>
+        <h3>🚨 Fix lỗi nghiêm trọng</h3>
+        <ul>
+          <li>Thu hồi quyền Trợ năng khi vkey đang chạy không còn làm <b>treo toàn bộ macOS</b> (mọi bản trước đều dính). Nay vkey tự tháo event tap trong ~2 giây; cấp lại quyền là tự hoạt động lại, không cần mở lại app.</li>
+        </ul>
+        <h3>🐛 Sửa lỗi</h3>
+        <ul>
+          <li>Cờ 🇻🇳/🇺🇸 ở menu bar sáng đúng theo ngôn ngữ đang bật; dấu ✓ Kiểu Telex/VNI cập nhật ngay khi đổi.</li>
+        </ul>
+        <h3>✨ Font</h3>
+        <ul>
+          <li>Thêm Inter + Nunito (hỗ trợ tiếng Việt). Gỡ Carter One, JetBrains Mono.</li>
+        </ul>
+        <p>⚠️ Sau update, nếu vkey hiện cảnh báo quyền Trợ năng: System Settings → Privacy &amp; Security → Accessibility → tắt/bật lại vkey.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.1 — "Neural AI + hoàn thiện giao diện 3.0"</title>
       <sparkle:version>30100</sparkle:version>
       <sparkle:shortVersionString>3.1</sparkle:shortVersionString>

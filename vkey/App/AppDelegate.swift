@@ -20,6 +20,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
   /// invalidate it on max-retry or app termination.
   private var trustCheckTimer: Timer?
   private var trustCheckRetries = 0
+  /// v3.2: watchdog phát hiện quyền Accessibility BỊ THU HỒI khi đang chạy.
+  /// Không có nó: tap tiếp tục xử lý phím + gọi AX (block sau revoke) →
+  /// kẹt toàn bộ input macOS, user phải reset cứng.
+  private var revocationWatchdog: Timer?
   /// Stop polling after ~60s — beyond that the user almost certainly hasn't
   /// granted permission (or never will in this session). A one-time NSAlert
   /// then guides them to System Settings.
@@ -115,13 +119,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     checkTrustStatus()
 
     if isTrusted {
-      // Set up the event tap if the process is trusted
-      appState.storeTrustedAppVersion()
-      appState.eventHook.setupEventTap(give: appState)
-
-      appState.load()
-      appState.setEnabled(set: true)
-      appState.registerSwitchFileMonitor()
+      // Set up the event tap if the process is trusted (kèm watchdog
+      // theo dõi thu hồi quyền — v3.2).
+      setupTrustedSession()
 
     } else if appState.isNewAppVersion() {
       openUpgradeNewVersion()
@@ -224,6 +224,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       appState.load()
       appState.setEnabled(set: true)
       appState.registerSwitchFileMonitor()
+      startRevocationWatchdog()
+  }
+
+  /// v3.2: theo dõi quyền Accessibility SUỐT phiên trusted (2s/lần, rẻ).
+  /// Thu hồi quyền → tháo tap ngay (hết chặn input hệ thống) + menu chuyển
+  /// về hướng dẫn cấp quyền. Cấp lại → tự dựng tap mới, không cần mở lại app.
+  private func startRevocationWatchdog() {
+    revocationWatchdog?.invalidate()
+    let timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+      guard let self else { return }
+      let trusted = self.appState.eventHook.isTrusted(prompt: false)
+      self.appState.eventHook.trustedCache = trusted
+      if !trusted && self.isTrusted {
+        // Quyền vừa bị thu hồi khi đang chạy.
+        self.isTrusted = false
+        self.appState.eventHook.suspendAfterRevocation()
+        self.appState.setEnabled(set: false)
+      } else if trusted && !self.isTrusted {
+        // User cấp lại quyền → dựng tap mới.
+        self.setupTrustedSession()
+      }
+    }
+    timer.tolerance = 0.5
+    revocationWatchdog = timer
   }
 
   @objc func onboardingDidComplete() {
