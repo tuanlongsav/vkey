@@ -60,21 +60,57 @@ Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự. **
 
 Nếu sai một trong các điều kiện trên, Sparkle sẽ từ chối update.
 
-## 2) Build bản phát hành
+## 2) Build bản phát hành (v3.5+: Developer ID + notarization)
 
-Khuyến nghị dùng Archive + Developer ID trong Xcode để đảm bảo helper của Sparkle được ký đúng.
-
-CLI build tham chiếu:
+Từ v3.5, app ký bằng **Developer ID Application: Long Hoang Tuan (U4B264GM2B)**
+(cert cloud-managed — private key nằm trên Apple, KHÔNG có trong keychain local;
+`-allowProvisioningUpdates` tự fetch khi export). `DEVELOPMENT_TEAM` đã ghi sẵn
+trong pbxproj. Yêu cầu: Xcode đang đăng nhập Apple ID của team (Settings →
+Accounts) — auth qua session Xcode, KHÔNG cần app-specific password.
 
 ```bash
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
-xcodebuild -project vkey.xcodeproj -scheme vkey -configuration Release \
-  -destination 'platform=macOS' \
-  -derivedDataPath /tmp/vkey-derived \
-  clean build
+# 1. Archive
+xcodebuild -project vkey.xcodeproj -scheme vkey -configuration Release archive \
+  -archivePath /tmp/vkey-X.Y.xcarchive \
+  -destination 'generic/platform=macOS' \
+  -allowProvisioningUpdates
+
+# 2. Ký Developer ID + nộp notarization (destination=upload)
+#    ExportOptions: method=developer-id, teamID=U4B264GM2B,
+#    signingStyle=automatic, destination=upload
+xcodebuild -exportArchive \
+  -archivePath /tmp/vkey-X.Y.xcarchive \
+  -exportPath /tmp/vkey-X.Y-upload \
+  -exportOptionsPlist ExportOptions-upload.plist \
+  -allowProvisioningUpdates
+# Lưu ý: bước này thỉnh thoảng fail "The request timed out" — chạy lại là được.
+
+# 3. Poll cho đến khi Apple duyệt (thường 1-5 phút) → export app đã staple ticket
+xcodebuild -exportNotarizedApp \
+  -archivePath /tmp/vkey-X.Y.xcarchive \
+  -exportPath /tmp/vkey-X.Y-notarized
+# Lặp lại mỗi 30s nếu chưa xong ("EXPORT FAILED" = chưa duyệt xong)
+
+# 4. Verify trước khi đóng gói
+spctl --assess --type exec -vv /tmp/vkey-X.Y-notarized/vkey.app   # "Notarized Developer ID"
+xcrun stapler validate /tmp/vkey-X.Y-notarized/vkey.app
 ```
 
-Sau đó đóng gói `.app` thành `.dmg` để phát hành.
+Sau đó đóng gói `.app` (bản notarized) thành `.dmg`:
+
+```bash
+mkdir /tmp/vkey-dmg-staging
+cp -R /tmp/vkey-X.Y-notarized/vkey.app /tmp/vkey-dmg-staging/
+ln -s /Applications /tmp/vkey-dmg-staging/Applications
+hdiutil create -volname "vkey X.Y" -srcfolder /tmp/vkey-dmg-staging -ov -format UDZO vkey-X.Y.dmg
+```
+
+DMG không ký Developer ID được bằng `codesign` CLI (key cloud-managed) — chấp
+nhận được vì app bên trong đã notarized + stapled, Gatekeeper vẫn pass khi user
+kéo app ra. Ký Sparkle (EdDSA) cho DMG vẫn BẮT BUỘC như Section 3.
+
+⚠️ Đổi chữ ký (vd ad-hoc → Developer ID, hoặc đổi team) làm macOS đòi cấp lại
+quyền Trợ năng một lần — phải ghi chú trong release notes.
 
 ## 3) Ký Sparkle cho file update
 

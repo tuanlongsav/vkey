@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.4 — "Gõ chuẩn keypad & Caps Lock + nhập/xuất từ điển"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.5 — "Ký Apple Developer ID + notarized"** ([CHANGELOG](CHANGELOG.md))
+
+> **3.5** — 🔏 **App được ký bằng chứng chỉ Apple Developer ID và notarized bởi Apple**: tải DMG về **mở ngay không bị Gatekeeper chặn** — hết thời "chuột phải → Mở". Hardened runtime bật. Engine gõ không đổi (code y hệt 3.4). ⚠️ Nâng cấp từ ≤3.4: cấp lại quyền Trợ năng **một lần** (chữ ký đổi); từ nay về sau chữ ký ổn định, không phải cấp lại nữa.
 
 > **3.4** — ⌨️ **Gõ chuẩn hơn**: hỗ trợ **bàn phím số (keypad)** cho VNI (Shift+keypad giữ nguyên chữ số, đúng macOS); **Caps Lock chuẩn** — Shift+Caps Lock ra chữ thường, Caps Lock không còn làm sai phím dấu câu; **diff NFC/NFD theo từng app** khi xoá/sửa từ → hết lệch ký tự trong Chrome/app web, thêm Google Gemini vào nhóm NFC. 💡 **Gợi ý từ**: lọc ứng viên rác (giữ đủ từ đơn "ở"/"ừ"/"à"…), tăng trọng số học cá nhân (trigram ×6, bigram ×3). 📚 **Từ điển cá nhân**: nút **Nhập file / Xuất file** (.txt/.csv, tự dò bảng mã). 🔧 File bật/tắt `/tmp/vkey_switch` tách riêng theo user.
 
@@ -173,14 +175,13 @@ Tất cả benchmark hiện tại **dưới ngưỡng** an toàn — engine Swif
 
 ### Tải file DMG (đơn giản nhất)
 
-1. Tải `vkey-x.y.z.dmg` từ trang [Releases](../../releases/latest).
+1. Tải `vkey-x.y.dmg` từ trang [Releases](../../releases/latest).
 2. Mở DMG → kéo `vkey` vào thư mục `Applications`.
-3. Vì vkey chỉ ký ad-hoc (không có Apple Developer ID), khi mở lần đầu macOS chặn:
-   - Mở Finder → Applications → **click chuột phải vào vkey** → chọn **"Mở"**.
-   - Hộp thoại hiện ra → bấm **"Mở"** xác nhận.
-   - Chỉ cần làm 1 lần.
+3. Mở app bình thường — từ **v3.5+** vkey được ký bằng **Apple Developer ID** và **notarized bởi Apple**, Gatekeeper không còn chặn (các bản ≤3.4 ký ad-hoc phải chuột phải → "Mở" 1 lần).
 4. Vào **System Settings → Privacy & Security → Accessibility** → bật toggle cho `vkey`.
 5. Tắt rồi mở lại app để event tap được nạp.
+
+> **Nâng cấp từ bản ≤3.4**: do chữ ký app đổi (ad-hoc → Developer ID), macOS sẽ yêu cầu **cấp lại quyền Trợ năng một lần** sau khi cập nhật lên 3.5. Từ 3.5 trở đi chữ ký ổn định — các bản sau không phải cấp lại nữa.
 
 ### Build từ source
 

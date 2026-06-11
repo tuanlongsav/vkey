@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.5 — "Ký Apple Developer ID + notarized"</title>
+      <sparkle:version>30500</sparkle:version>
+      <sparkle:shortVersionString>3.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 12 Jun 2026 07:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.5/vkey-3.5.dmg"
+        sparkle:edSignature="4tAxnx8Ko7I1WwKWDj0Cw+Uf6+QBIfW3pKHITMRydHorlEEubH83BuZLgMdtO3afLQuYrPXgLhDipVvkUrGrBw=="
+        length="6310760"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.5 — Ký Apple Developer ID + notarized</h2>
+        <ul>
+          <li>🔏 <b>App được ký bằng chứng chỉ Apple Developer ID</b> (Long Hoang Tuan — U4B264GM2B) và <b>notarized bởi Apple</b> — tải DMG về mở ngay, không còn bị Gatekeeper chặn, hết thời "chuột phải → Mở".</li>
+          <li>Hardened runtime bật; ticket notarization đã staple vào app.</li>
+          <li>Engine gõ không đổi — code y hệt v3.4.</li>
+        </ul>
+        <p>⚠️ <b>Lưu ý khi nâng cấp từ ≤3.4</b>: do chữ ký app đổi (ad-hoc → Developer ID), macOS sẽ yêu cầu <b>cấp lại quyền Trợ năng một lần</b> (System Settings → Privacy &amp; Security → Accessibility — tắt rồi bật lại toggle vkey nếu cần). Từ 3.5 trở đi chữ ký ổn định, các bản cập nhật sau không phải cấp lại nữa.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.4 — "Gõ chuẩn keypad &amp; Caps Lock + nhập/xuất từ điển"</title>
       <sparkle:version>30400</sparkle:version>
       <sparkle:shortVersionString>3.4</sparkle:shortVersionString>

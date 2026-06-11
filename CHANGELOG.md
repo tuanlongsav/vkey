@@ -2,6 +2,21 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.5] - 2026-06-12 — "Ký Apple Developer ID + notarized"
+
+**App được ký bằng chứng chỉ Apple Developer ID và notarized bởi Apple — tải về mở ngay, không còn bị Gatekeeper chặn. Engine gõ không đổi (code y hệt v3.4).**
+
+### 🔏 Chữ ký & phân phối
+
+- **Ký Developer ID Application** (Long Hoang Tuan — U4B264GM2B, cert cloud-managed của Xcode): thay ad-hoc signing từ mọi bản trước. Hardened runtime bật.
+- **Notarized + stapled**: app pass kiểm duyệt notarization của Apple, ticket staple trực tiếp vào bundle — `spctl` trả "Notarized Developer ID". User mới tải DMG mở ngay, không cần chuột phải → "Mở".
+- **Quy trình release mới** (RELEASE.md cập nhật): `xcodebuild archive` → `-exportArchive` method `developer-id` destination `upload` (ký + nộp notarize qua session Xcode, không cần app-specific password) → poll `-exportNotarizedApp` → đóng DMG → ký Sparkle như cũ.
+- `DEVELOPMENT_TEAM = U4B264GM2B` ghi vào project — build sau tự nhận team.
+
+### ⚠️ Lưu ý nâng cấp từ ≤3.4
+
+- Chữ ký app đổi (ad-hoc → Developer ID) nên macOS sẽ yêu cầu **cấp lại quyền Trợ năng một lần** sau khi cập nhật. Từ 3.5 trở đi chữ ký ổn định — các bản sau không phải cấp lại.
+
 ## [3.4] - 2026-06-11 — "Gõ chuẩn keypad & Caps Lock + nhập/xuất từ điển"
 
 **Hỗ trợ bàn phím số (keypad), Caps Lock chuẩn macOS, diff NFC/NFD theo từng app, gợi ý từ lọc rác + học nhanh hơn, nhập/xuất từ điển cá nhân.**
