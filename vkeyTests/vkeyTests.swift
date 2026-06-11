@@ -1904,6 +1904,92 @@ final class KeyboardUSTests: XCTestCase {
     XCTAssertTrue(layout.isNumberKey(keyCode: 29)) // 0
     XCTAssertFalse(layout.isNumberKey(keyCode: 0)) // A
     XCTAssertFalse(layout.isNumberKey(keyCode: 49)) // Space
+    
+    // Keypad numbers
+    XCTAssertTrue(layout.isNumberKey(keyCode: 83)) // Keypad 1
+    XCTAssertTrue(layout.isNumberKey(keyCode: 82)) // Keypad 0
+    XCTAssertEqual(layout.mapText(keyCode: 83, withShift: false), "1")
+    // Shift + keypad vẫn ra chữ số trên macOS (không ra ký hiệu như hàng số)
+    XCTAssertEqual(layout.mapText(keyCode: 83, withShift: true), "1")
+
+    // isLetterKey: chỉ phím chữ cái (Caps Lock chỉ tác động nhóm này)
+    XCTAssertTrue(layout.isLetterKey(keyCode: 0))   // A
+    XCTAssertFalse(layout.isLetterKey(keyCode: 18)) // 1
+    XCTAssertFalse(layout.isLetterKey(keyCode: 83)) // Keypad 1
+    XCTAssertFalse(layout.isLetterKey(keyCode: 43)) // Comma
+    XCTAssertFalse(layout.isLetterKey(keyCode: 49)) // Space
+  }
+
+  func testNumericKeypadVNI() throws {
+    let processor = InputProcessor(method: .VNI)
+    processor.newWord()
+    
+    // Simulate typing "a" (keycode 0)
+    let eventA = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
+    _ = processor.handleEvent(event: eventA)
+    XCTAssertEqual(processor.transformed, "a")
+    
+    // Simulate typing Keypad 1 (keycode 83)
+    let eventKeypad1 = CGEvent(keyboardEventSource: nil, virtualKey: 83, keyDown: true)!
+    _ = processor.handleEvent(event: eventKeypad1)
+    XCTAssertEqual(processor.transformed, "á")
+  }
+
+  func testCapsLockAndShiftInteraction() throws {
+    let processor = InputProcessor(method: .Telex)
+    processor.newWord()
+    
+    // Case 1: Shift OFF, Caps Lock OFF -> lowercase "a"
+    let event1 = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
+    event1.flags = []
+    _ = processor.handleEvent(event: event1)
+    XCTAssertEqual(processor.transformed, "a")
+    processor.newWord()
+    
+    // Case 2: Shift ON, Caps Lock OFF -> uppercase "A"
+    let event2 = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
+    event2.flags = [.maskShift]
+    _ = processor.handleEvent(event: event2)
+    XCTAssertEqual(processor.transformed, "A")
+    processor.newWord()
+    
+    // Case 3: Shift OFF, Caps Lock ON -> uppercase "A"
+    let event3 = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
+    event3.flags = [.maskAlphaShift]
+    _ = processor.handleEvent(event: event3)
+    XCTAssertEqual(processor.transformed, "A")
+    processor.newWord()
+    
+    // Case 4: Shift ON, Caps Lock ON -> lowercase "a" (inversion)
+    let event4 = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
+    event4.flags = [.maskShift, .maskAlphaShift]
+    _ = processor.handleEvent(event: event4)
+    XCTAssertEqual(processor.transformed, "a")
+  }
+
+  func testPredictionEngineEnhancements() throws {
+    let oldAllow = Defaults[.userAllowWords]
+    let oldKeep = Defaults[.userKeepWords]
+    defer {
+      Defaults[.userAllowWords] = oldAllow
+      Defaults[.userKeepWords] = oldKeep
+    }
+    
+    Defaults[.userAllowWords] = ["dựán"]
+    Defaults[.userKeepWords] = ["thànhcông"]
+    
+    let allowSet = Set(Defaults[.userAllowWords].map { $0.lowercased() })
+    
+    // Verify isValidCandidate filter
+    XCTAssertTrue(PredictionEngine.isValidCandidate("dựán", allowedSet: allowSet))
+    XCTAssertFalse(PredictionEngine.isValidCandidate("t%", allowedSet: allowSet))
+    XCTAssertFalse(PredictionEngine.isValidCandidate("f", allowedSet: allowSet))
+    XCTAssertTrue(PredictionEngine.isValidCandidate("à", allowedSet: allowSet))
+    // Từ đơn 1 chữ có dấu thanh trên ô/ơ/ư phải hợp lệ ("ở" cực phổ biến)
+    XCTAssertTrue(PredictionEngine.isValidCandidate("ở", allowedSet: []))
+    XCTAssertTrue(PredictionEngine.isValidCandidate("ừ", allowedSet: []))
+    XCTAssertTrue(PredictionEngine.isValidCandidate("ồ", allowedSet: []))
+    XCTAssertFalse(PredictionEngine.isValidCandidate("b", allowedSet: []))
   }
 }
 
@@ -3364,5 +3450,54 @@ final class VowelTypoFinalConsonantTests: XCTestCase {
   // Regression: "veit"→"việt" path (phuAmCuoi rỗng khi reparse) vẫn hoạt động.
   func testVeitStillWorks() throws {
     XCTAssertEqual(telex("vieetj"), "việt")
+  }
+}
+
+// MARK: - ===========================================
+// MARK: - NFD vs NFC Diffing Tests
+// MARK: - ===========================================
+
+final class NFDvsNFCDiffingTests: XCTestCase {
+  func testPopBehaviorNFCvsNFD() throws {
+    // 1. NFC app (default for Apple Notes)
+    let nfcProcessor = InputProcessor(method: .Telex)
+    nfcProcessor.changeActiveApp("com.apple.Notes")
+    nfcProcessor.push(char: "g")
+    nfcProcessor.push(char: "o")
+    nfcProcessor.push(char: "o")  // "gô"
+    XCTAssertEqual(nfcProcessor.transformed, "gô")
+    
+    // Pop (delete last 'o' to get "go")
+    let (nfcBs, nfcDiff) = nfcProcessor.pop()
+    XCTAssertEqual(nfcBs, 1) // deletes "ô"
+    XCTAssertEqual(nfcDiff, ["o"]) // re-types "o"
+    
+    // 2. NFD app (Chromium)
+    let nfdProcessor = InputProcessor(method: .Telex)
+    nfdProcessor.changeActiveApp("com.google.Chrome")
+    nfdProcessor.push(char: "g")
+    nfdProcessor.push(char: "o")
+    nfdProcessor.push(char: "o")  // "gô"
+    XCTAssertEqual(nfdProcessor.transformed, "gô")
+    
+    // Pop (delete last 'o' to get "go")
+    let (nfdBs, nfdDiff) = nfdProcessor.pop()
+    XCTAssertEqual(nfdBs, 0, "NFD should let the OS handle backspace (numBackspaces = 0)")
+    XCTAssertEqual(nfdDiff, [], "NFD should not need to retype any character")
+  }
+
+  func testGeminiAppUsesNFC() throws {
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.google.gemini"))
+    
+    let processor = InputProcessor(method: .Telex)
+    processor.changeActiveApp("com.google.gemini")
+    
+    // Type "nhân"
+    processor.push(char: "n")
+    processor.push(char: "h")
+    processor.push(char: "a")
+    processor.push(char: "a")
+    processor.push(char: "n")
+    XCTAssertEqual(processor.transformed, "nhân")
   }
 }

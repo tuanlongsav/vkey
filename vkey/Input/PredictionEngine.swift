@@ -51,13 +51,20 @@ final class PredictionEngine {
 
     let candidates = collectCandidates(prev2: prev2, prev1: p1)
     let keepSet = Set(Defaults[.userKeepWords].map { $0.lowercased() })
+    let allowSet = Set(Defaults[.userAllowWords].map { $0.lowercased() })
 
     var scored: [(word: String, score: Int)] = []
     for (word, freq) in candidates {
+      let lowerWord = word.lowercased()
       // Hard filter: không suggest từ trùng với prev1.
-      if word == p1 { continue }
+      if lowerWord == p1 { continue }
+      
+      // Filter out invalid/junk candidates
+      if !Self.isValidCandidate(word, allowedSet: allowSet) { continue }
+
       let dictBonus = LexiconManager.shared.isVietnameseWord(word) ? 1000 : 0
-      let personalBonus = keepSet.contains(word) ? 500 : 0
+      let isAllowed = allowSet.contains(lowerWord)
+      let personalBonus = (keepSet.contains(lowerWord) || isAllowed) ? 500 : 0
       let score = dictBonus + personalBonus + freq
       // Soft floor: phải có dict bonus hoặc freq ≥ 5.
       guard score >= 1000 || freq >= 5 else { continue }
@@ -76,14 +83,14 @@ final class PredictionEngine {
     if let prev2 = prev2 {
       let nexts = NGramStore.shared.trigramNexts(prev2: prev2.lowercased(), prev1: prev1)
       for (w, c) in nexts where c >= userTrigramThreshold {
-        out[w, default: 0] += c * 2  // trigram weight 2× (more specific)
+        out[w, default: 0] += c * 6  // boosted trigram user weight (was c * 2)
       }
     }
 
     // Layer 2: bigram user (1.7.x: NGramStore thay Defaults)
     let bigramNexts = NGramStore.shared.bigramNexts(prev1: prev1)
     for (w, c) in bigramNexts where c >= userBigramThreshold {
-      out[w, default: 0] += c
+      out[w, default: 0] += c * 3  // boosted bigram user weight (was c)
     }
 
     // Layer 3: embedded VN corpus
@@ -94,6 +101,28 @@ final class PredictionEngine {
     }
 
     return out.map { (word: $0.key, freq: $0.value) }
+  }
+
+  /// Kiểm tra ứng viên gợi ý có hợp lệ không (loại bỏ từ rác chứa ký tự lạ, hoặc phím gõ dấu lẻ)
+  static func isValidCandidate(_ word: String, allowedSet: Set<String>) -> Bool {
+    let lower = word.lowercased()
+    if allowedSet.contains(lower) {
+      return true
+    }
+    // Loại bỏ ứng viên chứa ký tự đặc biệt hoặc số (trừ khi nằm trong allowedSet như email)
+    if lower.contains(where: { !$0.isLetter }) {
+      return false
+    }
+    // Loại bỏ ký tự đơn lẻ không phải từ đơn hợp lệ của tiếng Việt.
+    // Set = đủ 12 nguyên âm × 6 thanh ("ở", "ừ", "ồ"… đều là từ đơn hợp lệ) + đ.
+    if lower.count == 1 {
+      let validSingleLetters = Set(
+        "aàáảãạăằắẳẵặâầấẩẫậeèéẻẽẹêềếểễệiìíỉĩịoòóỏõọôồốổỗộơờớởỡợuùúủũụưừứửữựyỳýỷỹỵđ")
+      if let char = lower.first, !validSingleLetters.contains(char) {
+        return false
+      }
+    }
+    return true
   }
 
   /// Học từ commit: update bigram[prev1][curr] + trigram[prev2|prev1][curr].

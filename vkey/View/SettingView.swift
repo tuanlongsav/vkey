@@ -3,6 +3,7 @@ import Defaults
 import KeyboardShortcuts
 import LaunchAtLogin
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - Flexible Shortcut Recorder
 //
@@ -255,7 +256,15 @@ struct PersonalDictionaryEditorView: View {
             // (cạnh nút "Sửa từ điển cá nhân"), không cần lặp lại trong editor.
 
             HStack {
+                Button(action: importWords) {
+                    Label("Nhập file", themedSymbol: "square.and.arrow.down")
+                }
+                Button(action: exportWords) {
+                    Label("Xuất file", themedSymbol: "square.and.arrow.up")
+                }
+                
                 Spacer()
+                
                 Button("Đóng") {
                     dismiss()
                 }
@@ -265,6 +274,96 @@ struct PersonalDictionaryEditorView: View {
             .padding(.vertical, 10)
         }
         .frame(width: 400, height: 520)
+    }
+    
+    private func importWords() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.text, .commaSeparatedText]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        // Ưu tiên UTF-8; file lưu bằng encoding khác (UTF-16, Windows…) thì
+        // để Foundation tự dò thay vì fail im lặng.
+        var content: String
+        if let utf8 = try? String(contentsOf: url, encoding: .utf8) {
+            content = utf8
+        } else {
+            var detected = String.Encoding.utf8
+            guard let fallback = try? String(contentsOf: url, usedEncoding: &detected) else {
+                showDictionaryAlert(
+                    title: "Không đọc được file",
+                    message: "File không phải dạng văn bản hoặc dùng bảng mã không hỗ trợ.")
+                return
+            }
+            content = fallback
+        }
+
+        // File .txt: mỗi dòng 1 từ. File .csv: thêm dấu phẩy làm ngăn cách.
+        let separators = CharacterSet.newlines.union(CharacterSet(charactersIn: ","))
+        let entries = content.components(separatedBy: separators)
+
+        var targetList: [String]
+        switch selectedTab {
+        case 0: targetList = userAllowWords
+        case 1: targetList = userKeepWords
+        case 2: targetList = userDenyWords
+        default: return
+        }
+
+        var addedCount = 0
+        for entry in entries {
+            let word = entry.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if !word.isEmpty && !targetList.contains(word) {
+                targetList.append(word)
+                addedCount += 1
+            }
+        }
+
+        if addedCount > 0 {
+            switch selectedTab {
+            case 0: userAllowWords = targetList
+            case 1: userKeepWords = targetList
+            case 2: userDenyWords = targetList
+            default: break
+            }
+        }
+        showDictionaryAlert(
+            title: "Nhập từ điển",
+            message: addedCount > 0
+                ? "Đã thêm \(addedCount) từ mới vào danh sách."
+                : "Không có từ mới nào (toàn bộ đã có sẵn hoặc file trống).",
+            style: .informational)
+    }
+
+    private func exportWords() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.text]
+        panel.nameFieldStringValue = "vkey_dictionary_export.txt"
+
+        if panel.runModal() == .OK, let url = panel.url {
+            let wordsList = currentWordsList()
+            let content = wordsList.joined(separator: "\n")
+            do {
+                try content.write(to: url, atomically: true, encoding: .utf8)
+            } catch {
+                showDictionaryAlert(
+                    title: "Không xuất được file",
+                    message: error.localizedDescription)
+            }
+        }
+    }
+
+    private func showDictionaryAlert(
+        title: String, message: String, style: NSAlert.Style = .warning
+    ) {
+        let alert = NSAlert()
+        alert.alertStyle = style
+        alert.messageText = title
+        alert.informativeText = message
+        alert.runModal()
     }
     
     private func currentWordsList() -> [String] {

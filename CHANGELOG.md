@@ -2,6 +2,34 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.4] - 2026-06-11 — "Gõ chuẩn keypad & Caps Lock + nhập/xuất từ điển"
+
+**Hỗ trợ bàn phím số (keypad), Caps Lock chuẩn macOS, diff NFC/NFD theo từng app, gợi ý từ lọc rác + học nhanh hơn, nhập/xuất từ điển cá nhân.**
+
+### ⌨️ Gõ chuẩn hơn
+
+- **Bàn phím số (keypad)**: keycode 82–92 được map vào layout — gõ dấu VNI bằng keypad hoạt động đúng. Shift + keypad giữ nguyên chữ số (đúng hành vi macOS — không bị hiểu nhầm thành `!@#…` như hàng phím số, tránh lệch buffer).
+- **Caps Lock chuẩn macOS**: logic shift đổi sang XOR — Shift + Caps Lock trên chữ cái ra chữ **thường** (trước đây ra chữ hoa). Caps Lock giờ chỉ tác động **phím chữ cái** (`KeyboardUS.isLetterKey`) — gõ `,` khi bật Caps Lock không còn bị hiểu thành `<`.
+- **Diff NFC/NFD theo từng app khi xoá/sửa từ** (`WordBuffer.pop` + các call-site replacement): app lưu NFC (Apple native, MS Office, iWork, Google Gemini) dùng diff grapheme; app lưu NFD (Chromium, Electron, web — default) dùng diff scalar NFD → backspace/sửa từ không còn lệch ký tự trong Chrome & app web.
+
+### 💡 Gợi ý từ (Prediction)
+
+- **Lọc ứng viên rác** (`PredictionEngine.isValidCandidate`): loại từ chứa ký tự đặc biệt/số (trừ khi nằm trong Allow list — vd email), loại chữ cái đơn không phải từ tiếng Việt. Set từ đơn hợp lệ = đủ 12 nguyên âm × 6 thanh + đ ("ở", "ừ", "ồ"… đều được giữ).
+- **Allow list tham gia scoring**: từ trong `userAllowWords` được +500 điểm như Keep list.
+- **Tăng trọng số học cá nhân**: trigram user ×6 (trước ×2), bigram user ×3 (trước ×1) → gợi ý bắt thói quen gõ nhanh hơn đáng kể.
+
+### 📚 Từ điển cá nhân
+
+- **Nhập file / Xuất file** trong editor: nhập từ file `.txt` (mỗi dòng 1 từ) hoặc `.csv` (tách thêm theo dấu phẩy), tự dò bảng mã khi file không phải UTF-8, lọc trùng, báo số từ thêm mới qua alert; xuất danh sách tab hiện tại ra `.txt`.
+
+### 🔧 Ổn định
+
+- **File bật/tắt nhanh tách theo user**: `/tmp/vkey_switch` → `/tmp/vkey_switch_<uid>` — hết xung đột (file của user khác chiếm tên, không ghi được) trên máy nhiều tài khoản.
+
+### 🧪 Tests
+
+- Test mới: keypad VNI, tương tác Shift × Caps Lock (4 case), `isLetterKey`, filter prediction (kể cả "ở"/"ừ"/"ồ"), NFD vs NFC pop behavior (Notes vs Chrome), Gemini NFC. Toàn bộ suite pass.
+
 ## [3.3] - 2026-06-11 — "Hết treo alert + HUD/menu mới + gọn app"
 
 **Fix nghiêm trọng: alert quyền Trợ năng vô hình chặn main thread (treo menu, không vào Settings). HUD hết "khoanh vuông mờ". Menu bar chau chuốt. Gỡ dependency không dùng.**

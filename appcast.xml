@@ -6,6 +6,41 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.4 — "Gõ chuẩn keypad &amp; Caps Lock + nhập/xuất từ điển"</title>
+      <sparkle:version>30400</sparkle:version>
+      <sparkle:shortVersionString>3.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 11 Jun 2026 19:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.4/vkey-3.4.dmg"
+        sparkle:edSignature="bCZ3cCW8Q8Cj7DHqhzVnJqrRMAz1aWGGgahjE5fIrB6pl2V7weqlYZHKPzUV6XQmspwyPJ6/DNyxVcIbY//gCw=="
+        length="6715317"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.4 — Gõ chuẩn keypad & Caps Lock + nhập/xuất từ điển</h2>
+        <h3>⌨️ Gõ chuẩn hơn</h3>
+        <ul>
+          <li><b>Bàn phím số (keypad)</b>: gõ dấu VNI bằng keypad hoạt động đúng; Shift + keypad không còn bị hiểu nhầm thành ký hiệu.</li>
+          <li><b>Caps Lock chuẩn macOS</b>: Shift + Caps Lock ra chữ thường; Caps Lock không còn làm sai phím dấu câu (gõ "," không bị hiểu thành "&lt;").</li>
+          <li><b>Xoá/sửa từ chính xác theo từng app</b>: phân biệt app lưu NFC (Apple, Office, iWork) và NFD (Chrome, Electron, web) khi tính backspace → hết lệch ký tự khi sửa từ trong Chrome/app web. Thêm Google Gemini vào nhóm NFC.</li>
+        </ul>
+        <h3>💡 Gợi ý từ thông minh hơn</h3>
+        <ul>
+          <li>Lọc ứng viên rác: loại từ chứa ký tự lạ/số và chữ cái đơn không phải từ tiếng Việt (vẫn giữ đủ "ở", "ừ", "à", "ý"…).</li>
+          <li>Tăng trọng số học cá nhân (trigram ×6, bigram ×3) → gợi ý bắt thói quen gõ của bạn nhanh hơn.</li>
+        </ul>
+        <h3>📚 Từ điển cá nhân</h3>
+        <ul>
+          <li>Nút <b>Nhập file / Xuất file</b> trong editor: nhập danh sách từ từ file .txt/.csv (tự dò bảng mã, báo số từ thêm mới), xuất danh sách hiện tại ra .txt.</li>
+        </ul>
+        <h3>🔧 Ổn định</h3>
+        <ul>
+          <li>File bật/tắt nhanh <code>/tmp/vkey_switch</code> tách riêng theo user → hết xung đột trên máy nhiều tài khoản.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.3 — "Hết treo alert + HUD/menu mới + gọn app"</title>
       <sparkle:version>30300</sparkle:version>
       <sparkle:shortVersionString>3.3</sparkle:shortVersionString>

@@ -222,7 +222,8 @@ class AppState: ObservableObject, FileMonitorDelegate {
     }
 
     func registerSwitchFileMonitor() {
-        let tmpPath = URL(fileURLWithPath: "/tmp/vkey_switch")
+        let uid = getuid()
+        let tmpPath = URL(fileURLWithPath: "/tmp/vkey_switch_\(uid)")
         do {
             try "".write(to: tmpPath, atomically: true, encoding: .utf8)
         } catch {

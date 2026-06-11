@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.3 — "Hết treo alert + HUD/menu mới + gọn app"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.4 — "Gõ chuẩn keypad & Caps Lock + nhập/xuất từ điển"** ([CHANGELOG](CHANGELOG.md))
+
+> **3.4** — ⌨️ **Gõ chuẩn hơn**: hỗ trợ **bàn phím số (keypad)** cho VNI (Shift+keypad giữ nguyên chữ số, đúng macOS); **Caps Lock chuẩn** — Shift+Caps Lock ra chữ thường, Caps Lock không còn làm sai phím dấu câu; **diff NFC/NFD theo từng app** khi xoá/sửa từ → hết lệch ký tự trong Chrome/app web, thêm Google Gemini vào nhóm NFC. 💡 **Gợi ý từ**: lọc ứng viên rác (giữ đủ từ đơn "ở"/"ừ"/"à"…), tăng trọng số học cá nhân (trigram ×6, bigram ×3). 📚 **Từ điển cá nhân**: nút **Nhập file / Xuất file** (.txt/.csv, tự dò bảng mã). 🔧 File bật/tắt `/tmp/vkey_switch` tách riêng theo user.
 
 > **3.3** — 🚨 **Fix bug treo nghiêm trọng**: alert quyền Trợ năng (bật khi TCC cũ làm tapCreate fail sau khi đổi chữ ký) **vô hình** mà vẫn chặn main thread → menu bar không bấm được, Settings không mở. Nay alert hiện đúng + có guard chống bật chồng. **HUD hết "khoanh vuông mờ"** quanh viên capsule (vá đủ 3 nguyên nhân: shadow margin + mask blur + bỏ blend mode). **Menu bar chau chuốt** — header trạng thái VI|EN, icon nhuộm brand khi tính năng bật, popover theme có swatch màu, footer 1 hàng. Gỡ dependency `Settings` (sindresorhus) không còn dùng. 235 test pass.
 
@@ -121,6 +123,7 @@ Tất cả benchmark hiện tại **dưới ngưỡng** an toàn — engine Swif
 
 - ✅ Gõ tiếng Việt với 2 kiểu phổ biến: **Telex** và **VNI**.
 - ✅ Tuỳ chọn kiểu đặt dấu: **Kiểu mới** (thuỷ, khoẻ, hoà, uý) hoặc **Kiểu cũ** (thủy, khỏe, hòa, úy).
+- ✅ **Hỗ trợ bàn phím số & Caps Lock chuẩn macOS (v3.4+)**: gõ dấu VNI bằng **keypad** hoạt động đúng (Shift+keypad giữ nguyên chữ số); **Shift+Caps Lock** trên chữ cái ra chữ thường, Caps Lock không ảnh hưởng phím dấu câu/số. Diff xoá/sửa từ phân biệt app lưu **NFC** (Apple, MS Office, iWork, Google Gemini) và **NFD** (Chromium/Electron/web) → backspace không còn lệch ký tự trong Chrome & app web.
 - ✅ **Tự động sửa lỗi gõ nhầm (Auto Typo Correction)**: Tự động sửa khi gõ nhầm dấu thanh sớm hoặc sai vị trí (ví dụ: `thfi` -> `thì`, `thfis` -> `thí`, `th2i` -> `thì`, `th1i` -> `thí`), sửa gạch chữ đ cuối từ (ví dụ: `dinhjd` -> `định` / `dinh59` -> `định`), sửa lỗi hoán đổi nguyên âm (ví dụ: `veeitj` -> `việt`) và hoán đổi phụ âm cuối (ví dụ: `phuowgn` -> `phương`). Có thể bật/tắt dễ dàng trong Cài đặt.
 - ✅ Bộ gõ chỉ duy nhất Unicode (UTF-8), không hỗ trợ TCVN3/VNI Windows (giữ đơn giản).
 - ✅ Nhớ chế độ Vi/En theo từng ứng dụng (per-app input mode memory).
@@ -298,7 +301,7 @@ Tab này được **tinh gọn liên tục qua các version**:
 | Kích hoạt nhanh tất cả tính năng mới | Toggle gộp — bật/tắt cùng lúc mọi tính năng chính tả + từ điển bên dưới |
 | Kiểm tra chính tả (v1.7.0 gộp "trong câu") | Bật cơ chế 6-bước check + Vowel Inclusion Pairs (chặn gõ dấu sai cấu trúc âm tiết) cho cả từ vừa gõ và từ trong câu |
 | Sử dụng từ điển cá nhân | Bật danh sách Allow / Keep / Deny do bạn tự định nghĩa |
-| Sửa từ điển cá nhân (v1.7.11 đổi tên từ "Quản lý") | Mở editor → thêm / xoá từ trong 3 danh sách Allow / Keep / Deny |
+| Sửa từ điển cá nhân (v1.7.11 đổi tên từ "Quản lý") | Mở editor → thêm / xoá từ trong 3 danh sách Allow / Keep / Deny. **v3.4+**: nút **Nhập file / Xuất file** — nhập danh sách từ `.txt` (mỗi dòng 1 từ) hoặc `.csv` (tách theo dấu phẩy), tự dò bảng mã, lọc trùng, báo số từ thêm mới; xuất tab hiện tại ra `.txt` |
 | Gửi cho tác giả (v1.7.11 đưa ra ngoài) | Mở mail compose tới tuanlong.sav@gmail.com với 3 lists. Gate ≥50 từ tổng Allow+Keep+Deny |
 | Tự động compute đề xuất hàng tuần (v1.6.0+) | Auto-compute đề xuất từ Thống kê tuần này. KHÔNG còn auto-promote ngầm — chỉ tạo danh sách để bạn review |
 | Xem đề xuất pending (v1.6.0+) | Mở sheet review từng từ ≥5 lần gõ thống nhất → chọn ✓ thêm vào Allow/Keep hoặc bỏ qua |

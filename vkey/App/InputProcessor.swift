@@ -138,7 +138,7 @@ struct WordBuffer {
 
   // MARK: - Pop (Backspace)
 
-  mutating func pop(engine: TypingMethod) -> (Int, [Character]) {
+  mutating func pop(engine: TypingMethod, usesNFC: Bool = true) -> (Int, [Character]) {
     lastTransformed = transformed
 
     // Single-step rollback: if we are in recovery and it was caused by the LATEST keystroke
@@ -149,8 +149,9 @@ struct WordBuffer {
       stopProcessing = valid.stopProcessing
       lastValidSnapshot = nil
 
-      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-        from: lastTransformed, to: transformed)
+      let (numBackspaces, diffChars) = usesNFC
+        ? EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
+        : EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
 
       if numBackspaces == 1 && diffChars.isEmpty {
         return (0, [])
@@ -177,8 +178,9 @@ struct WordBuffer {
     let remainingKeys = Array(keys.dropLast())
     reconstructState(for: remainingKeys, engine: engine)
 
-    let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-      from: lastTransformed, to: transformed)
+    let (numBackspaces, diffChars) = usesNFC
+      ? EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
+      : EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
 
     // If it's a simple 1-char deletion, let the OS handle it
     if numBackspaces == 1 && diffChars.isEmpty {
@@ -813,7 +815,8 @@ class InputProcessor {
   }
 
   public func pop() -> (Int, [Character]) {
-    return wordBuffer.pop(engine: engine)
+    let usesNFC = InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
+    return wordBuffer.pop(engine: engine, usesNFC: usesNFC)
   }
 
   public func push(char: Character) {
@@ -825,7 +828,11 @@ class InputProcessor {
   public func handleEvent(event: CGEvent) -> Unmanaged<CGEvent>? {
     let flags = event.flags
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-    let shifted = flags.contains(.maskShift) || (!keyLayout.isNumberKey(keyCode: keyCode) && flags.contains(.maskAlphaShift))
+    let isShift = flags.contains(.maskShift)
+    // Caps Lock chỉ đảo hoa/thường cho PHÍM CHỮ; số/keypad/dấu câu không đổi.
+    // Shift + Caps Lock trên chữ cái = chữ thường (XOR, đúng hành vi macOS).
+    let isCapsLock = keyLayout.isLetterKey(keyCode: keyCode) && flags.contains(.maskAlphaShift)
+    let shifted = isShift != isCapsLock
 
     // Handle modifier keys (Cmd, Ctrl, Alt) - clear word buffer
     if flags.contains(.maskCommand) || flags.contains(.maskControl)
@@ -897,7 +904,10 @@ class InputProcessor {
       let orig = String(wordBuffer.keys)
       let currentTransformed = wordBuffer.transformed
       if !wordBuffer.wordState.isBlank && currentTransformed != orig {
-        let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(from: currentTransformed, to: orig)
+        let usesNFC = InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
+        let (numBackspaces, diffChars) = usesNFC
+          ? EventSimulator.calcKeyStrokes(from: currentTransformed, to: orig)
+          : EventSimulator.calcKeyStrokesNFD(from: currentTransformed, to: orig)
         let telemetry = EventSimulator.sendReplacement(
           backspaceCount: numBackspaces,
           diffChars: diffChars,
@@ -979,10 +989,10 @@ class InputProcessor {
     // diff như v2.3.11 — stable cho NFC apps, accept bug trong Chromium
     // apps cho đến khi có giải pháp đúng.
     //
-    // Workaround tạm: user tắt vkey (⇧⌥) khi gõ English ngắn trong
-    // Chromium apps; hoặc gõ 3 'o' để cancel mu trước rồi tiếp tục.
-    let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-      from: lastTransformed, to: transformed)
+    let usesNFC = InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
+    let (numBackspaces, diffChars) = usesNFC
+      ? EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
+      : EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
 
     // If the only change is the new character itself, let it pass through
     if let firstDiffChar = diffChars.first,
@@ -1291,7 +1301,10 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
-      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(from: current, to: target)
+      let usesNFC = InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
+      let (numBackspaces, diffChars) = usesNFC
+        ? EventSimulator.calcKeyStrokes(from: current, to: target)
+        : EventSimulator.calcKeyStrokesNFD(from: current, to: target)
       let telemetry = EventSimulator.sendReplacement(
         backspaceCount: numBackspaces,
         diffChars: diffChars,
@@ -1354,6 +1367,8 @@ class InputProcessor {
     if officeNative.contains(bundleId) { return true }
     // iWork
     if bundleId.hasPrefix("com.apple.iWork.") { return true }
+    // Google Gemini app (native Swift wrapper / ported runtime)
+    if bundleId == "com.google.gemini" { return true }
     return false
   }
 

@@ -63,6 +63,18 @@ class KeyboardUS {
       43: (",", "<"),  // Comma key
       47: (".", ">"),  // Period key
       44: ("/", "?"),  // Slash key
+      // Keypad numbers — Shift KHÔNG biến keypad thành ký hiệu trên macOS,
+      // vẫn ra chữ số (khác hàng phím số phía trên).
+      82: ("0", "0"),
+      83: ("1", "1"),
+      84: ("2", "2"),
+      85: ("3", "3"),
+      86: ("4", "4"),
+      87: ("5", "5"),
+      88: ("6", "6"),
+      89: ("7", "7"),
+      91: ("8", "8"),
+      92: ("9", "9"),
     ]
 
     taskMap = [
@@ -107,7 +119,14 @@ class KeyboardUS {
   }
 
   func isNumberKey(keyCode: Int64) -> Bool {
-    // Number keys: 0-9
-    return [29, 18, 19, 20, 21, 23, 22, 26, 28, 25].contains(keyCode)
+    // Number keys: 0-9 and Keypad 0-9
+    return [29, 18, 19, 20, 21, 23, 22, 26, 28, 25,
+            82, 83, 84, 85, 86, 87, 88, 89, 91, 92].contains(keyCode)
+  }
+
+  /// Caps Lock chỉ ảnh hưởng phím chữ cái — số, keypad, dấu câu giữ nguyên.
+  func isLetterKey(keyCode: Int64) -> Bool {
+    guard let key = keyMap[keyCode] else { return false }
+    return key.ascii.isLetter
   }
 }
