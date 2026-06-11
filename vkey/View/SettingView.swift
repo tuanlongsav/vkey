@@ -2,7 +2,6 @@ import AppKit
 import Defaults
 import KeyboardShortcuts
 import LaunchAtLogin
-import Settings
 import SwiftUI
 
 // MARK: - Flexible Shortcut Recorder

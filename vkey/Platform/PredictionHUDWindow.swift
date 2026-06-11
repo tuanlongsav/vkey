@@ -2,15 +2,15 @@
 //  PredictionHUDWindow.swift
 //  vkey
 //
-//  HUD nổi hiển thị từ đoán tiếp theo (1.6.0+). Cấu trúc theo
-//  `ToggleHUDWindow.swift` existing — NSPanel + SwiftUI hosting view
-//  với `.ultraThinMaterial` glass background.
+//  HUD nổi hiển thị từ đoán tiếp theo (1.6.0+).
 //
-//  Vị trí: cố gắng đặt gần caret qua Accessibility API (focused element
-//  position). Nếu AX fail (Electron / Java / Wine), fallback bottom-center.
-//
-//  Auto-dismiss sau 3 giây hoặc khi user gõ phím khác (`hide()` được
-//  gọi explicit từ InputProcessor).
+//  v2.4.0 FIX "khoanh vuông mờ":
+//  - Window = contentSize + 2×HUDMetrics.predictionShadowMargin — shadow
+//    không còn bị cắt phẳng theo mép cửa sổ (shadowAllowance 16pt cũ quá
+//    nhỏ so với shadow radius 10–14 + glow Neural radius 14).
+//  - Blur nền dùng HUDBackdrop (mask đúng hình) thay .ultraThinMaterial.
+//  - ignoresMouseEvents = true — panel to hơn không được chặn click.
+//  - Origin bù trừ phần đệm để vị trí THỊ GIÁC của HUD không đổi.
 //
 
 import AppKit
@@ -22,37 +22,23 @@ final class PredictionHUDWindow {
   static let shared = PredictionHUDWindow()
 
   private var panel: NSPanel?
-  // 1.9.3: chuyển từ NSHostingView sang NSHostingController. NSHostingView
-  // (direct) gửi window constraint update requests qua updateWindowContentSizeExtrema
-  // → trong NSPanel borderless không có constraint pipeline đầy đủ → NSException
-  // → SIGABRT/SIGTRAP. NSHostingController không tự đẩy constraints lên window,
-  // và macOS 13+ sizingOptions=[] disable automatic sizing hoàn toàn.
-  // Pattern match ToggleHUDWindow (đã ổn định không crash).
   private var hostingController: NSHostingController<PredictionHUDView>?
   private var hideTimer: Timer?
 
-  // 1.8.2: defensive cleanup — singleton thực chất không bao giờ release,
-  // nhưng nếu future refactor đổi sang non-singleton, đảm bảo timer không
-  // fire vào freed memory.
   deinit {
     hideTimer?.invalidate()
     hideTimer = nil
     hostingController = nil
   }
 
-  /// 2.0.2 (J1): chỉ hiển thị top-1 prediction. Multi-candidate UI đã bị
-  /// xoá do digit selection (1/2/3) dễ nhầm với gõ số trong văn bản.
+  /// Chỉ hiển thị top-1 prediction.
   func show(prediction: String) {
     guard !prediction.isEmpty else { hide(); return }
     hideTimer?.invalidate()
 
-    // 1.9.1: đọc Defaults 1 lần ở show(), pass vào view qua init. Tránh
-    // @Default trong View struct gây re-render → hosting view request
-    // window resize → NSException crash (xảy ra ở v1.9.0).
     let fontSize = Self.clampedFontSize(Defaults[.predictionHUDFontSize])
     let backgroundStrength = Self.clampedBackgroundStrength(Defaults[.hudOpacityPercent])
-    // v2.3.0: format mới `→ <pred> · Tab` (Tab là Keycap pill, allowance
-    // handled trong contentSize). Measurement string không gồm "Tab" text.
+    // contentSize = kích thước THỊ GIÁC của viên HUD (không gồm đệm shadow).
     let contentSize = Self.contentSize(for: "→ \(prediction) ·", fontSize: fontSize)
     let view = PredictionHUDView(
       prediction: prediction,
@@ -62,26 +48,31 @@ final class PredictionHUDWindow {
     )
     let panel = ensurePanel()
 
-    // 1.9.3: tạo NSHostingController mới mỗi lần show (match ToggleHUD pattern).
-    // 1.9.6: giữ sizingOptions = [] để chặn SwiftUI tự propose resize window
-    // trong borderless NSPanel. Size HUD được tính thủ công bên dưới nên không
-    // phụ thuộc fittingSize và không còn bị invisible/size 0.
     let controller = NSHostingController(rootView: view)
     if #available(macOS 13.0, *) {
       controller.sizingOptions = []
     }
+    controller.view.wantsLayer = true
+    controller.view.layer?.backgroundColor = NSColor.clear.cgColor
     hostingController = controller
     panel.contentViewController = controller
 
-    // Không đọc fittingSize ở đây: với sizingOptions=[] nó có thể trả 0/tiny,
-    // còn với preferredContentSize thì SwiftUI có thể tự đẩy resize lên window.
-    controller.view.setFrameSize(contentSize)
-    panel.setContentSize(contentSize)
+    // v2.4.0: window = content + đệm shadow mỗi phía.
+    let margin = HUDMetrics.predictionShadowMargin
+    let windowSize = CGSize(
+      width: contentSize.width + margin * 2,
+      height: contentSize.height + margin * 2
+    )
+    controller.view.setFrameSize(windowSize)
+    panel.setContentSize(windowSize)
     panel.alphaValue = 1
 
-    // Position panel — re-align top theo logic cũ (HUD ở TRÊN caret).
+    // Position theo kích thước THỊ GIÁC, rồi bù trừ đệm.
     let originFrame = targetFrame(forContentSize: contentSize)
-    panel.setFrameOrigin(originFrame.origin)
+    panel.setFrameOrigin(NSPoint(
+      x: originFrame.origin.x - margin,
+      y: originFrame.origin.y - margin
+    ))
     panel.orderFrontRegardless()
 
     // Auto-dismiss sau 3 giây.
@@ -110,18 +101,14 @@ final class PredictionHUDWindow {
 
     let horizontalPadding: CGFloat = 32
     let verticalPadding: CGFloat = 22
-    let shadowAllowance: CGFloat = 16
-    // v2.3.0: Tab giờ là Keycap pill (size .sm: minWidth 22 + padding 10 + spacing).
-    // Cũng chừa chỗ cho `·` separator + 6pt khoảng đệm. Tổng ≈ 40pt.
+    // v2.4.0: bỏ shadowAllowance — đệm shadow giờ nằm NGOÀI contentSize
+    // (HUDMetrics.predictionShadowMargin), không trộn vào kích thước viên.
     let keycapAllowance: CGFloat = 40
     return CGSize(
-      width: max(180, ceil(measured.width + horizontalPadding + shadowAllowance + keycapAllowance)),
-      height: max(38, ceil(measured.height + verticalPadding + shadowAllowance))
+      width: max(180, ceil(measured.width + horizontalPadding + keycapAllowance)),
+      height: max(38, ceil(measured.height + verticalPadding))
     )
   }
-
-  // 2.0.2 (J1): xoá `candidatesContentSize(candidates:fontSize:)`. Multi-
-  // candidate UI bỏ; chỉ dùng `contentSize(for:fontSize:)` cho top-1.
 
   nonisolated private static func clampedFontSize(_ value: Int) -> Int {
     max(12, min(24, value))
@@ -133,7 +120,6 @@ final class PredictionHUDWindow {
 
   private func ensurePanel() -> NSPanel {
     if let p = panel { return p }
-    // 1.9.3: thêm `.fullSizeContentView` cho NSHostingController fill panel.
     let p = NSPanel(
       contentRect: NSRect(x: 0, y: 0, width: 200, height: 36),
       styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
@@ -143,35 +129,23 @@ final class PredictionHUDWindow {
     p.isFloatingPanel = true
     p.level = .floating
     p.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
-    // 1.9.4: bổ sung theo Apple docs cho transparent window:
-    //   window.isOpaque = false
-    //   window.backgroundColor = .clear
-    // PredictionHUDWindow trước v1.9.4 thiếu `isOpaque = false` → nền không
-    // trong suốt hẳn dù SwiftUI dùng .ultraThinMaterial.
     p.isOpaque = false
     p.backgroundColor = .clear
-    p.hasShadow = false  // SwiftUI vẽ shadow riêng (.shadow modifier)
+    p.hasShadow = false  // SwiftUI vẽ shadow riêng (đã có đệm chứa nó)
     p.isMovable = false
     p.becomesKeyOnlyIfNeeded = true
+    // v2.4.0: panel rộng hơn (đệm shadow) — tuyệt đối không chặn chuột.
+    p.ignoresMouseEvents = true
     panel = p
     return p
   }
 
   /// Cố gắng đặt HUD sát dòng caret của focused text element.
-  /// 1.7.7: HUD ở TRÊN dòng caret (đổi từ dưới, đỡ che cursor).
-  /// 1.7.9: dùng AX parametric API để lấy caret bounds CHÍNH XÁC
-  /// (thay vì element bounds toàn editor như cũ — multi-line editor caret
-  /// ở dòng 5/10 nay đặt đúng dòng đó). Flip xuống dưới nếu HUD vượt top
-  /// screen; tự detect screen chứa caret cho multi-display.
-  /// Fallback: bottom-center của main screen.
   private func targetFrame(forContentSize contentSize: CGSize) -> NSRect {
     let width = contentSize.width
     let height = contentSize.height
 
     if let caret = focusedElementCaretRect() {
-      // Tìm screen chứa caret (multi-display). AX dùng global top-down,
-      // gốc 0,0 ở top-left của main display. NSScreen.frame dùng bottom-up,
-      // gốc 0,0 ở bottom-left của main display.
       let mainHeight = NSScreen.main?.frame.height ?? 0
       let cocoaCaretPoint = CGPoint(
         x: caret.midX,
@@ -184,34 +158,23 @@ final class PredictionHUDWindow {
         return fallbackFrame(width: width, height: height)
       }
 
-      // 1.8.1: offset = N dòng văn bản (user-configurable trong Settings).
-      // lineHeight ước lượng từ caret.height (AX parametric trả height của
-      // 1 character ≈ line height). Floor 16px nếu API trả 0/giá trị bất
-      // thường. Default N = 4 dòng.
       let lineHeight = max(caret.height, 16)
       let offsetLines = CGFloat(max(1, min(10, Defaults[.predictionHUDLineOffset])))
       let separation = lineHeight * offsetLines
 
-      // Default: HUD trên caret line, cách `separation` px.
       let axTopY = caret.minY
       var hudCocoaBottomY = mainHeight - axTopY + separation - height
 
-      // FIX (che ô gõ): `separation - height` có thể ÂM khi offset nhỏ hoặc
-      // font HUD lớn → đáy HUD tụt xuống DƯỚI đỉnh caret, đè lên dòng đang gõ.
-      // Ép đáy HUD luôn nằm trên đỉnh caret tối thiểu `minCaretGap` px để HUD
-      // không bao giờ che dòng văn bản. (Offset lớn giữ nguyên hành vi cũ.)
       let caretTopCocoa = mainHeight - axTopY
       let minCaretGap: CGFloat = 6
       hudCocoaBottomY = max(hudCocoaBottomY, caretTopCocoa + minCaretGap)
 
-      // Flip xuống dưới nếu HUD top edge vượt screen.maxY.
       let hudCocoaTopY = hudCocoaBottomY + height
       if hudCocoaTopY > screen.frame.maxY - 8 {
         let axBottomY = caret.maxY
         hudCocoaBottomY = mainHeight - axBottomY - separation - height
       }
 
-      // Clamp để HUD không out-of-bounds (vd offset lớn + caret cuối screen).
       hudCocoaBottomY = max(
         screen.frame.minY + 8,
         min(hudCocoaBottomY, screen.frame.maxY - height - 8)
@@ -238,9 +201,6 @@ final class PredictionHUDWindow {
   }
 
   /// Lấy caret bounds CHÍNH XÁC qua AX parametric API.
-  /// 1.7.9: dùng kAXSelectedTextRangeAttribute + kAXBoundsForRangeParameterizedAttribute
-  /// thay vì kAXPositionAttribute + kAXSizeAttribute (bounds toàn element).
-  /// Fallback: element bounds (cũ) nếu parametric API không support.
   private func focusedElementCaretRect() -> CGRect? {
     let systemWide = AXUIElementCreateSystemWide()
     var focused: CFTypeRef?
@@ -253,14 +213,11 @@ final class PredictionHUDWindow {
     guard CFGetTypeID(element) == AXUIElementGetTypeID() else { return nil }
     let axElement = element as! AXUIElement
 
-    // 1.7.9: thử parametric API trước. App như TextEdit, VS Code, Safari
-    // support → lấy được pixel-level caret rect.
     if let caretRect = parametricCaretRect(axElement: axElement),
        caretRect.width > 0 || caretRect.height > 0 {
       return caretRect
     }
 
-    // Fallback: element bounds (cũ — multi-line editor có thể sai).
     var posValue: CFTypeRef?
     var sizeValue: CFTypeRef?
     AXUIElementCopyAttributeValue(axElement, kAXPositionAttribute as CFString, &posValue)
@@ -272,12 +229,6 @@ final class PredictionHUDWindow {
     return CGRect(origin: pos, size: size)
   }
 
-  /// 1.7.9: caret bounds chính xác qua AX parametric.
-  /// - kAXSelectedTextRangeAttribute → CFRange của selection (length 0 nếu
-  ///   chỉ caret thuần).
-  /// - kAXBoundsForRangeParameterizedAttribute(range) → CGRect bounds
-  ///   pixel của range đó. Range len 0 → trả về rect width 0 ở vị trí caret;
-  ///   ta force length=1 để lấy bounds của ký tự kế caret.
   private func parametricCaretRect(axElement: AXUIElement) -> CGRect? {
     var rangeRef: CFTypeRef?
     let rangeErr = AXUIElementCopyAttributeValue(
@@ -291,7 +242,7 @@ final class PredictionHUDWindow {
           range.location >= 0
     else { return nil }
     if range.length == 0 {
-      range.length = 1  // ép lấy bounds của 1 char để parametric API trả về rect non-zero
+      range.length = 1
     }
 
     guard let rangeAXValue = AXValueCreate(.cfRange, &range) else { return nil }
@@ -346,10 +297,7 @@ final class PredictionHUDWindow {
 }
 
 struct PredictionHUDView: View {
-  /// 2.0.2 (J1): chỉ 1 prediction. Multi-candidate UI đã xoá.
   let prediction: String
-  // 1.9.1: pass qua init thay vì @Default trong struct — tránh crash
-  // NSHostingView khi Defaults change trigger re-render + animated resize.
   let fontSize: Int
   let backgroundStrength: Double
   let contentSize: CGSize
@@ -372,6 +320,8 @@ struct PredictionHUDView: View {
       }
     }
     .frame(width: contentSize.width, height: contentSize.height)
+    // v2.4.0: đệm trong suốt chứa shadow — khớp windowSize bên controller.
+    .padding(HUDMetrics.predictionShadowMargin)
   }
 
   // MARK: - Neural AI HUD — pill obsidian + viền gradient + mũi tên gradient
@@ -392,8 +342,9 @@ struct PredictionHUDView: View {
     .padding(.horizontal, 14)
     .padding(.vertical, 9)
     .background(Capsule().fill(Color(vkHex: "#0F0F18").opacity(0.88)))
-    .background(.ultraThinMaterial, in: Capsule())
+    .background(HUDBackdrop()) // v2.4.0
     .overlay(Capsule().strokeBorder(VK.Color.brandGradient, lineWidth: 1).opacity(0.6))
+    .compositingGroup()
     .shadow(color: VK.Color.glow.opacity(0.4 * VK.glowK), radius: 14, x: 0, y: 6)
   }
 
@@ -414,9 +365,11 @@ struct PredictionHUDView: View {
     }
     .padding(.horizontal, 14)
     .padding(.vertical, 9)
-    .background(.ultraThinMaterial, in: Capsule())
+    .background(HUDBackdrop()) // v2.4.0
     .overlay(Capsule().strokeBorder(Color.white.opacity(0.22), lineWidth: 1))
-    .overlay(Capsule().strokeBorder(Color.white.opacity(0.45), lineWidth: 0.5).blendMode(.screen))
+    // v2.4.0: bỏ .blendMode(.screen) — stroke trắng đậm hơn thay thế
+    .overlay(Capsule().strokeBorder(Color.white.opacity(0.55), lineWidth: 0.5))
+    .compositingGroup()
     .shadow(color: .black.opacity(0.30), radius: 12, x: 0, y: 6)
   }
 
@@ -445,11 +398,12 @@ struct PredictionHUDView: View {
       VKeyDesign.ink500.opacity(tonalScrimOpacity),
       in: RoundedRectangle(cornerRadius: 10)
     )
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+    .background(HUDBackdrop(cornerRadius: 10)) // v2.4.0
     .overlay(
       RoundedRectangle(cornerRadius: 10)
         .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
     )
+    .compositingGroup()
     .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 4)
   }
 

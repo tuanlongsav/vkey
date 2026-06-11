@@ -4,19 +4,20 @@
 //
 //  Created by Antigravity on 19/05/2026.
 //
+//  v2.4.0 FIX "khoanh vuông mờ":
+//  - Panel size = content + HUDMetrics.shadowMargin mỗi phía → shadow/glow
+//    không còn bị cắt phẳng theo khung chữ nhật của cửa sổ.
+//  - Hosting view layer-backed + clear background.
+//  - Blur nền dùng HUDBackdrop (mask đúng hình) thay .ultraThinMaterial.
+//  - Bỏ .blendMode(.screen) (rò sáng ra nền trong suốt).
+//  - Thêm pop-in scale nhẹ (0.94→1, spring) cho cảm giác chau chuốt hơn.
+//
 
 import AppKit
 import SwiftUI
 import Defaults
 
 /// HUD overlay shown when the input mode toggles between VI and EN.
-///
-/// **Thread-safety (1.5.0)**: this class is `@MainActor`-isolated. All AppKit
-/// state (`panel`, `hostingController`, `hideTimer`) is mutated only on the
-/// main thread. Call `ToggleHUDWindow.shared.show(isEnabled:)` from a non-main
-/// thread via `DispatchQueue.main.async { … }`, or from an `async` context
-/// using `await`. Previously the singleton was free-threaded which let the
-/// event tap race with the main thread while constructing the panel.
 @MainActor
 final class ToggleHUDWindow {
 
@@ -26,7 +27,7 @@ final class ToggleHUDWindow {
     // MARK: - Properties
     private var panel: NSPanel?
     private var hideTimer: Timer?
-    private var hostingController: NSHostingController<ToggleHUDView>?
+    private var hostingController: NSHostingController<AnyView>?
     private let viewModel = ToggleHUDViewModel()
 
     // MARK: - Initialization
@@ -35,78 +36,84 @@ final class ToggleHUDWindow {
     // MARK: - Public API
 
     /// Hiển thị HUD thông báo trạng thái bật/tắt Tiếng Việt
-    /// - Parameters:
-    ///   - isEnabled: Trạng thái bật (true = Tiếng Việt, false = Tiếng Anh)
-    ///   - duration: Thời gian hiển thị trước khi tự động đóng (giây)
     func show(isEnabled: Bool, duration: TimeInterval = 1.0) {
-        // Nếu người dùng tắt HUD trong Cài đặt, không làm gì cả
         guard Defaults[.hudEnabled] else { return }
-        
-        // Hủy timer cũ nếu đang chạy
+
         hideTimer?.invalidate()
-        
+
         // Cập nhật dữ liệu ViewModel
         viewModel.isEnabled = isEnabled
         viewModel.backgroundStrength = Self.clampedBackgroundStrength(Defaults[.hudOpacityPercent])
-        
-        // Tạo panel nếu chưa tồn tại
+
         if panel == nil {
             createPanel()
         }
-        
+
         guard let panel = panel else { return }
-        
-        // Cập nhật kích thước panel để khớp hoàn hảo với nội dung SwiftUI
+
+        // Kích thước panel = content + đệm shadow (đã nằm trong fittingSize
+        // nhờ .padding(HUDMetrics.shadowMargin) ở rootView).
         if let hostingController = hostingController {
             let fittingSize = hostingController.view.fittingSize
             panel.setContentSize(fittingSize)
         }
-        
-        // Định vị HUD ở chính giữa màn hình đang hoạt động (lùi xuống dưới một chút cho tinh tế)
+
+        // Định vị HUD ở chính giữa màn hình đang hoạt động.
+        // Phần đệm đối xứng nên tâm thị giác không đổi.
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
             let panelSize = panel.frame.size
             let x = screenFrame.midX - panelSize.width / 2
-            let y = screenFrame.midY - panelSize.height / 2 - 120 // Thấp hơn tâm màn hình một chút
+            let y = screenFrame.midY - panelSize.height / 2 - 120
             panel.setFrameOrigin(NSPoint(x: x, y: y))
         }
-        
-        // Đưa panel lên trước mà không cướp focus (orderFrontRegardless)
+
+        // Đưa panel lên trước mà không cướp focus
         panel.alphaValue = 0
+        viewModel.appeared = false
         panel.orderFrontRegardless()
 
-        // 1.9.6: panel alpha chỉ dùng cho fade animation. Độ đậm HUD giờ
-        // điều khiển lớp nền trong SwiftUI, không làm mờ chữ/icon.
-        let targetAlpha: CGFloat = 1
-
-        // Hiệu ứng mờ dần (Fade-in)
+        // Fade-in (window alpha) + pop-in (SwiftUI scale spring)
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.12
-            panel.animator().alphaValue = targetAlpha
+            panel.animator().alphaValue = 1
         }
-        
+        DispatchQueue.main.async { [viewModel] in
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) {
+                viewModel.appeared = true
+            }
+        }
+
         // Lên lịch ẩn tự động
         hideTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { [weak self] _ in
-            self?.hideWithAnimation()
+            Task { @MainActor in self?.hideWithAnimation() }
         }
     }
-    
+
     // MARK: - Private Helper
 
     nonisolated private static func clampedBackgroundStrength(_ value: Int) -> Double {
         Double(max(30, min(100, value))) / 100.0
     }
-    
+
     private func createPanel() {
-        let hudView = ToggleHUDView(viewModel: viewModel)
+        // v2.4.0: đệm trong suốt quanh HUD để shadow không bị cắt vuông.
+        let hudView = AnyView(
+            ToggleHUDView(viewModel: viewModel)
+                .padding(HUDMetrics.shadowMargin)
+        )
         let controller = NSHostingController(rootView: hudView)
+        if #available(macOS 13.0, *) {
+            // Chặn SwiftUI tự propose window resize trong borderless panel.
+            controller.sizingOptions = []
+        }
+
+        // Hosting view phải layer-backed + clear — tránh vẽ backing rect.
+        controller.view.wantsLayer = true
+        controller.view.layer?.backgroundColor = NSColor.clear.cgColor
 
         let fittingSize = controller.view.fittingSize
 
-        // 1.9.2: thêm `.borderless` style mask để loại bỏ default window
-        // chrome rendering — fix bug bo góc bên trái có hình vuông đè
-        // (default panel chrome vẽ chevron/title area mà SwiftUI clipShape
-        // không che được).
         let newPanel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: fittingSize.width, height: fittingSize.height),
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
@@ -116,11 +123,11 @@ final class ToggleHUDWindow {
 
         newPanel.contentViewController = controller
         newPanel.isFloatingPanel = true
-        newPanel.level = .popUpMenu // Hiển thị trên cả các ứng dụng Fullscreen/Menus
+        newPanel.level = .popUpMenu
         newPanel.isOpaque = false
         newPanel.backgroundColor = .clear
-        newPanel.hasShadow = false // Shadow sẽ do SwiftUI vẽ để đẹp hơn
-        newPanel.ignoresMouseEvents = true // Không chặn click chuột của người dùng
+        newPanel.hasShadow = false // Shadow do SwiftUI vẽ (đã có đệm chứa nó)
+        newPanel.ignoresMouseEvents = true
         newPanel.isReleasedWhenClosed = false
         newPanel.hidesOnDeactivate = false
         newPanel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
@@ -128,14 +135,14 @@ final class ToggleHUDWindow {
         hostingController = controller
         panel = newPanel
     }
-    
+
     private func hideWithAnimation() {
         guard let panel = panel else { return }
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.25
             panel.animator().alphaValue = 0
         }, completionHandler: { [weak self] in
-            self?.panel?.orderOut(nil)
+            Task { @MainActor in self?.panel?.orderOut(nil) }
         })
     }
 }
@@ -145,6 +152,8 @@ final class ToggleHUDWindow {
 private class ToggleHUDViewModel: ObservableObject {
     @Published var isEnabled: Bool = true
     @Published var backgroundStrength: Double = 0.75
+    /// v2.4.0: drive pop-in scale (không đổi layout — scaleEffect thuần render).
+    @Published var appeared: Bool = true
 }
 
 // MARK: - SwiftUI HUD View
@@ -164,6 +173,7 @@ private struct ToggleHUDView: View {
             case .tonal:  tonalBody
             }
         }
+        .scaleEffect(viewModel.appeared ? 1 : 0.94)
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
     }
 
@@ -199,8 +209,9 @@ private struct ToggleHUDView: View {
         }
         .padding(EdgeInsets(top: 11, leading: 11, bottom: 11, trailing: 16))
         .background(Capsule().fill(Color(vkHex: "#0F0F18").opacity(0.88)))
-        .background(.ultraThinMaterial, in: Capsule())
+        .background(HUDBackdrop()) // v2.4.0: blur mask đúng capsule
         .overlay(Capsule().strokeBorder(VK.Color.brandGradient, lineWidth: 1).opacity(0.65))
+        .compositingGroup()
         .shadow(color: VK.Color.glow.opacity(0.45 * VK.glowK), radius: 26, x: 0, y: 10)
         .shadow(color: .black.opacity(0.5), radius: 24, x: 0, y: 14)
     }
@@ -236,17 +247,16 @@ private struct ToggleHUDView: View {
                 .overlay(Capsule().strokeBorder(.white.opacity(0.35), lineWidth: 0.5))
         }
         .padding(EdgeInsets(top: 11, leading: 11, bottom: 11, trailing: 16))
-        .background(.ultraThinMaterial, in: Capsule())
+        .background(HUDBackdrop()) // v2.4.0: blur mask đúng capsule
         .overlay(Capsule().strokeBorder(.white.opacity(0.25), lineWidth: 1))
-        .overlay(Capsule().strokeBorder(.white.opacity(0.5), lineWidth: 0.5).blendMode(.screen))
+        // v2.4.0: bỏ .blendMode(.screen) — thay bằng stroke trắng đậm hơn
+        .overlay(Capsule().strokeBorder(.white.opacity(0.6), lineWidth: 0.5))
+        .compositingGroup()
         .shadow(color: .black.opacity(0.40), radius: 24, x: 0, y: 12)
     }
 
     // MARK: - Sub-title + keycap helpers (v2.3.0)
 
-    /// Sub-title text below the main "Tiếng Việt" / "English" label.
-    /// Reads current typing method + tone-placement style for VI state;
-    /// indicates idle/inactive state for EN.
     private var subTitle: String {
         if viewModel.isEnabled {
             let style = newStyleTonePlacement ? "Kiểu mới" : "Kiểu cũ"
@@ -256,8 +266,6 @@ private struct ToggleHUDView: View {
         }
     }
 
-    /// Modifier glyphs in canonical macOS order (⌃⌥⇧⌘) for current toggle hotkey.
-    /// Empty array if hotkey unset → keycap row hidden.
     private var hotkeyGlyphs: [String] {
         let raw = modifierOnlyToggleHotkey
         guard raw != 0 else { return [] }

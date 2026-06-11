@@ -6,6 +6,39 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.3 — "Hết treo alert + HUD/menu mới + gọn app"</title>
+      <sparkle:version>30300</sparkle:version>
+      <sparkle:shortVersionString>3.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 11 Jun 2026 09:45:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.3/vkey-3.3.dmg"
+        sparkle:edSignature="uAUgkjwf6yNUnB9TF1SOGF7R684FPWPO80CQ03ribG7I2XavxNYgDsbKamZ/jRWuxOUnN/tydLAU9gbkZSN/Dw=="
+        length="7643802"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.3 — Hết treo alert + HUD/menu mới + gọn app</h2>
+        <h3>🚨 Fix bug treo nghiêm trọng</h3>
+        <ul>
+          <li>Sau khi cài bản mới (chữ ký đổi), alert "cần quyền Trợ năng" có thể hiện <b>vô hình</b> mà vẫn chặn main thread → menu bar không bấm được, Settings không mở. Đã vá: alert hiện đúng + guard chống bật chồng. Áp luôn cho alert Updater + sao lưu khi nâng cấp.</li>
+        </ul>
+        <h3>🎨 HUD — hết "khoanh vuông mờ"</h3>
+        <ul>
+          <li>Vá đủ 3 nguyên nhân: đệm shadow 64pt/40pt quanh content, blur mask đúng hình capsule, bỏ blend mode rò nền. Prediction HUD click xuyên qua được; Toggle HUD có pop-in spring.</li>
+        </ul>
+        <h3>✨ Menu bar chau chuốt</h3>
+        <ul>
+          <li>Header trạng thái cờ + VI|EN gradient, icon nhuộm brand khi tính năng đang bật, popover theme có swatch màu per-theme, footer 1 hàng + số phiên bản, status item cờ bo góc.</li>
+        </ul>
+        <h3>🔧 Khác</h3>
+        <ul>
+          <li>Gỡ dependency Settings (sindresorhus) không còn dùng — bundle gọn hơn. Dọn case font chết với decoder backward-compat. 235/235 test pass.</li>
+        </ul>
+        <p>⚠️ Sau update, nếu vkey hiện cảnh báo quyền Trợ năng (lần này NHÌN THẤY ĐƯỢC): System Settings → Privacy &amp; Security → Accessibility → tắt/bật lại vkey → bấm "Thử lại".</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.2 — "Hết treo máy khi thu hồi quyền + font mới"</title>
       <sparkle:version>30200</sparkle:version>
       <sparkle:shortVersionString>3.2</sparkle:shortVersionString>

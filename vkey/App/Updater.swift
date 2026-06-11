@@ -85,6 +85,11 @@ enum Updater {
               "Phiên bản v\(localVersionStr) (Build \(localVersionCodeStr)) là phiên bản mới nhất hiện tại. (Phiên bản server: v\(serverVersionStr))"
             alert.alertStyle = .informational
             alert.addButton(withTitle: "Đóng")
+            // v3.3: app accessory không active → alert modal có thể VÔ HÌNH
+            // mà vẫn chặn main thread (treo menu). Ép nổi + activate.
+            NSApp.activate(ignoringOtherApps: true)
+            alert.window.level = .floating
+            alert.window.orderFrontRegardless()
             alert.runModal()
           }
         }

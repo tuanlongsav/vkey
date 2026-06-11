@@ -644,6 +644,10 @@ enum UserDataMigration {
 
       NSApp.setActivationPolicy(.regular)
       NSApp.activate(ignoringOtherApps: true)
+      // v3.3: activate ngay sau khi đổi policy hay bị nuốt → alert modal có
+      // thể VÔ HÌNH mà vẫn chặn main thread (treo app). Ép cửa sổ alert nổi.
+      alert.window.level = .floating
+      alert.window.orderFrontRegardless()
       let response = alert.runModal()
 
       if alert.suppressionButton?.state == .on {

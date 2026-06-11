@@ -2,35 +2,117 @@
 //  HUDComponents.swift
 //  vkey
 //
-//  v2.3.0: shared HUD primitives — extracted to avoid duplication between
-//  ToggleHUDWindow + PredictionHUDWindow under both Liquid Glass and Tonal
-//  themes.
+//  v2.4.0: shared HUD primitives — extracted to avoid duplication between
+//  ToggleHUDWindow + PredictionHUDWindow under all themes.
 //
-//  Three primitives:
-//    • Keycap            — mini glass pill rendering a shortcut key label
-//                          (⌃ / ⇧ / Tab / etc). Two sizes md (28×28) / sm (22×20).
-//    • HUDFlag           — 48×36 flag image (vn-flag / us-flag) with inner
-//                          stroke + top-gloss + drop-shadow.
-//    • refractiveGlassBackground(radius:scrimOpacity:) — View modifier that
-//                          applies the 5-layer Liquid Glass recipe.
-//    • tonalScrimBackground(radius:scrimOpacity:) — simpler Tonal variant
-//                          (deep-ink scrim + thin stroke + soft shadow).
+//  v2.4.0 FIX "khoanh vuông mờ quanh HUD" — 3 nguyên nhân, 3 lớp vá:
+//
+//    (1) Shadow bị cắt theo khung chữ nhật của NSPanel.
+//        Panel size = fittingSize của content, nhưng các .shadow(radius
+//        24–30, y 12) vẽ RA NGOÀI bounds → bị cắt phẳng ở mép cửa sổ
+//        → quầng tối kết thúc đột ngột thành hình vuông mờ.
+//        → Vá: HUDMetrics.shadowMargin — đệm trong suốt quanh content,
+//          window to hơn content đúng phần đệm này.
+//
+//    (2) `.ultraThinMaterial` trong borderless panel trong suốt.
+//        SwiftUI material = NSVisualEffectView within-window; phần TINT
+//        được mask theo Capsule nhưng lớp backdrop-sample hình chữ nhật
+//        có thể vẫn render (rõ nhất khi animate window alphaValue).
+//        → Vá: HUDBackdrop — NSVisualEffectView blendingMode .behindWindow
+//          + maskImage bo tròn: mask đúng CẢ lớp blur.
+//
+//    (3) Blend mode rò ra nền cửa sổ trong suốt.
+//        .plusLighter / .screen composite với pixel trong suốt phía sau
+//        → khung chữ nhật của layer sáng lên lờ mờ.
+//        → Vá: bỏ blend mode trong HUD context (bù bằng opacity),
+//          + .compositingGroup() trước .shadow.
+//
+//  Primitives:
+//    • HUDMetrics          — hằng số đệm shadow dùng chung 2 HUD window.
+//    • HUDBackdrop         — nền blur mask đúng hình (capsule/rounded).
+//    • Keycap              — mini glass pill render shortcut key label.
+//    • HUDFlag             — 48×36 flag image với inner stroke + gloss.
+//    • refractiveGlassBackground / tonalScrimBackground — background recipes.
 //
 
+import AppKit
 import SwiftUI
+
+// MARK: - HUD metrics (v2.4.0)
+
+enum HUDMetrics {
+    /// Đệm trong suốt quanh content của Toggle HUD — đủ chứa shadow lớn
+    /// nhất (radius 30 + y 12 ≈ 57pt về phía dưới).
+    static let shadowMargin: CGFloat = 64
+
+    /// Đệm cho Prediction HUD (shadow nhỏ hơn: radius ≤ 14 + y 6).
+    static let predictionShadowMargin: CGFloat = 40
+}
+
+// MARK: - HUDBackdrop (v2.4.0)
+
+/// Nền blur cho HUD trong borderless NSPanel trong suốt.
+///
+/// Dùng THAY cho `.background(.ultraThinMaterial, in: Capsule())` ở mọi
+/// HUD: NSVisualEffectView `.behindWindow` + `maskImage` bo tròn nên lớp
+/// blur được mask đúng hình — không còn ô vuông backdrop lộ ra sau lưng
+/// capsule khi window alpha animate.
+///
+/// `cornerRadius == nil` → capsule (radius = height/2, tự cập nhật theo
+/// layout — dùng cho HUD dạng pill).
+struct HUDBackdrop: NSViewRepresentable {
+    var cornerRadius: CGFloat? = nil
+
+    func makeNSView(context: Context) -> HUDBackdropEffectView {
+        let v = HUDBackdropEffectView()
+        v.material = .hudWindow
+        v.blendingMode = .behindWindow
+        v.state = .active
+        v.wantsLayer = true
+        v.fixedCornerRadius = cornerRadius
+        return v
+    }
+
+    func updateNSView(_ v: HUDBackdropEffectView, context: Context) {
+        v.fixedCornerRadius = cornerRadius
+        v.needsLayout = true
+    }
+}
+
+final class HUDBackdropEffectView: NSVisualEffectView {
+    var fixedCornerRadius: CGFloat?
+
+    override func layout() {
+        super.layout()
+        let maxR = min(bounds.width, bounds.height) / 2
+        let r = max(1, min(fixedCornerRadius ?? maxR, maxR))
+        maskImage = .vkRoundedMask(cornerRadius: r)
+    }
+}
+
+extension NSImage {
+    /// Mask image bo góc, capInsets stretch — chuẩn AppKit để mask
+    /// NSVisualEffectView trong cửa sổ trong suốt.
+    static func vkRoundedMask(cornerRadius r: CGFloat) -> NSImage {
+        let edge = r * 2 + 1
+        let image = NSImage(size: NSSize(width: edge, height: edge), flipped: false) { rect in
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: r, yRadius: r).fill()
+            return true
+        }
+        image.capInsets = NSEdgeInsets(top: r, left: r, bottom: r, right: r)
+        image.resizingMode = .stretch
+        return image
+    }
+}
 
 // MARK: - Keycap
 
 /// Mini glass pill rendering a single keyboard symbol/word.
 ///
-/// Used in:
-/// - Toggle HUD keycap row (`⌃` `⇧` or whatever the active modifier-only
-///   toggle hotkey is, e.g. `⇧⌥` for v2.0.2 default).
-/// - Prediction HUD `Tab` chip (sm size).
-///
-/// Visual: rounded-rect with multi-layer glass background (top-bottom white
-/// gradient + bottom inset shadow + 0.6pt inner stroke). Sits on a dark scrim
-/// — same component renders correctly under both LG and Tonal HUD backgrounds.
+/// v2.4.0: bỏ `.blendMode(.plusLighter)` — blend mode trong cửa sổ trong
+/// suốt composite với pixel transparent phía sau làm khung layer sáng mờ.
+/// Bù bằng cách nâng opacity gradient (0.22→0.28 / 0.04→0.07).
 struct Keycap: View {
     enum Size {
         case md  // 28×28, 12pt 600
@@ -87,15 +169,14 @@ struct Keycap: View {
             .frame(minWidth: size.minWidth, minHeight: size.height)
             .padding(.horizontal, size.horizontalPadding)
             .background(
-                // Top-bottom white glass gradient
+                // Top-bottom white glass gradient — normal blend (v2.4.0)
                 LinearGradient(
                     colors: [
-                        Color.white.opacity(0.22),
-                        Color.white.opacity(0.04),
+                        Color.white.opacity(0.28),
+                        Color.white.opacity(0.07),
                     ],
                     startPoint: .top, endPoint: .bottom
-                )
-                .blendMode(.plusLighter),
+                ),
                 in: RoundedRectangle(cornerRadius: size.radius, style: .continuous)
             )
             .background(
@@ -107,6 +188,7 @@ struct Keycap: View {
                 RoundedRectangle(cornerRadius: size.radius, style: .continuous)
                     .strokeBorder(Color.white.opacity(0.35), lineWidth: 0.6)
             )
+            .compositingGroup()
             // Subtle bottom-inset shadow for "pressed-in" feel
             .shadow(color: Color.black.opacity(0.20), radius: 2, x: 0, y: 1)
     }
@@ -115,11 +197,6 @@ struct Keycap: View {
 // MARK: - HUDFlag
 
 /// 48×36 flag image used as the leading icon of the toggle HUD.
-///
-/// Replaces the v2.0.x SF Symbol approach (`character.bubble.fill` / `keyboard`)
-/// with the actual VN/US flag PNGs from `Assets.xcassets/{vn,us}-flag.imageset`.
-/// Adds inner stroke + top-gloss overlay + drop-shadow per design handoff
-/// `.hud-flag` spec.
 struct HUDFlag: View {
     let isVietnamese: Bool
 
@@ -150,6 +227,7 @@ struct HUDFlag: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
             )
+            .compositingGroup()
             .shadow(color: Color.black.opacity(0.30), radius: 8, x: 0, y: 2)
     }
 }
@@ -157,24 +235,14 @@ struct HUDFlag: View {
 // MARK: - Background modifiers
 
 extension View {
-    /// Apply the Liquid Glass refractive 5-layer background recipe.
-    ///
-    /// Layers (bottom-to-top in render order):
-    /// 1. `.ultraThinMaterial` — system blur baseline
-    /// 2. Scrim `lgGlass1Color` × `scrimOpacity` (dark anchor)
-    /// 3. Linear gradient white(0.16)→white(0.02)→black(0.18) + radial spec
-    ///    white(0.28) from top
-    /// 4. Refractive corner tints: red500 at 24% bottom-left + blueTint at
-    ///    10% top-right, `.softLight` blend
-    /// 5. Triple-stop edge stroke white(0.55)→(0.18)→(0.06), 1.2pt
-    ///
-    /// Outer: two-layer drop shadow (black 0.55 r 30 y 12) + (black 0.35 r 10 y 4).
+    /// Apply the Liquid Glass refractive background recipe.
+    /// v2.4.0: material → HUDBackdrop (mask đúng blur), compositingGroup
+    /// trước shadow.
     func refractiveGlassBackground(radius: CGFloat, scrimOpacity: Double) -> some View {
         self.modifier(RefractiveGlassBackground(radius: radius, scrimOpacity: scrimOpacity))
     }
 
-    /// Apply the Tonal deep-ink scrim background (simpler, no refractive
-    /// tints, no edge gradient — just dark glass + thin border).
+    /// Apply the Tonal deep-ink scrim background.
     func tonalScrimBackground(radius: CGFloat, scrimOpacity: Double) -> some View {
         self.modifier(TonalScrimBackground(radius: radius, scrimOpacity: scrimOpacity))
     }
@@ -186,27 +254,26 @@ private struct RefractiveGlassBackground: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            // Layer 4: refractive corner tints (rendered ABOVE the scrim via
-            // overlay below; here we layer beneath the content using
-            // background stacking).
+            // Layer 4: refractive corner tints.
+            // v2.4.0: bỏ .softLight (blend rò ra nền trong suốt) — giảm
+            // opacity tint để giữ cùng cường độ thị giác với normal blend.
             .background(
                 ZStack {
                     RadialGradient(
                         colors: [
-                            VKeyDesign.red500.opacity(VKeyDesign.lgRefractiveStrength),
+                            VKeyDesign.red500.opacity(VKeyDesign.lgRefractiveStrength * 0.6),
                             .clear,
                         ],
                         center: .bottomLeading, startRadius: 0, endRadius: 160
                     )
                     RadialGradient(
                         colors: [
-                            VKeyDesign.lgBlueTint.opacity(0.10),
+                            VKeyDesign.lgBlueTint.opacity(0.06),
                             .clear,
                         ],
                         center: .topTrailing, startRadius: 0, endRadius: 160
                     )
                 }
-                .blendMode(.softLight)
                 .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             )
             // Layer 3: linear + radial highlights
@@ -232,11 +299,8 @@ private struct RefractiveGlassBackground: ViewModifier {
                 VKeyDesign.lgGlass1Color.opacity(scrimOpacity),
                 in: RoundedRectangle(cornerRadius: radius, style: .continuous)
             )
-            // Layer 1: material blur baseline
-            .background(
-                .ultraThinMaterial,
-                in: RoundedRectangle(cornerRadius: radius, style: .continuous)
-            )
+            // Layer 1: blur baseline — v2.4.0: HUDBackdrop thay material
+            .background(HUDBackdrop(cornerRadius: radius))
             // Layer 5: triple-stop edge stroke
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -252,6 +316,7 @@ private struct RefractiveGlassBackground: ViewModifier {
                         lineWidth: 1.2
                     )
             )
+            .compositingGroup()
             // Outer two-layer drop shadow
             .shadow(color: Color.black.opacity(0.55), radius: 30, x: 0, y: 12)
             .shadow(color: Color.black.opacity(0.35), radius: 10, x: 0, y: 4)
@@ -262,16 +327,6 @@ private struct TonalScrimBackground: ViewModifier {
     let radius: CGFloat
     let scrimOpacity: Double
 
-    /// v2.3.4: Tonal HUD scrim refined per design `.hud` spec:
-    ///   background: var(--glass-dark);                    → ink500 @ scrimOpacity
-    ///   backdrop-filter: blur(40px) saturate(180%);       → .ultraThinMaterial
-    ///   box-shadow: 0 24px 60px -16px rgba(0,0,0,0.6),    → outer drop shadow
-    ///               0 0 0 1px rgba(255,255,255,0.08) inset; → overlay strokeBorder
-    ///
-    /// v2.3.4 thêm 2 layer:
-    ///   1. Subtle warm ink tint trên top — match `--shadow-key` warm undertone.
-    ///   2. Inner top highlight (white 6%) — match `inset 0 1px 0 white-0.06`
-    ///      cho cảm giác glass "lit from above".
     func body(content: Content) -> some View {
         content
             // Layer 4: subtle top highlight (white 6% gradient top → clear)
@@ -290,17 +345,15 @@ private struct TonalScrimBackground: ViewModifier {
                 Color(hex: 0x131519).opacity(scrimOpacity),
                 in: RoundedRectangle(cornerRadius: radius, style: .continuous)
             )
-            // Layer 2: material blur baseline (backdrop-filter equivalent)
-            .background(
-                .ultraThinMaterial,
-                in: RoundedRectangle(cornerRadius: radius, style: .continuous)
-            )
-            // Layer 1: inset border — match `inset 0 0 0 1px rgba(255,255,255,0.08)`
+            // Layer 2: blur baseline — v2.4.0: HUDBackdrop thay material
+            .background(HUDBackdrop(cornerRadius: radius))
+            // Layer 1: inset border
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
             )
-            // Outer drop shadow — match `0 24px 60px -16px rgba(0,0,0,0.6)`
+            .compositingGroup()
+            // Outer drop shadow
             .shadow(color: Color.black.opacity(0.55), radius: 24, x: 0, y: 12)
     }
 }

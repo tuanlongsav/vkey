@@ -12,7 +12,9 @@ struct vkeyApp: App {
       VKMenuPanel(appDelegate: appDelegate)
         .tint(VK.Color.brand)
     } label: {
-      MenuBarLabel(appDelegate: appDelegate, appState: appDelegate.appState)
+      // v2.4.0: VKMenuBarLabel (cờ bo góc + hairline) — định nghĩa trong
+      // VKMenuBar.swift.
+      VKMenuBarLabel(appDelegate: appDelegate, appState: appDelegate.appState)
     }
     .menuBarExtraStyle(.window)
 
@@ -24,23 +26,5 @@ struct vkeyApp: App {
     }
     .windowResizability(.contentMinSize)
     .defaultSize(width: 860, height: 640)
-  }
-}
-
-struct MenuBarLabel: View {
-  @ObservedObject var appDelegate: AppDelegate
-  @ObservedObject var appState: AppState
-
-  var body: some View {
-    if !appDelegate.isTrusted {
-      ThemedSymbol(name: "gear.badge.questionmark")
-    } else if appState.secureInputActive {
-      ThemedSymbol(name: "lock.square")
-    } else {
-      Image(appState.enabled ? "vn-flag" : "us-flag")
-        .resizable()
-        .interpolation(.high)
-        .frame(width: 22, height: 14)
-    }
   }
 }

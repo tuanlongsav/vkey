@@ -29,7 +29,6 @@
 		3F8A65082B8E370B009E2AF1 /* VNI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F8A65072B8E370B009E2AF1 /* VNI.swift */; };
 		3F8A650A2B8E3BE8009E2AF1 /* TypingMethod.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F8A65092B8E3BE8009E2AF1 /* TypingMethod.swift */; };
 		3F8A650C2B8F08B3009E2AF1 /* Focused.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F8A650B2B8F08B3009E2AF1 /* Focused.swift */; };
-		3F8A650F2B91CA9A009E2AF1 /* Settings in Frameworks */ = {isa = PBXBuildFile; productRef = 3F8A650E2B91CA9A009E2AF1 /* Settings */; };
 		3F94E7AF2BA736E100360F8B /* UpgradeAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F94E7AE2BA736E100360F8B /* UpgradeAppView.swift */; };
 		3F9FC6D52B9E14AF00659712 /* FileMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9FC6D42B9E14AF00659712 /* FileMonitor.swift */; };
 		3F9FC6D82B9EB6A200659712 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 3F9FC6D72B9EB6A200659712 /* LaunchAtLogin */; };
@@ -218,7 +217,6 @@
 				3F2E85C92B9EDE7900A95282 /* Defaults in Frameworks */,
 				3F2E85D22BA0B53F00A95282 /* KeyboardShortcuts in Frameworks */,
 				3F9FC6D82B9EB6A200659712 /* LaunchAtLogin in Frameworks */,
-				3F8A650F2B91CA9A009E2AF1 /* Settings in Frameworks */,
 				B8922497E2121A6FA04CC2A3 /* libvkey_core.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -489,7 +487,6 @@
 			name = vkey;
 			packageProductDependencies = (
 				3F5B00022C12345600000002 /* Sparkle */,
-				3F8A650E2B91CA9A009E2AF1 /* Settings */,
 				3F9FC6D72B9EB6A200659712 /* LaunchAtLogin */,
 				3F2E85C82B9EDE7900A95282 /* Defaults */,
 				3F2E85D12BA0B53F00A95282 /* KeyboardShortcuts */,
@@ -568,7 +565,6 @@
 			mainGroup = 3FAFBB782B84A86C0032A55E;
 			packageReferences = (
 				3F5B00012C12345600000001 /* XCRemoteSwiftPackageReference "Sparkle" */,
-				3F8A650D2B91CA9A009E2AF1 /* XCRemoteSwiftPackageReference "Settings" */,
 				3F9FC6D62B9EB6A200659712 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */,
 				3F2E85C72B9EDE7900A95282 /* XCRemoteSwiftPackageReference "Defaults" */,
 				3F2E85D02BA0B53F00A95282 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
@@ -881,7 +877,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 30200;
+				CURRENT_PROJECT_VERSION = 30300;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -904,7 +900,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -923,7 +919,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 30200;
+				CURRENT_PROJECT_VERSION = 30300;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = "";
@@ -947,7 +943,7 @@
 					"$(PROJECT_DIR)/rust-core/target/universal",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D VKEY_CORE_RUST";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;
@@ -1104,14 +1100,6 @@
 				minimumVersion = 2.0.0;
 			};
 		};
-		3F8A650D2B91CA9A009E2AF1 /* XCRemoteSwiftPackageReference "Settings" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sindresorhus/Settings";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 3.1.0;
-			};
-		};
 		3F9FC6D62B9EB6A200659712 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin";
@@ -1137,11 +1125,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3F5B00012C12345600000001 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
-		};
-		3F8A650E2B91CA9A009E2AF1 /* Settings */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3F8A650D2B91CA9A009E2AF1 /* XCRemoteSwiftPackageReference "Settings" */;
-			productName = Settings;
 		};
 		3F9FC6D72B9EB6A200659712 /* LaunchAtLogin */ = {
 			isa = XCSwiftPackageProductDependency;

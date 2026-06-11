@@ -2,6 +2,40 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.3] - 2026-06-11 — "Hết treo alert + HUD/menu mới + gọn app"
+
+**Fix nghiêm trọng: alert quyền Trợ năng vô hình chặn main thread (treo menu, không vào Settings). HUD hết "khoanh vuông mờ". Menu bar chau chuốt. Gỡ dependency không dùng.**
+
+### 🚨 Fix bug treo
+
+- **NSAlert vô hình kẹt main thread**: sau khi cài bản mới (chữ ký đổi), TCC entry cũ làm `tapCreate` fail → vkey bật alert "cần quyền Trợ năng"; app đang ở chế độ accessory nên `activate(ignoringOtherApps:)` ngay sau `setActivationPolicy(.regular)` bị macOS nuốt → alert chạy nhưng KHÔNG hiện → main thread kẹt vĩnh viễn trong `runModal` → bấm menu bar không phản hồi, Settings không mở. Đã vá: chờ activation settle + ép cửa sổ alert nổi + guard chống bật chồng. Áp luôn cho 2 alert cùng kiểu (Updater + prompt sao lưu).
+
+### 🎨 HUD — hết "khoanh vuông mờ" bao quanh viên tròn (3 nguyên nhân, vá đủ)
+
+- Đệm shadow 64pt (Toggle) / 40pt (Prediction) quanh content — shadow + glow Neural không còn bị cắt theo mép cửa sổ.
+- `HUDBackdrop` (NSVisualEffectView + maskImage bo tròn) thay `.ultraThinMaterial` — blur được mask đúng hình capsule, không lộ khung chữ nhật khi fade.
+- Bỏ toàn bộ `blendMode` rò ra nền trong suốt; thêm `compositingGroup()` trước mọi shadow.
+- Prediction HUD giờ **click xuyên qua được** (panel to hơn, bắt buộc).
+- Toggle HUD thêm pop-in scale 0.94→1 (spring).
+
+### ✨ Menu bar — chau chuốt
+
+- **Header trạng thái**: cờ lớn + "Tiếng Việt"/"English" + kiểu gõ + segmented **VI | EN** (active = brand gradient).
+- Hover animate easeOut 0.12s, pressed scale 0.98 + dim.
+- Icon `hierarchical`, **nhuộm brand khi tính năng đang BẬT** (Telex/VNI/Smart Switch/Chính tả/Macro) — liếc qua biết trạng thái.
+- Checkmark spring pop khi toggle; badge phím tắt dạng keycap (⌘, / ⌘Q).
+- Popover Giao diện: **swatch màu per-theme** (Tonal mực+đỏ · Glass kính trắng · Neural gradient).
+- Footer 1 hàng icon (Ủng hộ · Thông tin · Cập nhật) + số phiên bản — panel ngắn hơn.
+- `VKMenuBarLabel`: cờ bo góc + hairline cho status item.
+
+### 🔧 Khác
+
+- Gỡ dependency `Settings` (sindresorhus) — không còn nơi nào dùng. `Settings_Settings.bundle` biến mất; bundle gọn hơn.
+- `ThemeFont` dọn case chết (carterOne/jetBrains) — thêm decoder map giá trị lạ về `.system` cho backward-compat với config cũ.
+- Xoá control chết `VKAccentButton`/`VKAppearanceButton`. `MenuBarFooterRow` làm rỗng.
+
+235/235 test pass.
+
 ## [3.2] - 2026-06-11 — "Hết treo máy khi thu hồi quyền + font mới"
 
 **Fix lỗi nghiêm trọng: thu hồi quyền Trợ năng khi vkey đang chạy làm treo toàn bộ macOS. Kèm fix cờ menu bar + 3 font mới.**

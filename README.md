@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.2 — "Hết treo máy khi thu hồi quyền + font mới"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.3 — "Hết treo alert + HUD/menu mới + gọn app"** ([CHANGELOG](CHANGELOG.md))
+
+> **3.3** — 🚨 **Fix bug treo nghiêm trọng**: alert quyền Trợ năng (bật khi TCC cũ làm tapCreate fail sau khi đổi chữ ký) **vô hình** mà vẫn chặn main thread → menu bar không bấm được, Settings không mở. Nay alert hiện đúng + có guard chống bật chồng. **HUD hết "khoanh vuông mờ"** quanh viên capsule (vá đủ 3 nguyên nhân: shadow margin + mask blur + bỏ blend mode). **Menu bar chau chuốt** — header trạng thái VI|EN, icon nhuộm brand khi tính năng bật, popover theme có swatch màu, footer 1 hàng. Gỡ dependency `Settings` (sindresorhus) không còn dùng. 235 test pass.
 
 > **3.2** — 🚨 **Fix lỗi nghiêm trọng**: thu hồi quyền Trợ năng khi vkey đang chạy không còn làm **treo toàn bộ macOS** (mọi bản trước đều dính — tap giằng co với hệ thống + AX call block giữ dòng sự kiện). Nay tháo tap trong ~2s, cấp lại quyền là tự chạy lại không cần mở lại app. Kèm: cờ 🇻🇳/🇺🇸 menu bar sáng đúng ngôn ngữ đang bật, ✓ Telex/VNI cập nhật ngay; thêm font **Inter** + **Nunito** (gỡ Carter One, JetBrains Mono). 235 test pass.
 

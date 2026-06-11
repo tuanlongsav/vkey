@@ -386,38 +386,58 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
   /// Shown after the trust polling loop has given up. The alert links the
   /// user to System Settings so they can grant Accessibility manually, and
   /// offers a "Try again" path that restarts polling.
+  /// v3.3: guard chống hiện chồng nhiều alert (mỗi alert là 1 runModal chặn
+  /// main thread).
+  private var accessibilityAlertShowing = false
+
   private func showAccessibilityHelpAlert() {
-    let alert = NSAlert()
-    alert.messageText = "vkey cần quyền Trợ năng (Accessibility)"
-    alert.informativeText = """
-    vkey cần được cấp quyền Accessibility để có thể chuyển ký tự bạn gõ \
-    thành tiếng Việt. Vui lòng mở:
-
-    System Settings → Privacy & Security → Accessibility
-
-    rồi bật toggle cho vkey. Sau đó nhấn "Thử lại" để vkey tiếp tục.
-    """
-    alert.addButton(withTitle: "Mở Cài đặt")
-    alert.addButton(withTitle: "Thử lại")
-    alert.addButton(withTitle: "Để sau")
-    alert.alertStyle = .warning
+    // BUG TREO (đã gặp trên máy thật): activate ngay sau setActivationPolicy
+    // thường bị NUỐT → alert modal chạy nhưng VÔ HÌNH (app accessory không
+    // được kích hoạt) → main thread kẹt vĩnh viễn trong runModal → menu bar
+    // hiện mà bấm không phản hồi, Settings không mở. Fix: chờ activation
+    // settle 1 nhịp + ép cửa sổ alert nổi lên trên + guard single-shot.
+    guard !accessibilityAlertShowing else { return }
+    accessibilityAlertShowing = true
 
     NSApp.setActivationPolicy(.regular)
-    NSApp.activate(ignoringOtherApps: true)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+      guard let self else { return }
+      NSApp.activate(ignoringOtherApps: true)
 
-    switch alert.runModal() {
-    case .alertFirstButtonReturn:
-      // Open the Accessibility pane directly. URL accepted by macOS 14+.
-      if let url = URL(
-        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-      ) {
-        NSWorkspace.shared.open(url)
+      let alert = NSAlert()
+      alert.messageText = "vkey cần quyền Trợ năng (Accessibility)"
+      alert.informativeText = """
+      vkey cần được cấp quyền Accessibility để có thể chuyển ký tự bạn gõ \
+      thành tiếng Việt. Vui lòng mở:
+
+      System Settings → Privacy & Security → Accessibility
+
+      rồi bật toggle cho vkey. Sau đó nhấn "Thử lại" để vkey tiếp tục.
+      """
+      alert.addButton(withTitle: "Mở Cài đặt")
+      alert.addButton(withTitle: "Thử lại")
+      alert.addButton(withTitle: "Để sau")
+      alert.alertStyle = .warning
+      alert.window.level = .floating
+      alert.window.orderFrontRegardless()
+
+      let response = alert.runModal()
+      self.accessibilityAlertShowing = false
+
+      switch response {
+      case .alertFirstButtonReturn:
+        // Open the Accessibility pane directly. URL accepted by macOS 14+.
+        if let url = URL(
+          string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        ) {
+          NSWorkspace.shared.open(url)
+        }
+        self.restartTrustCheckLoop()
+      case .alertSecondButtonReturn:
+        self.restartTrustCheckLoop()
+      default:
+        break
       }
-      restartTrustCheckLoop()
-    case .alertSecondButtonReturn:
-      restartTrustCheckLoop()
-    default:
-      break
     }
   }
 

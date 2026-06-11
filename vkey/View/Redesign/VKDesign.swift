@@ -4,7 +4,7 @@
 //
 //  Single source of truth cho màu, bo góc, spacing và type của UI mới.
 //  Port từ design handoff `DesignTokens.swift` + colors_and_type.css.
-//  Font dùng SF system (không nhúng Be Vietnam Pro/JetBrains Mono) — kích cỡ
+//  Font: SF system hoặc font nhúng theo Defaults.themeFont — kích cỡ
 //  và weight bám theo design tokens.
 //
 //  Dùng:

@@ -281,35 +281,34 @@ enum ThemeDensity: String, CaseIterable, Codable, Defaults.Serializable {
 
 /// 2.16: font chữ giao diện. `.system` = SF; còn lại là font nhúng kèm app.
 enum ThemeFont: String, CaseIterable, Codable, Defaults.Serializable {
-  case system, beVietnam, inter, notoSans, lora, nunito, carterOne, jetBrains
+  case system, beVietnam, inter, notoSans, lora, nunito
 
-  /// Carter One (tiếng Việt kém) + JetBrains Mono đã gỡ — giữ case để config
-  /// cũ decode được, nhưng ẩn khỏi menu và fallback về SF.
-  static var allCases: [ThemeFont] { [.system, .beVietnam, .inter, .notoSans, .lora, .nunito] }
+  /// Giá trị lạ trong config cũ (vd "carterOne"/"jetBrains" — font đã gỡ)
+  /// tự map về `.system` thay vì làm hỏng decode cả ThemeConfig.
+  init(from decoder: Decoder) throws {
+    let raw = try decoder.singleValueContainer().decode(String.self)
+    self = ThemeFont(rawValue: raw) ?? .system
+  }
 
   var displayName: String {
     switch self {
-    case .system:     return "Hệ thống (SF)"
-    case .beVietnam:  return "Be Vietnam Pro"
-    case .inter:      return "Inter"
-    case .notoSans:   return "Noto Sans Display"
-    case .lora:       return "Lora (serif)"
-    case .nunito:     return "Nunito"
-    case .carterOne:  return "Hệ thống (SF)"   // đã gỡ
-    case .jetBrains:  return "Hệ thống (SF)"   // đã gỡ
+    case .system:    return "Hệ thống (SF)"
+    case .beVietnam: return "Be Vietnam Pro"
+    case .inter:     return "Inter"
+    case .notoSans:  return "Noto Sans Display"
+    case .lora:      return "Lora (serif)"
+    case .nunito:    return "Nunito"
     }
   }
   /// PostScript name của font nhúng; nil = dùng SF system.
   var postScriptName: String? {
     switch self {
-    case .system:     return nil
-    case .beVietnam:  return "BeVietnamPro-Regular"
-    case .inter:      return "Inter-Regular"
-    case .notoSans:   return "NotoSansDisplay-Regular"
-    case .lora:       return "Lora-Regular"
-    case .nunito:     return "Nunito-Regular"
-    case .carterOne:  return nil               // font đã xoá khỏi bundle
-    case .jetBrains:  return nil               // font đã xoá khỏi bundle
+    case .system:    return nil
+    case .beVietnam: return "BeVietnamPro-Regular"
+    case .inter:     return "Inter-Regular"
+    case .notoSans:  return "NotoSansDisplay-Regular"
+    case .lora:      return "Lora-Regular"
+    case .nunito:    return "Nunito-Regular"
     }
   }
 }
