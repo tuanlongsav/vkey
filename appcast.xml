@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.6 — "Hết mất chữ ở Gemini + hộp thoại lưu file Chrome"</title>
+      <sparkle:version>30600</sparkle:version>
+      <sparkle:shortVersionString>3.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 13 Jun 2026 08:30:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.6/vkey-3.6.dmg"
+        sparkle:edSignature="8V/fOW04xUaeJCo0YSITr2zRheqwAyALZ3CNteMCNTR3GqRvuY1VQOqqvHl71b6Wt6+v2/FYbsHtC07yLoMYAw=="
+        length="6311927"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.6 — Hết mất chữ ở Gemini + hộp thoại lưu file Chrome</h2>
+        <h3>🐛 Fix lỗi "nhập" → "nḥ̂p" (mất chữ, dấu rời bám nhầm)</h3>
+        <ul>
+          <li><b>Gemini app</b>: bundle ID thật là <code>com.google.GeminiMacOS</code> (bản 3.4 ghi nhầm) → app bị diff sai kiểu NFD. Đã nhận diện đúng.</li>
+          <li><b>Hộp thoại tải file của Chrome</b> (gõ tên file/thư mục khi "Save As…"): đây là hộp thoại native của macOS chạy trong Chrome — vkey giờ tự phát hiện ô nhập native (ngoài web content) qua Accessibility và chuyển kiểu diff phù hợp <b>theo từng ô nhập</b>, không còn áp một kiểu cho cả app.</li>
+          <li><b>Chống lỗi tận gốc</b>: vkey không bao giờ gửi dấu thanh/dấu mũ "rời" nữa — luôn xoá và gõ lại trọn ký tự có dấu. Kể cả gặp app lạ phân loại sai, lỗi tối đa chỉ là gõ thừa 1 nhịp, không phá chữ.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized (từ 3.5). Toàn bộ test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.5 — "Ký Apple Developer ID + notarized"</title>
       <sparkle:version>30500</sparkle:version>
       <sparkle:shortVersionString>3.5</sparkle:shortVersionString>

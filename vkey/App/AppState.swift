@@ -95,7 +95,20 @@ class AppState: ObservableObject, FileMonitorDelegate {
             inputProcessor.isSearchOrComboFocused = currentFocusedElementIsSearchOrCombo
         }
     }
+    /// v3.6: focused element nằm ngoài AXWebArea (hộp thoại native trong
+    /// Chromium app, vd NSSavePanel "Save As…" của Chrome) → InputProcessor
+    /// flip sang diff NFC dù app thuộc nhóm NFD. nil từ AX = giữ nguyên
+    /// phân loại theo app (false).
+    public private(set) var currentFocusedElementOutsideWebArea = false {
+        didSet {
+            inputProcessor.focusedFieldOutsideWebArea = currentFocusedElementOutsideWebArea
+        }
+    }
     private let focusRefreshQueue = DispatchQueue(label: "dev.longht.vkey.focusRefresh", qos: .userInteractive)
+    /// v3.6: refresh trễ thứ hai (coalesced) — hộp thoại native (Save panel)
+    /// xuất hiện SAU ⌘S/click một nhịp nên refresh ngay tại event còn thấy
+    /// focus cũ; nhịp trễ ~0.5s bắt đúng field mới.
+    private var pendingDelayedFocusRefresh: DispatchWorkItem?
 
     init() {
         bundleId = Bundle.main.bundleIdentifier ?? "dev.longht.vkey"
@@ -326,12 +339,30 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// switch; refresh này bắt sub-window focus changes trong cùng app.
     public func refreshFocusedBundleIdAsync() {
         focusRefreshQueue.async { [weak self] in
-            let bid = Focused.focusedAppBundleId()
-            let isSearchOrCombo = Focused.isComboBoxOrSearchField()
-            DispatchQueue.main.async {
-                self?.currentFocusedBundleId = bid
-                self?.currentFocusedElementIsSearchOrCombo = isSearchOrCombo
-            }
+            self?.performFocusedElementRefresh()
+        }
+        // v3.6: nhịp refresh trễ — hộp thoại native (Save panel của Chrome)
+        // mở SAU keystroke/click trigger nên nhịp đầu còn thấy focus cũ.
+        // Coalesce: trigger mới hủy nhịp trễ cũ, chỉ giữ 1 pending.
+        pendingDelayedFocusRefresh?.cancel()
+        let delayed = DispatchWorkItem { [weak self] in
+            self?.performFocusedElementRefresh()
+        }
+        pendingDelayedFocusRefresh = delayed
+        focusRefreshQueue.asyncAfter(deadline: .now() + 0.5, execute: delayed)
+    }
+
+    /// Đọc AX state của focused element (chạy trên focusRefreshQueue) rồi
+    /// publish về main. Tách riêng để refresh ngay + refresh trễ dùng chung.
+    private func performFocusedElementRefresh() {
+        let bid = Focused.focusedAppBundleId()
+        let isSearchOrCombo = Focused.isComboBoxOrSearchField()
+        // nil (AX không trả lời) → false: giữ phân loại NFC/NFD theo app.
+        let outsideWebArea = Focused.isOutsideWebArea() ?? false
+        DispatchQueue.main.async {
+            self.currentFocusedBundleId = bid
+            self.currentFocusedElementIsSearchOrCombo = isSearchOrCombo
+            self.currentFocusedElementOutsideWebArea = outsideWebArea
         }
     }
 

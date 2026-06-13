@@ -89,6 +89,34 @@ public struct Focused {
     return false
   }
 
+  /// v3.6: focused element có nằm NGOÀI web content không?
+  ///
+  /// Chromium/Electron expose mọi text field của web content bên dưới một
+  /// node `AXWebArea`. Các hộp thoại NATIVE chạy trong cùng process (vd
+  /// NSSavePanel của Chrome khi "Save As…" / tải file về) thì KHÔNG có
+  /// ancestor này — field đó là AppKit thật: NFC + grapheme backspace,
+  /// phải diff NFC dù bundle là Chromium (nếu không sẽ mất chữ + dấu rời
+  /// bám nhầm, vd "nhập" → "nḥ̂p").
+  ///
+  /// Trả về `nil` khi không xác định được (không có focused element /
+  /// app không expose AX) — caller giữ phân loại mặc định theo app.
+  public static func isOutsideWebArea() -> Bool? {
+    guard let focusedElement = Focused.element() else { return nil }
+    var current: AXUIElement? = focusedElement
+    var depth = 0
+    // Giới hạn 25 cấp: cây AX của browser sâu nhưng AXWebArea luôn nằm gần
+    // top; vòng lặp có trần để không bao giờ treo trên cây bệnh/đệ quy.
+    while let el = current, depth < 25 {
+      if let role: String = el.getAttribute(property: kAXRoleAttribute),
+         role == "AXWebArea" {
+        return false
+      }
+      current = el.getAttribute(property: kAXParentAttribute)
+      depth += 1
+    }
+    return true
+  }
+
   /// Whether the currently focused UI element (in the frontmost app) is a
   /// secure/password text field. Used to decide whether system-wide secure
   /// input actually belongs to the foreground app — `CGSIsSecureEventInputSet`

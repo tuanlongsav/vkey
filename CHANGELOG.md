@@ -2,6 +2,27 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.6] - 2026-06-13 — "Hết mất chữ ở Gemini + hộp thoại lưu file Chrome"
+
+**Fix lỗi "nhập" → "nḥ̂p" (mất chữ cái, dấu rời bám nhầm) ở Gemini app và khi gõ tên file/thư mục trong hộp thoại tải về của Chrome. Ba lớp fix: đúng bundle ID Gemini, phát hiện field native theo AX, và cấm gửi dấu rời "trần".**
+
+### 🐛 Nguyên nhân gốc
+
+Diff NFD scalar (dành cho Chromium web content) bị gửi vào field **NFC + grapheme backspace** → backspace xoá nguyên cụm trong khi vkey đếm theo scalar, rồi combining mark "trần" được gõ tiếp bám nhầm vào ký tự trước ("nhập" → "nḥ̂p", mất chữ "a"). Hai đường dẫn tới cùng lỗi:
+
+1. **Gemini app**: bundle ID thật là `com.google.GeminiMacOS` — v3.4 ghi nhầm `com.google.gemini` nên app native Swift này rơi về nhánh NFD.
+2. **Hộp thoại lưu file của Chrome** (gõ tên file/thư mục khi tải về): là `NSSavePanel` **native của macOS** chạy trong process Chrome — field NFC thật nhưng bundle `com.google.Chrome` bị phân loại NFD toàn app.
+
+### 🔧 Ba lớp fix
+
+- **Đúng bundle ID Gemini** (`usesNFCGraphemeStorage`): so sánh lowercased prefix `com.google.gemini` → khớp cả `com.google.GeminiMacOS`.
+- **Phát hiện field native theo AX** (`Focused.isOutsideWebArea` + `focusedFieldOutsideWebArea`): focused element không có ancestor `AXWebArea` (Chromium expose mọi field web content dưới node này) → field là native control → flip sang diff NFC dù app thuộc nhóm NFD. Cache push-based như `isSearchOrComboFocused`; thêm nhịp refresh trễ 0.5s (coalesced) vì save panel mở SAU ⌘S/click một nhịp.
+- **Cấm combining mark "trần"** (`calcKeyStrokesNFD`): nếu phần retype mở đầu bằng dấu rời, lùi ranh giới về đầu cụm grapheme — xoá nguyên cụm + retype cụm hoàn chỉnh ("go"→"gô" giờ là 1 backspace + "ô" thay vì 0 + ◌̂ trần). Đúng ở cả field NFD lẫn NFC → kể cả khi phân loại sai, lỗi không còn phá chữ. Diff rỗng (chỉ xoá) giữ nguyên tối ưu cũ.
+
+### 🧪 Tests
+
+- Test mới: snapping NFD ("nhâ"→"nhậ", "nhậ"→"nhâ", "đi"→"đị", "gô"→"go" giữ nguyên), per-field override trong Chrome (web content NFD vs save panel NFC), bundle ID Gemini cả 2 biến thể. Cập nhật test v2.3.8 cũ theo hành vi mới. Toàn bộ suite pass.
+
 ## [3.5] - 2026-06-12 — "Ký Apple Developer ID + notarized"
 
 **App được ký bằng chứng chỉ Apple Developer ID và notarized bởi Apple — tải về mở ngay, không còn bị Gatekeeper chặn. Engine gõ không đổi (code y hệt v3.4).**

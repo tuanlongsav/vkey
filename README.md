@@ -5,7 +5,9 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.5 — "Ký Apple Developer ID + notarized"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.6 — "Hết mất chữ ở Gemini + hộp thoại lưu file Chrome"** ([CHANGELOG](CHANGELOG.md))
+
+> **3.6** — 🐛 **Fix "nhập" → "nḥ̂p"** (mất chữ cái, dấu rời bám nhầm) ở **Gemini app** (bundle ID thật `com.google.GeminiMacOS`, v3.4 ghi nhầm) và khi **gõ tên file/thư mục trong hộp thoại tải về của Chrome** (NSSavePanel native trong process Chromium). Fix 3 lớp: đúng bundle ID; tự phát hiện field native ngoài `AXWebArea` → flip NFC theo từng ô nhập; và diff NFD không bao giờ gửi dấu rời "trần" (lùi về đầu cụm grapheme, retype trọn chữ). Toàn bộ test pass.
 
 > **3.5** — 🔏 **App được ký bằng chứng chỉ Apple Developer ID và notarized bởi Apple**: tải DMG về **mở ngay không bị Gatekeeper chặn** — hết thời "chuột phải → Mở". Hardened runtime bật. Engine gõ không đổi (code y hệt 3.4). ⚠️ Nâng cấp từ ≤3.4: cấp lại quyền Trợ năng **một lần** (chữ ký đổi); từ nay về sau chữ ký ổn định, không phải cấp lại nữa.
 
@@ -125,7 +127,7 @@ Tất cả benchmark hiện tại **dưới ngưỡng** an toàn — engine Swif
 
 - ✅ Gõ tiếng Việt với 2 kiểu phổ biến: **Telex** và **VNI**.
 - ✅ Tuỳ chọn kiểu đặt dấu: **Kiểu mới** (thuỷ, khoẻ, hoà, uý) hoặc **Kiểu cũ** (thủy, khỏe, hòa, úy).
-- ✅ **Hỗ trợ bàn phím số & Caps Lock chuẩn macOS (v3.4+)**: gõ dấu VNI bằng **keypad** hoạt động đúng (Shift+keypad giữ nguyên chữ số); **Shift+Caps Lock** trên chữ cái ra chữ thường, Caps Lock không ảnh hưởng phím dấu câu/số. Diff xoá/sửa từ phân biệt app lưu **NFC** (Apple, MS Office, iWork, Google Gemini) và **NFD** (Chromium/Electron/web) → backspace không còn lệch ký tự trong Chrome & app web.
+- ✅ **Hỗ trợ bàn phím số & Caps Lock chuẩn macOS (v3.4+)**: gõ dấu VNI bằng **keypad** hoạt động đúng (Shift+keypad giữ nguyên chữ số); **Shift+Caps Lock** trên chữ cái ra chữ thường, Caps Lock không ảnh hưởng phím dấu câu/số. Diff xoá/sửa từ phân biệt app lưu **NFC** (Apple, MS Office, iWork, Google Gemini) và **NFD** (Chromium/Electron/web) → backspace không còn lệch ký tự trong Chrome & app web. **v3.6+**: phát hiện theo **từng ô nhập** qua AX — hộp thoại native trong app Chromium (vd Save panel của Chrome khi tải file) tự flip sang NFC; diff NFD không bao giờ gửi dấu rời "trần" → hết lỗi mất chữ "nhập" → "nḥ̂p".
 - ✅ **Tự động sửa lỗi gõ nhầm (Auto Typo Correction)**: Tự động sửa khi gõ nhầm dấu thanh sớm hoặc sai vị trí (ví dụ: `thfi` -> `thì`, `thfis` -> `thí`, `th2i` -> `thì`, `th1i` -> `thí`), sửa gạch chữ đ cuối từ (ví dụ: `dinhjd` -> `định` / `dinh59` -> `định`), sửa lỗi hoán đổi nguyên âm (ví dụ: `veeitj` -> `việt`) và hoán đổi phụ âm cuối (ví dụ: `phuowgn` -> `phương`). Có thể bật/tắt dễ dàng trong Cài đặt.
 - ✅ Bộ gõ chỉ duy nhất Unicode (UTF-8), không hỗ trợ TCVN3/VNI Windows (giữ đơn giản).
 - ✅ Nhớ chế độ Vi/En theo từng ứng dụng (per-app input mode memory).

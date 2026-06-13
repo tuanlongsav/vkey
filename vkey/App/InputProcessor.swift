@@ -715,6 +715,13 @@ class InputProcessor {
   public var keyLayout = KeyboardUS()
   public var activeApp = ""
   public var isSearchOrComboFocused = false
+
+  /// v3.6: focused element nằm NGOÀI web content (không có ancestor
+  /// AXWebArea) — cập nhật push-based từ AppState. Khi true, field hiện tại
+  /// là native control (vd NSSavePanel "Save As…" của Chrome) → diff NFC
+  /// bất kể app thuộc nhóm NFD. Fix bug "nhập" → "nḥ̂p" khi gõ tên file
+  /// trong hộp thoại tải về của Chromium apps.
+  public var focusedFieldOutsideWebArea = false
   public private(set) var lastSuggestions: [SuggestionCandidate] = []
 
   /// 2.0 (B1): cached Window Title Rule overrides cho activeApp.
@@ -815,8 +822,7 @@ class InputProcessor {
   }
 
   public func pop() -> (Int, [Character]) {
-    let usesNFC = InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
-    return wordBuffer.pop(engine: engine, usesNFC: usesNFC)
+    return wordBuffer.pop(engine: engine, usesNFC: usesNFCForFocusedField())
   }
 
   public func push(char: Character) {
@@ -904,7 +910,7 @@ class InputProcessor {
       let orig = String(wordBuffer.keys)
       let currentTransformed = wordBuffer.transformed
       if !wordBuffer.wordState.isBlank && currentTransformed != orig {
-        let usesNFC = InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
+        let usesNFC = usesNFCForFocusedField()
         let (numBackspaces, diffChars) = usesNFC
           ? EventSimulator.calcKeyStrokes(from: currentTransformed, to: orig)
           : EventSimulator.calcKeyStrokesNFD(from: currentTransformed, to: orig)
@@ -989,7 +995,7 @@ class InputProcessor {
     // diff như v2.3.11 — stable cho NFC apps, accept bug trong Chromium
     // apps cho đến khi có giải pháp đúng.
     //
-    let usesNFC = InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
+    let usesNFC = usesNFCForFocusedField()
     let (numBackspaces, diffChars) = usesNFC
       ? EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
       : EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
@@ -1301,7 +1307,7 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
-      let usesNFC = InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
+      let usesNFC = usesNFCForFocusedField()
       let (numBackspaces, diffChars) = usesNFC
         ? EventSimulator.calcKeyStrokes(from: current, to: target)
         : EventSimulator.calcKeyStrokesNFD(from: current, to: target)
@@ -1367,9 +1373,20 @@ class InputProcessor {
     if officeNative.contains(bundleId) { return true }
     // iWork
     if bundleId.hasPrefix("com.apple.iWork.") { return true }
-    // Google Gemini app (native Swift wrapper / ported runtime)
-    if bundleId == "com.google.gemini" { return true }
+    // Google Gemini app — native Swift app (Frameworks chỉ có Swift runtime
+    // dylib). Bundle ID THẬT là "com.google.GeminiMacOS" (v3.4 ghi nhầm
+    // "com.google.gemini" → rơi về NFD → mất chữ "nhập" → "nḥ̂p").
+    // So sánh lowercased prefix để chịu được biến thể viết hoa/đuôi.
+    if bundleId.lowercased().hasPrefix("com.google.gemini") { return true }
     return false
+  }
+
+  /// v3.6: quyết định diff NFC/NFD cho FIELD đang focus — phân loại theo app
+  /// (whitelist NFC) HOẶC field native nằm ngoài web content trong app nhóm
+  /// NFD (vd Save panel của Chrome: AppKit thật → NFC + grapheme backspace).
+  func usesNFCForFocusedField() -> Bool {
+    return InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
+      || focusedFieldOutsideWebArea
   }
 
   static func macroReplacement(

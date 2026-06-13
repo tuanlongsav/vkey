@@ -202,6 +202,31 @@ class EventSimulator {
     {
       commonPrefixLength += 1
     }
+
+    // v3.6: KHÔNG BAO GIỜ gửi combining mark "trần" mở đầu diff. Nếu phần
+    // retype bắt đầu bằng dấu rời (ccc != 0), bất kỳ sai lệch nào giữa số
+    // backspace gửi đi và số ký tự field thật sự xoá sẽ làm dấu bám nhầm
+    // base ("nhập" → "nḥ̂p"). Lùi ranh giới prefix về đầu cụm grapheme:
+    // xoá nguyên cụm và retype cụm hoàn chỉnh — đúng với field NFD thật,
+    // và chỉ lệch nhẹ (không phá chữ) nếu field bị phân loại nhầm.
+    // Diff rỗng (chỉ xoá, không retype) giữ nguyên — không có gì để bám sai.
+    func isCombining(_ s: Unicode.Scalar) -> Bool {
+      s.properties.canonicalCombiningClass != .notReordered
+    }
+    if commonPrefixLength < toScalars.count && isCombining(toScalars[commonPrefixLength]) {
+      while commonPrefixLength > 0 {
+        let splitsFrom = commonPrefixLength < fromScalars.count
+          && isCombining(fromScalars[commonPrefixLength])
+        let splitsTo = commonPrefixLength < toScalars.count
+          && isCombining(toScalars[commonPrefixLength])
+        if splitsFrom || splitsTo {
+          commonPrefixLength -= 1
+        } else {
+          break
+        }
+      }
+    }
+
     let backspaceCount = fromScalars.count - commonPrefixLength
     var remainingScalars = String.UnicodeScalarView()
     for s in toScalars.dropFirst(commonPrefixLength) {

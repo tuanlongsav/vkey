@@ -547,12 +547,14 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(nfdBs, 2, "NFD backspace count khớp với Chrome scalar storage")
     XCTAssertEqual(String(nfdDiff), "ogl", "NFD diff không chứa 'o' thừa")
 
-    // Test 2: "go" → "gô" (step thêm dấu mũ). NFD chỉ cần append combining mark.
+    // Test 2: "go" → "gô" (step thêm dấu mũ).
+    // v2.3.8–v3.5: append combining mark TRẦN (0 bs + ◌̂) — đúng với field NFD
+    // thật nhưng PHÁ CHỮ nếu field hoá ra là NFC ("nhập" → "nḥ̂p" ở save panel
+    // của Chrome). v3.6: snap về đầu cụm — xoá "o" + retype "ô" hoàn chỉnh,
+    // đúng ở CẢ field NFD lẫn NFC.
     let (gôBs, gôDiff) = EventSimulator.calcKeyStrokesNFD(from: "go", to: "gô")
-    XCTAssertEqual(gôBs, 0, "0 backspace — chỉ thêm combining mark")
-    XCTAssertEqual(gôDiff.count, 1, "1 char (combining mark) thêm vào")
-    XCTAssertEqual(String(gôDiff).unicodeScalars.first?.value, 0x0302,
-                   "Diff là combining circumflex U+0302")
+    XCTAssertEqual(gôBs, 1, "xoá 'o' rồi retype nguyên cụm — không gửi dấu trần")
+    XCTAssertEqual(gôDiff, ["ô"], "retype cụm grapheme hoàn chỉnh")
 
     // Test 3: ASCII-only — NFD bằng NFC khi không có combining marks.
     let (a1, d1) = EventSimulator.calcKeyStrokes(from: "hello", to: "hello world")
@@ -3487,11 +3489,16 @@ final class NFDvsNFCDiffingTests: XCTestCase {
   }
 
   func testGeminiAppUsesNFC() throws {
+    // v3.6: bundle ID THẬT của Gemini app là com.google.GeminiMacOS
+    // (v3.4 ghi nhầm com.google.gemini → rơi về NFD → "nhập" → "nḥ̂p").
+    // Check lowercased prefix nên cả hai biến thể đều phải pass.
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.google.GeminiMacOS"))
     XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.google.gemini"))
-    
+    XCTAssertFalse(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.google.Chrome"))
+
     let processor = InputProcessor(method: .Telex)
-    processor.changeActiveApp("com.google.gemini")
-    
+    processor.changeActiveApp("com.google.GeminiMacOS")
+
     // Type "nhân"
     processor.push(char: "n")
     processor.push(char: "h")
@@ -3499,5 +3506,58 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     processor.push(char: "a")
     processor.push(char: "n")
     XCTAssertEqual(processor.transformed, "nhân")
+  }
+
+  /// v3.6: diff NFD không bao giờ được mở đầu bằng combining mark trần —
+  /// nếu có, ranh giới lùi về đầu cụm grapheme (xoá + retype nguyên cụm).
+  func testNFDDiffNeverStartsWithBareCombiningMark() throws {
+    // "nhâ" → "nhậ": NFD to = [n,h,a,◌̣,◌̂] — diff thô là [◌̣,◌̂] (dấu trần).
+    // Phải snap về đầu cụm: xoá 2 scalar (◌̂, a), retype "ậ" hoàn chỉnh.
+    let (bs1, diff1) = EventSimulator.calcKeyStrokesNFD(from: "nhâ", to: "nhậ")
+    XCTAssertEqual(bs1, 2)
+    XCTAssertEqual(diff1, ["ậ"])
+
+    // Chiều ngược (xoá dấu nặng): cũng phải retype nguyên cụm "â".
+    let (bs2, diff2) = EventSimulator.calcKeyStrokesNFD(from: "nhậ", to: "nhâ")
+    XCTAssertEqual(bs2, 3)
+    XCTAssertEqual(diff2, ["â"])
+
+    // Thêm dấu vào chữ không dấu: "đi" → "đị" — retype "ị" hoàn chỉnh.
+    let (bs3, diff3) = EventSimulator.calcKeyStrokesNFD(from: "đi", to: "đị")
+    XCTAssertEqual(bs3, 1)
+    XCTAssertEqual(diff3, ["ị"])
+
+    // Diff RỖNG (chỉ xoá) giữ nguyên — không snap, pop vẫn nhường OS xử lý.
+    let (bs4, diff4) = EventSimulator.calcKeyStrokesNFD(from: "gô", to: "go")
+    XCTAssertEqual(bs4, 1)
+    XCTAssertEqual(diff4, [])
+  }
+
+  /// v3.6: field native ngoài web content (NSSavePanel của Chrome khi gõ
+  /// tên file tải về) → flip sang NFC dù bundle là Chromium.
+  func testNativeFieldOverrideInChromiumApp() throws {
+    let processor = InputProcessor(method: .Telex)
+    processor.changeActiveApp("com.google.Chrome")
+
+    // Web content (mặc định): NFD — pop "gô"→"go" nhường OS (0, []).
+    processor.focusedFieldOutsideWebArea = false
+    processor.push(char: "g")
+    processor.push(char: "o")
+    processor.push(char: "o")
+    XCTAssertEqual(processor.transformed, "gô")
+    let (webBs, webDiff) = processor.pop()
+    XCTAssertEqual(webBs, 0)
+    XCTAssertEqual(webDiff, [])
+
+    // Save panel (ngoài AXWebArea): NFC — pop "gô"→"go" = (1, ["o"]).
+    processor.newWord()
+    processor.focusedFieldOutsideWebArea = true
+    processor.push(char: "g")
+    processor.push(char: "o")
+    processor.push(char: "o")
+    XCTAssertEqual(processor.transformed, "gô")
+    let (nativeBs, nativeDiff) = processor.pop()
+    XCTAssertEqual(nativeBs, 1)
+    XCTAssertEqual(nativeDiff, ["o"])
   }
 }
