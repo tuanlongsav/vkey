@@ -716,13 +716,10 @@ class InputProcessor {
   public var activeApp = ""
   public var isSearchOrComboFocused = false
 
-  /// v3.8: focused element nằm trong HỘP THOẠI MODAL NATIVE (AXSheet/dialog,
-  /// vd NSSavePanel "Save As…" của Chrome) — cập nhật push-based từ AppState.
-  /// Khi true, field hiện tại là AppKit thật → diff NFC bất kể app thuộc nhóm
-  /// NFD. Fix bug "nhập" → "nḥ̂p" khi gõ tên file trong hộp thoại tải về của
-  /// Chromium apps. (v3.6/3.7 dùng "ngoài AXWebArea" quá rộng → ép NFC nhầm
-  /// cả omnibox Chrome → "trường" → "truường"; v3.8 siết về đúng sheet/dialog.)
-  public var focusedFieldInNativePanel = false
+  /// v3.9: phân loại field đang focus (push-based từ AppState) — quyết định
+  /// diff NFC/NFD (`usesNFCForFocusedField`) và chiến lược gửi
+  /// (`effectiveTypingStrategy` → axDirect cho omnibox Chrome).
+  public var focusedFieldKind: Focused.FieldKind = .unknown
   public private(set) var lastSuggestions: [SuggestionCandidate] = []
 
   /// 2.0 (B1): cached Window Title Rule overrides cho activeApp.
@@ -1127,6 +1124,12 @@ class InputProcessor {
     if case .axDirect = strategyTracker.currentStrategy {
       return .axDirect
     }
+    // v3.9: browser-chrome field (thanh địa chỉ Chrome…) có inline autocomplete
+    // bôi đen → synthetic backspace lệch. Dùng axDirect (đọc value thật, xử lý
+    // suffix-selection như Spotlight). axDirect fail → tự fallback synthetic.
+    if focusedFieldIsBrowserChrome() {
+      return .axDirect
+    }
     if backspaceCount <= 1 && diffCharCount <= 1 {
       return .batch
     }
@@ -1382,12 +1385,31 @@ class InputProcessor {
     return false
   }
 
-  /// v3.8: quyết định diff NFC/NFD cho FIELD đang focus — phân loại theo app
-  /// (whitelist NFC) HOẶC field nằm trong hộp thoại modal native của app nhóm
-  /// NFD (vd Save panel của Chrome: AppKit thật → NFC + grapheme backspace).
+  /// v3.9: quyết định diff NFC/NFD cho FIELD đang focus.
+  /// 1) App nhóm NFC (Apple/Office/iWork/Gemini) → LUÔN NFC, bất kể field kind
+  ///    (vd web content trong Safari là WebKit nhưng vẫn NFC grapheme-delete).
+  /// 2) App nhóm NFD (Chromium/Electron) → phân biệt theo field:
+  ///    - webContent  → NFD (lưu/xoá theo scalar)
+  ///    - nativePanel → NFC (NSSavePanel AppKit thật)
+  ///    - windowField → NFC (browser-chrome/omnibox; dùng KÈM axDirect — xem
+  ///                    effectiveTypingStrategy — vì axDeleteStart đếm grapheme)
+  ///    - unknown     → giữ default NFD của app
   func usesNFCForFocusedField() -> Bool {
-    return InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
-      || focusedFieldInNativePanel
+    if InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp) { return true }
+    switch focusedFieldKind {
+    case .webContent: return false
+    case .nativePanel, .windowField: return true
+    case .unknown: return false
+    }
+  }
+
+  /// v3.9: field hiện tại là browser-chrome (vd thanh địa chỉ Chrome) của app
+  /// nhóm NFD — tức `windowField` trong app KHÔNG thuộc whitelist NFC. Các field
+  /// này (Chromium Views) có inline autocomplete bôi đen nên backspace synthetic
+  /// lệch số ký tự ("trường" → "truường"/"truờng"); phải dùng axDirect.
+  func focusedFieldIsBrowserChrome() -> Bool {
+    return focusedFieldKind == .windowField
+      && !InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
   }
 
   static func macroReplacement(

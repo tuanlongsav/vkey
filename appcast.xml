@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.9 — "Gõ đúng ở thanh địa chỉ Chrome (axDirect)"</title>
+      <sparkle:version>30900</sparkle:version>
+      <sparkle:shortVersionString>3.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 17 Jun 2026 20:10:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.9/vkey-3.9.dmg"
+        sparkle:edSignature="ucyqgbf0vGGOOUe7jBcQ/2ZyZsx5I0oxxBb0T8Ni5GMfwmmifhaKrZaRfOa2mtVGozvkckfHDhfJ9RPsAeV+Bg=="
+        length="6314486"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.9 — Gõ đúng ở thanh địa chỉ Chrome</h2>
+        <h3>🐛 Sửa triệt để lỗi gõ ở thanh địa chỉ (omnibox)</h3>
+        <ul>
+          <li>Thủ phạm thật là tính năng <b>tự gợi ý (autocomplete) bôi đen text</b> của thanh địa chỉ — khi vkey xoá để sửa chữ, phím xoá ăn nhầm phần bôi đen nên lệch ký tự (thừa hoặc thiếu chữ). Không phải chuyện kiểu lưu ký tự (NFC/NFD), nên các bản 3.6–3.8 chưa dứt.</li>
+          <li>Nay vkey gõ vào thanh địa chỉ bằng cách <b>ghi thẳng qua Accessibility</b>: đọc nội dung thật + vị trí con trỏ + vùng bôi đen rồi đặt đúng kết quả — bỏ qua hoàn toàn phần gợi ý. Cùng cơ chế đã chạy ổn cho Spotlight.</li>
+          <li>Gõ ở trang web, app khác, và hộp thoại lưu file vẫn nguyên như trước.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.8 — "Sửa lỗi gõ ở thanh địa chỉ Chrome"</title>
       <sparkle:version>30800</sparkle:version>
       <sparkle:shortVersionString>3.8</sparkle:shortVersionString>

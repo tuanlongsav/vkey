@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.8 — "Sửa lỗi gõ ở thanh địa chỉ Chrome"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.9 — "Gõ đúng ở thanh địa chỉ Chrome (axDirect)"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.9** — 🐛 **Sửa triệt để lỗi gõ ở thanh địa chỉ Chrome.** Thủ phạm là tính năng **tự gợi ý (autocomplete) bôi đen text** của thanh địa chỉ — backspace xoá nhầm phần bôi đen nên lệch ký tự (NFC → thừa chữ `"truường"`, NFD → thiếu chữ `"truờng"`). Không phải bài toán NFC/NFD. Nay vkey định tuyến thanh địa chỉ qua chế độ **ghi thẳng Accessibility (axDirect)** — đọc nội dung thật rồi ghi đúng kết quả, bỏ qua cả autocomplete (cùng cơ chế đã ổn cho Spotlight). Web page, app native, hộp thoại lưu file vẫn nguyên. Toàn bộ test pass.
+>
 > **3.8** — 🐛 **Fix `"trường"` → `"truường"`** (thừa chữ) khi gõ ở **thanh địa chỉ Chrome** và các ô do Chromium tự vẽ. Cơ chế ép NFC của 3.6/3.7 nhận diện field native quá rộng (omnibox cũng nằm ngoài `AXWebArea` nhưng là field Chromium Views, lưu/xoá theo scalar). 3.8 siết về đúng **hộp thoại modal native** (`AXSheet`/dialog) → omnibox quay lại diff NFD chuẩn, hộp thoại lưu file vẫn được fix như 3.6. Toàn bộ test pass.
 >
 > **3.7** — 🔧 **Củng cố bản 3.6 sau code-review.** Siết phần phát hiện ô nhập native theo Accessibility để **không đoán mò**: khi cây Accessibility quá sâu hoặc phản hồi chậm, vkey giữ kiểu gõ theo app thay vì ép NFC — tránh lỗi mất chữ theo **chiều ngược** ở ô web lồng sâu. Gộp truy vấn Accessibility khi đổi focus cho nhẹ. Engine gõ không đổi hành vi đã thấy ở 3.6. Toàn bộ test pass.

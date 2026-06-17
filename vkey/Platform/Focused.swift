@@ -89,55 +89,54 @@ public struct Focused {
     return false
   }
 
-  /// v3.8: focused element có nằm trong một HỘP THOẠI MODAL NATIVE (AppKit)
-  /// không? — vd `NSSavePanel`/`NSOpenPanel` mà Chromium app bung ra khi
-  /// "Save As…" / tải file về. Field trong đó là AppKit THẬT (NFC + grapheme
-  /// backspace) → phải diff NFC dù app thuộc nhóm NFD ("nhập" → "nḥ̂p" nếu sai).
-  ///
-  /// Trả về `nil` khi không xác định được — caller giữ phân loại theo app.
-  public static func isInsideNativePanel() -> Bool? {
-    guard let focusedElement = Focused.element() else { return nil }
-    return isInsideNativePanel(from: focusedElement)
+  /// v3.9: phân loại ngữ cảnh của focused element (leo cây AX) để caller quyết
+  /// định kiểu diff (NFC/NFD) và chiến lược gửi (synthetic vs axDirect).
+  public enum FieldKind {
+    /// Dưới `AXWebArea` — web content Chromium/Electron: lưu/xoá theo scalar
+    /// → diff NFD synthetic.
+    case webContent
+    /// Trong hộp thoại modal native (`AXSheet` / cửa sổ subrole dialog) — vd
+    /// `NSSavePanel`/`NSOpenPanel`: AppKit thật → diff NFC synthetic.
+    case nativePanel
+    /// Field thường trong cửa sổ chính (KHÔNG web area, KHÔNG dialog). Với app
+    /// native = ô text bình thường; với app nhóm NFD (Chromium) đây là
+    /// browser-chrome — vd THANH ĐỊA CHỈ (omnibox): field Chromium Views có
+    /// inline autocomplete bôi đen → caller dùng diff NFC + chiến lược axDirect.
+    case windowField
+    /// Không xác định được (AX timeout / đứt chain / chạm trần) — giữ mặc định
+    /// theo app.
+    case unknown
   }
 
-  /// v3.8: core leo cây AX từ `element` — tách ra để `snapshot()` tái dùng.
-  ///
-  /// CHỈ nhận diện HỘP THOẠI MODAL native, KHÔNG nhận control Chromium Views
-  /// trong cửa sổ chính:
-  /// - Gặp `AXSheet`, hoặc `AXWindow` subrole `AXDialog`/`AXSystemDialog`
-  ///     → `true`  (panel native như NSSavePanel → ép NFC).
-  /// - Gặp `AXWindow` thường (`AXStandardWindow`…) / `AXApplication`
-  ///     → `false` (cửa sổ chính → giữ phân loại theo app).
-  /// - Đọc role lỗi / đứt chain / chạm trần
-  ///     → `nil`   (KHÔNG kết luận).
-  ///
-  /// Vì sao KHÔNG dùng tiêu chí "ngoài AXWebArea" như v3.6/3.7: thanh địa chỉ
-  /// (omnibox) của Chrome cũng nằm ngoài AXWebArea NHƯNG là field do Chromium
-  /// Views tự vẽ — lưu/xoá theo SCALAR như web content (NFD). Ép nó sang NFC
-  /// làm hỏng gõ ("trường" → "truường"). Chỉ NSSavePanel/NSOpenPanel mới là
-  /// AppKit thật, và chúng luôn là sheet/dialog modal → phân biệt được bằng
-  /// AXSheet / subrole dialog. Cửa sổ chính (omnibox, toolbar, web) → giữ NFD.
-  private static func isInsideNativePanel(from element: AXUIElement) -> Bool? {
+  public static func fieldKind() -> FieldKind {
+    guard let focusedElement = Focused.element() else { return .unknown }
+    return fieldKind(from: focusedElement)
+  }
+
+  /// Core leo cây AX từ `element` — tách ra để `snapshot()` tái dùng.
+  /// Thứ tự kiểm tra QUAN TRỌNG: `AXWebArea` luôn là con của cửa sổ nên gặp
+  /// TRƯỚC `AXWindow` → web content phân loại đúng trước khi chạm window.
+  private static func fieldKind(from element: AXUIElement) -> FieldKind {
     var current: AXUIElement? = element
     var depth = 0
     // Trần 25 cấp: vòng lặp luôn có cận trên để không treo trên cây bệnh/đệ quy.
     while let el = current, depth < 25 {
       guard let role: String = el.getAttribute(property: kAXRoleAttribute) else {
         // Role không đọc được (AX timeout/lỗi) → không kết luận.
-        return nil
+        return .unknown
       }
-      if role == "AXSheet" { return true }
+      if role == "AXWebArea" { return .webContent }
+      if role == "AXSheet" { return .nativePanel }
       if role == "AXWindow" {
-        // Cửa sổ: chỉ là panel native nếu subrole là dialog modal. Cửa sổ
-        // thường (trình duyệt chính chứa omnibox/web) → KHÔNG ép NFC.
         let subrole: String? = el.getAttribute(property: kAXSubroleAttribute)
-        return subrole == "AXDialog" || subrole == "AXSystemDialog"
+        if subrole == "AXDialog" || subrole == "AXSystemDialog" { return .nativePanel }
+        return .windowField
       }
-      if role == "AXApplication" { return false }
+      if role == "AXApplication" { return .windowField }
       current = el.getAttribute(property: kAXParentAttribute)
       depth += 1
     }
-    return nil
+    return .unknown
   }
 
   /// v3.7: ảnh chụp trạng thái focused element trong MỘT lần fetch system-wide.
@@ -146,13 +145,12 @@ public struct Focused {
   public struct FocusSnapshot {
     public let bundleId: String?
     public let isComboOrSearch: Bool
-    /// `nil` = không kết luận được (caller giữ phân loại NFC/NFD theo app).
-    public let insideNativePanel: Bool?
+    public let fieldKind: FieldKind
   }
 
   public static func snapshot() -> FocusSnapshot {
     guard let element = Focused.element() else {
-      return FocusSnapshot(bundleId: nil, isComboOrSearch: false, insideNativePanel: nil)
+      return FocusSnapshot(bundleId: nil, isComboOrSearch: false, fieldKind: .unknown)
     }
     var bundleId: String? = nil
     var pid: pid_t = 0
@@ -161,9 +159,9 @@ public struct Focused {
     }
     let role: String? = element.getAttribute(property: kAXRoleAttribute)
     let isComboOrSearch = (role == "AXComboBox" || role == "AXSearchField")
-    let insidePanel = Focused.isInsideNativePanel(from: element)
+    let kind = Focused.fieldKind(from: element)
     return FocusSnapshot(
-      bundleId: bundleId, isComboOrSearch: isComboOrSearch, insideNativePanel: insidePanel)
+      bundleId: bundleId, isComboOrSearch: isComboOrSearch, fieldKind: kind)
   }
 
   /// Whether the currently focused UI element (in the frontmost app) is a

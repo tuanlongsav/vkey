@@ -3533,16 +3533,16 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(diff4, [])
   }
 
-  /// v3.8: field trong hộp thoại modal native (NSSavePanel của Chrome khi gõ
-  /// tên file tải về) → flip sang NFC dù bundle là Chromium. Omnibox/web
-  /// content (KHÔNG trong panel) → giữ NFD.
-  func testNativeFieldOverrideInChromiumApp() throws {
+  /// v3.9: kiểu diff theo FieldKind trong app nhóm NFD (Chrome).
+  /// - webContent → NFD (pop "gô"→"go" nhường OS = (0, []))
+  /// - nativePanel (NSSavePanel) → NFC = (1, ["o"])
+  /// - windowField (omnibox) → NFC = (1, ["o"]) — dùng kèm axDirect ở runtime
+  func testFieldKindDiffSelectionInChromiumApp() throws {
     let processor = InputProcessor(method: .Telex)
     processor.changeActiveApp("com.google.Chrome")
 
-    // Web content / omnibox (mặc định, KHÔNG trong native panel): NFD —
-    // pop "gô"→"go" nhường OS (0, []).
-    processor.focusedFieldInNativePanel = false
+    // Web content: NFD — pop "gô"→"go" nhường OS (0, []).
+    processor.focusedFieldKind = .webContent
     processor.push(char: "g")
     processor.push(char: "o")
     processor.push(char: "o")
@@ -3553,13 +3553,32 @@ final class NFDvsNFCDiffingTests: XCTestCase {
 
     // Save panel (hộp thoại modal native): NFC — pop "gô"→"go" = (1, ["o"]).
     processor.newWord()
-    processor.focusedFieldInNativePanel = true
+    processor.focusedFieldKind = .nativePanel
     processor.push(char: "g")
     processor.push(char: "o")
     processor.push(char: "o")
     XCTAssertEqual(processor.transformed, "gô")
-    let (nativeBs, nativeDiff) = processor.pop()
-    XCTAssertEqual(nativeBs, 1)
-    XCTAssertEqual(nativeDiff, ["o"])
+    let (panelBs, panelDiff) = processor.pop()
+    XCTAssertEqual(panelBs, 1)
+    XCTAssertEqual(panelDiff, ["o"])
+
+    // Omnibox (windowField của app NFD): NFC grapheme = (1, ["o"]) — vì
+    // axDeleteStart của axDirect đếm theo grapheme. Cũng là browser-chrome.
+    processor.newWord()
+    processor.focusedFieldKind = .windowField
+    XCTAssertTrue(processor.focusedFieldIsBrowserChrome())
+    processor.push(char: "g")
+    processor.push(char: "o")
+    processor.push(char: "o")
+    XCTAssertEqual(processor.transformed, "gô")
+    let (omniBs, omniDiff) = processor.pop()
+    XCTAssertEqual(omniBs, 1)
+    XCTAssertEqual(omniDiff, ["o"])
+
+    // windowField trong app NFC-whitelist (vd Notes) KHÔNG phải browser-chrome
+    // → không ép axDirect.
+    processor.changeActiveApp("com.apple.Notes")
+    processor.focusedFieldKind = .windowField
+    XCTAssertFalse(processor.focusedFieldIsBrowserChrome())
   }
 }

@@ -2,6 +2,23 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.9] - 2026-06-17 — "Gõ đúng ở thanh địa chỉ Chrome (axDirect)"
+
+**Sửa triệt để lỗi gõ ở thanh địa chỉ (omnibox) Chrome. Thủ phạm KHÔNG phải NFC/NFD mà là tính năng tự gợi ý (inline autocomplete) bôi đen text — backspace synthetic xoá nhầm phần bôi đen → lệch số ký tự. Định tuyến omnibox qua chế độ ghi thẳng Accessibility (axDirect) như đã làm cho Spotlight.**
+
+### 🐛 Nguyên nhân thật (vì sao 3.6–3.8 không dứt)
+
+Omnibox tự thêm phần gợi ý và **bôi đen (select)** nó khi đang gõ. Khi vkey gửi backspace để sửa chữ, backspace đầu tiên xoá nhầm vùng bôi đen → lệch đúng 1 nhịp. Gửi ít backspace (NFC, 3.7) → **thừa** chữ (`"truường"`); gửi nhiều backspace (NFD, 3.8) → **thiếu** chữ (`"truờng"`, `"nập"`). Cả NFC lẫn NFD đều sai theo hai hướng ngược nhau → đây không phải bài toán NFC/NFD.
+
+### 🔧 Fix
+
+- **`axDirect` cho browser-chrome field**: phân loại field đang focus thành `webContent` / `nativePanel` / `windowField` (`Focused.FieldKind`, leo cây AX). Field `windowField` của app nhóm NFD (= thanh địa chỉ Chrome) được định tuyến qua **axDirect** — đọc thẳng nội dung + vị trí con trỏ + vùng chọn qua Accessibility rồi ghi đúng kết quả (NFC), **bỏ qua hoàn toàn** chuyện NFC/NFD lẫn autocomplete. Đây chính là cơ chế đã ổn định cho Spotlight (xử lý sẵn "vùng chọn ở cuối = gợi ý autocomplete"). axDirect lỗi → tự fallback synthetic (không tệ hơn).
+- Hệ quả phụ: hộp thoại lưu file (`nativePanel`) vẫn NFC như 3.6; web content (`webContent`) vẫn NFD như cũ; Safari/app Apple vẫn NFC theo whitelist (web content WebKit vẫn đúng).
+
+### 🧪 Tests
+
+- Toàn bộ 243 test pass. Test mới `testFieldKindDiffSelectionInChromiumApp`: webContent → NFD, nativePanel/windowField → NFC; `focusedFieldIsBrowserChrome()` đúng cho omnibox Chrome, sai cho field app Apple.
+
 ## [3.8] - 2026-06-17 — "Sửa lỗi gõ ở thanh địa chỉ Chrome"
 
 **Fix lỗi `"trường"` → `"truường"` (thừa chữ) khi gõ ở thanh địa chỉ (omnibox) Chrome và các ô nhập tương tự do Chromium tự vẽ. Hệ quả của cơ chế nhận diện field native quá rộng ở 3.6/3.7.**
