@@ -88,6 +88,7 @@ final class TextConversionService {
   func applyToSelection(operation: Operation) {
     let pasteboard = NSPasteboard.general
     let originalChangeCount = pasteboard.changeCount
+    let previousPasteboardItems = Self.snapshotPasteboard(pasteboard)
 
     // 1. Send Cmd+C để copy selection vào clipboard.
     sendCmdC()
@@ -101,6 +102,7 @@ final class TextConversionService {
           let original = pasteboard.string(forType: .string),
           !original.isEmpty
     else {
+      Self.restorePasteboard(pasteboard, items: previousPasteboardItems)
       NSSound.beep()
       return
     }
@@ -111,9 +113,15 @@ final class TextConversionService {
     // 4. Set lại clipboard và paste.
     pasteboard.clearContents()
     pasteboard.setString(transformed, forType: .string)
+    let transformedChangeCount = pasteboard.changeCount
 
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
       Self.sendCmdV()
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        if pasteboard.changeCount == transformedChangeCount {
+          Self.restorePasteboard(pasteboard, items: previousPasteboardItems)
+        }
+      }
     }
   }
 
@@ -320,5 +328,30 @@ final class TextConversionService {
     }
     down?.post(tap: .cghidEventTap)
     up?.post(tap: .cghidEventTap)
+  }
+
+  private static func snapshotPasteboard(_ pasteboard: NSPasteboard) -> [NSPasteboardItem] {
+    guard let items = pasteboard.pasteboardItems else { return [] }
+    return items.map { item in
+      let copy = NSPasteboardItem()
+      for type in item.types {
+        if let data = item.data(forType: type) {
+          copy.setData(data, forType: type)
+        } else if let string = item.string(forType: type) {
+          copy.setString(string, forType: type)
+        }
+      }
+      return copy
+    }
+  }
+
+  private static func restorePasteboard(
+    _ pasteboard: NSPasteboard,
+    items: [NSPasteboardItem]
+  ) {
+    pasteboard.clearContents()
+    if !items.isEmpty {
+      pasteboard.writeObjects(items)
+    }
   }
 }

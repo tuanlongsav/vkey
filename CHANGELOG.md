@@ -2,6 +2,25 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.10] - 2026-06-18 — "Ổn định: race condition, backup đầy đủ, Window Title Rule"
+
+**Đợt củng cố độ ổn định: sửa race condition, áp dụng đầy đủ Window Title Rule, backup/restore giữ thêm các setting mới, và Text Tools không còn ghi đè clipboard của bạn.**
+
+### 🐛 Sửa lỗi
+
+- **Race condition** ở `NGramStore` (Thống kê n-gram) và `EnVnReference` (từ điển Anh–Việt) — truy cập đồng thời an toàn hơn.
+- **Accept prediction bằng Tab**: không chèn prediction khi commit hiện tại chưa thực sự được xử lý (tránh chèn nhầm).
+
+### ✨ Cải thiện
+
+- **Window Title Rule áp dụng đầy đủ** (`overrideState`): rule được tái đánh giá khi đổi focus / đổi tiêu đề cửa sổ; Smart Switch không còn ghi đè rule.
+- **Backup/Restore giữ thêm setting mới**: phím tắt Text Tools, HUD prediction, theme, Window Title Rules, auto-capitalize, non-Latin IME auto-disable, Free Mark Mode, và các cài đặt CGEvent.
+- **Text Tools tôn trọng clipboard**: khôi phục clipboard cũ sau khi paste, và KHÔNG đè nếu bạn đã copy thứ khác trong lúc chờ.
+
+### 🧪 Tests
+
+- Thêm test coverage cho việc export các setting mới. Toàn bộ 242 test pass.
+
 ## [3.9] - 2026-06-17 — "Gõ đúng ở thanh địa chỉ Chrome (axDirect)"
 
 **Sửa triệt để lỗi gõ ở thanh địa chỉ (omnibox) Chrome. Thủ phạm KHÔNG phải NFC/NFD mà là tính năng tự gợi ý (inline autocomplete) bôi đen text — backspace synthetic xoá nhầm phần bôi đen → lệch số ký tự. Định tuyến omnibox qua chế độ ghi thẳng Accessibility (axDirect) như đã làm cho Spotlight.**

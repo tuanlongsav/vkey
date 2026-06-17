@@ -6,6 +6,30 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.10 — "Ổn định: race condition, backup đầy đủ, Window Title Rule"</title>
+      <sparkle:version>31000</sparkle:version>
+      <sparkle:shortVersionString>3.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 18 Jun 2026 00:30:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.10/vkey-3.10.dmg"
+        sparkle:edSignature="2GZcb+EnU6Pqrga0dRJk6bIYoVUtbYJvEB7mtEmDs/AAlR3p7sJXpgXH072Oe1Zp7LvEBj8iM7dD6Q0e8zWeAw=="
+        length="6332162"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.10 — Củng cố độ ổn định</h2>
+        <ul>
+          <li><b>Sửa race condition</b> ở Thống kê n-gram và từ điển Anh–Việt.</li>
+          <li><b>Window Title Rule</b> áp dụng đầy đủ: tái đánh giá khi đổi focus / tiêu đề cửa sổ; Smart Switch không ghi đè rule.</li>
+          <li><b>Backup/Restore</b> giữ thêm nhiều cài đặt mới: phím tắt Text Tools, HUD prediction, theme, Window Title Rules, auto-capitalize, non-Latin IME, Free Mark Mode, CGEvent.</li>
+          <li><b>Text Tools</b> khôi phục clipboard cũ sau khi paste, và không đè nếu bạn vừa copy thứ khác.</li>
+          <li>Sửa accept prediction bằng phím Tab (không chèn nhầm khi commit chưa xử lý xong).</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.9 — "Gõ đúng ở thanh địa chỉ Chrome (axDirect)"</title>
       <sparkle:version>30900</sparkle:version>
       <sparkle:shortVersionString>3.9</sparkle:shortVersionString>

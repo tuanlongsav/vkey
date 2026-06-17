@@ -431,7 +431,13 @@ func eventTapCallback(
       if let focusedBundleId = appState.currentFocusedBundleId {
         let configs = Defaults[.appSmartSwitchConfigs]
         let desiredEnabled: Bool?
-        if let config = configs[focusedBundleId] {
+        if appState.activeRuleOverridesBundleId == focusedBundleId,
+           let ruleState = appState.activeRuleOverrides.overrideState {
+          switch ruleState {
+          case .disabled, .englishMode: desiredEnabled = false
+          case .vietnameseMode:         desiredEnabled = true
+          }
+        } else if let config = configs[focusedBundleId] {
           switch config.state {
           case .disabled, .englishMode: desiredEnabled = false
           case .vietnameseMode:         desiredEnabled = true

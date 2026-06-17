@@ -3038,10 +3038,42 @@ final class UserDataMigrationTests: XCTestCase {
     Defaults[.userAllowWords] = ["alpha", "beta"]
     Defaults[.macros] = [Macro(from: "vn", to: "Việt Nam")]
     Defaults[.perAppOverride] = ["com.apple.Terminal": "off"]
+    Defaults[.modifierOnlyTextToolsHotkey] = 123
+    Defaults[.uiTheme] = .glass
+    Defaults[.accentColorChoice] = .blue
+    Defaults[.appearanceMode] = .dark
+    Defaults[.predictionHUDLineOffset] = 7
+    Defaults[.predictionHUDFontSize] = 19
+    Defaults[.hudOpacityPercent] = 64
+    Defaults[.autoCapitalizeEnabled] = false
+    Defaults[.nonLatinIMEAutoDisable] = false
+    Defaults[.freeMarkModeEnabled] = true
+    Defaults[.cgEventRaceHardeningEnabled] = false
+    Defaults[.cgEventFlushDelayMs] = 42
+    var titleRule = WindowTitleRule()
+    titleRule.name = "Docs"
+    titleRule.bundleIdPrefix = "com.google.Chrome"
+    titleRule.titleRegex = "Docs"
+    titleRule.overrideState = .englishMode
+    titleRule.disablePrediction = true
+    Defaults[.windowTitleRules] = [titleRule]
     defer {
       Defaults.reset(.userAllowWords)
       Defaults.reset(.macros)
       Defaults.reset(.perAppOverride)
+      Defaults.reset(.modifierOnlyTextToolsHotkey)
+      Defaults.reset(.uiTheme)
+      Defaults.reset(.accentColorChoice)
+      Defaults.reset(.appearanceMode)
+      Defaults.reset(.predictionHUDLineOffset)
+      Defaults.reset(.predictionHUDFontSize)
+      Defaults.reset(.hudOpacityPercent)
+      Defaults.reset(.autoCapitalizeEnabled)
+      Defaults.reset(.nonLatinIMEAutoDisable)
+      Defaults.reset(.freeMarkModeEnabled)
+      Defaults.reset(.cgEventRaceHardeningEnabled)
+      Defaults.reset(.cgEventFlushDelayMs)
+      Defaults.reset(.windowTitleRules)
     }
 
     let export = UserDataMigration.currentExport(includeStatistics: false)
@@ -3049,6 +3081,20 @@ final class UserDataMigrationTests: XCTestCase {
     XCTAssertEqual(export.userAllowWords?.sorted(), ["alpha", "beta"])
     XCTAssertEqual(export.macros?.first?.from, "vn")
     XCTAssertEqual(export.perAppOverride?["com.apple.Terminal"], "off")
+    XCTAssertEqual(export.modifierOnlyTextToolsHotkey, 123)
+    XCTAssertEqual(export.uiTheme, UITheme.glass.rawValue)
+    XCTAssertEqual(export.accentColorChoice, AccentColorChoice.blue.rawValue)
+    XCTAssertEqual(export.appearanceMode, AppearanceMode.dark.rawValue)
+    XCTAssertEqual(export.predictionHUDLineOffset, 7)
+    XCTAssertEqual(export.predictionHUDFontSize, 19)
+    XCTAssertEqual(export.hudOpacityPercent, 64)
+    XCTAssertEqual(export.autoCapitalizeEnabled, false)
+    XCTAssertEqual(export.nonLatinIMEAutoDisable, false)
+    XCTAssertEqual(export.freeMarkModeEnabled, true)
+    XCTAssertEqual(export.cgEventRaceHardeningEnabled, false)
+    XCTAssertEqual(export.cgEventFlushDelayMs, 42)
+    XCTAssertEqual(export.windowTitleRules?.first?.name, "Docs")
+    XCTAssertEqual(export.windowTitleRules?.first?.overrideState, .englishMode)
   }
 
   func test_encodeRoundTrip() throws {

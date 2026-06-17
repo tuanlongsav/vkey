@@ -29,21 +29,29 @@ import Foundation
 /// hot (every committed word the user types).
 final class EnVnReference {
 
+  private struct ReferenceSnapshot {
+    var enToVn: [String: [String]] = [:]
+    var vnToEn: [String: [String]] = [:]
+    var enPrefixTrie = Trie(caseInsensitive: true)
+  }
+
+  private let queue = DispatchQueue(
+    label: "dev.longht.vkey.en-vn-reference",
+    qos: .userInitiated,
+    attributes: .concurrent
+  )
+  private var snapshot = ReferenceSnapshot()
+
   /// English → Vietnamese candidate translations.
-  private(set) var enToVn: [String: [String]] = [:]
+  var enToVn: [String: [String]] {
+    queue.sync { snapshot.enToVn }
+  }
 
   /// Vietnamese → English candidate translations. Reverse map for the
   /// Dictionary Browser; the spell engine doesn't read this hot path.
-  private(set) var vnToEn: [String: [String]] = [:]
-
-  /// Prefix trie over the English keys. Used by the future per-keystroke
-  /// "starts-with" check (e.g. to suppress Vietnamese diacritic application
-  /// while the user is typing what looks like a translatable English word).
-  /// Case-insensitive because the input we feed in may be mixed case.
-  /// 1.9.0: `var` để swap fresh instance trong `load()` — trước v1.9.0 là
-  /// `let` nên `rebuildPrefixTrie()` chỉ insert thêm vào trie cũ → cumulative
-  /// entries + memory leak qua mỗi lexicon update.
-  private var enPrefixTrie = Trie(caseInsensitive: true)
+  var vnToEn: [String: [String]] {
+    queue.sync { snapshot.vnToEn }
+  }
 
   /// Singleton instance shared with `LexiconManager`.
   static let shared = EnVnReference()
@@ -52,12 +60,12 @@ final class EnVnReference {
   /// content is fully replaced (idempotent). Safe to call from any thread —
   /// callers go through `LexiconManager`'s queue.
   func load(en2vn: [String: [String]]?, vn2en: [String: [String]]?) {
-    enToVn = (en2vn ?? [:]).reduce(into: [String: [String]]()) { acc, pair in
+    let enToVn = (en2vn ?? [:]).reduce(into: [String: [String]]()) { acc, pair in
       let key = pair.key.normalizedDictionaryToken
       guard !key.isEmpty else { return }
       acc[key] = pair.value
     }
-    vnToEn = (vn2en ?? [:]).reduce(into: [String: [String]]()) { acc, pair in
+    let vnToEn = (vn2en ?? [:]).reduce(into: [String: [String]]()) { acc, pair in
       let key = pair.key.normalizedDictionaryToken
       guard !key.isEmpty else { return }
       acc[key] = pair.value
@@ -69,31 +77,44 @@ final class EnVnReference {
     for english in enToVn.keys {
       fresh.insert(english)
     }
-    enPrefixTrie = fresh
+    let nextSnapshot = ReferenceSnapshot(
+      enToVn: enToVn,
+      vnToEn: vnToEn,
+      enPrefixTrie: fresh
+    )
+    queue.sync(flags: .barrier) {
+      snapshot = nextSnapshot
+    }
   }
 
   /// English word → Vietnamese candidates, or nil if not present.
   /// Lookup is case-insensitive (token-normalised).
   func lookupEnglish(_ word: String) -> [String]? {
-    enToVn[word.normalizedDictionaryToken]
+    let key = word.normalizedDictionaryToken
+    return queue.sync { snapshot.enToVn[key] }
   }
 
   /// Vietnamese word → English candidates, or nil if not present.
   func lookupVietnamese(_ word: String) -> [String]? {
-    vnToEn[word.normalizedDictionaryToken]
+    let key = word.normalizedDictionaryToken
+    return queue.sync { snapshot.vnToEn[key] }
   }
 
   /// True if `prefix` is the start of any English entry. Used by the input
   /// pipeline to defer Vietnamese diacritic application while the user
   /// types something that *might* turn out to be English.
   func hasEnglishPrefix(_ prefix: String) -> Bool {
-    enPrefixTrie.findLongestPrefix(in: prefix) != nil
-      || enToVn.keys.contains { $0.hasPrefix(prefix.lowercased()) }
+    let normalized = prefix.normalizedDictionaryToken
+    guard !normalized.isEmpty else { return false }
+    return queue.sync {
+      snapshot.enPrefixTrie.findLongestPrefix(in: normalized) != nil
+        || snapshot.enToVn.keys.contains { $0.hasPrefix(normalized) }
+    }
   }
 
   /// Counts useful for the Diagnostics panel.
   var entryCount: (en: Int, vn: Int) {
-    (enToVn.count, vnToEn.count)
+    queue.sync { (snapshot.enToVn.count, snapshot.vnToEn.count) }
   }
 
 }

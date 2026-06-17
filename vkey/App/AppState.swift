@@ -43,6 +43,9 @@ class AppState: ObservableObject, FileMonitorDelegate {
     // 2.0 (B1): cache resolved overrides cho focused context. Tránh
     // gọi AX query mỗi keystroke.
     public private(set) var activeRuleOverrides: ResolvedRuleOverrides = .init()
+    public private(set) var activeRuleOverridesBundleId: String?
+    private var ruleOverrideActive = false
+    private var enabledBeforeRuleOverride = false
 
     @Published public var enabled = false {
         didSet {
@@ -272,10 +275,13 @@ class AppState: ObservableObject, FileMonitorDelegate {
             currentFocusedBundleId = appName
             refreshFocusedBundleIdAsync()
 
-            // 2.0 (B1): invalidate + tái đánh giá Window Title Rules.
-            WindowTitleRuleEngine.shared.invalidateCache()
-            activeRuleOverrides = WindowTitleRuleEngine.shared.evaluate(bundleId: appName)
-            inputProcessor.ruleOverrides = activeRuleOverrides
+            refreshRuleOverrides(for: appName)
+            activeAppName = appName
+            inputProcessor.changeActiveApp(activeAppName)
+
+            if applyActiveRuleOverrideState() {
+                return
+            }
 
             // 1.7.0: ưu tiên đọc từ appSmartSwitchConfigs (3-state).
             // Fallback smartSwitchApps để backward-compat user chưa migrate.
@@ -285,8 +291,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
                     enabledBeforeSmartSwitch = enabled
                 }
                 smartSwitchActive = true
-                activeAppName = appName
-                inputProcessor.changeActiveApp(activeAppName)
                 switch config.state {
                 case .disabled, .englishMode:
                     setEnabledWithoutPersist(false)
@@ -304,16 +308,12 @@ class AppState: ObservableObject, FileMonitorDelegate {
                     enabledBeforeSmartSwitch = enabled
                 }
                 smartSwitchActive = true
-                activeAppName = appName
-                inputProcessor.changeActiveApp(activeAppName)
                 setEnabledWithoutPersist(false)
                 return
             }
 
             let shouldRestoreBeforeSmartSwitch = smartSwitchActive
             smartSwitchActive = false
-            activeAppName = appName
-            inputProcessor.changeActiveApp(activeAppName)
 
             if let appMode = appModes[activeAppName] {
                 setEnabled(set: appMode)
@@ -330,6 +330,48 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// cho overlay UIElement (Spotlight). Gọi trên main run loop (event tap).
     public func noteFocusedBundleId(_ bid: String) {
         currentFocusedBundleId = bid
+        if activeRuleOverridesBundleId != bid {
+            if ruleOverrideActive {
+                ruleOverrideActive = false
+                setEnabledWithoutPersist(enabledBeforeRuleOverride)
+            }
+            activeRuleOverrides = .init()
+            activeRuleOverridesBundleId = nil
+            inputProcessor.ruleOverrides = .init()
+            inputProcessor.updateAdaptiveFlushDelay()
+        }
+    }
+
+    private func refreshRuleOverrides(for appName: String) {
+        WindowTitleRuleEngine.shared.invalidateCache()
+        activeRuleOverrides = WindowTitleRuleEngine.shared.evaluate(bundleId: appName)
+        activeRuleOverridesBundleId = appName
+        inputProcessor.ruleOverrides = activeRuleOverrides
+        inputProcessor.updateAdaptiveFlushDelay()
+    }
+
+    @discardableResult
+    private func applyActiveRuleOverrideState() -> Bool {
+        guard let overrideState = activeRuleOverrides.overrideState else {
+            if ruleOverrideActive {
+                ruleOverrideActive = false
+                setEnabledWithoutPersist(enabledBeforeRuleOverride)
+            }
+            return false
+        }
+
+        if !ruleOverrideActive {
+            enabledBeforeRuleOverride = enabled
+        }
+        ruleOverrideActive = true
+
+        switch overrideState {
+        case .disabled, .englishMode:
+            setEnabledWithoutPersist(false)
+        case .vietnameseMode:
+            setEnabledWithoutPersist(true)
+        }
+        return true
     }
 
     /// 1.7.x: refresh `currentFocusedBundleId` async — gọi từ EventHook
@@ -359,6 +401,11 @@ class AppState: ObservableObject, FileMonitorDelegate {
         let snap = Focused.snapshot()
         DispatchQueue.main.async {
             self.currentFocusedBundleId = snap.bundleId
+            if let focusedBundleId = snap.bundleId,
+               focusedBundleId != self.bundleId {
+                self.refreshRuleOverrides(for: focusedBundleId)
+                _ = self.applyActiveRuleOverrideState()
+            }
             self.currentFocusedElementIsSearchOrCombo = snap.isComboOrSearch
             self.currentFocusedFieldKind = snap.fieldKind
         }

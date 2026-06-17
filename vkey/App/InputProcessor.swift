@@ -804,6 +804,10 @@ class InputProcessor {
   public func changeActiveApp(_ app: String) {
     activeApp = app
     strategyTracker.resetForApp(app)
+    updateAdaptiveFlushDelay()
+  }
+
+  public func updateAdaptiveFlushDelay() {
     // 2.0 (C4): cập nhật adaptive flush delay theo rule (nếu có) hoặc
     // global default. Đọc ruleOverrides hiện tại — AppState gán trước
     // khi gọi changeActiveApp khi đổi app.
@@ -879,8 +883,10 @@ class InputProcessor {
        Defaults[.wordPredictionEnabled],
        let prediction = activePrediction
     {
-      injectAcceptedPrediction(prediction)
-      return nil  // swallow Tab
+      if injectAcceptedPrediction(prediction) {
+        return nil  // swallow Tab
+      }
+      return Unmanaged.passUnretained(event)
     }
 
     if InputProcessor.NewWordTaskKeys.contains(taskKey) {
@@ -1025,7 +1031,7 @@ class InputProcessor {
   /// Chấp nhận một prediction (Tab hoặc digit 1/2/3) — inject vào caret,
   /// cập nhật n-gram window, ẩn HUD. Re-fetches top-1 prediction nếu
   /// buffer còn từ chưa commit (commit qua space trước rồi chèn dự đoán).
-  private func injectAcceptedPrediction(_ prediction: String) {
+  private func injectAcceptedPrediction(_ prediction: String) -> Bool {
     if wordBuffer.wordState.isBlank {
       // Caret đã ở sau space của commit trước. Chèn thẳng, không leading space.
       newWord(storePrevious: false)
@@ -1039,7 +1045,13 @@ class InputProcessor {
       prev1Committed = prediction.lowercased()
     } else {
       // Buffer có từ chưa commit: commit qua space rồi chèn prediction.
-      applySpellDecisionOnCommit(endingChar: " ", swallowEndingChar: true)
+      guard applySpellDecisionOnCommit(endingChar: " ", swallowEndingChar: true) else {
+        activePrediction = nil
+        DispatchQueue.main.async {
+          PredictionHUDWindow.shared.hide()
+        }
+        return false
+      }
       newWord(storePrevious: true)
       // Recompute prediction sau commit (prev1 đã đổi). Nếu HUD lúc đó
       // hiển thị candidate cho từ KHÁC, mới recompute; giữ user-chosen
@@ -1061,6 +1073,7 @@ class InputProcessor {
     DispatchQueue.main.async {
       PredictionHUDWindow.shared.hide()
     }
+    return true
   }
 
   // MARK: - 2.0 (A5): Auto-Capitalize Helpers

@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.9 — "Gõ đúng ở thanh địa chỉ Chrome (axDirect)"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.10 — "Ổn định: race condition, backup đầy đủ, Window Title Rule"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.10** — 🛡️ **Đợt củng cố độ ổn định.** Sửa race condition ở Thống kê n-gram & từ điển Anh–Việt; áp dụng đầy đủ Window Title Rule (tái đánh giá khi đổi focus/tiêu đề, Smart Switch không ghi đè); backup/restore giữ thêm nhiều setting mới (phím tắt Text Tools, HUD prediction, theme, Window Title Rules, auto-capitalize, non-Latin IME, Free Mark Mode, CGEvent); Text Tools khôi phục clipboard cũ sau khi paste và không đè nếu bạn vừa copy thứ khác; sửa accept prediction bằng Tab. Toàn bộ test pass.
+>
 > **3.9** — 🐛 **Sửa triệt để lỗi gõ ở thanh địa chỉ Chrome.** Thủ phạm là tính năng **tự gợi ý (autocomplete) bôi đen text** của thanh địa chỉ — backspace xoá nhầm phần bôi đen nên lệch ký tự (NFC → thừa chữ `"truường"`, NFD → thiếu chữ `"truờng"`). Không phải bài toán NFC/NFD. Nay vkey định tuyến thanh địa chỉ qua chế độ **ghi thẳng Accessibility (axDirect)** — đọc nội dung thật rồi ghi đúng kết quả, bỏ qua cả autocomplete (cùng cơ chế đã ổn cho Spotlight). Web page, app native, hộp thoại lưu file vẫn nguyên. Toàn bộ test pass.
 >
 > **3.8** — 🐛 **Fix `"trường"` → `"truường"`** (thừa chữ) khi gõ ở **thanh địa chỉ Chrome** và các ô do Chromium tự vẽ. Cơ chế ép NFC của 3.6/3.7 nhận diện field native quá rộng (omnibox cũng nằm ngoài `AXWebArea` nhưng là field Chromium Views, lưu/xoá theo scalar). 3.8 siết về đúng **hộp thoại modal native** (`AXSheet`/dialog) → omnibox quay lại diff NFD chuẩn, hộp thoại lưu file vẫn được fix như 3.6. Toàn bộ test pass.

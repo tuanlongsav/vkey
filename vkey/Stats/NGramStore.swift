@@ -151,11 +151,12 @@ final class NGramStore {
 
   private func scheduleFlush() {
     pendingFlushItem?.cancel()
-    let item = DispatchWorkItem { [weak self] in
+    let item = DispatchWorkItem {}
+    pendingFlushItem = item
+    queue.asyncAfter(deadline: .now() + 10, flags: .barrier) { [weak self, item] in
+      guard !item.isCancelled else { return }
       self?.flushNow()
     }
-    pendingFlushItem = item
-    queue.asyncAfter(deadline: .now() + 10, execute: item)
   }
 
   /// Public-equivalent — gọi từ app delegate khi terminate để đảm bảo

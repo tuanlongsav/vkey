@@ -54,6 +54,7 @@ struct UserDataExport: Codable {
   let allowedZWJF: Bool?
   let hudEnabled: Bool?
   let modifierOnlyToggleHotkey: Int?
+  let modifierOnlyTextToolsHotkey: Int?
 
   // Smart Switch
   let smartSwitchEnabled: Bool?
@@ -83,16 +84,30 @@ struct UserDataExport: Codable {
 
   // Theme (1.5.3+)
   let appTheme: String?             // AppTheme raw value
+  let uiTheme: String?
+  let accentColorChoice: String?
+  let appearanceMode: String?
+  let themeConfigs: [String: ThemeConfig]?
 
   // 1.5.5+: auto-feedback toggle for performWeeklyFeedback.
   let autoPersonalDictFeedback: Bool?
 
   // 1.7.6+: full settings backup — bổ sung 9 fields trước đây bị bỏ sót.
   let wordPredictionEnabled: Bool?
+  let predictionHUDLineOffset: Int?
+  let predictionHUDFontSize: Int?
+  let hudOpacityPercent: Int?
   let appSmartSwitchConfigs: [String: AppSmartSwitchConfig]?  // 1.7.0+ per-app 3-state
   let translationHUDEnabled: Bool?
   let translationHUDDurationMs: Double?
   let programmingMode: Bool?
+  let quickConfigPreset: Int?
+  let autoCapitalizeEnabled: Bool?
+  let nonLatinIMEAutoDisable: Bool?
+  let windowTitleRules: [WindowTitleRule]?
+  let freeMarkModeEnabled: Bool?
+  let cgEventRaceHardeningEnabled: Bool?
+  let cgEventFlushDelayMs: Int?
   let userBigrams: [String: [String: Int]]?
   let userTrigrams: [String: [String: Int]]?
   let statisticsEnabled: Bool?
@@ -112,16 +127,21 @@ struct UserDataExport: Codable {
   enum CodingKeys: String, CodingKey {
     case schemaVersion, exportedAt, appVersion, appBuild
     case typingMethod, newStyleTonePlacement, autoTypoCorrection, allowedZWJF
-    case hudEnabled, modifierOnlyToggleHotkey
+    case hudEnabled, modifierOnlyToggleHotkey, modifierOnlyTextToolsHotkey
     case smartSwitchEnabled, smartSwitchApps, perAppOverride
     case spellCheckEnabled, spellCheckInSentenceEnabled, englishAutoRestoreEnabled
     case restorePolicy, suggestionEnabled, autoApplyHighConfidenceSuggestion
     case useEnVnReference
     case personalDictionaryEnabled, userAllowWords, userKeepWords, userDenyWords
     case macros, macroEnabled, macrosSeeded, defaultMacrosVersion
-    case appTheme, autoPersonalDictFeedback
-    case wordPredictionEnabled, appSmartSwitchConfigs
+    case appTheme, uiTheme, accentColorChoice, appearanceMode, themeConfigs
+    case autoPersonalDictFeedback
+    case wordPredictionEnabled, predictionHUDLineOffset, predictionHUDFontSize
+    case hudOpacityPercent, appSmartSwitchConfigs
     case translationHUDEnabled, translationHUDDurationMs, programmingMode
+    case quickConfigPreset, autoCapitalizeEnabled, nonLatinIMEAutoDisable
+    case windowTitleRules, freeMarkModeEnabled, cgEventRaceHardeningEnabled
+    case cgEventFlushDelayMs
     case userBigrams, userTrigrams, statisticsEnabled, autoBackupOnUpgrade
     case statistics
   }
@@ -130,6 +150,7 @@ struct UserDataExport: Codable {
     schemaVersion: Int, exportedAt: Date, appVersion: String, appBuild: String,
     typingMethod: String?, newStyleTonePlacement: Bool?, autoTypoCorrection: Bool?,
     allowedZWJF: Bool?, hudEnabled: Bool?, modifierOnlyToggleHotkey: Int?,
+    modifierOnlyTextToolsHotkey: Int? = nil,
     smartSwitchEnabled: Bool?, smartSwitchApps: [String]?, perAppOverride: [String: String]?,
     spellCheckEnabled: Bool?, spellCheckInSentenceEnabled: Bool?,
     englishAutoRestoreEnabled: Bool?, restorePolicy: String?,
@@ -140,12 +161,26 @@ struct UserDataExport: Codable {
     macros: [MacroSeed]?,
     macroEnabled: Bool?, macrosSeeded: Bool?, defaultMacrosVersion: Int?,
     appTheme: String?,
+    uiTheme: String? = nil,
+    accentColorChoice: String? = nil,
+    appearanceMode: String? = nil,
+    themeConfigs: [String: ThemeConfig]? = nil,
     autoPersonalDictFeedback: Bool?,
     wordPredictionEnabled: Bool? = nil,
+    predictionHUDLineOffset: Int? = nil,
+    predictionHUDFontSize: Int? = nil,
+    hudOpacityPercent: Int? = nil,
     appSmartSwitchConfigs: [String: AppSmartSwitchConfig]? = nil,
     translationHUDEnabled: Bool? = nil,
     translationHUDDurationMs: Double? = nil,
     programmingMode: Bool? = nil,
+    quickConfigPreset: Int? = nil,
+    autoCapitalizeEnabled: Bool? = nil,
+    nonLatinIMEAutoDisable: Bool? = nil,
+    windowTitleRules: [WindowTitleRule]? = nil,
+    freeMarkModeEnabled: Bool? = nil,
+    cgEventRaceHardeningEnabled: Bool? = nil,
+    cgEventFlushDelayMs: Int? = nil,
     userBigrams: [String: [String: Int]]? = nil,
     userTrigrams: [String: [String: Int]]? = nil,
     statisticsEnabled: Bool? = nil,
@@ -162,6 +197,7 @@ struct UserDataExport: Codable {
     self.allowedZWJF = allowedZWJF
     self.hudEnabled = hudEnabled
     self.modifierOnlyToggleHotkey = modifierOnlyToggleHotkey
+    self.modifierOnlyTextToolsHotkey = modifierOnlyTextToolsHotkey
     self.smartSwitchEnabled = smartSwitchEnabled
     self.smartSwitchApps = smartSwitchApps
     self.perAppOverride = perAppOverride
@@ -181,12 +217,26 @@ struct UserDataExport: Codable {
     self.macrosSeeded = macrosSeeded
     self.defaultMacrosVersion = defaultMacrosVersion
     self.appTheme = appTheme
+    self.uiTheme = uiTheme
+    self.accentColorChoice = accentColorChoice
+    self.appearanceMode = appearanceMode
+    self.themeConfigs = themeConfigs
     self.autoPersonalDictFeedback = autoPersonalDictFeedback
     self.wordPredictionEnabled = wordPredictionEnabled
+    self.predictionHUDLineOffset = predictionHUDLineOffset
+    self.predictionHUDFontSize = predictionHUDFontSize
+    self.hudOpacityPercent = hudOpacityPercent
     self.appSmartSwitchConfigs = appSmartSwitchConfigs
     self.translationHUDEnabled = translationHUDEnabled
     self.translationHUDDurationMs = translationHUDDurationMs
     self.programmingMode = programmingMode
+    self.quickConfigPreset = quickConfigPreset
+    self.autoCapitalizeEnabled = autoCapitalizeEnabled
+    self.nonLatinIMEAutoDisable = nonLatinIMEAutoDisable
+    self.windowTitleRules = windowTitleRules
+    self.freeMarkModeEnabled = freeMarkModeEnabled
+    self.cgEventRaceHardeningEnabled = cgEventRaceHardeningEnabled
+    self.cgEventFlushDelayMs = cgEventFlushDelayMs
     self.userBigrams = userBigrams
     self.userTrigrams = userTrigrams
     self.statisticsEnabled = statisticsEnabled
@@ -206,6 +256,7 @@ struct UserDataExport: Codable {
     self.allowedZWJF = try c.decodeIfPresent(Bool.self, forKey: .allowedZWJF)
     self.hudEnabled = try c.decodeIfPresent(Bool.self, forKey: .hudEnabled)
     self.modifierOnlyToggleHotkey = try c.decodeIfPresent(Int.self, forKey: .modifierOnlyToggleHotkey)
+    self.modifierOnlyTextToolsHotkey = try c.decodeIfPresent(Int.self, forKey: .modifierOnlyTextToolsHotkey)
     self.smartSwitchEnabled = try c.decodeIfPresent(Bool.self, forKey: .smartSwitchEnabled)
     self.smartSwitchApps = try c.decodeIfPresent([String].self, forKey: .smartSwitchApps)
     self.perAppOverride = try c.decodeIfPresent([String: String].self, forKey: .perAppOverride)
@@ -225,14 +276,28 @@ struct UserDataExport: Codable {
     self.macrosSeeded = try c.decodeIfPresent(Bool.self, forKey: .macrosSeeded)
     self.defaultMacrosVersion = try c.decodeIfPresent(Int.self, forKey: .defaultMacrosVersion)
     self.appTheme = try c.decodeIfPresent(String.self, forKey: .appTheme)
+    self.uiTheme = try c.decodeIfPresent(String.self, forKey: .uiTheme)
+    self.accentColorChoice = try c.decodeIfPresent(String.self, forKey: .accentColorChoice)
+    self.appearanceMode = try c.decodeIfPresent(String.self, forKey: .appearanceMode)
+    self.themeConfigs = try c.decodeIfPresent([String: ThemeConfig].self, forKey: .themeConfigs)
     self.autoPersonalDictFeedback = try c.decodeIfPresent(Bool.self, forKey: .autoPersonalDictFeedback)
     // 1.7.6+ fields — optional cho file v1.x cũ.
     self.wordPredictionEnabled = try c.decodeIfPresent(Bool.self, forKey: .wordPredictionEnabled)
+    self.predictionHUDLineOffset = try c.decodeIfPresent(Int.self, forKey: .predictionHUDLineOffset)
+    self.predictionHUDFontSize = try c.decodeIfPresent(Int.self, forKey: .predictionHUDFontSize)
+    self.hudOpacityPercent = try c.decodeIfPresent(Int.self, forKey: .hudOpacityPercent)
     self.appSmartSwitchConfigs = try c.decodeIfPresent([String: AppSmartSwitchConfig].self,
                                                       forKey: .appSmartSwitchConfigs)
     self.translationHUDEnabled = try c.decodeIfPresent(Bool.self, forKey: .translationHUDEnabled)
     self.translationHUDDurationMs = try c.decodeIfPresent(Double.self, forKey: .translationHUDDurationMs)
     self.programmingMode = try c.decodeIfPresent(Bool.self, forKey: .programmingMode)
+    self.quickConfigPreset = try c.decodeIfPresent(Int.self, forKey: .quickConfigPreset)
+    self.autoCapitalizeEnabled = try c.decodeIfPresent(Bool.self, forKey: .autoCapitalizeEnabled)
+    self.nonLatinIMEAutoDisable = try c.decodeIfPresent(Bool.self, forKey: .nonLatinIMEAutoDisable)
+    self.windowTitleRules = try c.decodeIfPresent([WindowTitleRule].self, forKey: .windowTitleRules)
+    self.freeMarkModeEnabled = try c.decodeIfPresent(Bool.self, forKey: .freeMarkModeEnabled)
+    self.cgEventRaceHardeningEnabled = try c.decodeIfPresent(Bool.self, forKey: .cgEventRaceHardeningEnabled)
+    self.cgEventFlushDelayMs = try c.decodeIfPresent(Int.self, forKey: .cgEventFlushDelayMs)
     self.userBigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userBigrams)
     self.userTrigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userTrigrams)
     self.statisticsEnabled = try c.decodeIfPresent(Bool.self, forKey: .statisticsEnabled)
@@ -287,6 +352,7 @@ enum UserDataMigration {
       allowedZWJF: Defaults[.allowedZWJF],
       hudEnabled: Defaults[.hudEnabled],
       modifierOnlyToggleHotkey: Defaults[.modifierOnlyToggleHotkey],
+      modifierOnlyTextToolsHotkey: Defaults[.modifierOnlyTextToolsHotkey],
 
       smartSwitchEnabled: Defaults[.smartSwitchEnabled],
       smartSwitchApps: Defaults[.smartSwitchApps],
@@ -311,15 +377,29 @@ enum UserDataMigration {
       defaultMacrosVersion: Defaults[.defaultMacrosVersion],
 
       appTheme: nil, // 2.16: AppTheme đã xoá — giữ field để backup cũ vẫn decode
+      uiTheme: Defaults[.uiTheme].rawValue,
+      accentColorChoice: Defaults[.accentColorChoice].rawValue,
+      appearanceMode: Defaults[.appearanceMode].rawValue,
+      themeConfigs: Defaults[.themeConfigs],
 
       autoPersonalDictFeedback: Defaults[.autoPersonalDictFeedback],
 
       // 1.7.6+: full settings backup
       wordPredictionEnabled: Defaults[.wordPredictionEnabled],
+      predictionHUDLineOffset: Defaults[.predictionHUDLineOffset],
+      predictionHUDFontSize: Defaults[.predictionHUDFontSize],
+      hudOpacityPercent: Defaults[.hudOpacityPercent],
       appSmartSwitchConfigs: Defaults[.appSmartSwitchConfigs],
       translationHUDEnabled: Defaults[.translationHUDEnabled],
       translationHUDDurationMs: Defaults[.translationHUDDurationMs],
       programmingMode: Defaults[.programmingMode],
+      quickConfigPreset: Defaults[.quickConfigPreset],
+      autoCapitalizeEnabled: Defaults[.autoCapitalizeEnabled],
+      nonLatinIMEAutoDisable: Defaults[.nonLatinIMEAutoDisable],
+      windowTitleRules: Defaults[.windowTitleRules],
+      freeMarkModeEnabled: Defaults[.freeMarkModeEnabled],
+      cgEventRaceHardeningEnabled: Defaults[.cgEventRaceHardeningEnabled],
+      cgEventFlushDelayMs: Defaults[.cgEventFlushDelayMs],
       userBigrams: ngrams.bigrams,
       userTrigrams: ngrams.trigrams,
       statisticsEnabled: Defaults[.statisticsEnabled],
@@ -452,6 +532,8 @@ enum UserDataMigration {
     applyScalar(.hudEnabled, export.hudEnabled, label: "HUD")
     applyScalar(.modifierOnlyToggleHotkey, export.modifierOnlyToggleHotkey,
                 label: "Modifier-only hotkey")
+    applyScalar(.modifierOnlyTextToolsHotkey, export.modifierOnlyTextToolsHotkey,
+                label: "Text Tools modifier-only hotkey")
 
     // Smart Switch
     applyScalar(.smartSwitchEnabled, export.smartSwitchEnabled, label: "Smart Switch")
@@ -519,6 +601,22 @@ enum UserDataMigration {
                 label: "Default macros version")
 
     // 2.16: AppTheme đã xoá — bỏ qua field appTheme trong backup cũ.
+    if let raw = export.uiTheme, let parsed = UITheme(rawValue: raw),
+       Defaults[.uiTheme] != parsed {
+      Defaults[.uiTheme] = parsed
+      changes.append("Theme UI ← \(raw)")
+    }
+    if let raw = export.accentColorChoice, let parsed = AccentColorChoice(rawValue: raw),
+       Defaults[.accentColorChoice] != parsed {
+      Defaults[.accentColorChoice] = parsed
+      changes.append("Màu nhấn ← \(raw)")
+    }
+    if let raw = export.appearanceMode, let parsed = AppearanceMode(rawValue: raw),
+       Defaults[.appearanceMode] != parsed {
+      Defaults[.appearanceMode] = parsed
+      changes.append("Chế độ giao diện ← \(raw)")
+    }
+    applyScalar(.themeConfigs, export.themeConfigs, label: "Cấu hình theme")
 
     // 1.5.5+: auto-feedback toggle
     applyScalar(.autoPersonalDictFeedback, export.autoPersonalDictFeedback,
@@ -527,16 +625,37 @@ enum UserDataMigration {
     // 1.7.6+: previously-missing scalar settings
     applyScalar(.wordPredictionEnabled, export.wordPredictionEnabled,
                 label: "Đoán từ tiếp theo")
+    applyScalar(.predictionHUDLineOffset, export.predictionHUDLineOffset,
+                label: "Khoảng cách HUD dự đoán")
+    applyScalar(.predictionHUDFontSize, export.predictionHUDFontSize,
+                label: "Cỡ chữ HUD dự đoán")
+    applyScalar(.hudOpacityPercent, export.hudOpacityPercent,
+                label: "Độ trong suốt HUD")
     applyScalar(.translationHUDEnabled, export.translationHUDEnabled,
                 label: "HUD dịch")
     applyScalar(.translationHUDDurationMs, export.translationHUDDurationMs,
                 label: "Thời lượng HUD dịch (ms)")
     applyScalar(.programmingMode, export.programmingMode,
                 label: "Chế độ lập trình")
+    applyScalar(.quickConfigPreset, export.quickConfigPreset,
+                label: "Preset cấu hình nhanh")
+    applyScalar(.autoCapitalizeEnabled, export.autoCapitalizeEnabled,
+                label: "Tự viết hoa đầu câu")
+    applyScalar(.nonLatinIMEAutoDisable, export.nonLatinIMEAutoDisable,
+                label: "Tự tắt khi dùng IME non-Latin")
+    applyScalar(.freeMarkModeEnabled, export.freeMarkModeEnabled,
+                label: "Free Mark Mode")
+    applyScalar(.cgEventRaceHardeningEnabled, export.cgEventRaceHardeningEnabled,
+                label: "CGEvent race hardening")
+    applyScalar(.cgEventFlushDelayMs, export.cgEventFlushDelayMs,
+                label: "CGEvent flush delay (ms)")
     applyScalar(.statisticsEnabled, export.statisticsEnabled,
                 label: "Bật thống kê")
     applyScalar(.autoBackupOnUpgrade, export.autoBackupOnUpgrade,
                 label: "Tự sao lưu khi cập nhật")
+
+    mergeWindowTitleRules(export.windowTitleRules,
+                          replace: replaceLists, into: &changes)
 
     // 1.7.6+: per-app Smart Switch configs (critical — 1.7.0+ 3-state).
     // 1.7.7: merge mode đảo sang imported wins (file thắng khi trùng bundle id).
@@ -738,6 +857,45 @@ enum UserDataMigration {
     if changed > 0 {
       Defaults[key] = current
       changes.append("\(label): +\(changed) (merge, file ưu tiên)")
+    }
+  }
+
+  private static func mergeWindowTitleRules(
+    _ value: [WindowTitleRule]?,
+    replace: Bool,
+    into changes: inout [String]
+  ) {
+    guard let value = value else { return }
+    if replace {
+      if Defaults[.windowTitleRules] != value {
+        Defaults[.windowTitleRules] = value
+        changes.append("Window Title Rules: \(value.count) (overwrite)")
+      }
+      return
+    }
+
+    var current = Defaults[.windowTitleRules]
+    var indexesById: [UUID: Int] = [:]
+    for (index, rule) in current.enumerated() {
+      indexesById[rule.id] = index
+    }
+
+    var changed = 0
+    for rule in value {
+      if let index = indexesById[rule.id] {
+        if current[index] != rule {
+          current[index] = rule
+          changed += 1
+        }
+      } else {
+        current.append(rule)
+        changed += 1
+      }
+    }
+
+    if changed > 0 {
+      Defaults[.windowTitleRules] = current
+      changes.append("Window Title Rules: +\(changed) (merge, file ưu tiên)")
     }
   }
 }
