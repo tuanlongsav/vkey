@@ -102,19 +102,68 @@ public struct Focused {
   /// app không expose AX) — caller giữ phân loại mặc định theo app.
   public static func isOutsideWebArea() -> Bool? {
     guard let focusedElement = Focused.element() else { return nil }
-    var current: AXUIElement? = focusedElement
+    return isOutsideWebArea(from: focusedElement)
+  }
+
+  /// v3.7: core leo cây AX từ `element` — tách ra để `snapshot()` tái dùng
+  /// chung một lần fetch focused element.
+  ///
+  /// Kết luận CHẮC CHẮN, không đoán mò:
+  /// - Gặp `AXWebArea`                        → `false` (web content → giữ NFD).
+  /// - Leo tới container gốc native thật
+  ///   (`AXWindow`/`AXSheet`/`AXApplication`)
+  ///   mà CHƯA gặp AXWebArea                  → `true`  (AppKit thật → ép NFC).
+  /// - Đọc role lỗi / đứt chain / chạm trần   → `nil`   (KHÔNG kết luận).
+  ///
+  /// Vì sao trần/đứt chain phải trả `nil` chứ không `true` (bug v3.6 cũ):
+  /// một web input lồng > 25 cấp dưới AXWebArea, hoặc một AX call timeout
+  /// giữa chừng, cũng cho kết quả "chưa thấy AXWebArea". Nếu trả `true` ở
+  /// đó → ép NFC lên field NFD → tái hiện lỗi "nhập" → "nḥ̂p" theo CHIỀU
+  /// NGƯỢC. Trả `nil` ⇒ caller giữ phân loại theo app (Chromium = NFD) →
+  /// an toàn. NSSavePanel thật vẫn leo tới AXSheet/AXWindow nên vẫn ra `true`.
+  private static func isOutsideWebArea(from element: AXUIElement) -> Bool? {
+    var current: AXUIElement? = element
     var depth = 0
-    // Giới hạn 25 cấp: cây AX của browser sâu nhưng AXWebArea luôn nằm gần
-    // top; vòng lặp có trần để không bao giờ treo trên cây bệnh/đệ quy.
+    // Trần 25 cấp: vòng lặp luôn có cận trên để không treo trên cây bệnh/đệ quy.
     while let el = current, depth < 25 {
-      if let role: String = el.getAttribute(property: kAXRoleAttribute),
-         role == "AXWebArea" {
-        return false
+      guard let role: String = el.getAttribute(property: kAXRoleAttribute) else {
+        // Role không đọc được (AX timeout/lỗi) → không kết luận.
+        return nil
+      }
+      if role == "AXWebArea" { return false }
+      if role == "AXWindow" || role == "AXSheet" || role == "AXApplication" {
+        return true
       }
       current = el.getAttribute(property: kAXParentAttribute)
       depth += 1
     }
-    return true
+    return nil
+  }
+
+  /// v3.7: ảnh chụp trạng thái focused element trong MỘT lần fetch system-wide.
+  /// Trước đây `performFocusedElementRefresh` gọi 3 hàm riêng, mỗi hàm tự
+  /// `Focused.element()` → 3 round-trip AX. Gộp còn 1 fetch + 1 lần leo cây.
+  public struct FocusSnapshot {
+    public let bundleId: String?
+    public let isComboOrSearch: Bool
+    /// `nil` = không kết luận được (caller giữ phân loại NFC/NFD theo app).
+    public let outsideWebArea: Bool?
+  }
+
+  public static func snapshot() -> FocusSnapshot {
+    guard let element = Focused.element() else {
+      return FocusSnapshot(bundleId: nil, isComboOrSearch: false, outsideWebArea: nil)
+    }
+    var bundleId: String? = nil
+    var pid: pid_t = 0
+    if AXUIElementGetPid(element, &pid) == .success {
+      bundleId = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
+    }
+    let role: String? = element.getAttribute(property: kAXRoleAttribute)
+    let isComboOrSearch = (role == "AXComboBox" || role == "AXSearchField")
+    let outside = Focused.isOutsideWebArea(from: element)
+    return FocusSnapshot(
+      bundleId: bundleId, isComboOrSearch: isComboOrSearch, outsideWebArea: outside)
   }
 
   /// Whether the currently focused UI element (in the frontmost app) is a

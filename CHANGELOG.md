@@ -2,6 +2,20 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.7] - 2026-06-17 — "Nhận diện ô nhập chắc tay hơn (củng cố 3.6)"
+
+**Củng cố bản 3.6 sau code-review. Siết lại phần phát hiện ô nhập native theo Accessibility để KHÔNG đoán mò, và gộp truy vấn AX cho nhẹ. Engine gõ không đổi hành vi đã thấy ở 3.6 — toàn bộ test pass.**
+
+### 🔧 Sửa từ code-review
+
+- **`Focused.isOutsideWebArea` không còn đoán mò (correctness)**: trước đây leo hết 25 cấp cây Accessibility HOẶC tới gốc đều kết luận "field native" → ép NFC. Một ô nhập web lồng > 25 cấp dưới `AXWebArea`, hoặc một AX call timeout giữa chừng, cũng rơi vào nhánh này → ép NFC nhầm lên field NFD → tái hiện lỗi `"nhập" → "nḥ̂p"` theo **chiều ngược**. Giờ chỉ kết luận chắc chắn: gặp `AXWebArea` → web (giữ NFD); leo tới container gốc native thật (`AXWindow`/`AXSheet`/`AXApplication`) → native (ép NFC); chạm trần / đứt chain / role timeout → **không kết luận** → giữ phân loại theo app. `NSSavePanel` thật vẫn leo tới `AXSheet`/`AXWindow` nên fix save panel của 3.6 vẫn nguyên.
+- **Gộp truy vấn AX (performance)**: `performFocusedElementRefresh` trước gọi 3 hàm, mỗi hàm tự fetch focused element (3 round-trip Accessibility). Giờ gói trong một `Focused.snapshot()` → 1 lần fetch + 1 lần leo cây, dừng sớm tại `AXWindow`.
+- **Chú thích `ccc`** (`calcKeyStrokesNFD`): ghi rõ `canonicalCombiningClass != 0` phủ đủ mọi dấu thanh/dấu phụ tiếng Việt (216–230); các grapheme-extender ccc=0 (ZWJ, variation selector) không xuất hiện trong output bộ gõ nên không ảnh hưởng.
+
+### 🧪 Tests
+
+- Toàn bộ 242 test pass (không đổi). Phần `isOutsideWebArea` đi qua AX sống nên không unit-test được trực tiếp; test per-field override (Chrome web content vs save panel) vẫn cover qua `focusedFieldOutsideWebArea`.
+
 ## [3.6] - 2026-06-13 — "Hết mất chữ ở Gemini + hộp thoại lưu file Chrome"
 
 **Fix lỗi "nhập" → "nḥ̂p" (mất chữ cái, dấu rời bám nhầm) ở Gemini app và khi gõ tên file/thư mục trong hộp thoại tải về của Chrome. Ba lớp fix: đúng bundle ID Gemini, phát hiện field native theo AX, và cấm gửi dấu rời "trần".**

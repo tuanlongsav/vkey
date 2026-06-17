@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.6 — "Hết mất chữ ở Gemini + hộp thoại lưu file Chrome"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.7 — "Nhận diện ô nhập chắc tay hơn (củng cố 3.6)"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.7** — 🔧 **Củng cố bản 3.6 sau code-review.** Siết phần phát hiện ô nhập native theo Accessibility để **không đoán mò**: khi cây Accessibility quá sâu hoặc phản hồi chậm, vkey giữ kiểu gõ theo app thay vì ép NFC — tránh lỗi mất chữ theo **chiều ngược** ở ô web lồng sâu. Gộp truy vấn Accessibility khi đổi focus cho nhẹ. Engine gõ không đổi hành vi đã thấy ở 3.6. Toàn bộ test pass.
+>
 > **3.6** — 🐛 **Fix "nhập" → "nḥ̂p"** (mất chữ cái, dấu rời bám nhầm) ở **Gemini app** (bundle ID thật `com.google.GeminiMacOS`, v3.4 ghi nhầm) và khi **gõ tên file/thư mục trong hộp thoại tải về của Chrome** (NSSavePanel native trong process Chromium). Fix 3 lớp: đúng bundle ID; tự phát hiện field native ngoài `AXWebArea` → flip NFC theo từng ô nhập; và diff NFD không bao giờ gửi dấu rời "trần" (lùi về đầu cụm grapheme, retype trọn chữ). Toàn bộ test pass.
 
 > **3.5** — 🔏 **App được ký bằng chứng chỉ Apple Developer ID và notarized bởi Apple**: tải DMG về **mở ngay không bị Gatekeeper chặn** — hết thời "chuột phải → Mở". Hardened runtime bật. Engine gõ không đổi (code y hệt 3.4). ⚠️ Nâng cấp từ ≤3.4: cấp lại quyền Trợ năng **một lần** (chữ ký đổi); từ nay về sau chữ ký ổn định, không phải cấp lại nữa.

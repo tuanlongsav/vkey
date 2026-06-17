@@ -354,14 +354,16 @@ class AppState: ObservableObject, FileMonitorDelegate {
 
     /// Đọc AX state của focused element (chạy trên focusRefreshQueue) rồi
     /// publish về main. Tách riêng để refresh ngay + refresh trễ dùng chung.
+    /// v3.7: gộp 3 round-trip AX (bundleId + combo/search + web-area) thành
+    /// MỘT lần fetch focused element qua `Focused.snapshot()`.
     private func performFocusedElementRefresh() {
-        let bid = Focused.focusedAppBundleId()
-        let isSearchOrCombo = Focused.isComboBoxOrSearchField()
-        // nil (AX không trả lời) → false: giữ phân loại NFC/NFD theo app.
-        let outsideWebArea = Focused.isOutsideWebArea() ?? false
+        let snap = Focused.snapshot()
+        // nil (AX không trả lời / không kết luận được) → false: giữ phân
+        // loại NFC/NFD theo app, không ép NFC nhầm lên field NFD.
+        let outsideWebArea = snap.outsideWebArea ?? false
         DispatchQueue.main.async {
-            self.currentFocusedBundleId = bid
-            self.currentFocusedElementIsSearchOrCombo = isSearchOrCombo
+            self.currentFocusedBundleId = snap.bundleId
+            self.currentFocusedElementIsSearchOrCombo = snap.isComboOrSearch
             self.currentFocusedElementOutsideWebArea = outsideWebArea
         }
     }

@@ -210,6 +210,10 @@ class EventSimulator {
     // xoá nguyên cụm và retype cụm hoàn chỉnh — đúng với field NFD thật,
     // và chỉ lệch nhẹ (không phá chữ) nếu field bị phân loại nhầm.
     // Diff rỗng (chỉ xoá, không retype) giữ nguyên — không có gì để bám sai.
+    // ccc != 0 nhận diện mọi dấu thanh/dấu phụ tiếng Việt (U+0300..U+0323,
+    // U+031B… đều có ccc 216–230). Không phủ HẾT grapheme-extender Unicode
+    // (ZWJ, variation selector có ccc = 0) nhưng các ký tự đó không xuất
+    // hiện trong output bộ gõ → đủ và đúng cho miền dữ liệu này.
     func isCombining(_ s: Unicode.Scalar) -> Bool {
       s.properties.canonicalCombiningClass != .notReordered
     }
