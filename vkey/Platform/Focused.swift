@@ -89,39 +89,35 @@ public struct Focused {
     return false
   }
 
-  /// v3.6: focused element có nằm NGOÀI web content không?
+  /// v3.8: focused element có nằm trong một HỘP THOẠI MODAL NATIVE (AppKit)
+  /// không? — vd `NSSavePanel`/`NSOpenPanel` mà Chromium app bung ra khi
+  /// "Save As…" / tải file về. Field trong đó là AppKit THẬT (NFC + grapheme
+  /// backspace) → phải diff NFC dù app thuộc nhóm NFD ("nhập" → "nḥ̂p" nếu sai).
   ///
-  /// Chromium/Electron expose mọi text field của web content bên dưới một
-  /// node `AXWebArea`. Các hộp thoại NATIVE chạy trong cùng process (vd
-  /// NSSavePanel của Chrome khi "Save As…" / tải file về) thì KHÔNG có
-  /// ancestor này — field đó là AppKit thật: NFC + grapheme backspace,
-  /// phải diff NFC dù bundle là Chromium (nếu không sẽ mất chữ + dấu rời
-  /// bám nhầm, vd "nhập" → "nḥ̂p").
-  ///
-  /// Trả về `nil` khi không xác định được (không có focused element /
-  /// app không expose AX) — caller giữ phân loại mặc định theo app.
-  public static func isOutsideWebArea() -> Bool? {
+  /// Trả về `nil` khi không xác định được — caller giữ phân loại theo app.
+  public static func isInsideNativePanel() -> Bool? {
     guard let focusedElement = Focused.element() else { return nil }
-    return isOutsideWebArea(from: focusedElement)
+    return isInsideNativePanel(from: focusedElement)
   }
 
-  /// v3.7: core leo cây AX từ `element` — tách ra để `snapshot()` tái dùng
-  /// chung một lần fetch focused element.
+  /// v3.8: core leo cây AX từ `element` — tách ra để `snapshot()` tái dùng.
   ///
-  /// Kết luận CHẮC CHẮN, không đoán mò:
-  /// - Gặp `AXWebArea`                        → `false` (web content → giữ NFD).
-  /// - Leo tới container gốc native thật
-  ///   (`AXWindow`/`AXSheet`/`AXApplication`)
-  ///   mà CHƯA gặp AXWebArea                  → `true`  (AppKit thật → ép NFC).
-  /// - Đọc role lỗi / đứt chain / chạm trần   → `nil`   (KHÔNG kết luận).
+  /// CHỈ nhận diện HỘP THOẠI MODAL native, KHÔNG nhận control Chromium Views
+  /// trong cửa sổ chính:
+  /// - Gặp `AXSheet`, hoặc `AXWindow` subrole `AXDialog`/`AXSystemDialog`
+  ///     → `true`  (panel native như NSSavePanel → ép NFC).
+  /// - Gặp `AXWindow` thường (`AXStandardWindow`…) / `AXApplication`
+  ///     → `false` (cửa sổ chính → giữ phân loại theo app).
+  /// - Đọc role lỗi / đứt chain / chạm trần
+  ///     → `nil`   (KHÔNG kết luận).
   ///
-  /// Vì sao trần/đứt chain phải trả `nil` chứ không `true` (bug v3.6 cũ):
-  /// một web input lồng > 25 cấp dưới AXWebArea, hoặc một AX call timeout
-  /// giữa chừng, cũng cho kết quả "chưa thấy AXWebArea". Nếu trả `true` ở
-  /// đó → ép NFC lên field NFD → tái hiện lỗi "nhập" → "nḥ̂p" theo CHIỀU
-  /// NGƯỢC. Trả `nil` ⇒ caller giữ phân loại theo app (Chromium = NFD) →
-  /// an toàn. NSSavePanel thật vẫn leo tới AXSheet/AXWindow nên vẫn ra `true`.
-  private static func isOutsideWebArea(from element: AXUIElement) -> Bool? {
+  /// Vì sao KHÔNG dùng tiêu chí "ngoài AXWebArea" như v3.6/3.7: thanh địa chỉ
+  /// (omnibox) của Chrome cũng nằm ngoài AXWebArea NHƯNG là field do Chromium
+  /// Views tự vẽ — lưu/xoá theo SCALAR như web content (NFD). Ép nó sang NFC
+  /// làm hỏng gõ ("trường" → "truường"). Chỉ NSSavePanel/NSOpenPanel mới là
+  /// AppKit thật, và chúng luôn là sheet/dialog modal → phân biệt được bằng
+  /// AXSheet / subrole dialog. Cửa sổ chính (omnibox, toolbar, web) → giữ NFD.
+  private static func isInsideNativePanel(from element: AXUIElement) -> Bool? {
     var current: AXUIElement? = element
     var depth = 0
     // Trần 25 cấp: vòng lặp luôn có cận trên để không treo trên cây bệnh/đệ quy.
@@ -130,10 +126,14 @@ public struct Focused {
         // Role không đọc được (AX timeout/lỗi) → không kết luận.
         return nil
       }
-      if role == "AXWebArea" { return false }
-      if role == "AXWindow" || role == "AXSheet" || role == "AXApplication" {
-        return true
+      if role == "AXSheet" { return true }
+      if role == "AXWindow" {
+        // Cửa sổ: chỉ là panel native nếu subrole là dialog modal. Cửa sổ
+        // thường (trình duyệt chính chứa omnibox/web) → KHÔNG ép NFC.
+        let subrole: String? = el.getAttribute(property: kAXSubroleAttribute)
+        return subrole == "AXDialog" || subrole == "AXSystemDialog"
       }
+      if role == "AXApplication" { return false }
       current = el.getAttribute(property: kAXParentAttribute)
       depth += 1
     }
@@ -147,12 +147,12 @@ public struct Focused {
     public let bundleId: String?
     public let isComboOrSearch: Bool
     /// `nil` = không kết luận được (caller giữ phân loại NFC/NFD theo app).
-    public let outsideWebArea: Bool?
+    public let insideNativePanel: Bool?
   }
 
   public static func snapshot() -> FocusSnapshot {
     guard let element = Focused.element() else {
-      return FocusSnapshot(bundleId: nil, isComboOrSearch: false, outsideWebArea: nil)
+      return FocusSnapshot(bundleId: nil, isComboOrSearch: false, insideNativePanel: nil)
     }
     var bundleId: String? = nil
     var pid: pid_t = 0
@@ -161,9 +161,9 @@ public struct Focused {
     }
     let role: String? = element.getAttribute(property: kAXRoleAttribute)
     let isComboOrSearch = (role == "AXComboBox" || role == "AXSearchField")
-    let outside = Focused.isOutsideWebArea(from: element)
+    let insidePanel = Focused.isInsideNativePanel(from: element)
     return FocusSnapshot(
-      bundleId: bundleId, isComboOrSearch: isComboOrSearch, outsideWebArea: outside)
+      bundleId: bundleId, isComboOrSearch: isComboOrSearch, insideNativePanel: insidePanel)
   }
 
   /// Whether the currently focused UI element (in the frontmost app) is a

@@ -2,6 +2,23 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.8] - 2026-06-17 — "Sửa lỗi gõ ở thanh địa chỉ Chrome"
+
+**Fix lỗi `"trường"` → `"truường"` (thừa chữ) khi gõ ở thanh địa chỉ (omnibox) Chrome và các ô nhập tương tự do Chromium tự vẽ. Hệ quả của cơ chế nhận diện field native quá rộng ở 3.6/3.7.**
+
+### 🐛 Nguyên nhân gốc
+
+3.6 thêm cơ chế "field nằm ngoài `AXWebArea` → ép diff NFC" để fix hộp thoại lưu file của Chrome. Nhưng **thanh địa chỉ (omnibox) cũng nằm ngoài `AXWebArea`** mà KHÔNG phải AppKit thật — nó là control do **Chromium Views** tự vẽ, lưu/xoá theo **scalar** (NFD) y như web content. Ép nó sang NFC làm sai số ký tự xoá → `"trường"` → `"truường"`. (3.7 siết phần "đoán mò" nhưng vẫn giữ tiêu chí "ngoài AXWebArea" nên omnibox vẫn dính.)
+
+### 🔧 Fix
+
+- **Nhận diện đúng hộp thoại modal native** (`Focused.isInsideNativePanel`): chỉ ép NFC khi field nằm trong **`AXSheet`** hoặc cửa sổ subrole **`AXDialog`/`AXSystemDialog`** — đúng đặc trưng của `NSSavePanel`/`NSOpenPanel`. Cửa sổ trình duyệt chính (chứa omnibox, toolbar, web) → **giữ NFD** theo phân loại app. Đổi tên cờ `focusedFieldOutsideWebArea` → `focusedFieldInNativePanel` cho đúng ngữ nghĩa.
+- Kết quả: omnibox Chrome quay lại diff NFD (đúng như ≤ 3.5, gõ chuẩn); hộp thoại lưu file vẫn được ép NFC như fix 3.6.
+
+### 🧪 Tests
+
+- Toàn bộ 242 test pass. Test per-field override cập nhật theo cờ mới (`focusedFieldInNativePanel`): omnibox/web (false) → NFD; save panel (true) → NFC.
+
 ## [3.7] - 2026-06-17 — "Nhận diện ô nhập chắc tay hơn (củng cố 3.6)"
 
 **Củng cố bản 3.6 sau code-review. Siết lại phần phát hiện ô nhập native theo Accessibility để KHÔNG đoán mò, và gộp truy vấn AX cho nhẹ. Engine gõ không đổi hành vi đã thấy ở 3.6 — toàn bộ test pass.**

@@ -95,13 +95,13 @@ class AppState: ObservableObject, FileMonitorDelegate {
             inputProcessor.isSearchOrComboFocused = currentFocusedElementIsSearchOrCombo
         }
     }
-    /// v3.6: focused element nằm ngoài AXWebArea (hộp thoại native trong
-    /// Chromium app, vd NSSavePanel "Save As…" của Chrome) → InputProcessor
-    /// flip sang diff NFC dù app thuộc nhóm NFD. nil từ AX = giữ nguyên
-    /// phân loại theo app (false).
-    public private(set) var currentFocusedElementOutsideWebArea = false {
+    /// v3.8: focused element nằm trong hộp thoại modal native (NSSavePanel
+    /// "Save As…" của Chrome…) → InputProcessor flip sang diff NFC dù app
+    /// thuộc nhóm NFD. nil từ AX = giữ nguyên phân loại theo app (false).
+    /// (v3.6/3.7 dùng tiêu chí "ngoài AXWebArea" quá rộng → dính cả omnibox.)
+    public private(set) var currentFocusedElementInNativePanel = false {
         didSet {
-            inputProcessor.focusedFieldOutsideWebArea = currentFocusedElementOutsideWebArea
+            inputProcessor.focusedFieldInNativePanel = currentFocusedElementInNativePanel
         }
     }
     private let focusRefreshQueue = DispatchQueue(label: "dev.longht.vkey.focusRefresh", qos: .userInteractive)
@@ -360,11 +360,11 @@ class AppState: ObservableObject, FileMonitorDelegate {
         let snap = Focused.snapshot()
         // nil (AX không trả lời / không kết luận được) → false: giữ phân
         // loại NFC/NFD theo app, không ép NFC nhầm lên field NFD.
-        let outsideWebArea = snap.outsideWebArea ?? false
+        let inNativePanel = snap.insideNativePanel ?? false
         DispatchQueue.main.async {
             self.currentFocusedBundleId = snap.bundleId
             self.currentFocusedElementIsSearchOrCombo = snap.isComboOrSearch
-            self.currentFocusedElementOutsideWebArea = outsideWebArea
+            self.currentFocusedElementInNativePanel = inNativePanel
         }
     }
 

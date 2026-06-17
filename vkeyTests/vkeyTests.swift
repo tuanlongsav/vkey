@@ -3533,14 +3533,16 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(diff4, [])
   }
 
-  /// v3.6: field native ngoài web content (NSSavePanel của Chrome khi gõ
-  /// tên file tải về) → flip sang NFC dù bundle là Chromium.
+  /// v3.8: field trong hộp thoại modal native (NSSavePanel của Chrome khi gõ
+  /// tên file tải về) → flip sang NFC dù bundle là Chromium. Omnibox/web
+  /// content (KHÔNG trong panel) → giữ NFD.
   func testNativeFieldOverrideInChromiumApp() throws {
     let processor = InputProcessor(method: .Telex)
     processor.changeActiveApp("com.google.Chrome")
 
-    // Web content (mặc định): NFD — pop "gô"→"go" nhường OS (0, []).
-    processor.focusedFieldOutsideWebArea = false
+    // Web content / omnibox (mặc định, KHÔNG trong native panel): NFD —
+    // pop "gô"→"go" nhường OS (0, []).
+    processor.focusedFieldInNativePanel = false
     processor.push(char: "g")
     processor.push(char: "o")
     processor.push(char: "o")
@@ -3549,9 +3551,9 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(webBs, 0)
     XCTAssertEqual(webDiff, [])
 
-    // Save panel (ngoài AXWebArea): NFC — pop "gô"→"go" = (1, ["o"]).
+    // Save panel (hộp thoại modal native): NFC — pop "gô"→"go" = (1, ["o"]).
     processor.newWord()
-    processor.focusedFieldOutsideWebArea = true
+    processor.focusedFieldInNativePanel = true
     processor.push(char: "g")
     processor.push(char: "o")
     processor.push(char: "o")

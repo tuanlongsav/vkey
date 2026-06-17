@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.7 — "Nhận diện ô nhập chắc tay hơn (củng cố 3.6)"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.8 — "Sửa lỗi gõ ở thanh địa chỉ Chrome"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.8** — 🐛 **Fix `"trường"` → `"truường"`** (thừa chữ) khi gõ ở **thanh địa chỉ Chrome** và các ô do Chromium tự vẽ. Cơ chế ép NFC của 3.6/3.7 nhận diện field native quá rộng (omnibox cũng nằm ngoài `AXWebArea` nhưng là field Chromium Views, lưu/xoá theo scalar). 3.8 siết về đúng **hộp thoại modal native** (`AXSheet`/dialog) → omnibox quay lại diff NFD chuẩn, hộp thoại lưu file vẫn được fix như 3.6. Toàn bộ test pass.
+>
 > **3.7** — 🔧 **Củng cố bản 3.6 sau code-review.** Siết phần phát hiện ô nhập native theo Accessibility để **không đoán mò**: khi cây Accessibility quá sâu hoặc phản hồi chậm, vkey giữ kiểu gõ theo app thay vì ép NFC — tránh lỗi mất chữ theo **chiều ngược** ở ô web lồng sâu. Gộp truy vấn Accessibility khi đổi focus cho nhẹ. Engine gõ không đổi hành vi đã thấy ở 3.6. Toàn bộ test pass.
 >
 > **3.6** — 🐛 **Fix "nhập" → "nḥ̂p"** (mất chữ cái, dấu rời bám nhầm) ở **Gemini app** (bundle ID thật `com.google.GeminiMacOS`, v3.4 ghi nhầm) và khi **gõ tên file/thư mục trong hộp thoại tải về của Chrome** (NSSavePanel native trong process Chromium). Fix 3 lớp: đúng bundle ID; tự phát hiện field native ngoài `AXWebArea` → flip NFC theo từng ô nhập; và diff NFD không bao giờ gửi dấu rời "trần" (lùi về đầu cụm grapheme, retype trọn chữ). Toàn bộ test pass.

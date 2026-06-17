@@ -716,12 +716,13 @@ class InputProcessor {
   public var activeApp = ""
   public var isSearchOrComboFocused = false
 
-  /// v3.6: focused element nằm NGOÀI web content (không có ancestor
-  /// AXWebArea) — cập nhật push-based từ AppState. Khi true, field hiện tại
-  /// là native control (vd NSSavePanel "Save As…" của Chrome) → diff NFC
-  /// bất kể app thuộc nhóm NFD. Fix bug "nhập" → "nḥ̂p" khi gõ tên file
-  /// trong hộp thoại tải về của Chromium apps.
-  public var focusedFieldOutsideWebArea = false
+  /// v3.8: focused element nằm trong HỘP THOẠI MODAL NATIVE (AXSheet/dialog,
+  /// vd NSSavePanel "Save As…" của Chrome) — cập nhật push-based từ AppState.
+  /// Khi true, field hiện tại là AppKit thật → diff NFC bất kể app thuộc nhóm
+  /// NFD. Fix bug "nhập" → "nḥ̂p" khi gõ tên file trong hộp thoại tải về của
+  /// Chromium apps. (v3.6/3.7 dùng "ngoài AXWebArea" quá rộng → ép NFC nhầm
+  /// cả omnibox Chrome → "trường" → "truường"; v3.8 siết về đúng sheet/dialog.)
+  public var focusedFieldInNativePanel = false
   public private(set) var lastSuggestions: [SuggestionCandidate] = []
 
   /// 2.0 (B1): cached Window Title Rule overrides cho activeApp.
@@ -1381,12 +1382,12 @@ class InputProcessor {
     return false
   }
 
-  /// v3.6: quyết định diff NFC/NFD cho FIELD đang focus — phân loại theo app
-  /// (whitelist NFC) HOẶC field native nằm ngoài web content trong app nhóm
+  /// v3.8: quyết định diff NFC/NFD cho FIELD đang focus — phân loại theo app
+  /// (whitelist NFC) HOẶC field nằm trong hộp thoại modal native của app nhóm
   /// NFD (vd Save panel của Chrome: AppKit thật → NFC + grapheme backspace).
   func usesNFCForFocusedField() -> Bool {
     return InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
-      || focusedFieldOutsideWebArea
+      || focusedFieldInNativePanel
   }
 
   static func macroReplacement(

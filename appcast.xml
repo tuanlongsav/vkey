@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.8 — "Sửa lỗi gõ ở thanh địa chỉ Chrome"</title>
+      <sparkle:version>30800</sparkle:version>
+      <sparkle:shortVersionString>3.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 17 Jun 2026 19:40:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.8/vkey-3.8.dmg"
+        sparkle:edSignature="0+aOsSidcfVI605DuauRVm8kmpgfzbjXTfyT7aRwucMM7LNw72m8efiuPYQS0malznF66A6r7m46Y+ehdOb/Dg=="
+        length="6313467"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.8 — Sửa lỗi gõ ở thanh địa chỉ Chrome</h2>
+        <h3>🐛 Fix "trường" → "truường" (thừa chữ)</h3>
+        <ul>
+          <li>Lỗi xảy ra ở <b>thanh địa chỉ Chrome</b> và các ô nhập do Chromium tự vẽ. Cơ chế ép kiểu gõ NFC thêm ở bản 3.6/3.7 nhận diện ô native quá rộng — thanh địa chỉ tuy nằm ngoài vùng web nhưng vẫn là ô do Chromium vẽ (xoá theo từng ký tự con), bị ép sai kiểu.</li>
+          <li>3.8 chỉ ép NFC cho <b>hộp thoại lưu/mở file thật của macOS</b> (sheet/dialog) — đúng như hộp thoại tải file của Chrome (fix 3.6 vẫn giữ). Thanh địa chỉ quay lại gõ chuẩn như các bản ≤ 3.5.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.7 — "Nhận diện ô nhập chắc tay hơn (củng cố 3.6)"</title>
       <sparkle:version>30700</sparkle:version>
       <sparkle:shortVersionString>3.7</sparkle:shortVersionString>
