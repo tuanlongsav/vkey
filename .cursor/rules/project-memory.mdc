@@ -1,0 +1,47 @@
+---
+description: Trạng thái dự án vkey, release, và kiến thức quan trọng từ phiên làm việc
+alwaysApply: true
+---
+
+# vkey — Project Memory
+
+## Phiên bản hiện tại
+
+- **v3.13** (build `31300`) — released 2026-06-18
+- GitHub: `tuanlongsav/vkey`, branch `main`
+- Release: https://github.com/tuanlongsav/vkey/releases/tag/v3.13
+- Sparkle appcast: `appcast.xml` (item đầu = version mới nhất)
+
+## v3.13 — thay đổi quan trọng
+
+1. **`AppState.syncFocusedContextForKeystroke()`** — `Focused.snapshot()` đồng bộ trước mỗi keystroke (`EventHook` gọi trước `handleEvent`). Fix race `focusedFieldKind` sau Cmd+L / click omnibox.
+2. **`InputProcessor.sendTypedReplacement()`** — mọi `sendReplacement` đi qua `effectiveTypingStrategy()` → `axDirect` cho omnibox Chrome (không chỉ gõ chữ).
+3. **Window Title Rule** — `ResolvedRuleOverrides: Equatable`, `appliedRuleOverrideState` tránh toggle VI/EN; `refreshRuleOverrides(invalidate: false)` trên focus refresh.
+4. **`Focused.fieldKind`** — leo parent khi AX role timeout (không return `.unknown` sớm).
+
+## Kiến trúc focus / Chrome
+
+- `FieldKind`: `.webContent` (NFD) | `.nativePanel` (NFC) | `.windowField` (NFC + axDirect nếu app Chromium) | `.unknown`
+- `usesNFCForFocusedField()` + `focusedFieldIsBrowserChrome()` trong `InputProcessor`
+- `axDirectReplace` trong `EventSimulator` (Spotlight + omnibox)
+
+## Release workflow
+
+Xem [`RELEASE.md`](RELEASE.md). Tóm tắt: archive → export notarize → DMG → `Tools/sparkle_sign_update.sh` → `appcast.xml` → CHANGELOG + **README (blocking)** → commit → push → `gh release create`.
+
+- Version chỉ 2 cấp `MAJOR.MINOR`; build = `MAJOR*10000 + MINOR*100`
+- Private key Sparkle: `/Users/longht/Desktop/Claude/vkey/vkey_private_key.key`
+- DMG gitignored (`*.dmg`)
+
+## CodeGraph
+
+- Index local: `.codegraph/` (gitignored). Khởi tạo: `/codegraph` hoặc `codegraph init -i`
+- MCP tools `codegraph_*` dùng cho tra cứu cấu trúc
+
+## Test
+
+```bash
+xcodebuild test -scheme vkey -destination 'platform=macOS'
+```
+
+244 tests (tính đến v3.13).
