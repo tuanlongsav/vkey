@@ -3508,6 +3508,11 @@ final class VowelTypoFinalConsonantTests: XCTestCase {
     XCTAssertEqual(telex("Source"), "Source")
     XCTAssertEqual(telex("count"), "count", "ou + n(cuối) + 't' rác → giữ nguyên")
     XCTAssertEqual(telex("double"), "double")
+    // Prefix giữa chừng: không swap sou→suo (root cause Suorce trên màn hình).
+    XCTAssertEqual(telex("sou"), "sou")
+    XCTAssertEqual(telex("Sou"), "Sou")
+    XCTAssertEqual(telex("cou"), "cou")
+    XCTAssertEqual(telex("you"), "you")
   }
 
   // FIX: cùng guard conLai.isEmpty áp cho luật "ei→ie" và "aoi→oai".

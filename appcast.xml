@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.12 — "Fix triệt để Source→Suorce + HUD cân giữa thật"</title>
+      <sparkle:version>31200</sparkle:version>
+      <sparkle:shortVersionString>3.12</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 18 Jun 2026 15:53:29 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.12/vkey-3.12.dmg"
+        sparkle:edSignature="3k3/IzugjFKfYWOKxb+VWtuQBCda7aPwrAXvJ78j4Z/pic/7IxPi5Pt5b9PsMDaIUDC/BOVZFb5oJhxiXbYODQ=="
+        length="6336174"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.12 — Fix triệt để Source→Suorce + HUD cân giữa</h2>
+        <ul>
+          <li><b>Hết lỗi <code>Sou</code> → <code>Suorce</code>.</b> Bổ sung cho 3.11: prefix <code>sou</code>/<code>Sou</code> không còn bị swap thành <code>Suo</code> giữa chừng khi gõ <code>Source</code> ở chế độ tiếng Việt. Path VN <code>bou→buo</code> vẫn đầy đủ.</li>
+          <li><b>HUD VI/EN căn giữa ổn định.</b> Đo kích thước thủ công (max cả hai nhãn) thay vì SwiftUI <code>fittingSize</code> bất đồng bộ — toggle luôn căn giữa màn hình.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 244 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.11 — "Gõ chuẩn từ tiếng Anh (source, their…) + HUD cân giữa"</title>
       <sparkle:version>31100</sparkle:version>
       <sparkle:shortVersionString>3.11</sparkle:shortVersionString>

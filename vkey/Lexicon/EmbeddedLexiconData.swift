@@ -7276,7 +7276,37 @@ bửa
     "screen", "screens", "green", "greens", "feel",
     "feels", "feeling", "feelings", "wheel", "wheels", "three", "agree",
     "between", "freeze", "free", "trees",
+    // v3.11+: từ EN có `ou` — instant-restore khi gõ xong cả từ.
+    "source", "sources", "count", "counts", "double", "soup", "sound", "sounds",
+    "your", "yours", "you", "young", "youth",
   ])
+
+  /// English words chứa `ou` — khi keys đang là prefix (vd `sou` → `source`),
+  /// không áp typo-swap `ou→uo` lúc tail rỗng (tránh `Sou` → `Suo` → `Suorce`).
+  /// Không gồm `bout`/`bound`/… để giữ path VN `bou`→`buo`.
+  private static let englishOuTypoGuardWords: Set<String> = Set([
+    "about", "source", "sources", "soup", "sound", "sounds",
+    "south", "southern", "southeast", "southwest",
+    "count", "counts", "country", "countries", "county", "counties",
+    "couple", "course", "court", "cousin", "courage",
+    "double", "doubt", "dough", "downtown",
+    "your", "yours", "yourself", "yourselves", "you", "young", "youth",
+    "hour", "hours", "house", "mouse", "group", "route", "resource",
+    "trouble", "through", "though", "thought", "cloud", "loud", "proud",
+    "round", "ground", "wound", "would", "could", "should", "mount", "mountain",
+    "pour", "tour", "tours", "flour", "found", "around", "amount",
+  ])
+
+  /// `true` khi chuỗi đang gõ là prefix (hoặc khớp đủ) của từ EN trong
+  /// `englishOuTypoGuardWords` — dùng chặn swap `ou→uo` sớm.
+  static func isEnglishOuTypoInProgress(_ keys: [Character]) -> Bool {
+    let s = String(keys).lowercased()
+    guard s.count >= 3 else { return false }
+    // Path VN `bou`→`buo` (vd `bouts`→`buót`): không chặn prefix `bou`.
+    if s.hasPrefix("bou") { return false }
+    if englishOuTypoGuardWords.contains(s) { return true }
+    return englishOuTypoGuardWords.contains { $0.hasPrefix(s) && $0.count > s.count }
+  }
 
   /// 1.9.7: từ EN thông dụng có "ow"/"aw"/"ew" mid-word — Telex skip mark
   /// 'w' / 'a' / 'o' / 'e' để tránh xáo trộn state engine khi user gõ

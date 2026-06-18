@@ -194,8 +194,12 @@ enum TiengVietParser {
       // Nếu vẫn còn ký tự thừa thì đây là từ tiếng Anh, KHÔNG phải gõ nhầm
       // tiếng Việt → giữ nguyên thay vì phá:
       //   "source" → "suo"+"rce", "count" → "cuo"+"n"+"t", "your" → "yuo"+"r".
-      // ("bou" → "uo" và "sout" → "suot" vẫn fire vì conLai rỗng.)
-      if reparsed.conLai.isEmpty {
+      // v3.11+: tail rỗng + prefix EN (vd "sou"→"source") vẫn swap → "suo"
+      // trên màn hình rồi CGEvent không kịp sửa → "Suorce". Chặn thêm bằng
+      // `isEnglishOuTypoInProgress`. ("bou"→"uo" vẫn fire — không trong guard.)
+      let englishOuPrefix = tail.isEmpty
+        && EmbeddedLexiconData.isEnglishOuTypoInProgress(originalInput)
+      if reparsed.conLai.isEmpty && !englishOuPrefix {
         result.nguyenAm = reparsed.nguyenAm
         result.phuAmCuoi = reparsed.phuAmCuoi
         result.conLai = reparsed.conLai

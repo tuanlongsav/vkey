@@ -2,6 +2,19 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.12] - 2026-06-18 — "Fix triệt để Source→Suorce + HUD cân giữa thật"
+
+**Bổ sung fix cho 3.11: hết lỗi `Sou`/`sou` thành `Suo`/`Suorce` khi gõ giữa chừng, và HUD VI/EN căn giữa ổn định khi toggle.**
+
+### 🐛 Sửa lỗi
+
+- **`Source`/`sou` không còn thành `Suorce`.** 3.11 chặn swap `ou→uo` khi từ đủ ký tự còn rác (`source`), nhưng bước gõ prefix `sou`/`Sou` vẫn swap → `Suo` trên màn hình rồi CGEvent không kịp sửa → `Suorce`. Nay thêm guard prefix từ tiếng Anh (`isEnglishOuTypoInProgress`) + instant-restore cho `source`, `count`, `double`, `you`… Path VN `bou→buo` vẫn giữ.
+- **HUD VI/EN căn giữa ổn định.** Bỏ phụ thuộc SwiftUI `fittingSize` (bất đồng bộ khi đổi label). Đo thủ công `max("Tiếng Việt","English")` + căn giữa theo kích thước vừa tính (cùng cách Prediction HUD).
+
+### 🧪 Tests
+
+- Thêm `telex("sou")`, `telex("Sou")`, `telex("cou")`, `telex("you")`. Toàn bộ **244 test pass**.
+
 ## [3.11] - 2026-06-18 — "Gõ chuẩn từ tiếng Anh (source, their…) + HUD cân giữa"
 
 **Hết lỗi gõ từ tiếng Anh bị tự sửa nhầm ở chế độ tiếng Việt (vd `source` → `suorce`), và HUD VI/EN cân giữa màn hình khi đổi trạng thái.**

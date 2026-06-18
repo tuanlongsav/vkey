@@ -51,30 +51,13 @@ final class ToggleHUDWindow {
 
         guard let panel = panel else { return }
 
-        // Kích thước panel = content + đệm shadow (đã nằm trong fittingSize
-        // nhờ .padding(HUDMetrics.shadowMargin) ở rootView).
-        //
-        // viewModel.isEnabled vừa đổi ở trên là @Published → SwiftUI cập nhật
-        // BẤT ĐỒNG BỘ. Nếu đo fittingSize ngay lúc này, nó có thể vẫn là bề
-        // rộng của TRẠNG THÁI CŨ ("English" hẹp hơn "Tiếng Việt"). Panel bị
-        // set sai size rồi căn giữa theo size cũ → HUD lệch tâm khi toggle
-        // VI/EN. Ép hosting view layout lại NGAY với nội dung mới trước khi đo.
-        if let hostingController = hostingController {
-            hostingController.view.needsLayout = true
-            hostingController.view.layoutSubtreeIfNeeded()
-            let fittingSize = hostingController.view.fittingSize
-            panel.setContentSize(fittingSize)
-        }
-
-        // Định vị HUD ở chính giữa màn hình đang hoạt động.
-        // Phần đệm đối xứng nên tâm thị giác không đổi.
-        if let screen = NSScreen.main {
-            let screenFrame = screen.visibleFrame
-            let panelSize = panel.frame.size
-            let x = screenFrame.midX - panelSize.width / 2
-            let y = screenFrame.midY - panelSize.height / 2 - 120
-            panel.setFrameOrigin(NSPoint(x: x, y: y))
-        }
+        let contentSize = Self.contentSize(
+            theme: Defaults[.uiTheme],
+            typingMethod: Defaults[.typingMethod],
+            newStyleTonePlacement: Defaults[.newStyleTonePlacement],
+            modifierHotkey: Defaults[.modifierOnlyToggleHotkey]
+        )
+        applyPanelGeometry(contentSize: contentSize, panel: panel)
 
         // Đưa panel lên trước mà không cướp focus
         panel.alphaValue = 0
@@ -104,6 +87,112 @@ final class ToggleHUDWindow {
         Double(max(30, min(100, value))) / 100.0
     }
 
+    /// Đo kích thước thủ công — không phụ thuộc SwiftUI `fittingSize` (bất
+    /// đồng bộ khi `@Published` đổi). Luôn dùng max(VI, EN) để toggle không lệch.
+    nonisolated static func contentSize(
+        theme: UITheme,
+        typingMethod: TypingMethods,
+        newStyleTonePlacement: Bool,
+        modifierHotkey: Int
+    ) -> CGSize {
+        let hotkeyGlyphs = hotkeyGlyphs(from: modifierHotkey)
+        let keycapRowWidth = keycapRowWidth(glyphCount: hotkeyGlyphs.count)
+
+        switch theme {
+        case .glass, .neural:
+            let titleFont = hudDisplayFont(size: 18)
+            let titleWidth = max(
+                measureText("Tiếng Việt", font: titleFont).width,
+                measureText("English", font: titleFont).width
+            )
+            let badgeFont = NSFont.systemFont(ofSize: 12, weight: .semibold)
+            let badgeWidth = max(
+                measureText("VI", font: badgeFont).width,
+                measureText("EN", font: badgeFont).width
+            ) + 22 // .padding(.horizontal, 11) × 2
+            let flagWidth: CGFloat = 40
+            let spacing: CGFloat = 14
+            let innerWidth = flagWidth + spacing + titleWidth
+                + (keycapRowWidth > 0 ? spacing + keycapRowWidth : 0)
+                + spacing + badgeWidth
+            let innerHeight = max(40, measureText("Tiếng Việt", font: titleFont).height, 28)
+            return CGSize(
+                width: ceil(innerWidth + 11 + 16),
+                height: ceil(innerHeight + 22)
+            )
+
+        case .tonal:
+            let titleFont = hudDisplayFont(size: 17)
+            let subtitleFont = NSFont.systemFont(ofSize: 12, weight: .regular)
+            let viSubtitle = "\(typingMethod.rawValue) · \(newStyleTonePlacement ? "Kiểu mới" : "Kiểu cũ")"
+            let enSubtitle = "vkey tạm tắt"
+            let textColumnWidth = max(
+                measureText("Tiếng Việt", font: titleFont).width,
+                measureText("English", font: titleFont).width,
+                measureText(viSubtitle, font: subtitleFont).width,
+                measureText(enSubtitle, font: subtitleFont).width
+            )
+            let flagWidth: CGFloat = 48
+            let spacing: CGFloat = 14
+            let innerWidth = flagWidth + spacing + textColumnWidth
+                + (keycapRowWidth > 0 ? spacing + keycapRowWidth : 0)
+            let titleHeight = measureText("Tiếng Việt", font: titleFont).height
+            let subtitleHeight = measureText(viSubtitle, font: subtitleFont).height
+            let innerHeight = max(36, titleHeight + 4 + subtitleHeight)
+            return CGSize(
+                width: ceil(innerWidth + 48),
+                height: ceil(innerHeight + 36)
+            )
+        }
+    }
+
+    private func applyPanelGeometry(contentSize: CGSize, panel: NSPanel) {
+        let margin = HUDMetrics.shadowMargin
+        let windowSize = CGSize(
+            width: contentSize.width + margin * 2,
+            height: contentSize.height + margin * 2
+        )
+        panel.setContentSize(windowSize)
+        hostingController?.view.setFrameSize(windowSize)
+
+        let screen = panel.screen ?? NSScreen.main ?? NSScreen.screens.first
+        guard let screen else { return }
+        let screenFrame = screen.visibleFrame
+        let x = screenFrame.midX - windowSize.width / 2
+        let y = screenFrame.midY - windowSize.height / 2 - 120
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    nonisolated private static func hotkeyGlyphs(from raw: Int) -> [String] {
+        guard raw != 0 else { return [] }
+        return formatModifierMask(raw).map { String($0) }
+    }
+
+    nonisolated private static func keycapRowWidth(glyphCount: Int) -> CGFloat {
+        guard glyphCount > 0 else { return 0 }
+        let keycapUnit: CGFloat = 44 // minWidth 28 + horizontal padding 16
+        let spacing: CGFloat = 6
+        return CGFloat(glyphCount) * keycapUnit + CGFloat(glyphCount - 1) * spacing
+    }
+
+    nonisolated private static func hudDisplayFont(size: CGFloat) -> NSFont {
+        if let font = NSFont(name: "NotoSansDisplay-Bold", size: size)
+            ?? NSFont(name: "NotoSansDisplay", size: size) {
+            return font
+        }
+        return NSFont.systemFont(ofSize: size, weight: .bold)
+    }
+
+    nonisolated private static func measureText(_ text: String, font: NSFont) -> CGSize {
+        let attrs: [NSAttributedString.Key: Any] = [.font: font]
+        let rect = (text as NSString).boundingRect(
+            with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: attrs
+        )
+        return CGSize(width: ceil(rect.width), height: ceil(rect.height))
+    }
+
     private func createPanel() {
         // v2.4.0: đệm trong suốt quanh HUD để shadow không bị cắt vuông.
         let hudView = AnyView(
@@ -120,10 +209,21 @@ final class ToggleHUDWindow {
         controller.view.wantsLayer = true
         controller.view.layer?.backgroundColor = NSColor.clear.cgColor
 
-        let fittingSize = controller.view.fittingSize
+        let contentSize = Self.contentSize(
+            theme: Defaults[.uiTheme],
+            typingMethod: Defaults[.typingMethod],
+            newStyleTonePlacement: Defaults[.newStyleTonePlacement],
+            modifierHotkey: Defaults[.modifierOnlyToggleHotkey]
+        )
+        let margin = HUDMetrics.shadowMargin
+        let windowSize = CGSize(
+            width: contentSize.width + margin * 2,
+            height: contentSize.height + margin * 2
+        )
+        controller.view.setFrameSize(windowSize)
 
         let newPanel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: fittingSize.width, height: fittingSize.height),
+            contentRect: NSRect(x: 0, y: 0, width: windowSize.width, height: windowSize.height),
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
