@@ -122,8 +122,11 @@ public struct Focused {
     // Trần 25 cấp: vòng lặp luôn có cận trên để không treo trên cây bệnh/đệ quy.
     while let el = current, depth < 25 {
       guard let role: String = el.getAttribute(property: kAXRoleAttribute) else {
-        // Role không đọc được (AX timeout/lỗi) → không kết luận.
-        return .unknown
+        // Role không đọc được ở node này (AX timeout/lỗi) — leo parent thay vì
+        // bỏ cuộc sớm (sheet/dialog có thể nằm sâu hơn node lỗi).
+        current = el.getAttribute(property: kAXParentAttribute)
+        depth += 1
+        continue
       }
       if role == "AXWebArea" { return .webContent }
       if role == "AXSheet" { return .nativePanel }

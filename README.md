@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.12 — "Fix triệt để Source→Suorce + HUD cân giữa thật"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.13 — "Ổn định Chrome omnibox: sync focus + axDirect đầy đủ"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.13** — 🐛 **Ổn định gõ ở thanh địa chỉ Chrome và Window Title Rule.** Sync focus trước mỗi keystroke (hết race sau Cmd+L / click omnibox); `axDirect` áp cho mọi đường transform (Backspace, Escape, spell, macro, prediction); Window Title Rule không còn toggle VI/EN liên tục khi click/tab trong app. AX leo cây tốt hơn cho hộp Save. 244 test pass.
+>
 > **3.12** — 🐛 **Fix triệt để `Source`→`Suorce` + HUD cân giữa.** Bổ sung cho 3.11: prefix `sou`/`Sou` không còn bị swap thành `Suo` giữa chừng (nguyên nhân `Suorce` trên màn hình thật dù test từ đủ ký tự đã pass); thêm guard prefix từ tiếng Anh + instant-restore `source`/`you`/`count`… HUD VI/EN đo kích thước thủ công (`max` cả hai nhãn) thay vì `fittingSize` bất đồng bộ — toggle luôn căn giữa. Path VN `bou→buo` vẫn đầy đủ. 244 test pass.
 >
 > **3.11** — 🐛 **Gõ chuẩn từ tiếng Anh + HUD cân giữa.** Hết lỗi từ tiếng Anh có `ou`/`ei` bị tự "sửa lỗi gõ nhầm" ở chế độ tiếng Việt (`source` → `suorce`, `count` → `cuont`, `their` → `thier`…) — trước đây phải chuyển sang tiếng Anh mới gõ được. Nay luật hoán đổi nguyên âm chỉ áp khi tạo ra âm tiết tiếng Việt hợp lệ (không còn ký tự rác); các đường gõ nhầm tiếng Việt (`bou→buo`, `veit→viet`, `haoi→hoai`) vẫn đầy đủ. Đồng thời HUD VI/EN không còn lệch phải khi đổi trạng thái — luôn cân giữa màn hình. Toàn bộ 244 test pass.

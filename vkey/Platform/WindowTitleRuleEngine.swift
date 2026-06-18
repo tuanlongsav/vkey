@@ -17,7 +17,7 @@ import Foundation
 
 /// Resolved overrides cho 1 context hiện tại. Default (no rule match) là
 /// `init()` — không override gì.
-struct ResolvedRuleOverrides {
+struct ResolvedRuleOverrides: Equatable {
   var disablePrediction = false
   var disableSpellCheck = false
   var flushDelayMs = 0

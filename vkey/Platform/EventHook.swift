@@ -468,6 +468,7 @@ func eventTapCallback(
   }
 
   if type == .keyDown && eventHook.processing {
+    eventHook.appState?.syncFocusedContextForKeystroke()
     return input.handleEvent(event: event)
   } else if type == .leftMouseDown || type == .rightMouseDown {
     input.newWord()

@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.13 — "Ổn định Chrome omnibox: sync focus + axDirect đầy đủ"</title>
+      <sparkle:version>31300</sparkle:version>
+      <sparkle:shortVersionString>3.13</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 18 Jun 2026 21:35:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.13/vkey-3.13.dmg"
+        sparkle:edSignature="EQXkzxJ6XlQ99yTQOiusC7jrFt17+TDryu5o2l09XK8cLwW6AY2NuiXyNeMK4XW+d91m9XLg6r7eNfP5+Eh9DQ=="
+        length="6335477"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.13 — Ổn định Chrome omnibox</h2>
+        <ul>
+          <li><b>Sync focus trước mỗi keystroke</b> — hết race sau Cmd+L / click thanh địa chỉ Chrome rồi gõ nhanh.</li>
+          <li><b>axDirect cho mọi transform</b> — Backspace, Escape, spell, macro, prediction đều dùng đúng chiến lược omnibox.</li>
+          <li><b>Window Title Rule ổn định</b> — không toggle VI/EN liên tục khi click/tab trong app.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 244 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.12 — "Fix triệt để Source→Suorce + HUD cân giữa thật"</title>
       <sparkle:version>31200</sparkle:version>
       <sparkle:shortVersionString>3.12</sparkle:shortVersionString>
