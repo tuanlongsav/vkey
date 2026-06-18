@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.10 — "Ổn định: race condition, backup đầy đủ, Window Title Rule"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.11 — "Gõ chuẩn từ tiếng Anh (source, their…) + HUD cân giữa"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.11** — 🐛 **Gõ chuẩn từ tiếng Anh + HUD cân giữa.** Hết lỗi từ tiếng Anh có `ou`/`ei` bị tự "sửa lỗi gõ nhầm" ở chế độ tiếng Việt (`source` → `suorce`, `count` → `cuont`, `their` → `thier`…) — trước đây phải chuyển sang tiếng Anh mới gõ được. Nay luật hoán đổi nguyên âm chỉ áp khi tạo ra âm tiết tiếng Việt hợp lệ (không còn ký tự rác); các đường gõ nhầm tiếng Việt (`bou→buo`, `veit→viet`, `haoi→hoai`) vẫn đầy đủ. Đồng thời HUD VI/EN không còn lệch phải khi đổi trạng thái — luôn cân giữa màn hình. Toàn bộ 244 test pass.
+>
 > **3.10** — 🛡️ **Đợt củng cố độ ổn định.** Sửa race condition ở Thống kê n-gram & từ điển Anh–Việt; áp dụng đầy đủ Window Title Rule (tái đánh giá khi đổi focus/tiêu đề, Smart Switch không ghi đè); backup/restore giữ thêm nhiều setting mới (phím tắt Text Tools, HUD prediction, theme, Window Title Rules, auto-capitalize, non-Latin IME, Free Mark Mode, CGEvent); Text Tools khôi phục clipboard cũ sau khi paste và không đè nếu bạn vừa copy thứ khác; sửa accept prediction bằng Tab. Toàn bộ test pass.
 >
 > **3.9** — 🐛 **Sửa triệt để lỗi gõ ở thanh địa chỉ Chrome.** Thủ phạm là tính năng **tự gợi ý (autocomplete) bôi đen text** của thanh địa chỉ — backspace xoá nhầm phần bôi đen nên lệch ký tự (NFC → thừa chữ `"truường"`, NFD → thiếu chữ `"truờng"`). Không phải bài toán NFC/NFD. Nay vkey định tuyến thanh địa chỉ qua chế độ **ghi thẳng Accessibility (axDirect)** — đọc nội dung thật rồi ghi đúng kết quả, bỏ qua cả autocomplete (cùng cơ chế đã ổn cho Spotlight). Web page, app native, hộp thoại lưu file vẫn nguyên. Toàn bộ test pass.

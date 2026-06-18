@@ -155,13 +155,18 @@ enum TiengVietParser {
       var reparsed = ThanhPhanTieng()
       reparsed.nguyenAm = [iChar, eChar]
       reparsed = finishParsing(result: &reparsed, remaining: tail)
-      result.nguyenAm = reparsed.nguyenAm
-      result.phuAmCuoi = reparsed.phuAmCuoi
-      result.conLai = reparsed.conLai
-      // chuaNguyenAmUO recomputed by finishParsing against NguyenAmUO table —
-      // never hardcode here, otherwise new vowel patterns added to that table
-      // would not propagate through typo recovery.
-      result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
+      // FIX (loanword): chỉ swap khi reparse tiêu hoá HẾT (conLai rỗng) — nếu
+      // còn rác phía sau thì là từ tiếng Anh, giữ nguyên (vd "their" → "thie"+
+      // "r" ⇒ KHÔNG thành "thier"). "veit" → "ie"+"t" (rỗng) vẫn fire.
+      if reparsed.conLai.isEmpty {
+        result.nguyenAm = reparsed.nguyenAm
+        result.phuAmCuoi = reparsed.phuAmCuoi
+        result.conLai = reparsed.conLai
+        // chuaNguyenAmUO recomputed by finishParsing against NguyenAmUO table —
+        // never hardcode here, otherwise new vowel patterns added to that table
+        // would not propagate through typo recovery.
+        result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
+      }
     }
 
     // "bous" -> "buos" (to become "buốt" when tone/diacritics applied)
@@ -184,10 +189,18 @@ enum TiengVietParser {
       var reparsed = ThanhPhanTieng()
       reparsed.nguyenAm = [uChar, oChar]
       reparsed = finishParsing(result: &reparsed, remaining: tail)
-      result.nguyenAm = reparsed.nguyenAm
-      result.phuAmCuoi = reparsed.phuAmCuoi
-      result.conLai = reparsed.conLai
-      result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
+      // FIX (loanword "source" → "suorce"): chỉ áp swap khi sau khi reparse
+      // KHÔNG còn rác (conLai rỗng) — tức "uo" + (phụ âm cuối hợp lệ | hết chữ).
+      // Nếu vẫn còn ký tự thừa thì đây là từ tiếng Anh, KHÔNG phải gõ nhầm
+      // tiếng Việt → giữ nguyên thay vì phá:
+      //   "source" → "suo"+"rce", "count" → "cuo"+"n"+"t", "your" → "yuo"+"r".
+      // ("bou" → "uo" và "sout" → "suot" vẫn fire vì conLai rỗng.)
+      if reparsed.conLai.isEmpty {
+        result.nguyenAm = reparsed.nguyenAm
+        result.phuAmCuoi = reparsed.phuAmCuoi
+        result.conLai = reparsed.conLai
+        result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
+      }
     }
 
     // "haois" -> "hoais" (to become "hoái")
@@ -208,10 +221,15 @@ enum TiengVietParser {
       var reparsed = ThanhPhanTieng()
       reparsed.nguyenAm = [oChar, aChar, iChar]
       reparsed = finishParsing(result: &reparsed, remaining: tail)
-      result.nguyenAm = reparsed.nguyenAm
-      result.phuAmCuoi = reparsed.phuAmCuoi
-      result.conLai = reparsed.conLai
-      result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
+      // FIX (loanword): chỉ swap khi reparse tiêu hoá HẾT (conLai rỗng) — nếu
+      // còn rác phía sau thì là từ tiếng Anh, giữ nguyên. "haoi" → "oai" (rỗng)
+      // vẫn fire.
+      if reparsed.conLai.isEmpty {
+        result.nguyenAm = reparsed.nguyenAm
+        result.phuAmCuoi = reparsed.phuAmCuoi
+        result.conLai = reparsed.conLai
+        result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
+      }
     }
 
     // "haoc" -> "hoac" (to become "hoác").

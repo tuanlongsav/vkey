@@ -3499,6 +3499,35 @@ final class VowelTypoFinalConsonantTests: XCTestCase {
   func testVeitStillWorks() throws {
     XCTAssertEqual(telex("vieetj"), "việt")
   }
+
+  // FIX (loanword "source"→"suorce"): từ tiếng Anh có "ou" + đuôi rác KHÔNG
+  // được swap thành "uo" khi gõ ở chế độ tiếng Việt. Trước fix: "source" →
+  // "suorce" (phải chuyển EN mới gõ được). Sau fix: giữ nguyên.
+  func testEnglishOuWordsNotMangled() throws {
+    XCTAssertEqual(telex("source"), "source", "ou + 'rce' rác → KHÔNG thành 'suorce'")
+    XCTAssertEqual(telex("Source"), "Source")
+    XCTAssertEqual(telex("count"), "count", "ou + n(cuối) + 't' rác → giữ nguyên")
+    XCTAssertEqual(telex("double"), "double")
+  }
+
+  // FIX: cùng guard conLai.isEmpty áp cho luật "ei→ie" và "aoi→oai".
+  // Dùng parse() để kiểm tra cấu trúc, độc lập với xử lý dấu thanh.
+  func testEiAndAoiLoanwordsNotMangled() throws {
+    // "their": e + leftover "ir" → KHÔNG swap thành "ie" (còn 'r' rác).
+    let their = TiengVietParser.parse(Array("their"))
+    XCTAssertEqual(String(their.nguyenAm), "e", "their giữ 'e', không swap 'ie'")
+    XCTAssertEqual(String(their.conLai), "ir")
+    // "veil": e + "il" → KHÔNG swap (còn 'l').
+    let veil = TiengVietParser.parse(Array("veil"))
+    XCTAssertEqual(String(veil.nguyenAm), "e", "veil giữ 'e', không swap 'viel'")
+    // Regression: "veit" vẫn swap (conLai rỗng) → "ie" + "t".
+    let veit = TiengVietParser.parse(Array("veit"))
+    XCTAssertEqual(String(veit.nguyenAm), "ie")
+    XCTAssertEqual(String(veit.phuAmCuoi), "t")
+    // Regression: "haoi" vẫn swap → "oai".
+    let haoi = TiengVietParser.parse(Array("haoi"))
+    XCTAssertEqual(String(haoi.nguyenAm), "oai")
+  }
 }
 
 // MARK: - ===========================================

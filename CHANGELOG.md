@@ -2,6 +2,19 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.11] - 2026-06-18 — "Gõ chuẩn từ tiếng Anh (source, their…) + HUD cân giữa"
+
+**Hết lỗi gõ từ tiếng Anh bị tự sửa nhầm ở chế độ tiếng Việt (vd `source` → `suorce`), và HUD VI/EN cân giữa màn hình khi đổi trạng thái.**
+
+### 🐛 Sửa lỗi
+
+- **Từ tiếng Anh không còn bị "sửa lỗi gõ nhầm" phá hỏng.** Luật auto-correct hoán đổi nguyên âm (`ou→uo`, `ei→ie`, `aoi→oai`) trước đây áp **vô điều kiện**, biến `source` → `suorce`, `count` → `cuont`, `their` → `thier`… nên phải chuyển sang tiếng Anh mới gõ được. Nay chỉ áp khi phần sau **tiêu hoá hết** thành âm tiết tiếng Việt hợp lệ (`conLai` rỗng); còn ký tự rác phía sau ⇒ là từ ngoại lai ⇒ giữ nguyên. Các đường gõ nhầm tiếng Việt (`bou→buo`, `veit→viet`, `haoi→hoai`, `sout→suot`) vẫn hoạt động đầy đủ.
+- **HUD VI/EN cân giữa màn hình.** Khi đổi trạng thái Tiếng Việt ↔ English, HUD bị lệch sang phải do đo `fittingSize` trước khi SwiftUI layout lại theo nội dung mới. Nay ép layout lại trước khi đo nên panel luôn căn giữa đúng cho cả hai chiều.
+
+### 🧪 Tests
+
+- Thêm `testEnglishOuWordsNotMangled` (source/Source/count/double) và `testEiAndAoiLoanwordsNotMangled` (their/veil + regression veit/haoi). Toàn bộ **244 test pass**.
+
 ## [3.10] - 2026-06-18 — "Ổn định: race condition, backup đầy đủ, Window Title Rule"
 
 **Đợt củng cố độ ổn định: sửa race condition, áp dụng đầy đủ Window Title Rule, backup/restore giữ thêm các setting mới, và Text Tools không còn ghi đè clipboard của bạn.**

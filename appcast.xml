@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.11 — "Gõ chuẩn từ tiếng Anh (source, their…) + HUD cân giữa"</title>
+      <sparkle:version>31100</sparkle:version>
+      <sparkle:shortVersionString>3.11</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 18 Jun 2026 12:01:02 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.11/vkey-3.11.dmg"
+        sparkle:edSignature="WVoTmXpOBlGGswRfkJS8YfIIaVvfg9aZgY4T2/eeg3gwKwwSjTLo73B8Rb62YwgCnjJByeScfxKmTS2xA3IyCw=="
+        length="6328695"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.11 — Gõ chuẩn từ tiếng Anh + HUD cân giữa</h2>
+        <ul>
+          <li><b>Hết lỗi "source" → "suorce".</b> Gõ từ tiếng Anh có <code>ou</code>/<code>ei</code> ở chế độ tiếng Việt không còn bị tự sửa nhầm: <code>source</code>, <code>count</code>, <code>double</code>, <code>their</code>… giữ nguyên (trước đây phải chuyển sang tiếng Anh mới gõ được). Luật sửa-lỗi-gõ-nhầm tiếng Việt (<code>bou→buo</code>, <code>veit→viet</code>, <code>haoi→hoai</code>) vẫn hoạt động đầy đủ.</li>
+          <li><b>HUD VI/EN cân giữa màn hình.</b> Khi đổi trạng thái Tiếng Việt ↔ English, viên HUD không còn bị lệch sang phải.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 244 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.10 — "Ổn định: race condition, backup đầy đủ, Window Title Rule"</title>
       <sparkle:version>31000</sparkle:version>
       <sparkle:shortVersionString>3.10</sparkle:shortVersionString>

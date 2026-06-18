@@ -53,7 +53,15 @@ final class ToggleHUDWindow {
 
         // Kích thước panel = content + đệm shadow (đã nằm trong fittingSize
         // nhờ .padding(HUDMetrics.shadowMargin) ở rootView).
+        //
+        // viewModel.isEnabled vừa đổi ở trên là @Published → SwiftUI cập nhật
+        // BẤT ĐỒNG BỘ. Nếu đo fittingSize ngay lúc này, nó có thể vẫn là bề
+        // rộng của TRẠNG THÁI CŨ ("English" hẹp hơn "Tiếng Việt"). Panel bị
+        // set sai size rồi căn giữa theo size cũ → HUD lệch tâm khi toggle
+        // VI/EN. Ép hosting view layout lại NGAY với nội dung mới trước khi đo.
         if let hostingController = hostingController {
+            hostingController.view.needsLayout = true
+            hostingController.view.layoutSubtreeIfNeeded()
             let fittingSize = hostingController.view.fittingSize
             panel.setContentSize(fittingSize)
         }
