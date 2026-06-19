@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.16 — "Lịch sử clipboard tùy chỉnh"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.17 — "Sửa lỗi lịch sử clipboard"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.17** — 🐛 **Sửa lỗi lịch sử clipboard.** ⌥⇧⌘V (Paste and Match Style) không còn bị chặn; ⌘C sau dán từ lịch sử/Text Tools không bị bỏ qua; capture poll chậm hơn cho app Electron; dedup theo nội dung thật; menu đủ capacity; tắt setting xóa RAM; giới hạn 2MB/mục; backup gồm setting clipboard.
+>
 > **3.16** — 📋 **Lịch sử clipboard tùy chỉnh (tắt mặc định).** ⌘C lưu vào danh sách RAM; ⌥⌘V mở menu chọn mục để dán; ⌘V và ⇧⌘V dán bình thường như macOS. Cài đặt số mục (3–50) và chế độ chỉ văn bản / văn bản + tệp. 253 test pass.
 >
 > **3.15** — 💡 **HUD đoán từ căn giữa phía trên ô nhập** — hết lỗi pill `→ … · Tab` nhảy góc trên-phải màn hình khi app không trả caret (Electron/Claude); setting khoảng cách 1–20 dòng hoạt động cả khi fallback AX. 🧠 **Đoán từ theo cụm tiếng Việt có nghĩa** — thống kê chỉ ghi cụm hợp lệ; prediction thêm layer cụm nhúng sẵn + học từ phrase stats (vd `kính gửi` → `anh`). 249 test pass.

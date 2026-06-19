@@ -2169,6 +2169,43 @@ final class ClipboardHistoryTests: XCTestCase {
     ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
     XCTAssertEqual(ClipboardHistoryService.shared.entries.count, 1)
   }
+
+  func testDifferentContentWithSamePreviewCreatesTwoEntries() {
+    Defaults[.clipboardHistoryEnabled] = true
+    let pb = NSPasteboard.general
+    pb.clearContents()
+    pb.setString("hello", forType: .string)
+    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
+    pb.clearContents()
+    let item = NSPasteboardItem()
+    item.setString("hello", forType: .string)
+    item.setString("extra", forType: NSPasteboard.PasteboardType("org.vkey.test-meta"))
+    pb.writeObjects([item])
+    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
+    XCTAssertEqual(ClipboardHistoryService.shared.entries.count, 2)
+  }
+
+  func testMarkInternalPasteboardWriteSkipsNextCapture() {
+    Defaults[.clipboardHistoryEnabled] = true
+    let pb = NSPasteboard.general
+    pb.clearContents()
+    pb.setString("internal", forType: .string)
+    let before = pb.changeCount
+    ClipboardHistoryService.shared.markInternalPasteboardWrite(pb)
+    ClipboardHistoryService.shared.captureIfPasteboardChanged(since: before)
+    XCTAssertTrue(ClipboardHistoryService.shared.entries.isEmpty)
+  }
+
+  func testFingerprintDiffersForDifferentStrings() {
+    let a = NSPasteboardItem()
+    a.setString("a", forType: .string)
+    let b = NSPasteboardItem()
+    b.setString("b", forType: .string)
+    XCTAssertNotEqual(
+      ClipboardHistoryService.fingerprint(for: [a]),
+      ClipboardHistoryService.fingerprint(for: [b])
+    )
+  }
 }
 
 // MARK: - ===========================================

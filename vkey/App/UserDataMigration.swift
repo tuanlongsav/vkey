@@ -108,6 +108,9 @@ struct UserDataExport: Codable {
   let freeMarkModeEnabled: Bool?
   let cgEventRaceHardeningEnabled: Bool?
   let cgEventFlushDelayMs: Int?
+  let clipboardHistoryEnabled: Bool?
+  let clipboardHistoryCapacity: Int?
+  let clipboardHistoryContentMode: String?
   let userBigrams: [String: [String: Int]]?
   let userTrigrams: [String: [String: Int]]?
   let statisticsEnabled: Bool?
@@ -142,6 +145,7 @@ struct UserDataExport: Codable {
     case quickConfigPreset, autoCapitalizeEnabled, nonLatinIMEAutoDisable
     case windowTitleRules, freeMarkModeEnabled, cgEventRaceHardeningEnabled
     case cgEventFlushDelayMs
+    case clipboardHistoryEnabled, clipboardHistoryCapacity, clipboardHistoryContentMode
     case userBigrams, userTrigrams, statisticsEnabled, autoBackupOnUpgrade
     case statistics
   }
@@ -181,6 +185,9 @@ struct UserDataExport: Codable {
     freeMarkModeEnabled: Bool? = nil,
     cgEventRaceHardeningEnabled: Bool? = nil,
     cgEventFlushDelayMs: Int? = nil,
+    clipboardHistoryEnabled: Bool? = nil,
+    clipboardHistoryCapacity: Int? = nil,
+    clipboardHistoryContentMode: String? = nil,
     userBigrams: [String: [String: Int]]? = nil,
     userTrigrams: [String: [String: Int]]? = nil,
     statisticsEnabled: Bool? = nil,
@@ -237,6 +244,9 @@ struct UserDataExport: Codable {
     self.freeMarkModeEnabled = freeMarkModeEnabled
     self.cgEventRaceHardeningEnabled = cgEventRaceHardeningEnabled
     self.cgEventFlushDelayMs = cgEventFlushDelayMs
+    self.clipboardHistoryEnabled = clipboardHistoryEnabled
+    self.clipboardHistoryCapacity = clipboardHistoryCapacity
+    self.clipboardHistoryContentMode = clipboardHistoryContentMode
     self.userBigrams = userBigrams
     self.userTrigrams = userTrigrams
     self.statisticsEnabled = statisticsEnabled
@@ -298,6 +308,9 @@ struct UserDataExport: Codable {
     self.freeMarkModeEnabled = try c.decodeIfPresent(Bool.self, forKey: .freeMarkModeEnabled)
     self.cgEventRaceHardeningEnabled = try c.decodeIfPresent(Bool.self, forKey: .cgEventRaceHardeningEnabled)
     self.cgEventFlushDelayMs = try c.decodeIfPresent(Int.self, forKey: .cgEventFlushDelayMs)
+    self.clipboardHistoryEnabled = try c.decodeIfPresent(Bool.self, forKey: .clipboardHistoryEnabled)
+    self.clipboardHistoryCapacity = try c.decodeIfPresent(Int.self, forKey: .clipboardHistoryCapacity)
+    self.clipboardHistoryContentMode = try c.decodeIfPresent(String.self, forKey: .clipboardHistoryContentMode)
     self.userBigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userBigrams)
     self.userTrigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userTrigrams)
     self.statisticsEnabled = try c.decodeIfPresent(Bool.self, forKey: .statisticsEnabled)
@@ -400,6 +413,9 @@ enum UserDataMigration {
       freeMarkModeEnabled: Defaults[.freeMarkModeEnabled],
       cgEventRaceHardeningEnabled: Defaults[.cgEventRaceHardeningEnabled],
       cgEventFlushDelayMs: Defaults[.cgEventFlushDelayMs],
+      clipboardHistoryEnabled: Defaults[.clipboardHistoryEnabled],
+      clipboardHistoryCapacity: Defaults[.clipboardHistoryCapacity],
+      clipboardHistoryContentMode: Defaults[.clipboardHistoryContentMode].rawValue,
       userBigrams: ngrams.bigrams,
       userTrigrams: ngrams.trigrams,
       statisticsEnabled: Defaults[.statisticsEnabled],
@@ -649,6 +665,17 @@ enum UserDataMigration {
                 label: "CGEvent race hardening")
     applyScalar(.cgEventFlushDelayMs, export.cgEventFlushDelayMs,
                 label: "CGEvent flush delay (ms)")
+    applyScalar(.clipboardHistoryEnabled, export.clipboardHistoryEnabled,
+                label: "Lịch sử clipboard")
+    applyScalar(.clipboardHistoryCapacity, export.clipboardHistoryCapacity,
+                label: "Số mục lịch sử clipboard")
+    if let mode = export.clipboardHistoryContentMode,
+       let parsed = ClipboardHistoryContentMode(rawValue: mode) {
+      if Defaults[.clipboardHistoryContentMode] != parsed {
+        Defaults[.clipboardHistoryContentMode] = parsed
+        changes.append("Chế độ lịch sử clipboard: \(mode)")
+      }
+    }
     applyScalar(.statisticsEnabled, export.statisticsEnabled,
                 label: "Bật thống kê")
     applyScalar(.autoBackupOnUpgrade, export.autoBackupOnUpgrade,

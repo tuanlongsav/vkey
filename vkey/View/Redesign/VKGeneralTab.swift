@@ -116,6 +116,9 @@ struct VKGeneralTab: View {
                       label: "Bật lịch sử clipboard",
                       hint: "⌘C lưu vào danh sách; ⌥⌘V chọn mục để dán. ⌘V và ⇧⌘V dán bình thường.",
                       isOn: $clipboardHistory)
+            .onChange(of: clipboardHistory) { _, enabled in
+              if !enabled { ClipboardHistoryService.shared.clear() }
+            }
           if clipboardHistory {
             VKRow(icon: "list.number", iconColor: VK.Color.info,
                   label: "Số mục lưu tối đa") {

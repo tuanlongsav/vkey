@@ -351,10 +351,10 @@ func eventTapCallback(
       && !mods.contains(.maskControl)
     if commandOnly, keyCode == 8 {
       let beforeCount = NSPasteboard.general.changeCount
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
-        ClipboardHistoryService.shared.captureIfPasteboardChanged(since: beforeCount)
+      DispatchQueue.main.async {
+        ClipboardHistoryService.shared.scheduleCaptureAfterCopy(since: beforeCount)
       }
-    } else if optionCommand, keyCode == 9 {
+    } else if optionCommand, !mods.contains(.maskShift), keyCode == 9 {
       DispatchQueue.main.async {
         ClipboardHistoryService.shared.showPickerAndPaste()
       }
