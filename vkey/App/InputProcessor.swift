@@ -656,9 +656,6 @@ struct TransformationTracker {
     // chữ trở lại. Telemetry "fail" ở đây thường là false positive (Spotlight
     // là search field → bị đánh dấu nhạy cảm).
     if case .axDirect = currentStrategy { return }
-    // v2.12: axDirect là strategy chuyên biệt (Spotlight) — không bao giờ
-    // auto-switch khỏi nó; fallback synthetic đã nằm trong chính axDirect.
-    if case .axDirect = currentStrategy { return }
 
     // Switch to step-by-step for this session
     #if DEBUG
@@ -850,12 +847,9 @@ class InputProcessor {
       return Unmanaged.passUnretained(event)
     }
 
-    // Detect if a paste operation occurred (pasteboard changed externally)
-    let currentPasteboardCount = NSPasteboard.general.changeCount
-    if currentPasteboardCount != lastPasteboardChangeCount {
-      lastPasteboardChangeCount = currentPasteboardCount
-      newWord()
-    }
+    // Cập nhật changeCount để theo dõi paste thực — không reset word khi
+    // clipboard đổi từ app khác (trước đây gây mất buffer giữa chừng).
+    lastPasteboardChangeCount = NSPasteboard.general.changeCount
 
     // Dispatch based on key type
     if let taskKey = keyLayout.mapTask(keyCode: keyCode) {

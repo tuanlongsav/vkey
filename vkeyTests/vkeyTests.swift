@@ -2026,6 +2026,55 @@ final class PredictionHUDWindowTests: XCTestCase {
     XCTAssertGreaterThan(largeSize.width, smallSize.width)
     XCTAssertGreaterThan(largeSize.height, smallSize.height)
   }
+
+  func testNormalizedCaretRectClampsWideLineBounds() {
+    let wide = CGRect(x: 100, y: 400, width: 900, height: 22)
+    let normalized = PredictionHUDWindow.normalizedCaretRect(wide)
+    XCTAssertLessThanOrEqual(normalized.width, 8)
+    XCTAssertGreaterThanOrEqual(normalized.maxX, wide.maxX - 4)
+  }
+
+  func testComputeVisualFramePlacesHUDAboveCaretNearScreenBottom() {
+    let contentSize = CGSize(width: 200, height: 36)
+    let caret = CGRect(x: 420, y: 820, width: 2, height: 20)
+    let screen = NSRect(x: 0, y: 0, width: 1440, height: 900)
+    guard let frame = PredictionHUDWindow.computeVisualFrame(
+      caretAX: caret,
+      contentSize: contentSize,
+      lineOffset: 4,
+      visibleFrame: screen,
+      primaryDisplayHeight: 900
+    ) else {
+      return XCTFail("expected a frame")
+    }
+
+    let caretTopCocoa = 900 - caret.minY
+    let caretBottomCocoa = 900 - caret.maxY
+    let hudTop = frame.origin.y + frame.height
+    XCTAssertFalse(frame.origin.y < caretTopCocoa && hudTop > caretBottomCocoa)
+    XCTAssertGreaterThanOrEqual(frame.origin.y, caretTopCocoa + 8)
+  }
+
+  func testComputeVisualFrameAvoidsBelowCaretForChatInputAtBottom() {
+    let contentSize = CGSize(width: 200, height: 36)
+    let caret = CGRect(x: 420, y: 820, width: 2, height: 20)
+    let screen = NSRect(x: 0, y: 0, width: 1440, height: 900)
+    guard let frame = PredictionHUDWindow.computeVisualFrame(
+      caretAX: caret,
+      contentSize: contentSize,
+      lineOffset: 4,
+      visibleFrame: screen,
+      primaryDisplayHeight: 900
+    ) else {
+      return XCTFail("expected a frame")
+    }
+
+    let caretTopCocoa = 900 - caret.minY
+    let caretBottomCocoa = 900 - caret.maxY
+    // Không đặt HUD dưới dòng đang gõ (bug cũ khi thiếu chỗ phía trên).
+    XCTAssertGreaterThanOrEqual(frame.origin.y + frame.height, caretBottomCocoa + 4)
+    XCTAssertGreaterThanOrEqual(frame.origin.y, caretTopCocoa + 4)
+  }
 }
 
 // MARK: - ===========================================

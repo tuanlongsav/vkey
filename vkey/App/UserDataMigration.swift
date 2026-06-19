@@ -799,7 +799,7 @@ enum UserDataMigration {
       // not silently advanced if they cancelled / errored out.
       Defaults[.currentVersion] = running
     }
-    return true
+    return false
   }
 
   // MARK: - Helpers

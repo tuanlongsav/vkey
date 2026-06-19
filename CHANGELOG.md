@@ -2,6 +2,20 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.13] - 2026-06-19 — "HUD gợi ý không che vùng gõ + ổn định Text Tools"
+
+**HUD đoán từ không còn chèn đè lên dòng đang gõ (Claude desktop, chat app ở đáy màn hình). Kèm vá Text Tools và pasteboard.**
+
+### 🐛 Sửa lỗi
+
+- **HUD gợi ý từ (prediction) không che vùng gõ.** Trước đây khi thiếu chỗ phía trên, HUD bị đặt *dưới* caret → che chữ đang gõ (đặc biệt ô chat Electron/Claude). Nay ưu tiên phía trên / bên phải caret; bỏ placement dưới caret; không dùng bounds cả ô text làm vị trí caret; chuẩn hoá caret khi AX trả bounds cả dòng.
+- **Text Tools không block UI.** Chờ clipboard dùng poll async thay vì vòng `RunLoop` trên main thread (tránh treo menu bar / event tap timeout).
+- **Pasteboard ngoại lai không reset buffer gõ.** Clipboard đổi từ app khác không còn xoá từ đang gõ giữa chừng (Cmd+V vẫn reset qua modifier như cũ).
+
+### 🧪 Tests
+
+- Thêm test placement HUD (`computeVisualFrame`, `normalizedCaretRect`). Toàn bộ test pass.
+
 ## [3.12] - 2026-06-18 — "Fix triệt để Source→Suorce + HUD cân giữa thật"
 
 **Bổ sung fix cho 3.11: hết lỗi `Sou`/`sou` thành `Suo`/`Suorce` khi gõ giữa chừng, và HUD VI/EN căn giữa ổn định khi toggle.**

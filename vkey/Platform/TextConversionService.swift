@@ -90,38 +90,60 @@ final class TextConversionService {
     let originalChangeCount = pasteboard.changeCount
     let previousPasteboardItems = Self.snapshotPasteboard(pasteboard)
 
-    // 1. Send Cmd+C để copy selection vào clipboard.
     sendCmdC()
 
-    // 2. Đợi clipboard cập nhật (max 0.5s).
-    let deadline = Date().addingTimeInterval(0.5)
-    while pasteboard.changeCount == originalChangeCount && Date() < deadline {
-      RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.01))
-    }
-    guard pasteboard.changeCount != originalChangeCount,
-          let original = pasteboard.string(forType: .string),
-          !original.isEmpty
-    else {
-      Self.restorePasteboard(pasteboard, items: previousPasteboardItems)
-      NSSound.beep()
-      return
-    }
+    waitForPasteboardUpdate(
+      pasteboard: pasteboard,
+      originalChangeCount: originalChangeCount,
+      deadline: Date().addingTimeInterval(0.5)
+    ) { [weak self] original in
+      guard let self else { return }
+      guard let original, !original.isEmpty else {
+        Self.restorePasteboard(pasteboard, items: previousPasteboardItems)
+        NSSound.beep()
+        return
+      }
 
-    // 3. Apply transform.
-    let transformed = transform(original, operation: operation)
+      let transformed = self.transform(original, operation: operation)
+      pasteboard.clearContents()
+      pasteboard.setString(transformed, forType: .string)
+      let transformedChangeCount = pasteboard.changeCount
 
-    // 4. Set lại clipboard và paste.
-    pasteboard.clearContents()
-    pasteboard.setString(transformed, forType: .string)
-    let transformedChangeCount = pasteboard.changeCount
-
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-      Self.sendCmdV()
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-        if pasteboard.changeCount == transformedChangeCount {
-          Self.restorePasteboard(pasteboard, items: previousPasteboardItems)
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        Self.sendCmdV()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+          if pasteboard.changeCount == transformedChangeCount {
+            Self.restorePasteboard(pasteboard, items: previousPasteboardItems)
+          }
         }
       }
+    }
+  }
+
+  /// Poll clipboard không block main run loop (tránh treo UI / event tap timeout).
+  private func waitForPasteboardUpdate(
+    pasteboard: NSPasteboard,
+    originalChangeCount: Int,
+    deadline: Date,
+    completion: @escaping (String?) -> Void
+  ) {
+    if pasteboard.changeCount != originalChangeCount,
+       let original = pasteboard.string(forType: .string),
+       !original.isEmpty {
+      completion(original)
+      return
+    }
+    if Date() >= deadline {
+      completion(nil)
+      return
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in
+      self?.waitForPasteboardUpdate(
+        pasteboard: pasteboard,
+        originalChangeCount: originalChangeCount,
+        deadline: deadline,
+        completion: completion
+      )
     }
   }
 
