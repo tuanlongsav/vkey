@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.15 — "HUD đoán từ căn giữa + gợi ý theo cụm"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.16 — "Lịch sử clipboard tùy chỉnh"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.16** — 📋 **Lịch sử clipboard tùy chỉnh (tắt mặc định).** ⌘C lưu vào danh sách RAM; ⌥⌘V mở menu chọn mục để dán; ⌘V và ⇧⌘V dán bình thường như macOS. Cài đặt số mục (3–50) và chế độ chỉ văn bản / văn bản + tệp. 253 test pass.
+>
 > **3.15** — 💡 **HUD đoán từ căn giữa phía trên ô nhập** — hết lỗi pill `→ … · Tab` nhảy góc trên-phải màn hình khi app không trả caret (Electron/Claude); setting khoảng cách 1–20 dòng hoạt động cả khi fallback AX. 🧠 **Đoán từ theo cụm tiếng Việt có nghĩa** — thống kê chỉ ghi cụm hợp lệ; prediction thêm layer cụm nhúng sẵn + học từ phrase stats (vd `kính gửi` → `anh`). 249 test pass.
 >
 > **3.14** — 💡 **HUD gợi ý từ không che vùng gõ.** Hết lỗi pill `→ … · Tab` chèn đè lên dòng đang gõ khi ô chat ở đáy màn hình (Claude desktop, Electron) — bỏ placement dưới caret, ưu tiên phía trên/bên phải, không dùng bounds cả ô text làm vị trí caret. 🔧 **Text Tools** chờ clipboard async (không block UI). 📋 Pasteboard đổi từ app khác không còn xoá từ đang gõ giữa chừng. 247 test pass.
@@ -178,6 +180,7 @@ Tất cả benchmark hiện tại **dưới ngưỡng** an toàn — engine Swif
 - ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, đúng API v1.7.6+, rộng hơn v1.8.4+)**: dùng SwiftUI `.windowResizability(.contentMinSize)` cho phép drag góc/cạnh tự do; kích thước được nhớ qua `setFrameAutosaveName` giữa các lần mở. **v1.7.8** default opening 432×648 + tab labels gốc + font `.system(size: 10)` cho tab bar compact. **v1.8.4** width 432→**540** để fit nút "Chạy compute đề xuất ngay" trong tab Thống kê. User vẫn resize lên rộng tuỳ ý.
 - ✅ **3 giao diện ứng dụng (v1.5.5+, hoàn thiện v1.8.2+)**: chọn ở menu bar → "Giao diện ứng dụng": **Mặc định** (SF Symbol đơn giản), **3D bóng bẩy** (gradient + double shadow), **Emoji vui tươi** (Unicode emoji icons). **v1.8.2** rà soát toàn bộ View files + menu bar state icons + HUD icons sang dùng `ThemedSymbol` → theme apply consistent 100% (trước còn 6 file dùng `Image(systemName:)` không apply theme).
 - ✅ **Diagnostic export Stats (v1.6.1+)**: nút "Xuất chẩn đoán Stats" trong tab Thống kê → ghi file text mô tả tình trạng files + counters → gửi maintainer khi báo lỗi.
+- ✅ **Lịch sử clipboard tùy chỉnh (v3.16+, tắt mặc định)**: ⌘C lưu snapshot vào RAM (phiên làm việc); ⌥⌘V mở menu chọn mục → dán; ⌘V / ⇧⌘V dán clipboard hệ thống như macOS. Cài đặt số mục (3–50) và chế độ chỉ văn bản / văn bản + tệp trong tab Chung.
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
 
 ## Hình ảnh minh hoạ
@@ -258,6 +261,7 @@ Click icon cờ trên menu bar để mở các tác vụ nhanh.
 | Kiểu đặt dấu | **Kiểu mới** (thuỷ, khoẻ, hoà, uý) ⟷ **Kiểu cũ** (thủy, khỏe, hòa, úy) |
 | Phím tắt | Bấm vào nút → nhập tổ hợp (`⌃⇧Z`) hoặc nhấn-thả modifier (`⌃⇧`) để dùng modifier-only. Backspace để xoá phím tắt, Esc để huỷ |
 | Đoán từ tiếp theo (v1.6.1+, default OFF) | Bật để vkey hiển thị HUD dự đoán cạnh caret sau khi gõ xong 1 từ. **Tab** để chấp nhận, phím khác bỏ qua. Ưu tiên gợi ý từ trong từ điển gốc + từ điển cá nhân |
+| Lịch sử clipboard (v3.16+, tắt mặc định) | ⌘C lưu vào danh sách; ⌥⌘V chọn mục để dán. ⌘V / ⇧⌘V dán bình thường. Số mục 3–50; chỉ văn bản hoặc văn bản + tệp |
 
 ### Cài đặt → tab **Smart Switch**
 

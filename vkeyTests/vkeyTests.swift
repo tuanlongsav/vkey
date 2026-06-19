@@ -2115,6 +2115,62 @@ final class PredictionHUDWindowTests: XCTestCase {
   }
 }
 
+// MARK: - Clipboard history
+
+@MainActor
+final class ClipboardHistoryTests: XCTestCase {
+
+  override func setUp() {
+    super.setUp()
+    Defaults.reset(.clipboardHistoryEnabled)
+    Defaults.reset(.clipboardHistoryCapacity)
+    Defaults.reset(.clipboardHistoryContentMode)
+    ClipboardHistoryService.shared.clear()
+  }
+
+  func testPreviewTextTruncatesLongString() {
+    let long = String(repeating: "a", count: 100)
+    let preview = ClipboardHistoryService.previewText(long)
+    XCTAssertEqual(preview.count, 70)
+    XCTAssertTrue(preview.hasSuffix("…"))
+  }
+
+  func testBuildSnapshotTextOnlySkipsEmpty() {
+    let pb = NSPasteboard.general
+    pb.clearContents()
+    XCTAssertNil(ClipboardHistoryService.buildSnapshot(from: pb, mode: .textOnly))
+    pb.setString("xin chào", forType: .string)
+    let snap = ClipboardHistoryService.buildSnapshot(from: pb, mode: .textOnly)
+    XCTAssertNotNil(snap)
+    XCTAssertEqual(snap?.preview, "xin chào")
+    XCTAssertFalse(snap?.isFileEntry ?? true)
+  }
+
+  func testCaptureRespectsCapacity() {
+    Defaults[.clipboardHistoryEnabled] = true
+    Defaults[.clipboardHistoryCapacity] = 3
+    let pb = NSPasteboard.general
+    for i in 1...5 {
+      pb.clearContents()
+      pb.setString("item \(i)", forType: .string)
+      ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
+    }
+    XCTAssertEqual(ClipboardHistoryService.shared.entries.count, 3)
+    XCTAssertEqual(ClipboardHistoryService.shared.entries.first?.preview, "item 5")
+    XCTAssertEqual(ClipboardHistoryService.shared.entries.last?.preview, "item 3")
+  }
+
+  func testDedupSkipsIdenticalConsecutiveCapture() {
+    Defaults[.clipboardHistoryEnabled] = true
+    let pb = NSPasteboard.general
+    pb.clearContents()
+    pb.setString("same", forType: .string)
+    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
+    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
+    XCTAssertEqual(ClipboardHistoryService.shared.entries.count, 1)
+  }
+}
+
 // MARK: - ===========================================
 // MARK: - TiengVietValidator Rule Tests
 // MARK: - ===========================================

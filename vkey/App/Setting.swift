@@ -628,6 +628,18 @@ extension Defaults.Keys {
   /// nhạy cảm. Map theo bundle ID trong Window Title Rules; key này
   /// là default fallback.
   static let cgEventFlushDelayMs = Key<Int>("cgevent-flush-delay-ms", default: 0)
+
+  /// Bật lịch sử clipboard: ⌘C lưu; ⌥⌘V mở menu chọn (⌘V / ⇧⌘V = dán thường).
+  static let clipboardHistoryEnabled = Key<Bool>("clipboard-history-enabled", default: false)
+
+  /// Số mục clipboard tối đa giữ trong RAM (3–50).
+  static let clipboardHistoryCapacity = Key<Int>("clipboard-history-capacity", default: 10)
+
+  /// Chỉ văn bản hoặc cả tệp (file URL) khi lưu lịch sử.
+  static let clipboardHistoryContentMode = Key<ClipboardHistoryContentMode>(
+    "clipboard-history-content-mode",
+    default: .textOnly
+  )
 }
 
 // MARK: - 2.0 — Window Title Rule types

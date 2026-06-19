@@ -90,6 +90,7 @@ final class TextConversionService {
     let originalChangeCount = pasteboard.changeCount
     let previousPasteboardItems = Self.snapshotPasteboard(pasteboard)
 
+    ClipboardHistoryService.shared.suppressNextCapture = true
     sendCmdC()
 
     waitForPasteboardUpdate(
@@ -112,6 +113,7 @@ final class TextConversionService {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
         Self.sendCmdV()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+          ClipboardHistoryService.shared.suppressNextCapture = true
           if pasteboard.changeCount == transformedChangeCount {
             Self.restorePasteboard(pasteboard, items: previousPasteboardItems)
           }

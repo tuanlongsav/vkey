@@ -17,6 +17,9 @@ struct VKGeneralTab: View {
   @Default(.hudEnabled) private var hudEnabled
   @Default(.freeMarkModeEnabled) private var freeMark
   @Default(.newStyleTonePlacement) private var newStyleTone
+  @Default(.clipboardHistoryEnabled) private var clipboardHistory
+  @Default(.clipboardHistoryCapacity) private var clipboardCapacity
+  @Default(.clipboardHistoryContentMode) private var clipboardContentMode
 
   private var methodBinding: Binding<TypingMethods> {
     Binding(get: { appState.typingMethod }, set: { appState.setTypingMethod(method: $0) })
@@ -105,6 +108,49 @@ struct VKGeneralTab: View {
         }
         VKGroupHint("Nhấn & thả tổ hợp modifier (vd ⌃⇧, ⇧⌥) để chuyển nhanh giữa tiếng Việt và tiếng Anh.")
       }
+
+      // MARK: Clipboard tùy chỉnh
+      VKSection("Clipboard tùy chỉnh") {
+        VKRowGroup {
+          VKToggleRow(icon: "doc.on.clipboard.fill", iconColor: VK.Color.brand,
+                      label: "Bật lịch sử clipboard",
+                      hint: "⌘C lưu vào danh sách; ⌥⌘V chọn mục để dán. ⌘V và ⇧⌘V dán bình thường.",
+                      isOn: $clipboardHistory)
+          if clipboardHistory {
+            VKRow(icon: "list.number", iconColor: VK.Color.info,
+                  label: "Số mục lưu tối đa") {
+              clipboardStepper(value: $clipboardCapacity, range: 3...50)
+            }
+            VKRow(icon: "tray.full.fill", iconColor: VK.Color.ink200,
+                  label: "Loại nội dung lưu") {
+              VKSegmented(
+                selection: $clipboardContentMode,
+                options: ClipboardHistoryContentMode.allCases.map { ($0, $0.label) }
+              )
+            }
+            VKRow(icon: "trash", iconColor: VK.Color.warning,
+                  label: "Xóa lịch sử hiện tại") {
+              VKButton(title: "Xóa", icon: "trash", variant: .secondary, size: .sm) {
+                ClipboardHistoryService.shared.clear()
+              }
+            }
+          }
+        }
+      }
     }
+  }
+
+  @ViewBuilder
+  private func clipboardStepper(value: Binding<Int>, range: ClosedRange<Int>) -> some View {
+    HStack(spacing: 8) {
+      Text("\(value.wrappedValue) mục")
+        .font(.system(size: 12.5, weight: .medium, design: .rounded))
+        .foregroundStyle(VK.Color.fg2)
+        .frame(minWidth: 52, alignment: .trailing)
+        .monospacedDigit()
+      Stepper("", value: value, in: range)
+        .labelsHidden()
+    }
+    .fixedSize()
   }
 }

@@ -339,6 +339,29 @@ func eventTapCallback(
     return Unmanaged.passUnretained(event)
   }
 
+  // ── Clipboard history: ⌘C lưu; ⌥⌘V mở menu chọn (⌘V / ⇧⌘V = dán thường) ──
+  if type == .keyDown, Defaults[.clipboardHistoryEnabled] {
+    let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+    let mods = event.flags
+    let commandOnly = mods.contains(.maskCommand)
+      && !mods.contains(.maskControl)
+      && !mods.contains(.maskAlternate)
+    let optionCommand = mods.contains(.maskCommand)
+      && mods.contains(.maskAlternate)
+      && !mods.contains(.maskControl)
+    if commandOnly, keyCode == 8 {
+      let beforeCount = NSPasteboard.general.changeCount
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+        ClipboardHistoryService.shared.captureIfPasteboardChanged(since: beforeCount)
+      }
+    } else if optionCommand, keyCode == 9 {
+      DispatchQueue.main.async {
+        ClipboardHistoryService.shared.showPickerAndPaste()
+      }
+      return nil
+    }
+  }
+
   // ── Modifier-only hotkey detection ────────────────────────────────────────
   // The user can configure pure-modifier combos (e.g. ⇧⌥ for Vi/En toggle,
   // ⌃⇧ for Text Tools menu). Carbon's RegisterEventHotKey can't bind to
