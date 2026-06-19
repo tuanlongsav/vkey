@@ -912,12 +912,11 @@ class InputProcessor {
         let (numBackspaces, diffChars) = usesNFC
           ? EventSimulator.calcKeyStrokes(from: currentTransformed, to: orig)
           : EventSimulator.calcKeyStrokesNFD(from: currentTransformed, to: orig)
-        let telemetry = EventSimulator.sendReplacement(
+        let telemetry = sendTypedReplacement(
           backspaceCount: numBackspaces,
           diffChars: diffChars,
-          strategy: strategyTracker.currentStrategy
+          appLikelySensitive: isFixAutocompleteApp()
         )
-        observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
         newWord()
         return nil // swallow ESC event
       }
@@ -925,12 +924,11 @@ class InputProcessor {
     } else if taskKey == .Delete {
       let (numBackspaces, diffChars) = pop()
       if numBackspaces > 0 || !diffChars.isEmpty {
-        let telemetry = EventSimulator.sendReplacement(
+        sendTypedReplacement(
           backspaceCount: numBackspaces,
           diffChars: diffChars,
-          strategy: strategyTracker.currentStrategy
+          appLikelySensitive: isFixAutocompleteApp()
         )
-        observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
         return nil
       }
     } else if InputProcessor.JumpTaskKeys.contains(taskKey) {
@@ -1005,16 +1003,11 @@ class InputProcessor {
       return Unmanaged.passUnretained(event)
     }
 
-    let strategy = effectiveTypingStrategy(
-      backspaceCount: numBackspaces,
-      diffCharCount: diffChars.count
-    )
-    let telemetry = EventSimulator.sendReplacement(
+    sendTypedReplacement(
       backspaceCount: numBackspaces,
       diffChars: diffChars,
-      strategy: strategy
+      appLikelySensitive: false
     )
-    observeTelemetry(telemetry, appLikelySensitive: false)
     return nil
   }
 
@@ -1029,12 +1022,11 @@ class InputProcessor {
     if wordBuffer.wordState.isBlank {
       // Caret đã ở sau space của commit trước. Chèn thẳng, không leading space.
       newWord(storePrevious: false)
-      let telemetry = EventSimulator.sendReplacement(
+      sendTypedReplacement(
         backspaceCount: 0,
         diffChars: Array(prediction),
-        strategy: strategyTracker.currentStrategy
+        appLikelySensitive: isFixAutocompleteApp()
       )
-      observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
       prev2Committed = prev1Committed
       prev1Committed = prediction.lowercased()
     } else {
@@ -1054,12 +1046,11 @@ class InputProcessor {
         prev2: prev2Committed,
         prev1: prev1Committed ?? ""
       ) ?? prediction
-      let telemetry = EventSimulator.sendReplacement(
+      sendTypedReplacement(
         backspaceCount: 0,
         diffChars: Array(recomputed),
-        strategy: strategyTracker.currentStrategy
+        appLikelySensitive: isFixAutocompleteApp()
       )
-      observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
       prev2Committed = prev1Committed
       prev1Committed = recomputed.lowercased()
     }
@@ -1120,6 +1111,26 @@ class InputProcessor {
     ) {
       strategyTracker.autoSwitchIfNeeded(activeApp: activeApp)
     }
+  }
+
+  /// Gửi replacement với chiến lược đúng ngữ cảnh (axDirect cho omnibox Chrome…).
+  @discardableResult
+  private func sendTypedReplacement(
+    backspaceCount: Int,
+    diffChars: [Character],
+    appLikelySensitive: Bool
+  ) -> EventSendTelemetry {
+    let strategy = effectiveTypingStrategy(
+      backspaceCount: backspaceCount,
+      diffCharCount: diffChars.count
+    )
+    let telemetry = EventSimulator.sendReplacement(
+      backspaceCount: backspaceCount,
+      diffChars: diffChars,
+      strategy: strategy
+    )
+    observeTelemetry(telemetry, appLikelySensitive: appLikelySensitive)
+    return telemetry
   }
 
   /// For tiny diffs (common during Telex tone mutation), force immediate batch sending
@@ -1322,12 +1333,11 @@ class InputProcessor {
       let (numBackspaces, diffChars) = usesNFC
         ? EventSimulator.calcKeyStrokes(from: current, to: target)
         : EventSimulator.calcKeyStrokesNFD(from: current, to: target)
-      let telemetry = EventSimulator.sendReplacement(
+      sendTypedReplacement(
         backspaceCount: numBackspaces,
         diffChars: diffChars,
-        strategy: strategyTracker.currentStrategy
+        appLikelySensitive: isFixAutocompleteApp()
       )
-      observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
       return true
     }
   }
@@ -1464,12 +1474,11 @@ class InputProcessor {
       return false
     }
 
-    let telemetry = EventSimulator.sendReplacement(
+    sendTypedReplacement(
       backspaceCount: replacement.backspaceCount,
       diffChars: replacement.diffChars,
-      strategy: strategyTracker.currentStrategy
+      appLikelySensitive: isFixAutocompleteApp()
     )
-    observeTelemetry(telemetry, appLikelySensitive: isFixAutocompleteApp())
     return true
   }
 }

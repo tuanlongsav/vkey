@@ -46,6 +46,8 @@ class AppState: ObservableObject, FileMonitorDelegate {
     public private(set) var activeRuleOverridesBundleId: String?
     private var ruleOverrideActive = false
     private var enabledBeforeRuleOverride = false
+    /// State VI/EN đã apply từ Window Title Rule — tránh toggle lại mỗi focus refresh.
+    private var appliedRuleOverrideState: AppSmartSwitchState?
 
     @Published public var enabled = false {
         didSet {
@@ -337,14 +339,34 @@ class AppState: ObservableObject, FileMonitorDelegate {
             }
             activeRuleOverrides = .init()
             activeRuleOverridesBundleId = nil
+            appliedRuleOverrideState = nil
             inputProcessor.ruleOverrides = .init()
             inputProcessor.updateAdaptiveFlushDelay()
+            refreshRuleOverrides(for: bid, invalidate: false)
+            _ = applyActiveRuleOverrideState()
         }
     }
 
-    private func refreshRuleOverrides(for appName: String) {
-        WindowTitleRuleEngine.shared.invalidateCache()
-        activeRuleOverrides = WindowTitleRuleEngine.shared.evaluate(bundleId: appName)
+    /// v3.13: snapshot AX đồng bộ ngay trước transform — `focusedFieldKind` async
+    /// không kịp sau Cmd+L / click omnibox rồi gõ nhanh.
+    public func syncFocusedContextForKeystroke() {
+        let snap = Focused.snapshot()
+        if let bid = snap.bundleId {
+            currentFocusedBundleId = bid
+        }
+        currentFocusedElementIsSearchOrCombo = snap.isComboOrSearch
+        currentFocusedFieldKind = snap.fieldKind
+    }
+
+    private func refreshRuleOverrides(for appName: String, invalidate: Bool = true) {
+        if invalidate {
+            WindowTitleRuleEngine.shared.invalidateCache()
+        }
+        let evaluated = WindowTitleRuleEngine.shared.evaluate(bundleId: appName)
+        guard activeRuleOverridesBundleId != appName || activeRuleOverrides != evaluated else {
+            return
+        }
+        activeRuleOverrides = evaluated
         activeRuleOverridesBundleId = appName
         inputProcessor.ruleOverrides = activeRuleOverrides
         inputProcessor.updateAdaptiveFlushDelay()
@@ -352,11 +374,17 @@ class AppState: ObservableObject, FileMonitorDelegate {
 
     @discardableResult
     private func applyActiveRuleOverrideState() -> Bool {
-        guard let overrideState = activeRuleOverrides.overrideState else {
+        let target = activeRuleOverrides.overrideState
+        if target == appliedRuleOverrideState {
+            return target != nil
+        }
+
+        if target == nil {
             if ruleOverrideActive {
                 ruleOverrideActive = false
                 setEnabledWithoutPersist(enabledBeforeRuleOverride)
             }
+            appliedRuleOverrideState = nil
             return false
         }
 
@@ -364,8 +392,9 @@ class AppState: ObservableObject, FileMonitorDelegate {
             enabledBeforeRuleOverride = enabled
         }
         ruleOverrideActive = true
+        appliedRuleOverrideState = target
 
-        switch overrideState {
+        switch target! {
         case .disabled, .englishMode:
             setEnabledWithoutPersist(false)
         case .vietnameseMode:
@@ -403,7 +432,7 @@ class AppState: ObservableObject, FileMonitorDelegate {
             self.currentFocusedBundleId = snap.bundleId
             if let focusedBundleId = snap.bundleId,
                focusedBundleId != self.bundleId {
-                self.refreshRuleOverrides(for: focusedBundleId)
+                self.refreshRuleOverrides(for: focusedBundleId, invalidate: false)
                 _ = self.applyActiveRuleOverrideState()
             }
             self.currentFocusedElementIsSearchOrCombo = snap.isComboOrSearch
