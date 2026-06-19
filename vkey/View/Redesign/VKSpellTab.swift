@@ -18,6 +18,7 @@ struct VKSpellTab: View {
   @Default(.useEnVnReference) private var useRefDict
   @Default(.predictionHUDLineOffset) private var hudOffset
   @Default(.predictionHUDFontSize) private var hudFontSize
+  @Default(.predictionMaxWords) private var predictionMaxWords
   @Default(.hudOpacityPercent) private var hudOpacity
 
   @State private var showingDictEditor = false
@@ -59,9 +60,13 @@ struct VKSpellTab: View {
           VKRowGroup {
             VKToggleRow(icon: "sparkles", iconColor: VK.Color.gold,
                         label: "Bật đoán từ",
-                        hint: "Hiện HUD nhỏ cạnh con trỏ, nhấn ⇥ Tab để nhận.",
+                        hint: "Hiện HUD nhỏ cạnh con trỏ, nhấn ⇥ Tab để nhận cụm 1–3 từ.",
                         isOn: $wordPrediction)
             if wordPrediction {
+              VKRow(icon: "text.word.spacing", iconColor: VK.Color.gold,
+                    label: "Số từ gợi ý tối đa") {
+                stepperControl(value: $predictionMaxWords, range: 1...3, unit: "từ")
+              }
               VKRow(icon: "arrow.up.and.down", iconColor: VK.Color.info,
                     label: "Khoảng cách HUD đến con trỏ") {
                 stepperControl(value: $hudOffset, range: 1...20, unit: "dòng")

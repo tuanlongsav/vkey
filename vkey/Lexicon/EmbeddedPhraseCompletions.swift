@@ -67,4 +67,28 @@ enum EmbeddedPhraseCompletions {
     "càng ngày": [("càng", 6)],
     "ngày càng": [("phát", 5), ("tốt", 4)],
   ]
+
+  /// `"prev2 prev1"` hoặc `"prev1"` → suffix 2–3 từ (layer 6 cho PredictionEngine).
+  static let multiWordSuffixes: [String: [(suffix: String, weight: Int)]] = [
+    "kính gửi": [("anh chị", 9), ("quý vị", 7), ("ông bà", 6)],
+    "công ty": [("cổ phần", 8), ("chúng tôi", 6), ("trách nhiệm", 5)],
+    "trân trọng": [("cảm ơn", 8), ("kính chào", 6)],
+    "cảm ơn": [("rất nhiều", 7), ("anh chị", 6), ("quý vị", 5)],
+    "xin chào": [("anh chị", 7), ("mọi người", 6)],
+    "vui lòng": [("kiểm tra", 7), ("xem xét", 6), ("phản hồi", 5)],
+    "thông tin": [("chi tiết", 7), ("liên hệ", 6)],
+    "liên hệ": [("với chúng", 6), ("qua email", 5)],
+    "báo cáo": [("kết quả", 7), ("tình hình", 6)],
+    "kết quả": [("đạt được", 6), ("của dự", 5)],
+    "dự án": [("này đã", 5), ("của chúng", 4)],
+    "do đó": [("chúng tôi", 6), ("cần phải", 5)],
+    "tuy nhiên": [("vẫn cần", 5), ("chúng tôi", 4)],
+    "ngoài ra": [("còn có", 6), ("tôi muốn", 4)],
+    "một số": [("vấn đề", 7), ("điểm cần", 5)],
+    "một trong": [("những mục", 6)],
+    "theo như": [("quy định", 7), ("thỏa thuận", 5)],
+    "phụ trách": [("công việc", 6), ("dự án", 5)],
+    "hôm nay": [("tôi muốn", 5), ("chúng ta", 4)],
+    "ngày mai": [("chúng tôi", 5), ("tôi sẽ", 4)],
+  ]
 }

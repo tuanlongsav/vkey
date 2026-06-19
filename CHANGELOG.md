@@ -2,6 +2,26 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.19] - 2026-06-19 — "Gợi ý cụm 2–3 từ + thống kê suffix O(1)"
+
+**Tab chèn cả cụm ngắn (mặc định 2 từ), học cụm 4 từ, và index suffix tra cứu nhanh cho prediction.**
+
+### ✨ Tính năng mới
+
+- **Gợi ý cụm 2–3 từ** — setting *Số từ gợi ý tối đa* (1–3, mặc định 2) trong tab Chính tả. Ví dụ sau `kính gửi` → `anh chị`; sau `công ty` → `cổ phần`. Tab chèn cả cụm.
+- **Corpus cụm nhúng đa từ** (`EmbeddedPhraseCompletions.multiWordSuffixes`) — gợi ý văn phòng/hàng ngày kể cả khi chưa có lịch sử cá nhân.
+- **Thống kê cụm 4 từ** + `vnPhraseSuffixIndex` O(1) — học cụm user hay gõ để đoán nhanh hơn.
+
+### 🔧 Cải thiện
+
+- **`phraseSuffixHints`** thay thế scan O(n) — lookup suffix 1–3 từ theo ngữ cảnh.
+- **Backup/restore** — thêm `predictionMaxWords`.
+- **Tab chấp nhận gợi ý** — học n-gram cho từng từ trong cụm đã chọn.
+
+### 🧪 Tests
+
+- Thêm test suffix index + `topPhrasePrediction` multi-word. Toàn bộ **262 test pass**.
+
 ## [3.18] - 2026-06-19 — "Clipboard giới hạn dung lượng + HUD cảnh báo"
 
 **Dung lượng tối đa mỗi mục clipboard có thể chỉnh (mặc định 10 MB); HUD cảnh báo nổi bật khi vượt giới hạn.**

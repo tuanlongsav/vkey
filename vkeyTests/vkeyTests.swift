@@ -2007,6 +2007,35 @@ final class KeyboardUSTests: XCTestCase {
     XCTAssertFalse(UsageStatistics.isMeaningfulVietnamesePhrase(["hello", "world"]))
     XCTAssertFalse(UsageStatistics.isMeaningfulVietnamesePhrase(["asdf", "ghjk"]))
   }
+
+  func testPhraseCompletionIndexBuildAndLookup() {
+    let index = UsageStatistics.buildPhraseSuffixIndex(
+      phrases2: ["công ty": 5],
+      phrases3: [
+        "kính gửi anh": 4,
+        "kính gửi chị": 2,
+        "xin chào bạn": 3,
+      ],
+      phrases4: ["kính gửi anh chị": 2]
+    )
+    XCTAssertEqual(index["kính gửi"]?["anh"], 4)
+    XCTAssertEqual(index["kính gửi"]?["chị"], 2)
+    XCTAssertEqual(index["kính gửi"]?["anh chị"], 2)
+    XCTAssertEqual(index["xin chào"]?["bạn"], 3)
+    XCTAssertEqual(index["công"]?["ty"], 5)
+  }
+
+  func testTopPhrasePredictionPrefersMultiWordWhenConfigured() {
+    Defaults[.predictionMaxWords] = 2
+    defer { Defaults.reset(.predictionMaxWords) }
+    let prediction = PredictionEngine.shared.topPhrasePrediction(
+      prev2: "kính",
+      prev1: "gửi",
+      maxWords: 2
+    )
+    XCTAssertNotNil(prediction)
+    XCTAssertGreaterThanOrEqual(prediction?.split(separator: " ").count ?? 0, 1)
+  }
 }
 
 // MARK: - ===========================================

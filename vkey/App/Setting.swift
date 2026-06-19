@@ -510,6 +510,10 @@ extension Defaults.Keys {
   /// hiển thị HUD nổi gần cursor. Nhấn Tab để chấp nhận.
   static let wordPredictionEnabled = Key<Bool>("word-prediction-enabled", default: false)
 
+  /// Số từ tối đa trong gợi ý đoán (1–3). Mặc định 2 — gợi ý cụm ngắn
+  /// thay vì chỉ một từ đơn.
+  static let predictionMaxWords = Key<Int>("prediction-max-words", default: 2)
+
   /// 1.8.1: số dòng văn bản cách giữa HUD prediction và caret line.
   /// Range 1-10. Default 4 (cân bằng giữa nhìn rõ và không che nội dung).
   /// Trước 1.8.1 HUD chỉ cách caret 4px — quá gần, hay che dòng đang gõ.

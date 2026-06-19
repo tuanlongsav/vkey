@@ -64,8 +64,6 @@
 		7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */; };
 		87E125B7BEC3E062DBEF8E63 /* VKStatsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12E48189AF4A1252777C0EE /* VKStatsTab.swift */; };
 		964199382501358B452A147B /* TextConversionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */; };
-		A1B2C3D4E5F60718293A4B5C /* ClipboardHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* ClipboardHistoryService.swift */; };
-		C3D4E5F60718293A4B5C6D7E /* NoticeHUDWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60718293A4B5C6D7E8F /* NoticeHUDWindow.swift */; };
 		9972B2786EB0E3A600C0FF4A /* EnVnReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0A79FB401501E597B689C9 /* EnVnReference.swift */; };
 		A085F9440573F6BC7380FAEE /* PersonalDictSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A620251BD70C5F36817A13 /* PersonalDictSuggestionSheet.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* NGramStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A2 /* NGramStore.swift */; };
@@ -90,6 +88,8 @@
 		D7BEBA3029B05306751A69B3 /* EmbeddedBigrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521F6BD0B4DB972BC0C580DE /* EmbeddedBigrams.swift */; };
 		E1F2A3B4C5D6E7F8091A2B3C /* EmbeddedPhraseCompletions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A69788796A5B4C /* EmbeddedPhraseCompletions.swift */; };
 		E678805A2EF92EAE65B2E3FF /* LexiconManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FF852BE303C340328CB8C0 /* LexiconManager.swift */; };
+		A7C8D9E0F1A2B3C4D5E6F702 /* ClipboardHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C7D8E9F0A1B2C3D4E5F601 /* ClipboardHistoryService.swift */; };
+		C9E0F1A2B3C4D5E6F708142 /* NoticeHUDWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8D9E0F1A2B3C4D5E6F7031 /* NoticeHUDWindow.swift */; };
 		EC46658134875A59BD2FCBC3 /* PredictionHUDWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */; };
 		EFFCE0E4013BAD0984BC07CC /* VKSpellTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E87049C6C5D5457BEEBEDD /* VKSpellTab.swift */; };
 		F348AD6A8752A1C54FA5C347 /* InputSourceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C5E95C08CD53A70A0C43DF /* InputSourceMonitor.swift */; };
@@ -165,9 +165,9 @@
 		521F6BD0B4DB972BC0C580DE /* EmbeddedBigrams.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedBigrams.swift; sourceTree = "<group>"; };
 		F1E2D3C4B5A69788796A5B4C /* EmbeddedPhraseCompletions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedPhraseCompletions.swift; sourceTree = "<group>"; };
 		558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PredictionHUDWindow.swift; sourceTree = "<group>"; };
+		A6C7D8E9F0A1B2C3D4E5F601 /* ClipboardHistoryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryService.swift; sourceTree = "<group>"; };
+		B8D9E0F1A2B3C4D5E6F7031 /* NoticeHUDWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NoticeHUDWindow.swift; sourceTree = "<group>"; };
 		5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TextConversionService.swift; sourceTree = "<group>"; };
-		B2C3D4E5F60718293A4B5C6D /* ClipboardHistoryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryService.swift; sourceTree = "<group>"; };
-		D4E5F60718293A4B5C6D7E8F /* NoticeHUDWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NoticeHUDWindow.swift; sourceTree = "<group>"; };
 		678377A8AD0029F0A4116AD9 /* VKComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKComponents.swift; path = ../View/Redesign/VKComponents.swift; sourceTree = "<group>"; };
 		69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThemedSymbol.swift; sourceTree = "<group>"; };
 		6A132B1E7CD9978F8BF13B21 /* VKSmartTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKSmartTab.swift; path = ../View/Redesign/VKSmartTab.swift; sourceTree = "<group>"; };
@@ -359,10 +359,10 @@
 				3F9FC6D42B9E14AF00659712 /* FileMonitor.swift */,
 				3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */,
 				558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */,
+				B8D9E0F1A2B3C4D5E6F7031 /* NoticeHUDWindow.swift */,
+				A6C7D8E9F0A1B2C3D4E5F601 /* ClipboardHistoryService.swift */,
 				99C5E95C08CD53A70A0C43DF /* InputSourceMonitor.swift */,
 				5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */,
-				B2C3D4E5F60718293A4B5C6D /* ClipboardHistoryService.swift */,
-				D4E5F60718293A4B5C6D7E8F /* NoticeHUDWindow.swift */,
 				9DE993E0CD7CE91EF6CAF208 /* WindowTitleRuleEngine.swift */,
 			);
 			path = Platform;
@@ -693,11 +693,11 @@
 				E1F2A3B4C5D6E7F8091A2B3C /* EmbeddedPhraseCompletions.swift in Sources */,
 				28F11D31D04926F7FB4860B4 /* PredictionEngine.swift in Sources */,
 				EC46658134875A59BD2FCBC3 /* PredictionHUDWindow.swift in Sources */,
+				C9E0F1A2B3C4D5E6F708142 /* NoticeHUDWindow.swift in Sources */,
+				A7C8D9E0F1A2B3C4D5E6F702 /* ClipboardHistoryService.swift in Sources */,
 				5501620FAC63ADA15F6A37B4 /* SmartSwitchRunningAppsSheet.swift in Sources */,
 				F348AD6A8752A1C54FA5C347 /* InputSourceMonitor.swift in Sources */,
 				964199382501358B452A147B /* TextConversionService.swift in Sources */,
-				A1B2C3D4E5F60718293A4B5C /* ClipboardHistoryService.swift in Sources */,
-				C3D4E5F60718293A4B5C6D7E /* NoticeHUDWindow.swift in Sources */,
 				1C1E141EB16B027B173B8F1F /* WindowTitleRuleEngine.swift in Sources */,
 				757DCAEB9D825EC7776C2BEE /* VKDesign.swift in Sources */,
 				0757D78148617667C5D66327 /* VKComponents.swift in Sources */,
@@ -879,7 +879,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 31800;
+				CURRENT_PROJECT_VERSION = 31900;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = U4B264GM2B;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -894,7 +894,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.18;
+				MARKETING_VERSION = 3.19;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -911,7 +911,7 @@
 				CODE_SIGN_ENTITLEMENTS = vkey/vkey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 31800;
+				CURRENT_PROJECT_VERSION = 31900;
 				DEVELOPMENT_ASSET_PATHS = "\"vkey/Preview Content\"";
 				DEVELOPMENT_TEAM = U4B264GM2B;
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = U4B264GM2B;
@@ -927,7 +927,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 3.18;
+				MARKETING_VERSION = 3.19;
 				"MTL_ENABLE_DEBUG_INFO[sdk=macosx*]" = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.longht.vkey;
 				PRODUCT_NAME = "$(TARGET_NAME)";

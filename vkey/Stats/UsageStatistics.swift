@@ -88,6 +88,7 @@ public struct WeekBucketExport: Codable {
 
   public let vnPhraseCounts2: [String: Int]   // 1.6.1+
   public let vnPhraseCounts3: [String: Int]
+  public let vnPhraseCounts4: [String: Int]   // 3.14+ multi-word prediction
 
   public let enPhraseCounts2: [String: Int]   // 1.7.9+
   public let enPhraseCounts3: [String: Int]
@@ -104,7 +105,7 @@ public struct WeekBucketExport: Codable {
     case typoCorrectionsApplied
     case vnWordCounts, enWordCounts, appCounts
     case vnKeepStreak, enRestoreStreak
-    case vnPhraseCounts2, vnPhraseCounts3
+    case vnPhraseCounts2, vnPhraseCounts3, vnPhraseCounts4
     case enPhraseCounts2, enPhraseCounts3   // 1.7.9+
     case appLanguageVnCounts, appLanguageEnCounts, appLanguageDays
   }
@@ -117,6 +118,7 @@ public struct WeekBucketExport: Codable {
     vnWordCounts: [String: Int], enWordCounts: [String: Int], appCounts: [String: Int],
     vnKeepStreak: [String: Int], enRestoreStreak: [String: Int],
     vnPhraseCounts2: [String: Int], vnPhraseCounts3: [String: Int],
+    vnPhraseCounts4: [String: Int] = [:],
     enPhraseCounts2: [String: Int] = [:], enPhraseCounts3: [String: Int] = [:],
     appLanguageVnCounts: [String: Int], appLanguageEnCounts: [String: Int],
     appLanguageDays: [String: [Int]]
@@ -137,6 +139,7 @@ public struct WeekBucketExport: Codable {
     self.enRestoreStreak = enRestoreStreak
     self.vnPhraseCounts2 = vnPhraseCounts2
     self.vnPhraseCounts3 = vnPhraseCounts3
+    self.vnPhraseCounts4 = vnPhraseCounts4
     self.enPhraseCounts2 = enPhraseCounts2
     self.enPhraseCounts3 = enPhraseCounts3
     self.appLanguageVnCounts = appLanguageVnCounts
@@ -162,6 +165,7 @@ public struct WeekBucketExport: Codable {
     self.enRestoreStreak = try c.decodeIfPresent([String: Int].self, forKey: .enRestoreStreak) ?? [:]
     self.vnPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts2) ?? [:]
     self.vnPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts3) ?? [:]
+    self.vnPhraseCounts4 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts4) ?? [:]
     self.enPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .enPhraseCounts2) ?? [:]
     self.enPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .enPhraseCounts3) ?? [:]
     self.appLanguageVnCounts = try c.decodeIfPresent([String: Int].self, forKey: .appLanguageVnCounts) ?? [:]
@@ -212,13 +216,16 @@ final class UsageStatistics {
   /// flushed. Keeps disk writes throttled to one per ~10 seconds.
   private var pendingFlushItem: DispatchWorkItem?
 
-  /// 1.6.1: sliding window các từ tiếng Việt vừa commit (≤3) để tracking
-  /// phrase bigram/trigram. Reset khi gõ tiếng Anh/raw/Smart Switch.
+  /// 1.6.1: sliding window các từ tiếng Việt vừa commit (≤4) để tracking
+  /// phrase bigram/trigram/4-gram. Reset khi gõ tiếng Anh/raw/Smart Switch.
   private var recentVnQueue: [String] = []
 
   /// 1.7.9: sliding window EN/raw vừa commit (≤3) — đối ứng với recentVnQueue.
   /// Reset khi xen .keepVietnamese / .suggest / smart switch (đổi context).
   private var recentEnQueue: [String] = []
+
+  /// O(1) lookup: ngữ cảnh đã gõ → suffix 1–3 từ gợi ý chèn tiếp.
+  private var vnPhraseSuffixIndex: [String: [String: Int]] = [:]
 
   /// Limit on the number of weekly files we keep on disk. Older files get
   /// deleted automatically during flush.
@@ -426,6 +433,7 @@ final class UsageStatistics {
         let bucket = WeekBucket(from: export)
         if bucket.weekId == currentId {
           counters = bucket
+          rebuildPhraseSuffixIndex()
           flushNow()
           restored += 1
         } else {
@@ -463,11 +471,10 @@ final class UsageStatistics {
       .sorted { $0.count > $1.count }
   }
 
-  /// 1.6.1: Aggregate top phrases (2 hoặc 3 từ tiếng Việt liền) qua
-  /// current week. Chỉ gồm cụm có nghĩa (mọi token là từ VN hợp lệ).
-  /// Dùng cho Macro suggestion UI và phrase-aware prediction.
+  /// Aggregate top phrases (2–4 từ tiếng Việt liền) qua current week.
+  /// Chỉ gồm cụm có nghĩa (mọi token là từ VN hợp lệ).
   func aggregatedTopVietnamesePhrases(
-    minWords: Int = 2, maxWords: Int = 3, threshold: Int = 10
+    minWords: Int = 2, maxWords: Int = 4, threshold: Int = 10
   ) -> [WordCount] {
     queue.sync {
       var out: [String: Int] = [:]
@@ -481,29 +488,36 @@ final class UsageStatistics {
           out[phrase] = count
         }
       }
+      if minWords <= 4 && maxWords >= 4 {
+        for (phrase, count) in counters.vnPhraseCounts4 where count >= threshold {
+          out[phrase] = count
+        }
+      }
       return out
         .map { WordCount(word: $0.key, count: $0.value) }
         .sorted { $0.count > $1.count }
     }
   }
 
-  /// Gợi ý từ tiếp theo từ cụm 3 từ user hay gõ (vd "kính gửi" → "anh").
-  /// Chỉ dùng phrase counters đã lọc có nghĩa.
-  func phraseCompletionHints(prev2: String, prev1: String) -> [String: Int] {
-    let p2 = prev2.lowercased()
-    let p1 = prev1.lowercased()
-    let prefix = "\(p2) \(p1) "
-    guard !p2.isEmpty, !p1.isEmpty else { return [:] }
+  /// Gợi ý suffix 1–3 từ sau ngữ cảnh đã gõ (cho đoán cụm).
+  func phraseSuffixHints(prev2: String?, prev1: String, maxWords: Int = 3) -> [String: Int] {
+    let key = Self.phraseContextKey(prev2: prev2, prev1: prev1)
+    guard !key.isEmpty else { return [:] }
+    let cap = max(1, min(3, maxWords))
     return queue.sync {
-      var hints: [String: Int] = [:]
-      for (phrase, count) in counters.vnPhraseCounts3 where phrase.hasPrefix(prefix) {
-        let remainder = phrase.dropFirst(prefix.count)
-        guard let nextWord = remainder.split(separator: " ", omittingEmptySubsequences: true).first
-        else { continue }
-        hints[String(nextWord), default: 0] += count
+      (vnPhraseSuffixIndex[key] ?? [:]).filter {
+        $0.key.split(separator: " ", omittingEmptySubsequences: true).count <= cap
       }
-      return hints
     }
+  }
+
+  /// Backward-compat: chỉ từ đơn tiếp theo.
+  func phraseCompletionHints(prev2: String, prev1: String) -> [String: Int] {
+    phraseSuffixHints(prev2: prev2, prev1: prev1, maxWords: 1)
+  }
+
+  static func phraseContextKey(prev2: String?, prev1: String) -> String {
+    PredictionEngine.phraseContextKey(prev2: prev2, prev1: prev1)
   }
 
   /// 1.7.9: Aggregate top phrases EN/raw (2 hoặc 3 từ ngoài tiếng Việt liền).
@@ -672,6 +686,7 @@ final class UsageStatistics {
       counters = WeekBucket(weekId: counters.weekId, weekEnd: counters.weekEnd)
       recentVnQueue.removeAll()
       recentEnQueue.removeAll()
+      vnPhraseSuffixIndex.removeAll()
     }
   }
 
@@ -704,6 +719,7 @@ final class UsageStatistics {
     /// English / raw / Smart Switch.
     var vnPhraseCounts2: [String: Int] = [:]   // "công ty" → count
     var vnPhraseCounts3: [String: Int] = [:]   // "kính gửi anh" → count
+    var vnPhraseCounts4: [String: Int] = [:]   // 4 từ — suffix 2–3 từ cho prediction
 
     /// 1.7.9: phrase counters cho EN/raw — đối ứng vnPhraseCounts.
     /// Chỉ tăng khi commit liền nhau là `.restoreRawEnglish` hoặc `.keepRaw`;
@@ -745,6 +761,7 @@ final class UsageStatistics {
       self.enRestoreStreak = export.enRestoreStreak
       self.vnPhraseCounts2 = export.vnPhraseCounts2
       self.vnPhraseCounts3 = export.vnPhraseCounts3
+      self.vnPhraseCounts4 = export.vnPhraseCounts4
       // 1.7.9: EN phrase counters từ export.
       self.enPhraseCounts2 = export.enPhraseCounts2
       self.enPhraseCounts3 = export.enPhraseCounts3
@@ -771,6 +788,7 @@ final class UsageStatistics {
         enRestoreStreak: enRestoreStreak,
         vnPhraseCounts2: vnPhraseCounts2,
         vnPhraseCounts3: vnPhraseCounts3,
+        vnPhraseCounts4: vnPhraseCounts4,
         enPhraseCounts2: enPhraseCounts2,
         enPhraseCounts3: enPhraseCounts3,
         appLanguageVnCounts: appLanguageVnCounts,
@@ -786,7 +804,7 @@ final class UsageStatistics {
       case typoCorrectionsApplied
       case vnWordCounts, enWordCounts, appCounts
       case vnKeepStreak, enRestoreStreak
-      case vnPhraseCounts2, vnPhraseCounts3   // 1.6.1+
+      case vnPhraseCounts2, vnPhraseCounts3, vnPhraseCounts4   // 1.6.1+
       case enPhraseCounts2, enPhraseCounts3   // 1.7.9+
       case appLanguageVnCounts, appLanguageEnCounts, appLanguageDays  // 1.7.0+
     }
@@ -816,6 +834,7 @@ final class UsageStatistics {
       // 1.6.1: phrase counters — luôn optional (file v1.5.x/1.6.0 không có).
       self.vnPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts2) ?? [:]
       self.vnPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts3) ?? [:]
+      self.vnPhraseCounts4 = try c.decodeIfPresent([String: Int].self, forKey: .vnPhraseCounts4) ?? [:]
       // 1.7.9: EN phrase counters — optional (file < v1.7.9 không có).
       self.enPhraseCounts2 = try c.decodeIfPresent([String: Int].self, forKey: .enPhraseCounts2) ?? [:]
       self.enPhraseCounts3 = try c.decodeIfPresent([String: Int].self, forKey: .enPhraseCounts3) ?? [:]
@@ -905,6 +924,7 @@ final class UsageStatistics {
     // current.json → mất hết stats khi upgrade qua biên tuần ISO.
     queue.sync {
       counters = loaded
+      rebuildPhraseSuffixIndex()
       rotateIfNeeded()
     }
   }
@@ -926,6 +946,7 @@ final class UsageStatistics {
 
     // Reset counters for the new week.
     counters = WeekBucket()
+    vnPhraseSuffixIndex.removeAll()
     try? FileManager.default.removeItem(at: storageDir.appendingPathComponent("current.json"))
 
     pruneOldWeeks()
@@ -1031,8 +1052,18 @@ final class UsageStatistics {
     // Cap the per-bucket sizes so a runaway map can't blow disk.
     trimDict(&counters.vnWordCounts, max: 500)
     trimDict(&counters.enWordCounts, max: 500)
+    let phraseCountBefore = counters.vnPhraseCounts2.count
+      + counters.vnPhraseCounts3.count
+      + counters.vnPhraseCounts4.count
     trimDict(&counters.vnPhraseCounts2, max: 300)
     trimDict(&counters.vnPhraseCounts3, max: 300)
+    trimDict(&counters.vnPhraseCounts4, max: 200)
+    let phraseCountAfter = counters.vnPhraseCounts2.count
+      + counters.vnPhraseCounts3.count
+      + counters.vnPhraseCounts4.count
+    if phraseCountAfter != phraseCountBefore {
+      rebuildPhraseSuffixIndex()
+    }
     // 1.7.9: cap EN phrase counters tương tự.
     trimDict(&counters.enPhraseCounts2, max: 300)
     trimDict(&counters.enPhraseCounts3, max: 300)
@@ -1044,14 +1075,15 @@ final class UsageStatistics {
   /// mỗi khi commit `.keepVietnamese` thành công. Chỉ ghi cụm có nghĩa.
   private func recordVnPhraseTransition(append token: String) {
     recentVnQueue.append(token)
-    if recentVnQueue.count > 3 {
-      recentVnQueue.removeFirst(recentVnQueue.count - 3)
+    if recentVnQueue.count > 4 {
+      recentVnQueue.removeFirst(recentVnQueue.count - 4)
     }
     if recentVnQueue.count >= 2 {
       let words2 = Array(recentVnQueue.suffix(2))
       if Self.isMeaningfulVietnamesePhrase(words2) {
         let phrase2 = words2.joined(separator: " ")
         counters.vnPhraseCounts2[phrase2, default: 0] += 1
+        notePhraseSuffix(words: words2)
       }
     }
     if recentVnQueue.count >= 3 {
@@ -1059,8 +1091,66 @@ final class UsageStatistics {
       if Self.isMeaningfulVietnamesePhrase(words3) {
         let phrase3 = words3.joined(separator: " ")
         counters.vnPhraseCounts3[phrase3, default: 0] += 1
+        notePhraseSuffix(words: words3)
       }
     }
+    if recentVnQueue.count >= 4 {
+      let words4 = Array(recentVnQueue.suffix(4))
+      if Self.isMeaningfulVietnamesePhrase(words4) {
+        let phrase4 = words4.joined(separator: " ")
+        counters.vnPhraseCounts4[phrase4, default: 0] += 1
+        notePhraseSuffix(words: words4)
+      }
+    }
+  }
+
+  private func notePhraseSuffix(words: [String]) {
+    guard words.count >= 2 else { return }
+    for i in 1..<words.count {
+      let key = words[0..<i].map { $0.lowercased() }.joined(separator: " ")
+      let suffix = words[i..<words.count].map { $0.lowercased() }.joined(separator: " ")
+      let suffixWordCount = words.count - i
+      guard suffixWordCount >= 1, suffixWordCount <= 3 else { continue }
+      var bucket = vnPhraseSuffixIndex[key, default: [:]]
+      bucket[suffix, default: 0] += 1
+      vnPhraseSuffixIndex[key] = bucket
+    }
+  }
+
+  private func rebuildPhraseSuffixIndex() {
+    vnPhraseSuffixIndex = Self.buildPhraseSuffixIndex(
+      phrases2: counters.vnPhraseCounts2,
+      phrases3: counters.vnPhraseCounts3,
+      phrases4: counters.vnPhraseCounts4
+    )
+  }
+
+  /// Internal — testable rebuild từ phrase counters đã lưu.
+  static func buildPhraseSuffixIndex(
+    phrases2: [String: Int],
+    phrases3: [String: Int],
+    phrases4: [String: Int] = [:]
+  ) -> [String: [String: Int]] {
+    var index: [String: [String: Int]] = [:]
+    func ingest(_ phrase: String, count: Int) {
+      let parts = phrase.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
+      guard parts.count >= 2 else { return }
+      for i in 1..<parts.count {
+        let key = parts[0..<i].map { $0.lowercased() }.joined(separator: " ")
+        let suffix = parts[i..<parts.count].map { $0.lowercased() }.joined(separator: " ")
+        guard suffix.split(separator: " ", omittingEmptySubsequences: true).count <= 3 else { continue }
+        index[key, default: [:]][suffix, default: 0] += count
+      }
+    }
+    for (phrase, count) in phrases2 { ingest(phrase, count: count) }
+    for (phrase, count) in phrases3 { ingest(phrase, count: count) }
+    for (phrase, count) in phrases4 { ingest(phrase, count: count) }
+    return index
+  }
+
+  /// Backward-compat alias cho test cũ.
+  static func buildPhraseCompletionIndex(from phrases: [String: Int]) -> [String: [String: Int]] {
+    buildPhraseSuffixIndex(phrases2: [:], phrases3: phrases, phrases4: [:])
   }
 
   /// Cụm tiếng Việt có nghĩa: mọi token ≥2 ký tự và nằm trong từ điển VN

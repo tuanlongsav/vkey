@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.18 — "Clipboard giới hạn dung lượng + HUD cảnh báo"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.19 — "Gợi ý cụm 2–3 từ + thống kê suffix O(1)"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.19** — ✨ **Gợi ý cụm 2–3 từ** (mặc định 2): Tab chèn cả cụm như `anh chị`, `cổ phần` — học từ thống kê suffix O(1) + corpus nhúng đa từ. Thống kê cụm 4 từ. Backup gồm `predictionMaxWords`. 262 test pass.
+>
 > **3.18** — 📋 **Giới hạn dung lượng clipboard có thể chỉnh** (mặc định 10 MB, 1–200 MB). Tệp lớn hơn mức không lưu lịch sử — hiện **HUD cảnh báo amber** dễ nhận ra kể cả theme Liquid Glass; sao chép/dán vẫn như macOS. 259 test pass.
 >
 > **3.17** — 🐛 **Sửa lỗi lịch sử clipboard.** ⌥⇧⌘V (Paste and Match Style) không còn bị chặn; ⌘C sau dán từ lịch sử/Text Tools không bị bỏ qua; capture poll chậm hơn cho app Electron; dedup theo nội dung thật; menu đủ capacity; tắt setting xóa RAM; backup gồm setting clipboard.
@@ -175,7 +177,7 @@ Tất cả benchmark hiện tại **dưới ngưỡng** an toàn — engine Swif
 - ✅ **Section "Các tuần đã đóng" (v1.6.1+)**: hiển thị data thống kê tuần trước (historical) ngay trong tab Thống kê — không còn "biến mất" sau khi tuần ISO chuyển.
 - ✅ **Top cụm 2-3 từ tiếng Việt + ngoài tiếng Việt (v1.7.9+)**: tab Thống kê thêm 2 sections "Top cụm 2-3 từ tiếng Việt" (`vnPhraseCounts2/3` từ v1.6.1) và "Top cụm ngoài tiếng Việt" (backend mới `enPhraseCounts2/3`). Hữu ích để xác định cụm thường gõ → tạo macro hoặc đề xuất personal dict. Section "Top từ ngoài tiếng Việt" cho phép cả raw text + ký tự lạ (vd "lol", "okay") để dễ thấy candidate bổ sung Personal Dict (filter nới v1.7.10+).
 - ✅ **Balanced restore policy ưu tiên dấu Việt (v1.7.11+)**: ở chế độ **Cân bằng**, khi `transformed` có dấu Việt (`ả`/`ư`/`đ`/...) → vkey giữ VN bất kể raw có match English. Gõ "car " (telex của "cả") giờ ra "cả" thay vì "car"; "the→thể", "nuut→nứt" cũng đúng. Common-words list ~45 từ giờ chỉ fallback cho từ phẳng không dấu.
-- ✅ **Đoán từ tiếp theo (v1.6.0+, default OFF, HUD chính xác v1.7.9+, file-backed v1.8.0+, UX fix v1.8.1+, chuyển sang Tab Chính tả v1.8.3+)**: HUD nổi cạnh caret hiện 1 ứng viên dự đoán sau khi commit 1 từ. Nhấn **Tab** để chấp nhận; phím khác để bỏ qua. **v1.6.1+** ranking ưu tiên từ điển gốc + cá nhân. **v1.7.7+** HUD hiển thị PHÍA TRÊN caret line (đỡ che cursor) + Tab smart-detect cho 2 case buffer khác nhau. **v1.7.9+** HUD dùng `kAXBoundsForRangeParameterizedAttribute` lấy pixel caret chính xác (multi-line editor không còn đặt HUD ở top editor). **v1.8.0+** bigram/trigram tách khỏi UserDefaults plist sang file JSON tại `~/Library/Application Support/vkey/ngram/` + background queue + throttled flush 10s. Dict prediction tăng vài MB không còn block UI khi commit từ. **v1.8.1+** sửa bug thừa space khi Tab accept sau commit Space (`"đoán  từ"` → `"đoán từ"`) + Stepper trong Settings cho user chỉnh **Khoảng cách HUD đến caret** (1-10 dòng văn bản, default 4) — không còn HUD che dòng đang gõ. **v1.8.3** chuyển toggle + Stepper sang **Tab Chính tả** → section "Cấu hình kiểm tra chính tả" (cùng nhóm với spell-checking).
+- ✅ **Đoán từ tiếp theo (v1.6.0+, default OFF, cụm 2–3 từ v3.19+, HUD chính xác v1.7.9+, file-backed v1.8.0+, UX fix v1.8.1+, chuyển sang Tab Chính tả v1.8.3+)**: HUD nổi phía trên dòng gõ hiện gợi ý sau khi commit 1 từ. **v3.19+** gợi ý **cụm 2–3 từ** (mặc định 2, chỉnh trong tab Chính tả) — Tab chèn cả cụm như `anh chị`, `cổ phần`; học từ thống kê suffix O(1) + corpus nhúng đa từ. **v3.15+** HUD căn giữa màn hình, fix vị trí trên Electron/chat. Nhấn **Tab** để chấp nhận; phím khác để bỏ qua.
 - ✅ **Sao lưu & khôi phục dữ liệu cá nhân (v1.5.0+)**: Xuất / nhập JSON gồm toàn bộ Cài đặt, Macro, từ điển cá nhân, Smart Switch, per-app override, thống kê. Khi cập nhật phiên bản, app tự động hỏi sao lưu trước khi tiếp tục.
 - ✅ **Từ điển GitHub tự động cập nhật (v1.5.0+, cải tiến v1.6.2+ / v1.7.9+, tra cứu inline v1.9.0+)**: vkey tự fetch `lexicon-update.json` từ `raw.githubusercontent.com/tuanlongsav/vkey` (v1.6.2+ chuyển từ Contents API, không còn giới hạn 1 MB + bỏ rate-limit) mỗi 24h khi launch. **Nút "Cập nhật từ điển ngay" (v1.6.2+)** trong tab Chính tả để force kiểm tra ngay. **v1.7.10** UI hiển thị riêng số từ VN + EN (`Tiếng Việt: vX · N từ` + `Tiếng Anh: vX · N từ`). Hiện tại **v9: 8,960 syllables VN + 9,826 từ EN** (file 257 KB). **v1.9.0** thêm section **"Tra cứu từ điển"** — gõ 1 từ → realtime hiển thị từ đó thuộc lexicon nào (VN / EN / Keep / Personal Allow/Keep/Deny).
 - ✅ **Đề xuất Macro từ Thống kê (v1.5.5+, mở rộng v1.6.1+)**: vkey nhận diện các từ và cụm từ tiếng Việt bạn gõ ≥10 lần → đề xuất tạo macro với viết tắt tự sinh (vd "công ty → ct", "kính gửi anh → kga").
@@ -264,7 +266,7 @@ Click icon cờ trên menu bar để mở các tác vụ nhanh.
 | Hiển thị thông báo khi chuyển VI/EN | Bật/tắt Glassmorphic Toggle HUD ở giữa màn hình |
 | Kiểu đặt dấu | **Kiểu mới** (thuỷ, khoẻ, hoà, uý) ⟷ **Kiểu cũ** (thủy, khỏe, hòa, úy) |
 | Phím tắt | Bấm vào nút → nhập tổ hợp (`⌃⇧Z`) hoặc nhấn-thả modifier (`⌃⇧`) để dùng modifier-only. Backspace để xoá phím tắt, Esc để huỷ |
-| Đoán từ tiếp theo (v1.6.1+, default OFF) | Bật để vkey hiển thị HUD dự đoán cạnh caret sau khi gõ xong 1 từ. **Tab** để chấp nhận, phím khác bỏ qua. Ưu tiên gợi ý từ trong từ điển gốc + từ điển cá nhân |
+| Đoán từ tiếp theo (v1.6.1+, cụm 2–3 từ v3.19+, default OFF) | Bật HUD dự đoán sau khi gõ xong 1 từ. **Tab** chấp nhận — **v3.19+** có thể gợi ý cụm 2–3 từ (mặc định 2). Stepper *Số từ gợi ý tối đa* trong tab Chính tả |
 | Lịch sử clipboard (v3.16+, tắt mặc định) | ⌘C lưu vào danh sách; ⌥⌘V chọn mục để dán. ⌘V / ⇧⌘V dán bình thường. Số mục 3–50; chỉ văn bản hoặc văn bản + tệp; dung lượng tối đa/mục 1–200 MB (mặc định 10 MB, v3.18+) |
 
 ### Cài đặt → tab **Smart Switch**

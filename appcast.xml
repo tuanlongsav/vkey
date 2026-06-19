@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.19 — "Gợi ý cụm 2–3 từ + thống kê suffix O(1)"</title>
+      <sparkle:version>31900</sparkle:version>
+      <sparkle:shortVersionString>3.19</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 19 Jun 2026 15:35:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.19/vkey-3.19.dmg"
+        sparkle:edSignature="hkF72PNOSUEs5ghigd7Xtph5zHqksIBfxxzxCNYYTmQH5ofDmy8MXkkSJUnwuE1+XnrUsN5kGkfShTgqAvEvDQ=="
+        length="6458874"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.19 — Gợi ý cụm 2–3 từ + thống kê suffix O(1)</h2>
+        <ul>
+          <li><b>Gợi ý cụm 2–3 từ</b> — setting <i>Số từ gợi ý tối đa</i> (1–3, mặc định 2). Tab chèn cả cụm như <code>anh chị</code>, <code>cổ phần</code>.</li>
+          <li><b>Corpus cụm nhúng đa từ</b> — gợi ý văn phòng/hàng ngày kể cả khi chưa có lịch sử cá nhân.</li>
+          <li><b>Thống kê cụm 4 từ</b> + index suffix O(1) — học cụm user hay gõ để đoán nhanh hơn.</li>
+          <li><b>Backup/restore</b> — thêm <code>predictionMaxWords</code>.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 262 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.18 — "Clipboard giới hạn dung lượng + HUD cảnh báo"</title>
       <sparkle:version>31800</sparkle:version>
       <sparkle:shortVersionString>3.18</sparkle:shortVersionString>

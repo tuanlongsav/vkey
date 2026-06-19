@@ -1019,18 +1019,26 @@ class InputProcessor {
   /// cập nhật n-gram window, ẩn HUD. Re-fetches top-1 prediction nếu
   /// buffer còn từ chưa commit (commit qua space trước rồi chèn dự đoán).
   private func injectAcceptedPrediction(_ prediction: String) -> Bool {
+    let words = prediction
+      .split(separator: " ", omittingEmptySubsequences: true)
+      .map(String.init)
     if wordBuffer.wordState.isBlank {
-      // Caret đã ở sau space của commit trước. Chèn thẳng, không leading space.
       newWord(storePrevious: false)
       sendTypedReplacement(
         backspaceCount: 0,
         diffChars: Array(prediction),
         appLikelySensitive: isFixAutocompleteApp()
       )
-      prev2Committed = prev1Committed
-      prev1Committed = prediction.lowercased()
+      PredictionEngine.shared.learnAcceptedPhrase(
+        prediction,
+        prev2: prev2Committed,
+        prev1: prev1Committed
+      )
+      if let last = words.last?.lowercased() {
+        prev2Committed = words.count >= 2 ? words[words.count - 2].lowercased() : prev1Committed
+        prev1Committed = last
+      }
     } else {
-      // Buffer có từ chưa commit: commit qua space rồi chèn prediction.
       guard applySpellDecisionOnCommit(endingChar: " ", swallowEndingChar: true) else {
         activePrediction = nil
         DispatchQueue.main.async {
@@ -1039,10 +1047,7 @@ class InputProcessor {
         return false
       }
       newWord(storePrevious: true)
-      // Recompute prediction sau commit (prev1 đã đổi). Nếu HUD lúc đó
-      // hiển thị candidate cho từ KHÁC, mới recompute; giữ user-chosen
-      // nếu họ explicitly chọn (digit-selection).
-      let recomputed = PredictionEngine.shared.topPrediction(
+      let recomputed = PredictionEngine.shared.topPhrasePrediction(
         prev2: prev2Committed,
         prev1: prev1Committed ?? ""
       ) ?? prediction
@@ -1051,8 +1056,20 @@ class InputProcessor {
         diffChars: Array(recomputed),
         appLikelySensitive: isFixAutocompleteApp()
       )
-      prev2Committed = prev1Committed
-      prev1Committed = recomputed.lowercased()
+      PredictionEngine.shared.learnAcceptedPhrase(
+        recomputed,
+        prev2: prev2Committed,
+        prev1: prev1Committed
+      )
+      let acceptedWords = recomputed
+        .split(separator: " ", omittingEmptySubsequences: true)
+        .map(String.init)
+      if let last = acceptedWords.last?.lowercased() {
+        prev2Committed = acceptedWords.count >= 2
+          ? acceptedWords[acceptedWords.count - 2].lowercased()
+          : prev1Committed
+        prev1Committed = last
+      }
     }
     activePrediction = nil
     DispatchQueue.main.async {
@@ -1235,7 +1252,7 @@ class InputProcessor {
     if Defaults[.wordPredictionEnabled], !ruleOverrides.disablePrediction {
       // 2.0.2 (J1): chỉ top-1 prediction. Multi-candidate UI đã được xoá
       // (digit 1/2/3 dễ nhầm với gõ số trong văn bản).
-      if let prediction = PredictionEngine.shared.topPrediction(
+      if let prediction = PredictionEngine.shared.topPhrasePrediction(
         prev2: prev2Committed,
         prev1: prev1Committed ?? ""
       ) {

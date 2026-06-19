@@ -96,6 +96,7 @@ struct UserDataExport: Codable {
   let wordPredictionEnabled: Bool?
   let predictionHUDLineOffset: Int?
   let predictionHUDFontSize: Int?
+  let predictionMaxWords: Int?
   let hudOpacityPercent: Int?
   let appSmartSwitchConfigs: [String: AppSmartSwitchConfig]?  // 1.7.0+ per-app 3-state
   let translationHUDEnabled: Bool?
@@ -141,6 +142,7 @@ struct UserDataExport: Codable {
     case appTheme, uiTheme, accentColorChoice, appearanceMode, themeConfigs
     case autoPersonalDictFeedback
     case wordPredictionEnabled, predictionHUDLineOffset, predictionHUDFontSize
+    case predictionMaxWords
     case hudOpacityPercent, appSmartSwitchConfigs
     case translationHUDEnabled, translationHUDDurationMs, programmingMode
     case quickConfigPreset, autoCapitalizeEnabled, nonLatinIMEAutoDisable
@@ -175,6 +177,7 @@ struct UserDataExport: Codable {
     wordPredictionEnabled: Bool? = nil,
     predictionHUDLineOffset: Int? = nil,
     predictionHUDFontSize: Int? = nil,
+    predictionMaxWords: Int? = nil,
     hudOpacityPercent: Int? = nil,
     appSmartSwitchConfigs: [String: AppSmartSwitchConfig]? = nil,
     translationHUDEnabled: Bool? = nil,
@@ -235,6 +238,7 @@ struct UserDataExport: Codable {
     self.wordPredictionEnabled = wordPredictionEnabled
     self.predictionHUDLineOffset = predictionHUDLineOffset
     self.predictionHUDFontSize = predictionHUDFontSize
+    self.predictionMaxWords = predictionMaxWords
     self.hudOpacityPercent = hudOpacityPercent
     self.appSmartSwitchConfigs = appSmartSwitchConfigs
     self.translationHUDEnabled = translationHUDEnabled
@@ -299,6 +303,7 @@ struct UserDataExport: Codable {
     self.wordPredictionEnabled = try c.decodeIfPresent(Bool.self, forKey: .wordPredictionEnabled)
     self.predictionHUDLineOffset = try c.decodeIfPresent(Int.self, forKey: .predictionHUDLineOffset)
     self.predictionHUDFontSize = try c.decodeIfPresent(Int.self, forKey: .predictionHUDFontSize)
+    self.predictionMaxWords = try c.decodeIfPresent(Int.self, forKey: .predictionMaxWords)
     self.hudOpacityPercent = try c.decodeIfPresent(Int.self, forKey: .hudOpacityPercent)
     self.appSmartSwitchConfigs = try c.decodeIfPresent([String: AppSmartSwitchConfig].self,
                                                       forKey: .appSmartSwitchConfigs)
@@ -406,6 +411,7 @@ enum UserDataMigration {
       wordPredictionEnabled: Defaults[.wordPredictionEnabled],
       predictionHUDLineOffset: Defaults[.predictionHUDLineOffset],
       predictionHUDFontSize: Defaults[.predictionHUDFontSize],
+      predictionMaxWords: Defaults[.predictionMaxWords],
       hudOpacityPercent: Defaults[.hudOpacityPercent],
       appSmartSwitchConfigs: Defaults[.appSmartSwitchConfigs],
       translationHUDEnabled: Defaults[.translationHUDEnabled],
@@ -651,6 +657,8 @@ enum UserDataMigration {
                 label: "Khoảng cách HUD dự đoán")
     applyScalar(.predictionHUDFontSize, export.predictionHUDFontSize,
                 label: "Cỡ chữ HUD dự đoán")
+    applyScalar(.predictionMaxWords, export.predictionMaxWords,
+                label: "Số từ gợi ý tối đa")
     applyScalar(.hudOpacityPercent, export.hudOpacityPercent,
                 label: "Độ trong suốt HUD")
     applyScalar(.translationHUDEnabled, export.translationHUDEnabled,
