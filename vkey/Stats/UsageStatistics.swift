@@ -624,9 +624,11 @@ final class UsageStatistics {
 
   /// Stat category để xoá cụm từ cụ thể (1.5.9+).
   enum StatCategory {
-    case vietnamese  // Top tiếng Việt
-    case english     // Top tiếng Anh / raw
-    case app         // Top app
+    case vietnamese       // Top từ tiếng Việt
+    case english          // Top từ tiếng Anh / raw
+    case app              // Top app
+    case vietnamesePhrase // Cụm 2–4 từ tiếng Việt
+    case englishPhrase    // Cụm 2–3 từ ngoài tiếng Việt
   }
 
   /// Xoá 1 cụm từ / app khỏi current week's counters. Sau khi xoá:
@@ -638,6 +640,17 @@ final class UsageStatistics {
   ///   không sửa được.
   /// - Total counters (wordsTotal, wordsKeptVietnamese, ...) không trừ,
   ///   vì đã được dùng để tính nhiều thứ khác — chỉ remove khỏi top list.
+  /// UI + Settings: xóa khỏi top tuần này; từ EN đơn cũng thêm `userDenyWords`.
+  func removeTopEntry(word: String, category: StatCategory) {
+    removeFromCurrentWeek(word: word, category: category)
+    guard category == .english else { return }
+    let norm = word.normalizedDictionaryToken
+    var deny = Defaults[.userDenyWords]
+    guard !deny.contains(where: { $0.normalizedDictionaryToken == norm }) else { return }
+    deny.append(norm)
+    Defaults[.userDenyWords] = deny
+  }
+
   func removeFromCurrentWeek(word: String, category: StatCategory) {
     queue.async { [weak self] in
       guard let self else { return }
@@ -651,8 +664,32 @@ final class UsageStatistics {
         self.counters.enRestoreStreak.removeValue(forKey: word)
       case .app:
         self.counters.appCounts.removeValue(forKey: word)
+      case .vietnamesePhrase:
+        self.removePhrase(word, kind: .vietnamese)
+      case .englishPhrase:
+        self.removePhrase(word, kind: .english)
       }
       self.scheduleFlush()
+    }
+  }
+
+  private enum PhraseCounterKind { case vietnamese, english }
+
+  private func removePhrase(_ phrase: String, kind: PhraseCounterKind) {
+    let key = phrase
+      .split(separator: " ", omittingEmptySubsequences: true)
+      .joined(separator: " ")
+    guard !key.isEmpty else { return }
+    switch kind {
+    case .vietnamese:
+      var removed = false
+      if counters.vnPhraseCounts2.removeValue(forKey: key) != nil { removed = true }
+      if counters.vnPhraseCounts3.removeValue(forKey: key) != nil { removed = true }
+      if counters.vnPhraseCounts4.removeValue(forKey: key) != nil { removed = true }
+      if removed { rebuildPhraseSuffixIndex() }
+    case .english:
+      counters.enPhraseCounts2.removeValue(forKey: key)
+      counters.enPhraseCounts3.removeValue(forKey: key)
     }
   }
 

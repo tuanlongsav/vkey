@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.19 — "Gợi ý cụm 2–3 từ + thống kê suffix O(1)"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.20 — "Thống kê quản lý cụm + icon Glass/Neural"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.20** — 📊 **Quản lý & xóa cụm thống kê** — cụm ngoài tiếng Việt (và VN) có sheet xóa; fix xóa đúng bucket phrase; xóa từ EN thêm deny list. 🎨 **Icon cài đặt** — không còn mờ trên Glass/Neural. 263 test pass.
+>
 > **3.19** — ✨ **Gợi ý cụm 2–3 từ** (mặc định 2): Tab chèn cả cụm như `anh chị`, `cổ phần` — học từ thống kê suffix O(1) + corpus nhúng đa từ. Thống kê cụm 4 từ. Backup gồm `predictionMaxWords`. 262 test pass.
 >
 > **3.18** — 📋 **Giới hạn dung lượng clipboard có thể chỉnh** (mặc định 10 MB, 1–200 MB). Tệp lớn hơn mức không lưu lịch sử — hiện **HUD cảnh báo amber** dễ nhận ra kể cả theme Liquid Glass; sao chép/dán vẫn như macOS. 259 test pass.

@@ -2,6 +2,23 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.20] - 2026-06-19 — "Thống kê quản lý cụm + icon Glass/Neural"
+
+### Thống kê
+- **Quản lý & xóa cụm ngoài tiếng Việt** — sheet chi tiết + nút quản lý kể cả khi ≤10 mục (`VKStatsTab`, `StatisticsView`).
+- **Fix xóa cụm** — `StatCategory.vietnamesePhrase` / `.englishPhrase` + `removePhrase` xóa đúng bucket (`vnPhraseCounts*` / `enPhraseCounts*`), không còn gọi nhầm `vnWordCounts`.
+- **`removeTopEntry`** — xóa từ EN đơn đồng thời thêm `userDenyWords` (inline trash + detail sheet).
+- **Đồng nhất UX** — section cụm VN/EN đều có nút quản lý.
+
+### Giao diện
+- **`tileAccent`** — icon cài đặt `ink200` không còn mờ trên theme Glass/Neural (`VKIconTile`, sidebar nav).
+- Tab **Thống kê & Sao lưu** — màu tile `gold` (tách khỏi Smart Switch `info`).
+
+### Test
+- 3 test mới: xóa cụm VN/EN, `removeTopEntry` + deny list. Toàn bộ 263 test pass.
+
+---
+
 ## [3.19] - 2026-06-19 — "Gợi ý cụm 2–3 từ + thống kê suffix O(1)"
 
 **Tab chèn cả cụm ngắn (mặc định 2 từ), học cụm 4 từ, và index suffix tra cứu nhanh cho prediction.**

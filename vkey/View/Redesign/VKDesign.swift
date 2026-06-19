@@ -13,6 +13,7 @@
 //    Toggle("", isOn: $on).tint(VK.Color.brand)
 //
 
+import AppKit
 import Defaults
 import SwiftUI
 
@@ -206,6 +207,15 @@ enum VK {
     static let warningSoft = C(lightVK: C(vkHex: "#FAF1D6"), darkVK: Palette.warning.opacity(0.18))
     static let dangerSoft  = C(lightVK: C(vkHex: "#FBE0E3"), darkVK: Palette.danger.opacity(0.18))
     static let infoSoft    = C(lightVK: C(vkHex: "#DDEBF9"), darkVK: Palette.info.opacity(0.18))
+
+    /// Màu icon trên tile — remap màu tối tĩnh (ink*) khi Glass/Neural để glyph không bị chìm.
+    static func tileAccent(_ base: C) -> C {
+      guard VK.Glass.isOn || VK.isNeural else { return base }
+      guard let rgb = NSColor(base).usingColorSpace(.sRGB) else { return base }
+      let lum = 0.299 * rgb.redComponent + 0.587 * rgb.greenComponent + 0.114 * rgb.blueComponent
+      if lum < 0.42 { return fg2 }
+      return base
+    }
   }
 
   // MARK: Radii (pt) — 2.16: nhân theo Defaults.themeRadius (sắc/vừa/tròn)

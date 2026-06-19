@@ -3248,6 +3248,72 @@ final class UsageStatisticsTests: XCTestCase {
     )
     XCTAssertEqual(result.allow.count, 5)
   }
+
+  private func drainStatsQueue(_ stats: UsageStatistics) {
+    stats.flushSynchronously()
+    let exp = expectation(description: "queue drain")
+    DispatchQueue.global().asyncAfter(deadline: .now() + 0.05) { exp.fulfill() }
+    wait(for: [exp], timeout: 1.0)
+  }
+
+  func test_removeFromCurrentWeek_vietnamesePhrase() {
+    for _ in 0..<5 {
+      stats.recordCommit(
+        decision: .keepVietnamese,
+        rawInput: "xin", transformed: "xin", appBundleId: nil
+      )
+      stats.recordCommit(
+        decision: .keepVietnamese,
+        rawInput: "chào", transformed: "chào", appBundleId: nil
+      )
+    }
+    drainStatsQueue(stats)
+    let before = stats.aggregatedTopVietnamesePhrases(minWords: 2, maxWords: 3, threshold: 3)
+    XCTAssertTrue(before.contains { $0.word == "xin chào" && $0.count >= 3 })
+
+    stats.removeFromCurrentWeek(word: "xin chào", category: .vietnamesePhrase)
+    drainStatsQueue(stats)
+    let after = stats.aggregatedTopVietnamesePhrases(minWords: 2, maxWords: 3, threshold: 3)
+    XCTAssertFalse(after.contains { $0.word == "xin chào" })
+  }
+
+  func test_removeFromCurrentWeek_englishPhrase() {
+    for _ in 0..<5 {
+      stats.recordCommit(
+        decision: .restoreRawEnglish("machine"),
+        rawInput: "machine", transformed: "machine", appBundleId: nil
+      )
+      stats.recordCommit(
+        decision: .restoreRawEnglish("learning"),
+        rawInput: "learning", transformed: "learning", appBundleId: nil
+      )
+    }
+    drainStatsQueue(stats)
+    let before = stats.aggregatedTopEnglishPhrases(minWords: 2, maxWords: 3, threshold: 3)
+    XCTAssertTrue(before.contains { $0.word == "machine learning" && $0.count >= 3 })
+
+    stats.removeFromCurrentWeek(word: "machine learning", category: .englishPhrase)
+    drainStatsQueue(stats)
+    let after = stats.aggregatedTopEnglishPhrases(minWords: 2, maxWords: 3, threshold: 3)
+    XCTAssertFalse(after.contains { $0.word == "machine learning" })
+  }
+
+  func test_removeTopEntry_english_addsUserDeny() {
+    stats.recordCommit(
+      decision: .restoreRawEnglish("lol"),
+      rawInput: "lol", transformed: "lol", appBundleId: nil
+    )
+    drainStatsQueue(stats)
+    XCTAssertTrue(stats.currentWeekSummary().topEnglishWords.contains { $0.word == "lol" })
+
+    stats.removeTopEntry(word: "lol", category: .english)
+    drainStatsQueue(stats)
+    XCTAssertTrue(
+      Defaults[.userDenyWords].contains { $0.normalizedDictionaryToken == "lol" },
+      "Xóa từ EN từ top phải thêm deny list để không hiện lại"
+    )
+    XCTAssertFalse(stats.currentWeekSummary().topEnglishWords.contains { $0.word == "lol" })
+  }
 }
 
 // MARK: - vkey 1.5.0 Phase 10 — UserDataMigration

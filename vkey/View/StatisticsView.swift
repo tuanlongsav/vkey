@@ -19,18 +19,22 @@ enum TopWordsDetailCategory: Identifiable {
   case vietnamese
   case english
   case vietnamesePhrases
+  case englishPhrases
   var id: Self { self }
   var title: String {
     switch self {
     case .vietnamese:        return "Top từ tiếng Việt"
     case .english:           return "Top từ tiếng Anh / ký tự đặc biệt"
     case .vietnamesePhrases: return "Top cụm 2-3 từ tiếng Việt"
+    case .englishPhrases:    return "Top cụm ngoài tiếng Việt"
     }
   }
   var statCategory: UsageStatistics.StatCategory {
     switch self {
-    case .vietnamese, .vietnamesePhrases: return .vietnamese
-    case .english:                        return .english
+    case .vietnamese:        return .vietnamese
+    case .english:           return .english
+    case .vietnamesePhrases: return .vietnamesePhrase
+    case .englishPhrases:    return .englishPhrase
     }
   }
 }
@@ -199,17 +203,19 @@ struct StatisticsView: View {
                     .monospacedDigit()
                 }
               }
-              // 1.8.4: button "Xem chi tiết" như top từ đơn — mở sheet full list.
-              if topVnPhrases.count > 10 {
-                HStack {
-                  Spacer()
-                  Button {
-                    detailCategory = .vietnamesePhrases
-                  } label: {
-                    Label("Xem chi tiết (\(topVnPhrases.count))", themedSymbol: "list.bullet")
-                  }
-                  Spacer()
+              HStack {
+                Spacer()
+                Button {
+                  detailCategory = .vietnamesePhrases
+                } label: {
+                  Label(
+                    topVnPhrases.count > 10
+                      ? "Xem chi tiết (\(topVnPhrases.count))"
+                      : "Quản lý & xóa (\(topVnPhrases.count))",
+                    themedSymbol: "list.bullet"
+                  )
                 }
+                Spacer()
               }
             } header: {
               Text("Top cụm 2-3 từ tiếng Việt (tuần này)")
@@ -224,16 +230,19 @@ struct StatisticsView: View {
               ForEach(filteredTopEN.prefix(10), id: \.word) { wc in
                 statDeletableRow(word: wc.word, count: wc.count, category: .english)
               }
-              if filteredTopEN.count > 10 {
-                HStack {
-                  Spacer()
-                  Button {
-                    detailCategory = .english
-                  } label: {
-                    Label("Xem chi tiết (\(filteredTopEN.count))", themedSymbol: "list.bullet")
-                  }
-                  Spacer()
+              HStack {
+                Spacer()
+                Button {
+                  detailCategory = .english
+                } label: {
+                  Label(
+                    filteredTopEN.count > 10
+                      ? "Xem chi tiết (\(filteredTopEN.count))"
+                      : "Quản lý & xóa (\(filteredTopEN.count))",
+                    themedSymbol: "list.bullet"
+                  )
                 }
+                Spacer()
               }
             } header: {
               Text("Top từ ngoài tiếng Việt (gợi ý từ điển cá nhân)")
@@ -246,13 +255,21 @@ struct StatisticsView: View {
           if !topEnPhrases.isEmpty {
             Section {
               ForEach(topEnPhrases.prefix(10), id: \.word) { wc in
-                HStack {
-                  Text(wc.word)
-                  Spacer()
-                  Text("×\(wc.count)")
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
+                statDeletableRow(word: wc.word, count: wc.count, category: .englishPhrase)
+              }
+              HStack {
+                Spacer()
+                Button {
+                  detailCategory = .englishPhrases
+                } label: {
+                  Label(
+                    topEnPhrases.count > 10
+                      ? "Xem chi tiết (\(topEnPhrases.count))"
+                      : "Quản lý & xóa (\(topEnPhrases.count))",
+                    themedSymbol: "list.bullet"
+                  )
                 }
+                Spacer()
               }
             } header: {
               Text("Top cụm ngoài tiếng Việt (tuần này)")
@@ -332,7 +349,7 @@ struct StatisticsView: View {
         category: category,
         words: detailWords(for: category),
         onDelete: { word in
-          UsageStatistics.shared.removeFromCurrentWeek(
+          UsageStatistics.shared.removeTopEntry(
             word: word, category: category.statCategory
           )
           DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -360,10 +377,10 @@ struct StatisticsView: View {
     let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
     if denied.contains(normalized) { return false }
     switch category {
-    case .vietnamese:
+    case .vietnamese, .vietnamesePhrase:
       return LexiconManager.shared.isVietnameseWord(normalized)
         || LexiconManager.shared.shouldKeepVietnamese(normalized)
-    case .english:
+    case .english, .englishPhrase:
       // 1.7.10: section "Top từ ngoài tiếng Việt" hiển thị raw text + ký
       // tự đặc biệt để gợi ý bổ sung từ điển cá nhân (vd "lol", "okay").
       // 1.8.3: thêm filter — loại từ có trong VN lexicon (vd "hay", "chi",
@@ -388,6 +405,10 @@ struct StatisticsView: View {
       // 1.8.4: phrase data từ aggregatedTopVietnamesePhrases — không filter
       // qua isCleanTopWord vì phrases được aggregate theo threshold riêng.
       return UsageStatistics.shared.aggregatedTopVietnamesePhrases(
+        minWords: 2, maxWords: 3, threshold: 3
+      )
+    case .englishPhrases:
+      return UsageStatistics.shared.aggregatedTopEnglishPhrases(
         minWords: 2, maxWords: 3, threshold: 3
       )
     }
@@ -530,8 +551,7 @@ struct StatisticsView: View {
         .foregroundStyle(.secondary)
         .monospacedDigit()
       Button {
-        UsageStatistics.shared.removeFromCurrentWeek(word: word, category: category)
-        // Refresh sau 1 tick để counters update qua queue.async.
+        UsageStatistics.shared.removeTopEntry(word: word, category: category)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
           refresh()
         }

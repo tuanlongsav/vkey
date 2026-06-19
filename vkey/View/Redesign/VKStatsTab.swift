@@ -81,7 +81,7 @@ struct VKStatsTab: View {
         wordListSection("Top từ ngoài tiếng Việt · gợi ý từ điển", words: topEN,
                         detail: .english, accent: VK.Color.info)
         wordListSection("Top cụm ngoài tiếng Việt", words: topENPhrases,
-                        detail: nil, accent: VK.Color.info)
+                        detail: .englishPhrases, accent: VK.Color.info)
         topAppsSection
         historicalSection
       }
@@ -98,7 +98,7 @@ struct VKStatsTab: View {
         category: category,
         words: detailWords(for: category),
         onDelete: { word in
-          UsageStatistics.shared.removeFromCurrentWeek(word: word, category: category.statCategory)
+          UsageStatistics.shared.removeTopEntry(word: word, category: category.statCategory)
           DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: refresh)
         },
         onDismiss: { detailCategory = nil }
@@ -174,11 +174,17 @@ struct VKStatsTab: View {
         }
         .background(cardBackground)
 
-        if let detail, words.count > 10 {
+        if let detail {
           HStack {
             Spacer()
-            VKButton(title: "Xem chi tiết (\(words.count))", icon: "list.bullet",
-                     variant: .ghost, size: .sm) { detailCategory = detail }
+            VKButton(
+              title: words.count > 10
+                ? "Xem chi tiết (\(words.count))"
+                : "Quản lý & xóa (\(words.count))",
+              icon: "list.bullet",
+              variant: .ghost,
+              size: .sm
+            ) { detailCategory = detail }
           }
         }
       }
@@ -291,10 +297,10 @@ struct VKStatsTab: View {
     let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
     if denied.contains(normalized) { return false }
     switch category {
-    case .vietnamese:
+    case .vietnamese, .vietnamesePhrase:
       return LexiconManager.shared.isVietnameseWord(normalized)
         || LexiconManager.shared.shouldKeepVietnamese(normalized)
-    case .english:
+    case .english, .englishPhrase:
       if LexiconManager.shared.isVietnameseWord(normalized) { return false }
       return true
     case .app:
@@ -307,6 +313,7 @@ struct VKStatsTab: View {
     case .vietnamese:        return topVN
     case .english:           return topEN
     case .vietnamesePhrases: return topVNPhrases
+    case .englishPhrases:    return topENPhrases
     }
   }
 

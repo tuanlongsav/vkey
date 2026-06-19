@@ -39,7 +39,7 @@ enum VKTab: String, CaseIterable, Identifiable {
     case .smart:   return VK.Color.info
     case .macro:   return VK.Color.gold
     case .spell:   return VK.Color.success
-    case .stats:   return VK.Color.ink200
+    case .stats:   return VK.Color.gold
     case .theme:   return VK.Color.danger
     }
   }
@@ -416,18 +416,19 @@ private struct VKSidebar: View {
   /// Tile icon nav: Tonal → vuông đặc; Liquid Glass / Neural → tinted mờ.
   @ViewBuilder
   private func navTile(_ tab: VKTab, active: Bool) -> some View {
+    let accent = VK.Color.tileAccent(tab.tileColor)
     if (VK.Glass.isOn || VK.isNeural) && !active {
       Circle()
-        .fill(tab.tileColor.opacity(0.22))
+        .fill(accent.opacity(0.22))
         .frame(width: 26, height: 26)
         .background(.ultraThinMaterial, in: Circle())
         .overlay(Image(systemName: tab.icon)
                   .font(.system(size: 12.5, weight: .semibold))
-                  .foregroundStyle(tab.tileColor))
-        .overlay(Circle().strokeBorder(tab.tileColor.opacity(0.30), lineWidth: 1))
+                  .foregroundStyle(accent))
+        .overlay(Circle().strokeBorder(accent.opacity(0.30), lineWidth: 1))
     } else {
       RoundedRectangle(cornerRadius: VK.Glass.isOn ? 13 : 7, style: .continuous)
-        .fill(active ? Color.white.opacity(0.22) : tab.tileColor)
+        .fill(active ? Color.white.opacity(0.22) : accent)
         .frame(width: 26, height: 26)
         .overlay(Image(systemName: tab.icon)
                   .font(.system(size: 13, weight: .semibold))

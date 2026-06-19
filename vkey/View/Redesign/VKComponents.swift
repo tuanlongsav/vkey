@@ -93,24 +93,25 @@ struct VKIconTile: View {
   var size: CGFloat = 32
 
   var body: some View {
+    let accent = VK.Color.tileAccent(color)
     if VK.Glass.isOn || VK.isNeural {
       // Liquid Glass / Neural: tile tinted — nền màu nhạt + blur + glyph theo
       // màu + viền specular (per design `.icon-tile`).
       let shape = RoundedRectangle(cornerRadius: 11, style: .continuous)
-      shape.fill(color.opacity(0.20))
+      shape.fill(accent.opacity(0.20))
         .frame(width: size, height: size)
         .background(.ultraThinMaterial, in: shape)
         .overlay(
           Image(systemName: systemName)
             .font(.system(size: size * 0.48, weight: .semibold))
-            .foregroundStyle(color))
-        .overlay(shape.strokeBorder(color.opacity(0.32), lineWidth: 1))
+            .foregroundStyle(accent))
+        .overlay(shape.strokeBorder(accent.opacity(0.32), lineWidth: 1))
         .overlay(shape.strokeBorder(Color.white.opacity(0.45), lineWidth: 0.5)
                   .blendMode(.screen))
         .shadow(color: .black.opacity(0.18), radius: 3, x: 0, y: 2)
     } else {
       RoundedRectangle(cornerRadius: 8, style: .continuous)
-        .fill(color)
+        .fill(accent)
         .frame(width: size, height: size)
         .overlay(
           Image(systemName: systemName)

@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.20 — "Thống kê quản lý cụm + icon Glass/Neural"</title>
+      <sparkle:version>32000</sparkle:version>
+      <sparkle:shortVersionString>3.20</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 19 Jun 2026 21:42:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.20/vkey-3.20.dmg"
+        sparkle:edSignature="YoSELOvAMB9+b1+NLbKPh+/cX19UpWOUcvG5Mxi2CdC/yD2J5lKio1EjeCgN777X1kE3R7XIhKFnnzP1wuiUDg=="
+        length="6461575"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.20 — Thống kê quản lý cụm + icon Glass/Neural</h2>
+        <ul>
+          <li><b>Quản lý &amp; xóa cụm thống kê</b> — cụm ngoài tiếng Việt (và VN) có sheet xóa; fix xóa đúng bucket phrase.</li>
+          <li><b>Deny list</b> — xóa từ EN đơn thêm <code>userDenyWords</code> (inline + detail sheet).</li>
+          <li><b>Icon cài đặt</b> — không còn mờ trên theme Glass/Neural (<code>tileAccent</code>).</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 263 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.19 — "Gợi ý cụm 2–3 từ + thống kê suffix O(1)"</title>
       <sparkle:version>31900</sparkle:version>
       <sparkle:shortVersionString>3.19</sparkle:shortVersionString>
