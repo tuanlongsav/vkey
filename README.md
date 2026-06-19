@@ -5,8 +5,10 @@
 
 Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
 
-**Phiên bản hiện tại: 3.14 — "HUD gợi ý không che vùng gõ + Text Tools ổn định"** ([CHANGELOG](CHANGELOG.md))
+**Phiên bản hiện tại: 3.15 — "HUD đoán từ căn giữa + gợi ý theo cụm"** ([CHANGELOG](CHANGELOG.md))
 
+> **3.15** — 💡 **HUD đoán từ căn giữa phía trên ô nhập** — hết lỗi pill `→ … · Tab` nhảy góc trên-phải màn hình khi app không trả caret (Electron/Claude); setting khoảng cách 1–20 dòng hoạt động cả khi fallback AX. 🧠 **Đoán từ theo cụm tiếng Việt có nghĩa** — thống kê chỉ ghi cụm hợp lệ; prediction thêm layer cụm nhúng sẵn + học từ phrase stats (vd `kính gửi` → `anh`). 249 test pass.
+>
 > **3.14** — 💡 **HUD gợi ý từ không che vùng gõ.** Hết lỗi pill `→ … · Tab` chèn đè lên dòng đang gõ khi ô chat ở đáy màn hình (Claude desktop, Electron) — bỏ placement dưới caret, ưu tiên phía trên/bên phải, không dùng bounds cả ô text làm vị trí caret. 🔧 **Text Tools** chờ clipboard async (không block UI). 📋 Pasteboard đổi từ app khác không còn xoá từ đang gõ giữa chừng. 247 test pass.
 >
 > **3.13** — 🐛 **Ổn định gõ ở thanh địa chỉ Chrome và Window Title Rule.** Sync focus trước mỗi keystroke (hết race sau Cmd+L / click omnibox); `axDirect` áp cho mọi đường transform (Backspace, Escape, spell, macro, prediction); Window Title Rule không còn toggle VI/EN liên tục khi click/tab trong app. AX leo cây tốt hơn cho hộp Save. 244 test pass.

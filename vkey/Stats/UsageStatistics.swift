@@ -464,8 +464,8 @@ final class UsageStatistics {
   }
 
   /// 1.6.1: Aggregate top phrases (2 hoặc 3 từ tiếng Việt liền) qua
-  /// current week. Historical weeks không track phrase (chỉ từ 1.6.1+).
-  /// Dùng cho Macro suggestion UI.
+  /// current week. Chỉ gồm cụm có nghĩa (mọi token là từ VN hợp lệ).
+  /// Dùng cho Macro suggestion UI và phrase-aware prediction.
   func aggregatedTopVietnamesePhrases(
     minWords: Int = 2, maxWords: Int = 3, threshold: Int = 10
   ) -> [WordCount] {
@@ -484,6 +484,25 @@ final class UsageStatistics {
       return out
         .map { WordCount(word: $0.key, count: $0.value) }
         .sorted { $0.count > $1.count }
+    }
+  }
+
+  /// Gợi ý từ tiếp theo từ cụm 3 từ user hay gõ (vd "kính gửi" → "anh").
+  /// Chỉ dùng phrase counters đã lọc có nghĩa.
+  func phraseCompletionHints(prev2: String, prev1: String) -> [String: Int] {
+    let p2 = prev2.lowercased()
+    let p1 = prev1.lowercased()
+    let prefix = "\(p2) \(p1) "
+    guard !p2.isEmpty, !p1.isEmpty else { return [:] }
+    return queue.sync {
+      var hints: [String: Int] = [:]
+      for (phrase, count) in counters.vnPhraseCounts3 where phrase.hasPrefix(prefix) {
+        let remainder = phrase.dropFirst(prefix.count)
+        guard let nextWord = remainder.split(separator: " ", omittingEmptySubsequences: true).first
+        else { continue }
+        hints[String(nextWord), default: 0] += count
+      }
+      return hints
     }
   }
 
@@ -1022,20 +1041,41 @@ final class UsageStatistics {
   }
 
   /// 1.6.1: sliding window cập nhật phrase counters. Gọi từ `applyCommit`
-  /// mỗi khi commit `.keepVietnamese` thành công.
+  /// mỗi khi commit `.keepVietnamese` thành công. Chỉ ghi cụm có nghĩa.
   private func recordVnPhraseTransition(append token: String) {
     recentVnQueue.append(token)
     if recentVnQueue.count > 3 {
       recentVnQueue.removeFirst(recentVnQueue.count - 3)
     }
     if recentVnQueue.count >= 2 {
-      let phrase2 = recentVnQueue.suffix(2).joined(separator: " ")
-      counters.vnPhraseCounts2[phrase2, default: 0] += 1
+      let words2 = Array(recentVnQueue.suffix(2))
+      if Self.isMeaningfulVietnamesePhrase(words2) {
+        let phrase2 = words2.joined(separator: " ")
+        counters.vnPhraseCounts2[phrase2, default: 0] += 1
+      }
     }
     if recentVnQueue.count >= 3 {
-      let phrase3 = recentVnQueue.suffix(3).joined(separator: " ")
-      counters.vnPhraseCounts3[phrase3, default: 0] += 1
+      let words3 = Array(recentVnQueue.suffix(3))
+      if Self.isMeaningfulVietnamesePhrase(words3) {
+        let phrase3 = words3.joined(separator: " ")
+        counters.vnPhraseCounts3[phrase3, default: 0] += 1
+      }
     }
+  }
+
+  /// Cụm tiếng Việt có nghĩa: mọi token ≥2 ký tự và nằm trong từ điển VN
+  /// (hoặc user keep/allow). Loại chuỗi ngẫu nhiên / xen tiếng Anh.
+  static func isMeaningfulVietnamesePhrase(_ words: [String]) -> Bool {
+    guard words.count >= 2 else { return false }
+    let allowSet = Set(Defaults[.userAllowWords].map { $0.lowercased() })
+    let keepSet = Set(Defaults[.userKeepWords].map { $0.lowercased() })
+    for word in words {
+      let lower = word.lowercased()
+      guard lower.count >= 2 else { return false }
+      if keepSet.contains(lower) || allowSet.contains(lower) { continue }
+      if !LexiconManager.shared.isVietnameseWord(lower) { return false }
+    }
+    return true
   }
 
   /// 1.7.9: sliding window phrase counters cho EN/raw. Gọi từ `applyCommit`

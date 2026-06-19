@@ -93,10 +93,37 @@ final class PredictionEngine {
       out[w, default: 0] += c * 3  // boosted bigram user weight (was c)
     }
 
-    // Layer 3: embedded VN corpus
+    // Layer 3: embedded VN corpus (single-word prev1)
     if let nexts = EmbeddedBigrams.commonPairs[prev1] {
       for (next, weight) in nexts {
         out[next, default: 0] += weight
+      }
+    }
+
+    // Layer 4: embedded phrase completions ("prev2 prev1" → next)
+    if let prev2 = prev2 {
+      let phraseKey = "\(prev2.lowercased()) \(prev1)"
+      if let nexts = EmbeddedPhraseCompletions.completions[phraseKey] {
+        for (next, weight) in nexts {
+          out[next, default: 0] += weight * 2
+        }
+      }
+      // Layer 4b: bigram key cũng có thể là cụm 2 từ
+      if let nexts = EmbeddedBigrams.commonPairs[phraseKey] {
+        for (next, weight) in nexts {
+          out[next, default: 0] += weight * 2
+        }
+      }
+    }
+
+    // Layer 5: user phrase stats (cụm VN có nghĩa từ UsageStatistics)
+    if let prev2 = prev2 {
+      let phraseHints = UsageStatistics.shared.phraseCompletionHints(
+        prev2: prev2.lowercased(),
+        prev1: prev1
+      )
+      for (word, count) in phraseHints where count >= 2 {
+        out[word, default: 0] += count * 4
       }
     }
 

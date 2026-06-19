@@ -142,16 +142,23 @@ final class PredictionHUDWindow {
 
   /// Cố gắng đặt HUD sát dòng caret của focused text element.
   private func targetFrame(forContentSize contentSize: CGSize) -> NSRect {
-    if let caret = focusedElementCaretRect(),
+    let lineOffset = Defaults[.predictionHUDLineOffset]
+    let screens = NSScreen.screens
+    if let caret = focusedElementCaretRect() ?? focusedTextFieldAnchorRect(),
        let frame = Self.computeVisualFrame(
          caretAX: caret,
          contentSize: contentSize,
-         lineOffset: Defaults[.predictionHUDLineOffset],
-         screens: NSScreen.screens
+         lineOffset: lineOffset,
+         screens: screens
        ) {
       return frame
     }
-    return fallbackFrame(width: contentSize.width, height: contentSize.height)
+    return fallbackFrame(
+      width: contentSize.width,
+      height: contentSize.height,
+      lineOffset: lineOffset,
+      screens: screens
+    )
   }
 
   /// Chuẩn hoá caret AX — một số app (Electron chat) trả bounds cả dòng
@@ -172,7 +179,7 @@ final class PredictionHUDWindow {
   }
 
   /// Tính frame HUD (Cocoa coords, origin bottom-left) sao cho không chồng vùng gõ.
-  /// Ưu tiên: phía trên caret → bên phải caret → thu offset → fallback caller.
+  /// Luôn căn giữa theo bề ngang màn hình; đặt phía trên dòng nhập.
   nonisolated static func computeVisualFrame(
     caretAX: CGRect,
     contentSize: CGSize,
@@ -203,13 +210,13 @@ final class PredictionHUDWindow {
     let width = contentSize.width
     let height = contentSize.height
     let lineHeight = min(max(caret.height, 16), 48)
-    let offsetLines = CGFloat(max(1, min(10, lineOffset)))
+    let offsetLines = CGFloat(max(1, min(20, lineOffset)))
     let separation = lineHeight * offsetLines
     let minGap: CGFloat = 8
+    let visible = visibleFrame
 
     let caretTopCocoa = primaryDisplayHeight - caret.minY
     let caretBottomCocoa = primaryDisplayHeight - caret.maxY
-    let visible = visibleFrame
 
     func caretOverlapsHUD(_ hud: NSRect) -> Bool {
       let hudTop = hud.origin.y + hud.size.height
@@ -220,23 +227,27 @@ final class PredictionHUDWindow {
       max(visible.minY + 8, min(y, visible.maxY - height - 8))
     }
 
-    func clampX(_ x: CGFloat) -> CGFloat {
-      max(visible.minX + 8, min(x, visible.maxX - width - 8))
+    func centeredX() -> CGFloat {
+      max(visible.minX + 8, min(visible.midX - width / 2, visible.maxX - width - 8))
     }
 
-    // 1) Phía trên caret (mặc định).
+    // 1) Phía trên caret, căn giữa màn hình (mặc định).
     var aboveBottomY = caretTopCocoa + separation - height
     aboveBottomY = max(aboveBottomY, caretTopCocoa + minGap)
-    var aboveX = clampX(caret.minX)
-    var aboveFrame = NSRect(x: aboveX, y: clampY(aboveBottomY), width: width, height: height)
+    let aboveFrame = NSRect(
+      x: centeredX(),
+      y: clampY(aboveBottomY),
+      width: width,
+      height: height
+    )
     if !caretOverlapsHUD(aboveFrame) {
       return aboveFrame
     }
 
-    // 2) Thu offset nếu sát mép trên màn hình (không hạ xuống dưới caret).
+    // 2) Thu offset nếu sát mép trên màn hình — vẫn không hạ xuống dưới caret.
     let tightBottomY = caretTopCocoa + lineHeight * 1.25 - height
     let tightFrame = NSRect(
-      x: aboveX,
+      x: centeredX(),
       y: clampY(max(tightBottomY, caretTopCocoa + minGap)),
       width: width,
       height: height
@@ -245,41 +256,15 @@ final class PredictionHUDWindow {
       return tightFrame
     }
 
-    // 3) Bên phải caret, căn theo mép trên dòng — tránh che vùng đang gõ.
-    let rightX = caret.maxX + 12
-    let rightBottomY = caretTopCocoa + lineHeight * 0.15 - height
-    let rightFrame = NSRect(
-      x: clampX(rightX),
-      y: clampY(max(rightBottomY, caretTopCocoa + minGap - height * 0.5)),
-      width: width,
-      height: height
-    )
-    if rightFrame.maxX <= visible.maxX - 8 && !caretOverlapsHUD(rightFrame) {
-      return rightFrame
-    }
-
-    // 4) Neo phải màn hình, vẫn phía trên caret.
-    let trailingFrame = NSRect(
-      x: clampX(visible.maxX - width - 16),
+    // 3) Không đủ chỗ theo offset — neo sát phía trên caret, vẫn căn giữa.
+    let snugFrame = NSRect(
+      x: centeredX(),
       y: clampY(caretTopCocoa + minGap),
       width: width,
       height: height
     )
-    if !caretOverlapsHUD(trailingFrame) {
-      return trailingFrame
-    }
-
-    // 5) Caret ở nửa dưới màn hình → neo HUD lên vùng trên (tránh che ô chat).
-    if caretBottomCocoa < visible.midY {
-      let upperFrame = NSRect(
-        x: clampX(caret.minX),
-        y: visible.maxY - height - 16,
-        width: width,
-        height: height
-      )
-      if !caretOverlapsHUD(upperFrame) {
-        return upperFrame
-      }
+    if !caretOverlapsHUD(snugFrame) {
+      return snugFrame
     }
 
     return nil
@@ -304,15 +289,93 @@ final class PredictionHUDWindow {
     return NSScreen.main ?? screens.first
   }
 
-  private func fallbackFrame(width: CGFloat, height: CGFloat) -> NSRect {
-    let screen = NSScreen.main?.visibleFrame ?? .zero
-    // Góc trên-phải — tránh chồng ô nhập thường ở đáy màn hình (chat apps).
+  private func fallbackFrame(
+    width: CGFloat,
+    height: CGFloat,
+    lineOffset: Int,
+    screens: [NSScreen]
+  ) -> NSRect {
+    let screen = NSScreen.main?.visibleFrame ?? screens.first?.visibleFrame ?? .zero
+    let lineHeight: CGFloat = 20
+    let offsetLines = CGFloat(max(1, min(20, lineOffset)))
+    let separation = lineHeight * offsetLines
+
+    let centeredX = max(
+      screen.minX + 8,
+      min(screen.midX - width / 2, screen.maxX - width - 8)
+    )
+
+    // Ưu tiên neo theo mép dưới ô nhập nếu AX trả được bounds element.
+    if let anchor = focusedTextFieldAnchorRect(),
+       let frame = Self.computeVisualFrame(
+         caretAX: anchor,
+         contentSize: CGSize(width: width, height: height),
+         lineOffset: lineOffset,
+         screens: screens
+       ) {
+      return frame
+    }
+
+    // Fallback cuối: căn giữa ngang, phía trên vùng nhập thường gặp ở đáy màn hình.
+    let inputLineY = screen.minY + max(48, screen.height * 0.12)
+    let bottomY = inputLineY + separation - height
     return NSRect(
-      x: screen.maxX - width - 24,
-      y: screen.maxY - height - 24,
+      x: centeredX,
+      y: max(screen.minY + 8, bottomY),
       width: width,
       height: height
     )
+  }
+
+  /// Khi parametric caret không khả dụng (Electron/Claude desktop), dùng
+  /// mép dưới focused text field làm neo — không lấy bounds cả ô làm caret.
+  private func focusedTextFieldAnchorRect() -> CGRect? {
+    let systemWide = AXUIElementCreateSystemWide()
+    var focused: CFTypeRef?
+    let err = AXUIElementCopyAttributeValue(
+      systemWide,
+      kAXFocusedUIElementAttribute as CFString,
+      &focused
+    )
+    guard err == .success, let element = focused else { return nil }
+    guard CFGetTypeID(element) == AXUIElementGetTypeID() else { return nil }
+    let axElement = element as! AXUIElement
+
+    guard let position = axPoint(from: axElement, attribute: kAXPositionAttribute as CFString),
+          let size = axSize(from: axElement, attribute: kAXSizeAttribute as CFString),
+          size.width > 0, size.height > 0
+    else { return nil }
+
+    let lineHeight = min(max(size.height * 0.12, 16), 48)
+    let anchorX = position.x + size.width / 2
+    let anchorY = position.y + size.height - lineHeight
+    return CGRect(x: anchorX - 2, y: anchorY, width: 4, height: lineHeight)
+  }
+
+  private func axPoint(from element: AXUIElement, attribute: CFString) -> CGPoint? {
+    var valueRef: CFTypeRef?
+    guard AXUIElementCopyAttributeValue(element, attribute, &valueRef) == .success,
+          let value = valueRef,
+          CFGetTypeID(value) == AXValueGetTypeID()
+    else { return nil }
+    let axValue = value as! AXValue
+    guard AXValueGetType(axValue) == .cgPoint else { return nil }
+    var point = CGPoint.zero
+    guard AXValueGetValue(axValue, .cgPoint, &point) else { return nil }
+    return point
+  }
+
+  private func axSize(from element: AXUIElement, attribute: CFString) -> CGSize? {
+    var valueRef: CFTypeRef?
+    guard AXUIElementCopyAttributeValue(element, attribute, &valueRef) == .success,
+          let value = valueRef,
+          CFGetTypeID(value) == AXValueGetTypeID()
+    else { return nil }
+    let axValue = value as! AXValue
+    guard AXValueGetType(axValue) == .cgSize else { return nil }
+    var size = CGSize.zero
+    guard AXValueGetValue(axValue, .cgSize, &size) else { return nil }
+    return size
   }
 
   /// Lấy caret bounds CHÍNH XÁC qua AX parametric API.

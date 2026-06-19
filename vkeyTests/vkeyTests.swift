@@ -1992,6 +1992,20 @@ final class KeyboardUSTests: XCTestCase {
     XCTAssertTrue(PredictionEngine.isValidCandidate("ừ", allowedSet: []))
     XCTAssertTrue(PredictionEngine.isValidCandidate("ồ", allowedSet: []))
     XCTAssertFalse(PredictionEngine.isValidCandidate("b", allowedSet: []))
+
+    // Layer 4: phrase completion từ embedded corpus
+    let phraseCandidates = PredictionEngine.shared.collectCandidates(
+      prev2: "kính",
+      prev1: "gửi"
+    )
+    XCTAssertTrue(phraseCandidates.contains { $0.word == "anh" && $0.freq > 0 })
+  }
+
+  func testMeaningfulVietnamesePhraseFilter() {
+    XCTAssertTrue(UsageStatistics.isMeaningfulVietnamesePhrase(["công", "ty"]))
+    XCTAssertTrue(UsageStatistics.isMeaningfulVietnamesePhrase(["xin", "chào"]))
+    XCTAssertFalse(UsageStatistics.isMeaningfulVietnamesePhrase(["hello", "world"]))
+    XCTAssertFalse(UsageStatistics.isMeaningfulVietnamesePhrase(["asdf", "ghjk"]))
   }
 }
 
@@ -2053,6 +2067,30 @@ final class PredictionHUDWindowTests: XCTestCase {
     let hudTop = frame.origin.y + frame.height
     XCTAssertFalse(frame.origin.y < caretTopCocoa && hudTop > caretBottomCocoa)
     XCTAssertGreaterThanOrEqual(frame.origin.y, caretTopCocoa + 8)
+    // Căn giữa theo bề ngang màn hình.
+    XCTAssertEqual(frame.midX, screen.midX, accuracy: 1)
+  }
+
+  func testComputeVisualFrameRespectsLineOffset() {
+    let contentSize = CGSize(width: 200, height: 36)
+    let caret = CGRect(x: 420, y: 820, width: 2, height: 20)
+    let screen = NSRect(x: 0, y: 0, width: 1440, height: 900)
+    guard let near = PredictionHUDWindow.computeVisualFrame(
+      caretAX: caret,
+      contentSize: contentSize,
+      lineOffset: 2,
+      visibleFrame: screen,
+      primaryDisplayHeight: 900
+    ), let far = PredictionHUDWindow.computeVisualFrame(
+      caretAX: caret,
+      contentSize: contentSize,
+      lineOffset: 10,
+      visibleFrame: screen,
+      primaryDisplayHeight: 900
+    ) else {
+      return XCTFail("expected frames")
+    }
+    XCTAssertGreaterThan(far.origin.y, near.origin.y)
   }
 
   func testComputeVisualFrameAvoidsBelowCaretForChatInputAtBottom() {
