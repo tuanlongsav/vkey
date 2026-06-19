@@ -2125,6 +2125,7 @@ final class ClipboardHistoryTests: XCTestCase {
     Defaults.reset(.clipboardHistoryEnabled)
     Defaults.reset(.clipboardHistoryCapacity)
     Defaults.reset(.clipboardHistoryContentMode)
+    Defaults.reset(.clipboardHistoryMaxEntryMegabytes)
     ClipboardHistoryService.shared.clear()
   }
 
@@ -2205,6 +2206,26 @@ final class ClipboardHistoryTests: XCTestCase {
       ClipboardHistoryService.fingerprint(for: [a]),
       ClipboardHistoryService.fingerprint(for: [b])
     )
+  }
+
+  func testMaxEntryBytesFromSettingsDefaultsTo10MB() {
+    Defaults[.clipboardHistoryMaxEntryMegabytes] = 10
+    XCTAssertEqual(ClipboardHistoryService.maxEntryBytesFromSettings(), 10 * 1024 * 1024)
+  }
+
+  func testOversizedCaptureDoesNotAddEntry() {
+    Defaults[.clipboardHistoryEnabled] = true
+    Defaults[.clipboardHistoryMaxEntryMegabytes] = 1
+    let pb = NSPasteboard.general
+    pb.clearContents()
+    let big = String(repeating: "x", count: 2 * 1024 * 1024)
+    pb.setString(big, forType: .string)
+    XCTAssertGreaterThan(
+      ClipboardHistoryService.estimatedCaptureBytes(from: pb, mode: .textOnly),
+      ClipboardHistoryService.maxEntryBytesFromSettings()
+    )
+    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
+    XCTAssertTrue(ClipboardHistoryService.shared.entries.isEmpty)
   }
 }
 

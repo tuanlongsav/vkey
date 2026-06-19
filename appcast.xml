@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.18 — "Clipboard giới hạn dung lượng + HUD cảnh báo"</title>
+      <sparkle:version>31800</sparkle:version>
+      <sparkle:shortVersionString>3.18</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 19 Jun 2026 12:44:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.18/vkey-3.18.dmg"
+        sparkle:edSignature="YKnPehprdGf9VHcf1pq08Sha1mYNDhMO9iHCTOQ0Wp+gH0IDDEIin4vm7aPEqdHmNsG3U1R87+zEWDF6nlu5BA=="
+        length="6424939"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.18 — Clipboard giới hạn dung lượng + HUD cảnh báo</h2>
+        <ul>
+          <li><b>Dung lượng tối đa mỗi mục</b> có thể chỉnh (1–200 MB, mặc định 10 MB).</li>
+          <li><b>Tệp vượt giới hạn</b> không lưu lịch sử — ⌘C/⌘V vẫn như macOS.</li>
+          <li><b>HUD cảnh báo amber</b> nổi bật, đọc rõ kể cả theme Liquid Glass.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 259 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.17 — "Sửa lỗi lịch sử clipboard"</title>
       <sparkle:version>31700</sparkle:version>
       <sparkle:shortVersionString>3.17</sparkle:shortVersionString>

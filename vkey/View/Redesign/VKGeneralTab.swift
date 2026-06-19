@@ -20,6 +20,7 @@ struct VKGeneralTab: View {
   @Default(.clipboardHistoryEnabled) private var clipboardHistory
   @Default(.clipboardHistoryCapacity) private var clipboardCapacity
   @Default(.clipboardHistoryContentMode) private var clipboardContentMode
+  @Default(.clipboardHistoryMaxEntryMegabytes) private var clipboardMaxEntryMB
 
   private var methodBinding: Binding<TypingMethods> {
     Binding(get: { appState.typingMethod }, set: { appState.setTypingMethod(method: $0) })
@@ -131,12 +132,19 @@ struct VKGeneralTab: View {
                 options: ClipboardHistoryContentMode.allCases.map { ($0, $0.label) }
               )
             }
+            VKRow(icon: "externaldrive.fill", iconColor: VK.Color.warning,
+                  label: "Dung lượng tối đa mỗi mục") {
+              clipboardStepper(value: $clipboardMaxEntryMB, range: 1...200, unit: "MB")
+            }
             VKRow(icon: "trash", iconColor: VK.Color.warning,
                   label: "Xóa lịch sử hiện tại") {
               VKButton(title: "Xóa", icon: "trash", variant: .secondary, size: .sm) {
                 ClipboardHistoryService.shared.clear()
               }
             }
+            VKGroupHint(
+              "Tệp hoặc nội dung lớn hơn mức tối đa không lưu vào lịch sử — hiện HUD cảnh báo; sao chép và dán vẫn như macOS."
+            )
           }
         }
       }
@@ -144,9 +152,13 @@ struct VKGeneralTab: View {
   }
 
   @ViewBuilder
-  private func clipboardStepper(value: Binding<Int>, range: ClosedRange<Int>) -> some View {
+  private func clipboardStepper(
+    value: Binding<Int>,
+    range: ClosedRange<Int>,
+    unit: String = "mục"
+  ) -> some View {
     HStack(spacing: 8) {
-      Text("\(value.wrappedValue) mục")
+      Text(unit == "mục" ? "\(value.wrappedValue) mục" : "\(value.wrappedValue) \(unit)")
         .font(.system(size: 12.5, weight: .medium, design: .rounded))
         .foregroundStyle(VK.Color.fg2)
         .frame(minWidth: 52, alignment: .trailing)

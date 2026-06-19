@@ -111,6 +111,7 @@ struct UserDataExport: Codable {
   let clipboardHistoryEnabled: Bool?
   let clipboardHistoryCapacity: Int?
   let clipboardHistoryContentMode: String?
+  let clipboardHistoryMaxEntryMegabytes: Int?
   let userBigrams: [String: [String: Int]]?
   let userTrigrams: [String: [String: Int]]?
   let statisticsEnabled: Bool?
@@ -146,6 +147,7 @@ struct UserDataExport: Codable {
     case windowTitleRules, freeMarkModeEnabled, cgEventRaceHardeningEnabled
     case cgEventFlushDelayMs
     case clipboardHistoryEnabled, clipboardHistoryCapacity, clipboardHistoryContentMode
+    case clipboardHistoryMaxEntryMegabytes
     case userBigrams, userTrigrams, statisticsEnabled, autoBackupOnUpgrade
     case statistics
   }
@@ -188,6 +190,7 @@ struct UserDataExport: Codable {
     clipboardHistoryEnabled: Bool? = nil,
     clipboardHistoryCapacity: Int? = nil,
     clipboardHistoryContentMode: String? = nil,
+    clipboardHistoryMaxEntryMegabytes: Int? = nil,
     userBigrams: [String: [String: Int]]? = nil,
     userTrigrams: [String: [String: Int]]? = nil,
     statisticsEnabled: Bool? = nil,
@@ -247,6 +250,7 @@ struct UserDataExport: Codable {
     self.clipboardHistoryEnabled = clipboardHistoryEnabled
     self.clipboardHistoryCapacity = clipboardHistoryCapacity
     self.clipboardHistoryContentMode = clipboardHistoryContentMode
+    self.clipboardHistoryMaxEntryMegabytes = clipboardHistoryMaxEntryMegabytes
     self.userBigrams = userBigrams
     self.userTrigrams = userTrigrams
     self.statisticsEnabled = statisticsEnabled
@@ -311,6 +315,7 @@ struct UserDataExport: Codable {
     self.clipboardHistoryEnabled = try c.decodeIfPresent(Bool.self, forKey: .clipboardHistoryEnabled)
     self.clipboardHistoryCapacity = try c.decodeIfPresent(Int.self, forKey: .clipboardHistoryCapacity)
     self.clipboardHistoryContentMode = try c.decodeIfPresent(String.self, forKey: .clipboardHistoryContentMode)
+    self.clipboardHistoryMaxEntryMegabytes = try c.decodeIfPresent(Int.self, forKey: .clipboardHistoryMaxEntryMegabytes)
     self.userBigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userBigrams)
     self.userTrigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userTrigrams)
     self.statisticsEnabled = try c.decodeIfPresent(Bool.self, forKey: .statisticsEnabled)
@@ -416,6 +421,7 @@ enum UserDataMigration {
       clipboardHistoryEnabled: Defaults[.clipboardHistoryEnabled],
       clipboardHistoryCapacity: Defaults[.clipboardHistoryCapacity],
       clipboardHistoryContentMode: Defaults[.clipboardHistoryContentMode].rawValue,
+      clipboardHistoryMaxEntryMegabytes: Defaults[.clipboardHistoryMaxEntryMegabytes],
       userBigrams: ngrams.bigrams,
       userTrigrams: ngrams.trigrams,
       statisticsEnabled: Defaults[.statisticsEnabled],
@@ -669,6 +675,8 @@ enum UserDataMigration {
                 label: "Lịch sử clipboard")
     applyScalar(.clipboardHistoryCapacity, export.clipboardHistoryCapacity,
                 label: "Số mục lịch sử clipboard")
+    applyScalar(.clipboardHistoryMaxEntryMegabytes, export.clipboardHistoryMaxEntryMegabytes,
+                label: "Dung lượng tối đa mục clipboard (MB)")
     if let mode = export.clipboardHistoryContentMode,
        let parsed = ClipboardHistoryContentMode(rawValue: mode) {
       if Defaults[.clipboardHistoryContentMode] != parsed {

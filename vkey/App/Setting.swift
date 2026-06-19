@@ -640,6 +640,12 @@ extension Defaults.Keys {
     "clipboard-history-content-mode",
     default: .textOnly
   )
+
+  /// Dung lượng tối đa mỗi mục lịch sử clipboard (MB, 1–200). Mặc định 10 MB.
+  static let clipboardHistoryMaxEntryMegabytes = Key<Int>(
+    "clipboard-history-max-entry-megabytes",
+    default: 10
+  )
 }
 
 // MARK: - 2.0 — Window Title Rule types

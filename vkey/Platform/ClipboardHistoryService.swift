@@ -26,9 +26,6 @@ enum ClipboardHistoryContentMode: String, CaseIterable, Codable, Defaults.Serial
 final class ClipboardHistoryService: NSObject {
   static let shared = ClipboardHistoryService()
 
-  /// Giới hạn kích thước mỗi mục (byte) — tránh ảnh/tệp lớn chiếm RAM.
-  static let maxEntryBytes = 2 * 1024 * 1024
-
   private static let capturePollDelays: [TimeInterval] = [0.06, 0.12, 0.20]
 
   private static let menuTimeFormatter: DateFormatter = {
@@ -96,6 +93,12 @@ final class ClipboardHistoryService: NSObject {
   func captureCurrentPasteboard(_ pasteboard: NSPasteboard = .general) {
     guard Defaults[.clipboardHistoryEnabled] else { return }
     let mode = Defaults[.clipboardHistoryContentMode]
+    let maxBytes = Self.maxEntryBytesFromSettings()
+    let estimatedBytes = Self.estimatedCaptureBytes(from: pasteboard, mode: mode)
+    if estimatedBytes > maxBytes {
+      showOversizedWarning(actualBytes: estimatedBytes, maxBytes: maxBytes)
+      return
+    }
     guard let snapshot = Self.buildSnapshot(from: pasteboard, mode: mode) else { return }
     if let latest = entries.first, latest.fingerprint == snapshot.fingerprint {
       return
@@ -223,7 +226,6 @@ final class ClipboardHistoryService: NSObject {
     }
 
     guard let snapshot else { return nil }
-    guard totalDataSize(items: snapshot.items) <= maxEntryBytes else { return nil }
     return snapshot
   }
 
@@ -301,5 +303,48 @@ final class ClipboardHistoryService: NSObject {
       return entry.preview
     }
     return "\(entry.preview)  ·  \(menuTimeFormatter.string(from: entry.capturedAt))"
+  }
+
+  // MARK: - Size limits & warnings
+
+  static func maxEntryBytesFromSettings() -> Int {
+    let mb = max(1, min(200, Defaults[.clipboardHistoryMaxEntryMegabytes]))
+    return mb * 1024 * 1024
+  }
+
+  /// Ước lượng dung lượng trước khi snapshot — tệp dùng kích thước trên đĩa.
+  static func estimatedCaptureBytes(
+    from pasteboard: NSPasteboard,
+    mode: ClipboardHistoryContentMode
+  ) -> Int {
+    if mode == .textAndFiles {
+      let urls = fileURLs(from: pasteboard)
+      if !urls.isEmpty {
+        return urls.reduce(0) { sum, url in
+          let fileSize = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+          return sum + fileSize
+        }
+      }
+    }
+    guard let rawItems = pasteboard.pasteboardItems else { return 0 }
+    let items = snapshotItems(rawItems, allowFiles: mode == .textAndFiles)
+    return totalDataSize(items: items)
+  }
+
+  private func showOversizedWarning(actualBytes: Int, maxBytes: Int) {
+    let actual = Self.formatMegabytes(actualBytes)
+    let limit = Self.formatMegabytes(maxBytes)
+    let message = """
+    Nội dung \(actual) vượt giới hạn \(limit). \
+    Không lưu vào lịch sử — sao chép và dán vẫn như macOS.
+    """
+    NoticeHUDWindow.shared.show(message: message, title: "Clipboard quá lớn")
+  }
+
+  static func formatMegabytes(_ bytes: Int) -> String {
+    let mb = Double(bytes) / (1024 * 1024)
+    if mb >= 100 { return String(format: "%.0f MB", mb) }
+    if mb >= 10 { return String(format: "%.0f MB", mb) }
+    return String(format: "%.1f MB", mb)
   }
 }
