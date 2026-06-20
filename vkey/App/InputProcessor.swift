@@ -802,6 +802,28 @@ class InputProcessor {
     activeApp = app
     strategyTracker.resetForApp(app)
     updateAdaptiveFlushDelay()
+    if !Self.isWordPredictionActive(bundleId: app, ruleOverrides: ruleOverrides) {
+      activePrediction = nil
+      DispatchQueue.main.async {
+        PredictionHUDWindow.shared.hide()
+      }
+    }
+  }
+
+  /// Đoán từ bật globally, không bị Window Title Rule tắt, và app không nằm
+  /// trong danh sách loại trừ.
+  static func isWordPredictionActive(
+    bundleId: String,
+    ruleOverrides: ResolvedRuleOverrides = .init()
+  ) -> Bool {
+    guard Defaults[.wordPredictionEnabled] else { return false }
+    guard !ruleOverrides.disablePrediction else { return false }
+    guard !bundleId.isEmpty else { return true }
+    return !Defaults[.wordPredictionExcludedApps].contains(bundleId)
+  }
+
+  private func isWordPredictionActive() -> Bool {
+    Self.isWordPredictionActive(bundleId: activeApp, ruleOverrides: ruleOverrides)
   }
 
   public func updateAdaptiveFlushDelay() {
@@ -874,7 +896,7 @@ class InputProcessor {
     // - Nếu không có activePrediction → fall-through cho Tab pass-through
     //   (legitimate form navigation / tab indent).
     if taskKey == .Tab,
-       Defaults[.wordPredictionEnabled],
+       isWordPredictionActive(),
        let prediction = activePrediction
     {
       if injectAcceptedPrediction(prediction) {
@@ -1239,17 +1261,19 @@ class InputProcessor {
     // 1.6.0: Word prediction learning + lookup. Học passively từ commit;
     // chỉ trigger HUD khi user bật toggle `wordPredictionEnabled`.
     let committedToken = current.normalizedDictionaryToken
-    PredictionEngine.shared.learnTransition(
-      prev2: prev2Committed,
-      prev1: prev1Committed,
-      current: committedToken
-    )
+    if isWordPredictionActive() {
+      PredictionEngine.shared.learnTransition(
+        prev2: prev2Committed,
+        prev1: prev1Committed,
+        current: committedToken
+      )
+    }
     // Slide window
     prev2Committed = prev1Committed
     prev1Committed = committedToken
 
     // 2.0 (B1): Window Title Rule có thể force tắt prediction cho context này.
-    if Defaults[.wordPredictionEnabled], !ruleOverrides.disablePrediction {
+    if isWordPredictionActive() {
       // 2.0.2 (J1): chỉ top-1 prediction. Multi-candidate UI đã được xoá
       // (digit 1/2/3 dễ nhầm với gõ số trong văn bản).
       if let prediction = PredictionEngine.shared.topPhrasePrediction(

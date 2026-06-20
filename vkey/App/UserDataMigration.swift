@@ -94,6 +94,7 @@ struct UserDataExport: Codable {
 
   // 1.7.6+: full settings backup — bổ sung 9 fields trước đây bị bỏ sót.
   let wordPredictionEnabled: Bool?
+  let wordPredictionExcludedApps: [String]?
   let predictionHUDLineOffset: Int?
   let predictionHUDFontSize: Int?
   let predictionMaxWords: Int?
@@ -141,7 +142,7 @@ struct UserDataExport: Codable {
     case macros, macroEnabled, macrosSeeded, defaultMacrosVersion
     case appTheme, uiTheme, accentColorChoice, appearanceMode, themeConfigs
     case autoPersonalDictFeedback
-    case wordPredictionEnabled, predictionHUDLineOffset, predictionHUDFontSize
+    case wordPredictionEnabled, wordPredictionExcludedApps, predictionHUDLineOffset, predictionHUDFontSize
     case predictionMaxWords
     case hudOpacityPercent, appSmartSwitchConfigs
     case translationHUDEnabled, translationHUDDurationMs, programmingMode
@@ -175,6 +176,7 @@ struct UserDataExport: Codable {
     themeConfigs: [String: ThemeConfig]? = nil,
     autoPersonalDictFeedback: Bool?,
     wordPredictionEnabled: Bool? = nil,
+    wordPredictionExcludedApps: [String]? = nil,
     predictionHUDLineOffset: Int? = nil,
     predictionHUDFontSize: Int? = nil,
     predictionMaxWords: Int? = nil,
@@ -236,6 +238,7 @@ struct UserDataExport: Codable {
     self.themeConfigs = themeConfigs
     self.autoPersonalDictFeedback = autoPersonalDictFeedback
     self.wordPredictionEnabled = wordPredictionEnabled
+    self.wordPredictionExcludedApps = wordPredictionExcludedApps
     self.predictionHUDLineOffset = predictionHUDLineOffset
     self.predictionHUDFontSize = predictionHUDFontSize
     self.predictionMaxWords = predictionMaxWords
@@ -301,6 +304,7 @@ struct UserDataExport: Codable {
     self.autoPersonalDictFeedback = try c.decodeIfPresent(Bool.self, forKey: .autoPersonalDictFeedback)
     // 1.7.6+ fields — optional cho file v1.x cũ.
     self.wordPredictionEnabled = try c.decodeIfPresent(Bool.self, forKey: .wordPredictionEnabled)
+    self.wordPredictionExcludedApps = try c.decodeIfPresent([String].self, forKey: .wordPredictionExcludedApps)
     self.predictionHUDLineOffset = try c.decodeIfPresent(Int.self, forKey: .predictionHUDLineOffset)
     self.predictionHUDFontSize = try c.decodeIfPresent(Int.self, forKey: .predictionHUDFontSize)
     self.predictionMaxWords = try c.decodeIfPresent(Int.self, forKey: .predictionMaxWords)
@@ -409,6 +413,7 @@ enum UserDataMigration {
 
       // 1.7.6+: full settings backup
       wordPredictionEnabled: Defaults[.wordPredictionEnabled],
+      wordPredictionExcludedApps: Defaults[.wordPredictionExcludedApps],
       predictionHUDLineOffset: Defaults[.predictionHUDLineOffset],
       predictionHUDFontSize: Defaults[.predictionHUDFontSize],
       predictionMaxWords: Defaults[.predictionMaxWords],
@@ -653,6 +658,8 @@ enum UserDataMigration {
     // 1.7.6+: previously-missing scalar settings
     applyScalar(.wordPredictionEnabled, export.wordPredictionEnabled,
                 label: "Đoán từ tiếp theo")
+    mergeStringList(.wordPredictionExcludedApps, export.wordPredictionExcludedApps,
+                    replace: replaceLists, label: "App loại trừ đoán từ", into: &changes)
     applyScalar(.predictionHUDLineOffset, export.predictionHUDLineOffset,
                 label: "Khoảng cách HUD dự đoán")
     applyScalar(.predictionHUDFontSize, export.predictionHUDFontSize,

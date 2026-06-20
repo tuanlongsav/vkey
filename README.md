@@ -1,5 +1,5 @@
 <h1>
-  <img src="images/vkey-icon.png?v=32000" alt="vkey logo" width="56" style="vertical-align: middle;">
+  <img src="images/vkey-icon.png?v=32100" alt="vkey logo" width="56" style="vertical-align: middle;">
   &nbsp;vkey
 </h1>
 
@@ -8,7 +8,12 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [3.20](CHANGELOG.md)** — Developer ID signed & notarized · 263 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [3.21](CHANGELOG.md)** — Developer ID signed & notarized · 263 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v3.21
+
+- **Đoán từ — loại trừ app** — tab Chính tả: chọn app không chạy HUD gợi ý (IDE, terminal, v.v.).
+- **Lịch sử Clipboard trên menu bar** — bật/tắt nhanh cùng Smart Switch / Chính tả / Macro.
 
 ## Mới ở v3.20
 
@@ -20,18 +25,18 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 ## Hình ảnh
 
 <p align="center">
-  <img src="images/menubar-menu.png?v=32000" width="200" alt="Menu bar">
-  <img src="images/hud-toggle-vi.png?v=32000" width="300" alt="HUD VI/EN">
-  <img src="images/hud-prediction.png?v=32000" width="220" alt="HUD gợi ý cụm">
+  <img src="images/menubar-menu.png?v=32100" width="200" alt="Menu bar">
+  <img src="images/hud-toggle-vi.png?v=32100" width="300" alt="HUD VI/EN">
+  <img src="images/hud-prediction.png?v=32100" width="220" alt="HUD gợi ý cụm">
 </p>
 
 <p align="center">
-  <img src="images/general-settings.png?v=32000" width="200" alt="Tab Chung">
-  <img src="images/smart-switch-settings.png?v=32000" width="200" alt="Tab Smart Switch">
-  <img src="images/macro-settings.png?v=32000" width="200" alt="Tab Macro">
-  <img src="images/spellcheck-settings.png?v=32000" width="200" alt="Tab Chính tả">
-  <img src="images/statistics-settings.png?v=32000" width="200" alt="Tab Thống kê">
-  <img src="images/theme-settings.png?v=32000" width="200" alt="Tab Giao diện">
+  <img src="images/general-settings.png?v=32100" width="200" alt="Tab Chung">
+  <img src="images/smart-switch-settings.png?v=32100" width="200" alt="Tab Smart Switch">
+  <img src="images/macro-settings.png?v=32100" width="200" alt="Tab Macro">
+  <img src="images/spellcheck-settings.png?v=32100" width="200" alt="Tab Chính tả">
+  <img src="images/statistics-settings.png?v=32100" width="200" alt="Tab Thống kê">
+  <img src="images/theme-settings.png?v=32100" width="200" alt="Tab Giao diện">
 </p>
 
 ## Tính năng chính
@@ -46,7 +51,7 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 | **Thống kê** | Top từ/cụm tuần này · sao lưu/khôi phục JSON · quản lý & xóa cụm (v3.20) |
 | **Giao diện** | Menu bar panel · Cài đặt sidebar 6 tab · 3 theme: **Tonal** / **Liquid Glass** / **Neural AI** |
 | **HUD** | Capsule VI/EN giữa màn hình · pill gợi ý `→ cụm · Tab` · cảnh báo clipboard amber |
-| **Tiện ích** | Lịch sử clipboard tùy chỉnh (tắt mặc định) · Text Tools ⌃⇧ · cập nhật Sparkle · VietQR donate |
+| **Tiện ích** | Lịch sử clipboard (toggle menu bar) · Text Tools ⌃⇧ · cập nhật Sparkle · VietQR donate |
 | **Tương thích** | Chrome omnibox (axDirect) · Electron/Office/terminal · QWERTZ/AZERTY/Dvorak · bypass ô password |
 
 Dữ liệu thống kê & từ điển cá nhân **chỉ lưu cục bộ** — không telemetry.
@@ -85,7 +90,7 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 |----------|-----------|
 | Chuyển VI ↔ EN | Nhấn + nhả **⇧⌥** (mặc định) hoặc segmented **VI \| EN** trên panel |
 | Kiểu gõ | **Kiểu Telex** / **Kiểu VNI** |
-| Bật/tắt nhanh | Smart Switch · Sửa lỗi chính tả · Macro |
+| Bật/tắt nhanh | Smart Switch · Sửa lỗi chính tả · Macro · Lịch sử Clipboard |
 | Cài đặt | **Cài đặt** (⌘,) |
 | Đổi theme | **Chuyển giao diện** → Tonal / Liquid Glass / Neural AI |
 | Thoát | **Thoát** (⌘Q) |
@@ -96,10 +101,10 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 
 | Tab | Nội dung chính |
 |-----|----------------|
-| **Chung** | Bật/tắt gõ VN · Telex/VNI · auto sửa lỗi · HUD · phím tắt · clipboard · đoán từ |
+| **Chung** | Bật/tắt gõ VN · Telex/VNI · auto sửa lỗi · HUD · phím tắt · clipboard |
 | **Smart Switch** | Cấu hình VI/EN/tắt theo app · thêm app đang chạy · tự học từ thống kê |
 | **Macro** | Viết tắt → cụm dài · nhập/xuất JSON · gợi ý từ thống kê |
-| **Chính tả** | Spell check · từ điển cá nhân · Space Restore · cập nhật lexicon GitHub |
+| **Chính tả** | Spell check · từ điển cá nhân · đoán từ (loại trừ app) · Space Restore · cập nhật lexicon GitHub |
 | **Thống kê & Sao lưu** | Top từ/cụm tuần · xuất/nhập JSON · quản lý/xóa cụm |
 | **Quản lý giao diện** | Theme · màu nhấn · font · bo góc · sáng/tối |
 

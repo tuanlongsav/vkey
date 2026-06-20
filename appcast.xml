@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.21 — "Đoán từ loại trừ app + Clipboard menu bar"</title>
+      <sparkle:version>32100</sparkle:version>
+      <sparkle:shortVersionString>3.21</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sat, 20 Jun 2026 22:07:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.21/vkey-3.21.dmg"
+        sparkle:edSignature="6bxOULNpLtFKpJDibuOaOKxtrTiRvJoMzalJE5uEUVQ5j9oWz/DHEff3TD0j2Iai+DI9Mu4gzM5rxDgzYZ/bDw=="
+        length="6537866"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.21 — Đoán từ loại trừ app + Clipboard menu bar</h2>
+        <ul>
+          <li><b>Đoán từ — loại trừ app</b> — tab Chính tả: chọn app không chạy HUD gợi ý (không Tab, không học n-gram).</li>
+          <li><b>Lịch sử Clipboard trên menu bar</b> — bật/tắt nhanh cùng Smart Switch / Chính tả / Macro.</li>
+          <li><b>Backup</b> — export/import <code>wordPredictionExcludedApps</code>.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 263 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.20 — "Thống kê quản lý cụm + icon Glass/Neural"</title>
       <sparkle:version>32000</sparkle:version>
       <sparkle:shortVersionString>3.20</sparkle:shortVersionString>

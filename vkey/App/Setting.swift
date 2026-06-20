@@ -510,6 +510,12 @@ extension Defaults.Keys {
   /// hiển thị HUD nổi gần cursor. Nhấn Tab để chấp nhận.
   static let wordPredictionEnabled = Key<Bool>("word-prediction-enabled", default: false)
 
+  /// Bundle ID các app không chạy đoán từ (HUD + Tab chấp nhận).
+  static let wordPredictionExcludedApps = Key<[String]>(
+    "word-prediction-excluded-apps",
+    default: []
+  )
+
   /// Số từ tối đa trong gợi ý đoán (1–3). Mặc định 2 — gợi ý cụm ngắn
   /// thay vì chỉ một từ đơn.
   static let predictionMaxWords = Key<Int>("prediction-max-words", default: 2)

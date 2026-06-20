@@ -166,6 +166,7 @@ struct VKMenuPanel: View {
   @Default(.smartSwitchEnabled) private var smartSwitchEnabled
   @Default(.spellCheckEnabled) private var spellCheckEnabled
   @Default(.macroEnabled) private var macroEnabled
+  @Default(.clipboardHistoryEnabled) private var clipboardHistoryEnabled
   @Default(.newStyleTonePlacement) private var newStyleTonePlacement
   @Default(.uiTheme) private var uiTheme
   @State private var showThemes = false
@@ -259,6 +260,16 @@ struct VKMenuPanel: View {
                 iconTint: macroEnabled ? VK.Color.brand : nil,
                 action: { macroEnabled.toggle() }) {
         VKMenuCheck(on: macroEnabled)
+      }
+      VKMenuRow("doc.on.clipboard", "Lịch sử Clipboard",
+                iconTint: clipboardHistoryEnabled ? VK.Color.brand : nil,
+                action: {
+                  clipboardHistoryEnabled.toggle()
+                  if !clipboardHistoryEnabled {
+                    ClipboardHistoryService.shared.clear()
+                  }
+                }) {
+        VKMenuCheck(on: clipboardHistoryEnabled)
       }
 
       // Chuyển giao diện nhanh
