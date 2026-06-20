@@ -1,5 +1,5 @@
 <h1>
-  <img src="images/vkey-icon.png" alt="vkey logo" width="56" style="vertical-align: middle;">
+  <img src="images/vkey-icon.png?v=32000" alt="vkey logo" width="56" style="vertical-align: middle;">
   &nbsp;vkey
 </h1>
 
@@ -20,18 +20,18 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 ## Hình ảnh
 
 <p align="center">
-  <img src="images/menubar-menu.png" width="200" alt="Menu bar">
-  <img src="images/hud-toggle-vi.png" width="300" alt="HUD VI/EN">
-  <img src="images/hud-prediction.png" width="220" alt="HUD gợi ý cụm">
+  <img src="images/menubar-menu.png?v=32000" width="200" alt="Menu bar">
+  <img src="images/hud-toggle-vi.png?v=32000" width="300" alt="HUD VI/EN">
+  <img src="images/hud-prediction.png?v=32000" width="220" alt="HUD gợi ý cụm">
 </p>
 
 <p align="center">
-  <img src="images/general-settings.png" width="200" alt="Tab Chung">
-  <img src="images/smart-switch-settings.png" width="200" alt="Tab Smart Switch">
-  <img src="images/macro-settings.png" width="200" alt="Tab Macro">
-  <img src="images/spellcheck-settings.png" width="200" alt="Tab Chính tả">
-  <img src="images/statistics-settings.png" width="200" alt="Tab Thống kê">
-  <img src="images/theme-settings.png" width="200" alt="Tab Giao diện">
+  <img src="images/general-settings.png?v=32000" width="200" alt="Tab Chung">
+  <img src="images/smart-switch-settings.png?v=32000" width="200" alt="Tab Smart Switch">
+  <img src="images/macro-settings.png?v=32000" width="200" alt="Tab Macro">
+  <img src="images/spellcheck-settings.png?v=32000" width="200" alt="Tab Chính tả">
+  <img src="images/statistics-settings.png?v=32000" width="200" alt="Tab Thống kê">
+  <img src="images/theme-settings.png?v=32000" width="200" alt="Tab Giao diện">
 </p>
 
 ## Tính năng chính
