@@ -3,7 +3,7 @@
   &nbsp;vkey
 </h1>
 
-Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên.
+Bộ gõ tiếng Việt cá nhân, đơn giản, cho macOS. Viết bằng Swift native, chạy như một app menu bar nhỏ gọn, hỗ trợ macOS 14 Sonoma trở lên. Giao diện **Tonal** sidebar 6 tab, **3 theme** (Mặc định / Liquid Glass / Neural AI), HUD VI/EN + gợi ý cụm 2–3 từ.
 
 **Phiên bản hiện tại: 3.20 — "Thống kê quản lý cụm + icon Glass/Neural"** ([CHANGELOG](CHANGELOG.md))
 
@@ -153,6 +153,7 @@ Tất cả benchmark hiện tại **dưới ngưỡng** an toàn — engine Swif
 
 ## Chức năng
 
+- ✅ **Quản lý & xóa cụm thống kê (v3.20+)**: sheet chi tiết cho top cụm tiếng Việt / ngoài tiếng Việt; xóa đúng bucket phrase; xóa từ EN đơn thêm vào deny list; icon sidebar/nav sắc nét trên theme Glass/Neural.
 - ✅ Gõ tiếng Việt với 2 kiểu phổ biến: **Telex** và **VNI**.
 - ✅ Tuỳ chọn kiểu đặt dấu: **Kiểu mới** (thuỷ, khoẻ, hoà, uý) hoặc **Kiểu cũ** (thủy, khỏe, hòa, úy).
 - ✅ **Hỗ trợ bàn phím số & Caps Lock chuẩn macOS (v3.4+)**: gõ dấu VNI bằng **keypad** hoạt động đúng (Shift+keypad giữ nguyên chữ số); **Shift+Caps Lock** trên chữ cái ra chữ thường, Caps Lock không ảnh hưởng phím dấu câu/số. Diff xoá/sửa từ phân biệt app lưu **NFC** (Apple, MS Office, iWork, Google Gemini) và **NFD** (Chromium/Electron/web) → backspace không còn lệch ký tự trong Chrome & app web. **v3.6+**: phát hiện theo **từng ô nhập** qua AX — hộp thoại native trong app Chromium (vd Save panel của Chrome khi tải file) tự flip sang NFC; diff NFD không bao giờ gửi dấu rời "trần" → hết lỗi mất chữ "nhập" → "nḥ̂p".
@@ -186,7 +187,7 @@ Tất cả benchmark hiện tại **dưới ngưỡng** an toàn — engine Swif
 - ✅ **Sheet "Tự học từ Thống kê" (v1.7.0+)**: bấm trong tab Smart Switch để preview các app vkey gợi ý đổi state, áp dụng hàng loạt. User-set entries (🔒) tự động bị skip.
 - ✅ **Gửi từ điển cá nhân cho tác giả (v1.7.2+, đưa ra ngoài v1.7.11+)**: nút **"Gửi cho tác giả"** đặt ngay trong tab Chính tả cạnh nút **"Sửa từ điển cá nhân"** (đổi tên từ "Quản lý" ở v1.7.11). Gate ≥50 từ trong tổng Allow/Keep/Deny. Click mở app mail mặc định gửi tới `tuanlong.sav@gmail.com` với body chứa 3 lists để tác giả rà soát + bổ sung vào từ điển chung.
 - ✅ **Cửa sổ Cài đặt resize được (v1.6.1+, đúng API v1.7.6+, rộng hơn v1.8.4+)**: dùng SwiftUI `.windowResizability(.contentMinSize)` cho phép drag góc/cạnh tự do; kích thước được nhớ qua `setFrameAutosaveName` giữa các lần mở. **v1.7.8** default opening 432×648 + tab labels gốc + font `.system(size: 10)` cho tab bar compact. **v1.8.4** width 432→**540** để fit nút "Chạy compute đề xuất ngay" trong tab Thống kê. User vẫn resize lên rộng tuỳ ý.
-- ✅ **3 giao diện ứng dụng (v1.5.5+, hoàn thiện v1.8.2+)**: chọn ở menu bar → "Giao diện ứng dụng": **Mặc định** (SF Symbol đơn giản), **3D bóng bẩy** (gradient + double shadow), **Emoji vui tươi** (Unicode emoji icons). **v1.8.2** rà soát toàn bộ View files + menu bar state icons + HUD icons sang dùng `ThemedSymbol` → theme apply consistent 100% (trước còn 6 file dùng `Image(systemName:)` không apply theme).
+- ✅ **3 theme giao diện (v3.0+)**: **Mặc định (Tonal)**, **Liquid Glass** (kính khúc xạ macOS Tahoe), **Neural AI** (aurora tím–cyan). Đổi nhanh từ menu bar → *Chuyển giao diện*; tab **Quản lý giao diện** chỉnh màu nhấn, phông chữ (6 font nhúng), bo góc, mật độ, độ trong suốt — lưu riêng theo từng theme. HUD + menu bar đồng bộ theme.
 - ✅ **Diagnostic export Stats (v1.6.1+)**: nút "Xuất chẩn đoán Stats" trong tab Thống kê → ghi file text mô tả tình trạng files + counters → gửi maintainer khi báo lỗi.
 - ✅ **Lịch sử clipboard tùy chỉnh (v3.16+, tắt mặc định)**: ⌘C lưu snapshot vào RAM (phiên làm việc); ⌥⌘V mở menu chọn mục → dán; ⌘V / ⇧⌘V dán clipboard hệ thống như macOS. Cài đặt số mục (3–50), chế độ chỉ văn bản / văn bản + tệp, **dung lượng tối đa mỗi mục (1–200 MB, mặc định 10 MB)** trong tab Chung. **v3.18+**: tệp vượt giới hạn không lưu — HUD cảnh báo amber nổi bật (kể cả Liquid Glass).
 - ✅ Hỗ trợ **Ủng hộ tác giả** (Donate) qua VietQR.
@@ -194,13 +195,21 @@ Tất cả benchmark hiện tại **dưới ngưỡng** an toàn — engine Swif
 ## Hình ảnh minh hoạ
 
 <p align="center">
-  <img src="images/menubar-menu.png" width="260" alt="Menu bar dropdown">
-  <img src="images/general-settings.png" width="260" alt="Tab Chung">
-  <img src="images/smart-switch-settings.png" width="260" alt="Tab Smart Switch">
-  <img src="images/macro-settings.png" width="260" alt="Tab Macro">
-  <img src="images/spellcheck-settings.png" width="260" alt="Tab Chính tả">
-  <img src="images/statistics-settings.png" width="260" alt="Tab Thống kê & Sao lưu">
+  <img src="images/menubar-menu.png" width="200" alt="Menu bar dropdown v3.20">
+  <img src="images/hud-toggle-vi.png" width="300" alt="HUD chuyển Tiếng Việt">
+  <img src="images/hud-prediction.png" width="220" alt="HUD gợi ý cụm anh chị">
 </p>
+
+<p align="center">
+  <img src="images/general-settings.png" width="200" alt="Tab Chung">
+  <img src="images/smart-switch-settings.png" width="200" alt="Tab Smart Switch">
+  <img src="images/macro-settings.png" width="200" alt="Tab Macro">
+  <img src="images/spellcheck-settings.png" width="200" alt="Tab Chính tả">
+  <img src="images/statistics-settings.png" width="200" alt="Tab Thống kê & Sao lưu">
+  <img src="images/theme-settings.png" width="200" alt="Tab Quản lý giao diện">
+</p>
+
+> Clip demo ngắn (12s): [`marketing/videos/vkey-demo-12s.mov`](marketing/videos/vkey-demo-12s.mov) — tái tạo bằng `Tools/capture_marketing.sh --video`.
 
 ## Cài đặt
 
@@ -237,18 +246,18 @@ Click icon cờ trên menu bar để mở các tác vụ nhanh.
 
 | Tác vụ | Cách dùng |
 |--------|----------|
-| Chuyển VN ↔ EN bằng phím tắt | Nhấn + nhả **⌃⇧** (Control + Shift) đồng thời (mặc định) |
-| Chuyển VN ↔ EN từ menu | Menu → **"Chuyển đổi ngôn ngữ 🇻🇳 \| 🇺🇸"** |
+| Chuyển VN ↔ EN bằng phím tắt | Nhấn + nhả **⇧⌥** (Shift + Option) đồng thời (mặc định) |
+| Chuyển VN ↔ EN từ menu | Header panel → segmented **VI \| EN** |
 | Đổi kiểu gõ | Menu → **"Kiểu Telex"** / **"Kiểu VNI"** (✓ ở dòng đang chọn) |
-| Bật/tắt nhanh Smart Switch | Menu → **"Smart Switch"** (✓ khi đang bật) — v1.7.0+: master toggle cho cơ chế 3-state per-app (xem tab Smart Switch để cấu hình từng app) |
+| Bật/tắt nhanh Smart Switch | Menu → **"Smart Switch"** (✓ khi đang bật) — master toggle cho cơ chế 3-state per-app (xem tab Smart Switch) |
 | Bật/tắt nhanh Sửa lỗi chính tả | Menu → **"Sửa lỗi chính tả"** (✓ khi đang bật) |
-| Bật/tắt nhanh Macro (1.5.3+) | Menu → **"Macro"** (✓ khi đang bật) — tạm dừng expansion mà vẫn giữ danh sách |
-| Mở cửa sổ Cài đặt | Menu → **"Cài đặt"** |
-| Chọn giao diện ứng dụng (1.5.5+) | Menu → **"Giao diện ứng dụng"** → submenu 3 lựa chọn: Mặc định / 3D bóng bẩy / Emoji vui tươi |
-| Ủng hộ tác giả | Menu → **"Ủng hộ tác giả"** (quét mã VietQR) |
-| Trang dự án trên GitHub | Menu → **"Thông tin dự án"** |
-| Kiểm tra cập nhật app thủ công | Menu → **"Kiểm tra cập nhật"** (Sparkle update — khác với nút "Cập nhật từ điển ngay" trong tab Chính tả) |
-| Thoát vkey | Menu → **"Thoát"** |
+| Bật/tắt nhanh Macro | Menu → **"Macro"** (✓ khi đang bật) — tạm dừng expansion mà vẫn giữ danh sách |
+| Mở cửa sổ Cài đặt | Menu → **"Cài đặt"** (⌘,) |
+| Đổi theme UI | Menu → **"Chuyển giao diện"** — **Mặc định** / **Liquid Glass** / **Neural AI** |
+| Ủng hộ tác giả | Footer → biểu tượng cà phê (VietQR) |
+| Trang dự án trên GitHub | Footer → **Thông tin** |
+| Kiểm tra cập nhật app | Footer → **Cập nhật** (Sparkle) |
+| Thoát vkey | Menu → **"Thoát"** (⌘Q) |
 
 **Trạng thái icon menu bar:**
 - 🇻🇳 cờ Việt Nam: đang gõ tiếng Việt
@@ -364,8 +373,19 @@ Header tuần này (v1.7.0+) hiển thị tiếng Việt: **"Tuần 21 năm 2026
 | **Top cụm 2-3 từ tiếng Việt** (v1.7.9+) | Section mới — dùng API `aggregatedTopVietnamesePhrases` (data từ v1.6.1 nhưng UI mới v1.7.9). Giúp xác định cụm thường gõ để tạo macro |
 | **Top từ ngoài tiếng Việt (gợi ý từ điển cá nhân)** (v1.7.9+, filter nới v1.7.10+) | Đổi tên từ "Top từ tiếng Anh / ký tự đặc biệt". Filter chỉ length≥2 + ngoài deny — hiện cả raw text ("hopwj") + ký tự lạ ("lol", "okay") để dễ thấy candidate add Personal Dict |
 | **Top cụm ngoài tiếng Việt** (v1.7.9+) | Section mới — backend `enPhraseCounts2/3` track khi commit `.restoreRawEnglish`/`.keepRaw` liền nhau |
+| **Quản lý & xóa cụm (v3.20+)** | Nút quản lý trên mỗi section cụm VN/EN; sheet chi tiết + xóa đúng bucket phrase; xóa từ EN đơn thêm deny list |
 | **Các tuần đã đóng** (v1.6.1+) | Hiển thị tóm tắt 4 tuần lịch sử gần nhất — đảm bảo data tuần cũ không "biến mất" sau khi tuần ISO chuyển |
 | **Xuất chẩn đoán Stats** (v1.6.1+) | Ghi file `~/Desktop/vkey-stats-diagnostic.txt` mô tả tình trạng files + counters để gửi khi báo lỗi |
+
+### Cài đặt → tab **Quản lý giao diện**
+
+| Mục | Tác dụng |
+|-----|---------|
+| Chọn theme | **Mặc định (Tonal)** / **Liquid Glass** / **Neural AI** |
+| Màu nhấn | 8 preset (đỏ, vàng, xanh dương, xanh lá, tím, xám, ink…) — lưu riêng theo theme |
+| Phông chữ | 6 font nhúng (SF Pro, Noto Sans Display, Inter, Nunito, …) |
+| Bo góc / Mật độ / Độ trong suốt | Slider tinh chỉnh layout; Glass/Neural có thêm cường độ blur & phát sáng |
+| Sáng / Tối / Theo hệ thống | Segment góc phải header — đổi tức thì trên toàn cửa sổ |
 
 ### Phím gõ đặc biệt khi đang gõ
 

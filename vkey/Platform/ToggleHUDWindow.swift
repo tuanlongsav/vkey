@@ -81,6 +81,12 @@ final class ToggleHUDWindow {
         }
     }
 
+    /// Ẩn ngay (marketing export — bỏ animation).
+    func hideImmediately() {
+        hideTimer?.invalidate()
+        panel?.orderOut(nil)
+    }
+
     // MARK: - Private Helper
 
     nonisolated private static func clampedBackgroundStrength(_ value: Int) -> Double {

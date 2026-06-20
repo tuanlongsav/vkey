@@ -36,6 +36,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // ngay launch đầu tiên dù plist key có vấn đề.
     FontRegistration.register()
 
+    if MarketingSnapshotExporter.isRequested {
+      NSApp.setActivationPolicy(.regular)
+      Task { @MainActor in
+        MarketingSnapshotExporter.run(appDelegate: self)
+      }
+      return
+    }
+
     // Hide dock icon since we use MenuBarExtra
     NSApp.setActivationPolicy(.accessory)
 
