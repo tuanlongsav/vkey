@@ -2,6 +2,27 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.0] - 2026-06-22 — "Tự động cập nhật im lặng + cải thiện kiểm tra phiên bản"
+
+**Mốc 4.0: cập nhật im lặng qua Sparkle, HUD hoàn tất, và thống nhất luồng kiểm tra phiên bản.**
+
+### ✨ Tính năng
+
+- **Tự động cập nhật phiên bản mới** — toggle Cài đặt → Chung; tải nền + cài im lặng khi thoát app (`SUAutomaticallyUpdate`).
+- **HUD xanh「Cập nhật hoàn tất」** sau khi Sparkle relaunch với tên phiên bản mới.
+- **Kiểm tra cập nhật thủ công** luôn dùng dialog Sparkle căn giữa (bỏ NSAlert lệch trái ghi build number).
+
+### 🐛 Sửa lỗi
+
+- **⇧⌘V clipboard**: không nuốt phím khi lịch sử rỗng — dán bình thường vẫn hoạt động.
+- **Backup/restore**: export/import `clipboardHistoryModifierOnlyHotkey` và `autoUpdateEnabled`.
+
+### 🧪 Tests
+
+- Thêm test migration auto-update + clipboard hotkey. Toàn bộ **267 test pass**.
+
+---
+
 ## [3.22] - 2026-06-22 — "Phím tắt clipboard ⇧⌘V + vá giới hạn dung lượng"
 
 **Đổi phím mở menu lịch sử clipboard sang ⇧⌘V (tùy chỉnh được); sửa ước lượng dung lượng và tối ưu capture.**

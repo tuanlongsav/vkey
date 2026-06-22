@@ -1,5 +1,5 @@
 <h1>
-  <img src="images/vkey-icon.png?v=32200" alt="vkey logo" width="56" style="vertical-align: middle;">
+  <img src="images/vkey-icon.png?v=40000" alt="vkey logo" width="56" style="vertical-align: middle;">
   &nbsp;vkey
 </h1>
 
@@ -8,7 +8,13 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [3.22](CHANGELOG.md)** — Developer ID signed & notarized · 265 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.0](CHANGELOG.md)** — Developer ID signed & notarized · 267 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.0
+
+- **Tự động cập nhật phiên bản mới** — bật/tắt trong Cài đặt → Chung; Sparkle tải và cài im lặng, HUD xanh báo hoàn tất sau relaunch.
+- **Kiểm tra cập nhật** thống nhất qua dialog Sparkle căn giữa (menu bar).
+- **Clipboard ⇧⌘V** — không chặn phím khi lịch sử rỗng; backup/restore phím tắt clipboard.
 
 ## Mới ở v3.22
 
@@ -56,7 +62,7 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 | **Thống kê** | Top từ/cụm tuần này · sao lưu/khôi phục JSON · quản lý & xóa cụm (v3.20) |
 | **Giao diện** | Menu bar panel · Cài đặt sidebar 6 tab · 3 theme: **Tonal** / **Liquid Glass** / **Neural AI** |
 | **HUD** | Capsule VI/EN giữa màn hình · pill gợi ý `→ cụm · Tab` · cảnh báo clipboard amber |
-| **Tiện ích** | Lịch sử clipboard (⇧⌘V mở menu, tùy chỉnh phím tắt) · toggle menu bar · Text Tools ⌃⇧ · Sparkle · VietQR donate |
+| **Tiện ích** | Lịch sử clipboard (⇧⌘V mở menu, tùy chỉnh phím tắt) · **tự động cập nhật im lặng** (v4.0) · toggle menu bar · Text Tools ⌃⇧ · Sparkle · VietQR donate |
 | **Tương thích** | Chrome omnibox (axDirect) · Electron/Office/terminal · QWERTZ/AZERTY/Dvorak · bypass ô password |
 
 Dữ liệu thống kê & từ điển cá nhân **chỉ lưu cục bộ** — không telemetry.

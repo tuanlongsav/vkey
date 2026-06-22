@@ -370,10 +370,12 @@ func eventTapCallback(
     } else if Defaults[.clipboardHistoryModifierOnlyHotkey] == 0,
               let shortcut = KeyboardShortcuts.getShortcut(for: .pasteClipboardHistory),
               cgEventMatchesKeyboardShortcut(event, shortcut: shortcut) {
-      DispatchQueue.main.async {
-        ClipboardHistoryService.shared.showPickerAndPaste()
+      if ClipboardHistoryService.shared.hasEntriesForEventTap {
+        DispatchQueue.main.async {
+          ClipboardHistoryService.shared.showPickerAndPaste()
+        }
+        return nil
       }
-      return nil
     }
   }
 

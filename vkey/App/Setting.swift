@@ -507,6 +507,16 @@ extension Defaults.Keys {
   /// Reset = 0 sẽ enable notification lại.
   static let lastNotifiedUpdateBuild = Key<Int>("last-notified-update-build", default: 0)
 
+  /// Tự động tải và cài bản mới im lặng qua Sparkle (3.23+).
+  /// Tắt → chỉ kiểm tra/cài thủ công từ menu bar.
+  static let autoUpdateEnabled = Key<Bool>("auto-update-enabled", default: true)
+
+  /// Phiên bản hiển thị HUD "cập nhật hoàn tất" sau khi Sparkle relaunch.
+  static let pendingUpdateSuccessHUDVersion = Key<String>(
+    "pending-update-success-hud-version",
+    default: ""
+  )
+
   /// Danh sách đề xuất pending — chờ user review qua
   /// `PersonalDictSuggestionSheet` (1.6.0+). Mỗi lần
   /// `performWeeklyFeedback` chạy, app ADD entries mới (dedupe by `id`).

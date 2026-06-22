@@ -166,7 +166,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     }
     
     // Check for updates silently on launch
-    Updater.checkForUpdates(manual: false)
+    Updater.configureOnLaunch()
 
     // Check for dictionary updates on launch
     LexiconManager.shared.checkAndPromptForDictionaryUpdate()

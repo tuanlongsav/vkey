@@ -6,6 +6,8 @@
 	<string>https://raw.githubusercontent.com/tuanlongsav/vkey/main/appcast.xml</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
 	<key>SUPublicEDKey</key>
 	<string>uEXoR2b6zqiULJU1aeR/GSWSl7FLItFbFNRaNyYKqzM=</string>
 </dict>

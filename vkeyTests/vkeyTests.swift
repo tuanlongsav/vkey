@@ -3364,6 +3364,8 @@ final class UserDataMigrationTests: XCTestCase {
     Defaults[.macros] = [Macro(from: "vn", to: "Việt Nam")]
     Defaults[.perAppOverride] = ["com.apple.Terminal": "off"]
     Defaults[.modifierOnlyTextToolsHotkey] = 123
+    Defaults[.clipboardHistoryModifierOnlyHotkey] = 456
+    Defaults[.autoUpdateEnabled] = false
     Defaults[.uiTheme] = .glass
     Defaults[.accentColorChoice] = .blue
     Defaults[.appearanceMode] = .dark
@@ -3387,6 +3389,8 @@ final class UserDataMigrationTests: XCTestCase {
       Defaults.reset(.macros)
       Defaults.reset(.perAppOverride)
       Defaults.reset(.modifierOnlyTextToolsHotkey)
+      Defaults.reset(.clipboardHistoryModifierOnlyHotkey)
+      Defaults.reset(.autoUpdateEnabled)
       Defaults.reset(.uiTheme)
       Defaults.reset(.accentColorChoice)
       Defaults.reset(.appearanceMode)
@@ -3407,6 +3411,8 @@ final class UserDataMigrationTests: XCTestCase {
     XCTAssertEqual(export.macros?.first?.from, "vn")
     XCTAssertEqual(export.perAppOverride?["com.apple.Terminal"], "off")
     XCTAssertEqual(export.modifierOnlyTextToolsHotkey, 123)
+    XCTAssertEqual(export.clipboardHistoryModifierOnlyHotkey, 456)
+    XCTAssertEqual(export.autoUpdateEnabled, false)
     XCTAssertEqual(export.uiTheme, UITheme.glass.rawValue)
     XCTAssertEqual(export.accentColorChoice, AccentColorChoice.blue.rawValue)
     XCTAssertEqual(export.appearanceMode, AppearanceMode.dark.rawValue)
@@ -3430,6 +3436,30 @@ final class UserDataMigrationTests: XCTestCase {
     let decoded = try decoder.decode(UserDataExport.self, from: data)
     XCTAssertEqual(decoded.schemaVersion, export.schemaVersion)
     XCTAssertEqual(decoded.appVersion, export.appVersion)
+  }
+
+  func test_autoUpdateEnabled_roundTrip() {
+    Defaults[.autoUpdateEnabled] = false
+    defer { Defaults.reset(.autoUpdateEnabled) }
+
+    let export = UserDataMigration.currentExport(includeStatistics: false)
+    XCTAssertEqual(export.autoUpdateEnabled, false)
+
+    Defaults[.autoUpdateEnabled] = true
+    UserDataMigration.importExport(export)
+    XCTAssertEqual(Defaults[.autoUpdateEnabled], false)
+  }
+
+  func test_clipboardHistoryModifierOnlyHotkey_roundTrip() {
+    Defaults[.clipboardHistoryModifierOnlyHotkey] = 999
+    defer { Defaults.reset(.clipboardHistoryModifierOnlyHotkey) }
+
+    let export = UserDataMigration.currentExport(includeStatistics: false)
+    XCTAssertEqual(export.clipboardHistoryModifierOnlyHotkey, 999)
+
+    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
+    UserDataMigration.importExport(export)
+    XCTAssertEqual(Defaults[.clipboardHistoryModifierOnlyHotkey], 999)
   }
 
   func test_importMerge_keepsExistingEntries() {

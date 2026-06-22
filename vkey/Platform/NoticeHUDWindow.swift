@@ -14,6 +14,11 @@ import SwiftUI
 final class NoticeHUDWindow {
   static let shared = NoticeHUDWindow()
 
+  enum Style {
+    case warning
+    case success
+  }
+
   private var panel: NSPanel?
   private var hostingController: NSHostingController<NoticeHUDView>?
   private var hideTimer: Timer?
@@ -23,6 +28,7 @@ final class NoticeHUDWindow {
   func show(
     message: String,
     title: String = "Cảnh báo",
+    style: Style = .warning,
     duration: TimeInterval = 3.2
   ) {
     hideTimer?.invalidate()
@@ -31,6 +37,7 @@ final class NoticeHUDWindow {
     let view = NoticeHUDView(
       title: title,
       message: message,
+      style: style,
       backgroundStrength: backgroundStrength
     )
     let contentSize = Self.contentSize(title: title, message: message)
@@ -118,22 +125,55 @@ final class NoticeHUDWindow {
   }
 }
 
-// MARK: - Warning palette (theme-independent, high contrast)
+// MARK: - Palettes (theme-independent, high contrast)
 
-private enum NoticeHUDPalette {
-  static let amber = Color(vkHex: "#FFB020")
-  static let amberDeep = Color(vkHex: "#E58A00")
-  static let scrim = Color(vkHex: "#1C1008").opacity(0.94)
-  static let scrimGlass = Color(vkHex: "#241408").opacity(0.90)
-  static let titleText = Color(vkHex: "#FFD878")
-  static let bodyText = Color(vkHex: "#FFF4E8")
-  static let iconHalo = Color(vkHex: "#FF9500").opacity(0.35)
+private struct NoticeHUDPalette {
+  let accent: Color
+  let accentDeep: Color
+  let scrim: Color
+  let scrimGlass: Color
+  let titleText: Color
+  let bodyText: Color
+  let iconHalo: Color
+  let iconName: String
+
+  static let warning = NoticeHUDPalette(
+    accent: Color(vkHex: "#FFB020"),
+    accentDeep: Color(vkHex: "#E58A00"),
+    scrim: Color(vkHex: "#1C1008").opacity(0.94),
+    scrimGlass: Color(vkHex: "#241408").opacity(0.90),
+    titleText: Color(vkHex: "#FFD878"),
+    bodyText: Color(vkHex: "#FFF4E8"),
+    iconHalo: Color(vkHex: "#FF9500").opacity(0.35),
+    iconName: "exclamationmark.triangle.fill"
+  )
+
+  static let success = NoticeHUDPalette(
+    accent: Color(vkHex: "#3DDC84"),
+    accentDeep: Color(vkHex: "#22B86A"),
+    scrim: Color(vkHex: "#081810").opacity(0.94),
+    scrimGlass: Color(vkHex: "#0C2018").opacity(0.90),
+    titleText: Color(vkHex: "#B8FFD8"),
+    bodyText: Color(vkHex: "#E8FFF2"),
+    iconHalo: Color(vkHex: "#34C759").opacity(0.35),
+    iconName: "checkmark.circle.fill"
+  )
+
+  static func forStyle(_ style: NoticeHUDWindow.Style) -> NoticeHUDPalette {
+    switch style {
+    case .warning: return .warning
+    case .success: return .success
+    }
+  }
 }
 
 private struct NoticeHUDView: View {
   let title: String
   let message: String
+  let style: NoticeHUDWindow.Style
   let backgroundStrength: Double
+
+  private var palette: NoticeHUDPalette { NoticeHUDPalette.forStyle(style) }
 
   @Default(.uiTheme) private var uiTheme
 
@@ -155,32 +195,32 @@ private struct NoticeHUDView: View {
     HStack(alignment: .top, spacing: 14) {
       ZStack {
         Circle()
-          .fill(NoticeHUDPalette.iconHalo)
+          .fill(palette.iconHalo)
           .frame(width: 40, height: 40)
         Circle()
-          .strokeBorder(NoticeHUDPalette.amber.opacity(0.55), lineWidth: 1.5)
+          .strokeBorder(palette.accent.opacity(0.55), lineWidth: 1.5)
           .frame(width: 40, height: 40)
-        Image(systemName: "exclamationmark.triangle.fill")
+        Image(systemName: palette.iconName)
           .font(.system(size: 22, weight: .bold))
           .foregroundStyle(
             LinearGradient(
-              colors: [NoticeHUDPalette.amber, NoticeHUDPalette.amberDeep],
+              colors: [palette.accent, palette.accentDeep],
               startPoint: .top,
               endPoint: .bottom
             )
           )
-          .shadow(color: NoticeHUDPalette.amber.opacity(0.6), radius: 4, y: 1)
+          .shadow(color: palette.accent.opacity(0.6), radius: 4, y: 1)
       }
       .padding(.top, 1)
 
       VStack(alignment: .leading, spacing: 5) {
         Text(title)
           .font(VKeyDesign.display(15, weight: .bold))
-          .foregroundStyle(NoticeHUDPalette.titleText)
+          .foregroundStyle(palette.titleText)
           .tracking(0.2)
         Text(message)
           .font(.system(size: 13.5, weight: .semibold, design: .rounded))
-          .foregroundStyle(NoticeHUDPalette.bodyText)
+          .foregroundStyle(palette.bodyText)
           .multilineTextAlignment(.leading)
           .lineSpacing(2)
           .fixedSize(horizontal: false, vertical: true)
@@ -191,24 +231,24 @@ private struct NoticeHUDView: View {
     .frame(maxWidth: 380)
   }
 
-  // MARK: - Tonal — nền nâu đậm + viền amber
+  // MARK: - Tonal
 
   private var tonalBody: some View {
     warningContent
       .background {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
-          .fill(NoticeHUDPalette.scrim.opacity(scrimStrength))
+          .fill(palette.scrim.opacity(scrimStrength))
       }
       .overlay {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
-          .strokeBorder(NoticeHUDPalette.amber, lineWidth: 2)
+          .strokeBorder(palette.accent, lineWidth: 2)
       }
       .compositingGroup()
-      .shadow(color: NoticeHUDPalette.amber.opacity(0.35), radius: 18, y: 0)
+      .shadow(color: palette.accent.opacity(0.35), radius: 18, y: 0)
       .shadow(color: .black.opacity(0.42), radius: 20, y: 10)
   }
 
-  // MARK: - Liquid Glass — lớp đục phủ lên blur để chữ không chìm
+  // MARK: - Liquid Glass
 
   private var glassBody: some View {
     warningContent
@@ -216,12 +256,12 @@ private struct NoticeHUDView: View {
         ZStack {
           HUDBackdrop(cornerRadius: 16)
           RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(NoticeHUDPalette.scrimGlass.opacity(scrimStrength))
+            .fill(palette.scrimGlass.opacity(scrimStrength))
         }
       }
       .overlay {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
-          .strokeBorder(NoticeHUDPalette.amber, lineWidth: 2.5)
+          .strokeBorder(palette.accent, lineWidth: 2.5)
       }
       .overlay {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -229,24 +269,24 @@ private struct NoticeHUDView: View {
           .padding(1)
       }
       .compositingGroup()
-      .shadow(color: NoticeHUDPalette.amber.opacity(0.50), radius: 22, y: 0)
+      .shadow(color: palette.accent.opacity(0.50), radius: 22, y: 0)
       .shadow(color: .black.opacity(0.48), radius: 22, y: 12)
   }
 
-  // MARK: - Neural — obsidian + viền/viền glow amber
+  // MARK: - Neural
 
   private var neuralBody: some View {
     warningContent
       .background {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
-          .fill(Color(vkHex: "#120A06").opacity(0.55 + 0.37 * backgroundStrength))
+          .fill(Color(vkHex: style == .success ? "#081810" : "#120A06").opacity(0.55 + 0.37 * backgroundStrength))
       }
       .background { HUDBackdrop(cornerRadius: 16) }
       .overlay {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
           .strokeBorder(
             LinearGradient(
-              colors: [NoticeHUDPalette.amber, NoticeHUDPalette.amberDeep],
+              colors: [palette.accent, palette.accentDeep],
               startPoint: .topLeading,
               endPoint: .bottomTrailing
             ),
@@ -254,7 +294,7 @@ private struct NoticeHUDView: View {
           )
       }
       .compositingGroup()
-      .shadow(color: NoticeHUDPalette.amber.opacity(0.55 * VK.glowK), radius: 24, y: 0)
+      .shadow(color: palette.accent.opacity(0.55 * VK.glowK), radius: 24, y: 0)
       .shadow(color: .black.opacity(0.55), radius: 24, y: 14)
   }
 }

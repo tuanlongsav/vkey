@@ -15,6 +15,7 @@ struct VKGeneralTab: View {
   @Default(.autoCapitalizeEnabled) private var autoCapitalize
   @Default(.nonLatinIMEAutoDisable) private var nonLatinAutoDisable
   @Default(.hudEnabled) private var hudEnabled
+  @Default(.autoUpdateEnabled) private var autoUpdate
   @Default(.freeMarkModeEnabled) private var freeMark
   @Default(.newStyleTonePlacement) private var newStyleTone
   @Default(.clipboardHistoryEnabled) private var clipboardHistory
@@ -72,6 +73,20 @@ struct VKGeneralTab: View {
                       label: "Hiển thị thông báo khi chuyển VI / EN",
                       isOn: $hudEnabled)
         }
+      }
+
+      // MARK: Cập nhật ứng dụng
+      VKSection("Cập nhật ứng dụng") {
+        VKRowGroup {
+          VKToggleRow(icon: "arrow.triangle.2.circlepath", iconColor: VK.Color.success,
+                      label: "Tự động cập nhật phiên bản mới",
+                      hint: "Tải và cài im lặng khi có bản mới. Sau khi cài xong, HUD thông báo phiên bản hiện tại.",
+                      isOn: $autoUpdate)
+            .onChange(of: autoUpdate) { _, _ in
+              Updater.applyAutomaticUpdatePreference()
+            }
+        }
+        VKGroupHint("Tắt tùy chọn này nếu bạn chỉ muốn cập nhật thủ công qua nút Kiểm tra cập nhật trên menu bar.")
       }
 
       // MARK: Cấu hình nâng cao

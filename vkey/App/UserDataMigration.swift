@@ -55,6 +55,7 @@ struct UserDataExport: Codable {
   let hudEnabled: Bool?
   let modifierOnlyToggleHotkey: Int?
   let modifierOnlyTextToolsHotkey: Int?
+  let clipboardHistoryModifierOnlyHotkey: Int?   // 3.22+
 
   // Smart Switch
   let smartSwitchEnabled: Bool?
@@ -118,6 +119,7 @@ struct UserDataExport: Codable {
   let userTrigrams: [String: [String: Int]]?
   let statisticsEnabled: Bool?
   let autoBackupOnUpgrade: Bool?
+  let autoUpdateEnabled: Bool?          // 3.23+
 
   // Statistics — 1.7.6+: full WeekBucketExport (raw frequency tables, streaks,
   // phrases, per-app language). File backup v1 chỉ có UsageSummary (top 10%
@@ -133,7 +135,7 @@ struct UserDataExport: Codable {
   enum CodingKeys: String, CodingKey {
     case schemaVersion, exportedAt, appVersion, appBuild
     case typingMethod, newStyleTonePlacement, autoTypoCorrection, allowedZWJF
-    case hudEnabled, modifierOnlyToggleHotkey, modifierOnlyTextToolsHotkey
+    case hudEnabled, modifierOnlyToggleHotkey, modifierOnlyTextToolsHotkey, clipboardHistoryModifierOnlyHotkey
     case smartSwitchEnabled, smartSwitchApps, perAppOverride
     case spellCheckEnabled, spellCheckInSentenceEnabled, englishAutoRestoreEnabled
     case restorePolicy, suggestionEnabled, autoApplyHighConfidenceSuggestion
@@ -152,6 +154,7 @@ struct UserDataExport: Codable {
     case clipboardHistoryEnabled, clipboardHistoryCapacity, clipboardHistoryContentMode
     case clipboardHistoryMaxEntryMegabytes
     case userBigrams, userTrigrams, statisticsEnabled, autoBackupOnUpgrade
+    case autoUpdateEnabled
     case statistics
   }
 
@@ -160,6 +163,7 @@ struct UserDataExport: Codable {
     typingMethod: String?, newStyleTonePlacement: Bool?, autoTypoCorrection: Bool?,
     allowedZWJF: Bool?, hudEnabled: Bool?, modifierOnlyToggleHotkey: Int?,
     modifierOnlyTextToolsHotkey: Int? = nil,
+    clipboardHistoryModifierOnlyHotkey: Int? = nil,
     smartSwitchEnabled: Bool?, smartSwitchApps: [String]?, perAppOverride: [String: String]?,
     spellCheckEnabled: Bool?, spellCheckInSentenceEnabled: Bool?,
     englishAutoRestoreEnabled: Bool?, restorePolicy: String?,
@@ -200,6 +204,7 @@ struct UserDataExport: Codable {
     userTrigrams: [String: [String: Int]]? = nil,
     statisticsEnabled: Bool? = nil,
     autoBackupOnUpgrade: Bool? = nil,
+    autoUpdateEnabled: Bool? = nil,
     statistics: [WeekBucketExport]?
   ) {
     self.schemaVersion = schemaVersion
@@ -213,6 +218,7 @@ struct UserDataExport: Codable {
     self.hudEnabled = hudEnabled
     self.modifierOnlyToggleHotkey = modifierOnlyToggleHotkey
     self.modifierOnlyTextToolsHotkey = modifierOnlyTextToolsHotkey
+    self.clipboardHistoryModifierOnlyHotkey = clipboardHistoryModifierOnlyHotkey
     self.smartSwitchEnabled = smartSwitchEnabled
     self.smartSwitchApps = smartSwitchApps
     self.perAppOverride = perAppOverride
@@ -262,6 +268,7 @@ struct UserDataExport: Codable {
     self.userTrigrams = userTrigrams
     self.statisticsEnabled = statisticsEnabled
     self.autoBackupOnUpgrade = autoBackupOnUpgrade
+    self.autoUpdateEnabled = autoUpdateEnabled
     self.statistics = statistics
   }
 
@@ -278,6 +285,7 @@ struct UserDataExport: Codable {
     self.hudEnabled = try c.decodeIfPresent(Bool.self, forKey: .hudEnabled)
     self.modifierOnlyToggleHotkey = try c.decodeIfPresent(Int.self, forKey: .modifierOnlyToggleHotkey)
     self.modifierOnlyTextToolsHotkey = try c.decodeIfPresent(Int.self, forKey: .modifierOnlyTextToolsHotkey)
+    self.clipboardHistoryModifierOnlyHotkey = try c.decodeIfPresent(Int.self, forKey: .clipboardHistoryModifierOnlyHotkey)
     self.smartSwitchEnabled = try c.decodeIfPresent(Bool.self, forKey: .smartSwitchEnabled)
     self.smartSwitchApps = try c.decodeIfPresent([String].self, forKey: .smartSwitchApps)
     self.perAppOverride = try c.decodeIfPresent([String: String].self, forKey: .perAppOverride)
@@ -329,6 +337,7 @@ struct UserDataExport: Codable {
     self.userTrigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userTrigrams)
     self.statisticsEnabled = try c.decodeIfPresent(Bool.self, forKey: .statisticsEnabled)
     self.autoBackupOnUpgrade = try c.decodeIfPresent(Bool.self, forKey: .autoBackupOnUpgrade)
+    self.autoUpdateEnabled = try c.decodeIfPresent(Bool.self, forKey: .autoUpdateEnabled)
     // Statistics — try v2 ([WeekBucketExport]) trước, fallback v1 ([UsageSummary]).
     if let buckets = try? c.decodeIfPresent([WeekBucketExport].self, forKey: .statistics) {
       self.statistics = buckets
@@ -380,6 +389,7 @@ enum UserDataMigration {
       hudEnabled: Defaults[.hudEnabled],
       modifierOnlyToggleHotkey: Defaults[.modifierOnlyToggleHotkey],
       modifierOnlyTextToolsHotkey: Defaults[.modifierOnlyTextToolsHotkey],
+      clipboardHistoryModifierOnlyHotkey: Defaults[.clipboardHistoryModifierOnlyHotkey],
 
       smartSwitchEnabled: Defaults[.smartSwitchEnabled],
       smartSwitchApps: Defaults[.smartSwitchApps],
@@ -437,6 +447,7 @@ enum UserDataMigration {
       userTrigrams: ngrams.trigrams,
       statisticsEnabled: Defaults[.statisticsEnabled],
       autoBackupOnUpgrade: Defaults[.autoBackupOnUpgrade],
+      autoUpdateEnabled: Defaults[.autoUpdateEnabled],
 
       // 1.9.0: tôn trọng `statisticsEnabled` — không export stats data nếu
       // user đã tắt. Trước v1.9 export anyway → user gặp privacy gap khi
@@ -567,6 +578,8 @@ enum UserDataMigration {
                 label: "Modifier-only hotkey")
     applyScalar(.modifierOnlyTextToolsHotkey, export.modifierOnlyTextToolsHotkey,
                 label: "Text Tools modifier-only hotkey")
+    applyScalar(.clipboardHistoryModifierOnlyHotkey, export.clipboardHistoryModifierOnlyHotkey,
+                label: "Clipboard history modifier-only hotkey")
 
     // Smart Switch
     applyScalar(.smartSwitchEnabled, export.smartSwitchEnabled, label: "Smart Switch")
@@ -703,6 +716,11 @@ enum UserDataMigration {
                 label: "Bật thống kê")
     applyScalar(.autoBackupOnUpgrade, export.autoBackupOnUpgrade,
                 label: "Tự sao lưu khi cập nhật")
+    applyScalar(.autoUpdateEnabled, export.autoUpdateEnabled,
+                label: "Tự động cập nhật phiên bản mới")
+    if export.autoUpdateEnabled != nil {
+      Updater.applyAutomaticUpdatePreference()
+    }
 
     mergeWindowTitleRules(export.windowTitleRules,
                           replace: replaceLists, into: &changes)

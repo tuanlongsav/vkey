@@ -12,193 +12,154 @@ import Sparkle
 import UserNotifications
 
 enum Updater {
+  static let delegate = VkeyUpdaterDelegate()
+
   // Share a single global controller instance to manage updates silently in the background
   static let updaterController = SPUStandardUpdaterController(
     startingUpdater: true,
-    updaterDelegate: nil as (any SPUUpdaterDelegate)?,
-    userDriverDelegate: nil as (any SPUStandardUserDriverDelegate)?
+    updaterDelegate: delegate,
+    userDriverDelegate: delegate
   )
+
+  /// Chặn bấm "Kiểm tra cập nhật" liên tục → nhiều dialog chồng nhau.
+  private static var manualCheckInProgress = false
+
+  /// Gọi từ AppDelegate sau launch — áp preference + check nền + HUD hoàn tất.
+  static func configureOnLaunch() {
+    delegate.applyPreferences()
+    showPostUpdateSuccessHUDIfNeeded()
+
+    guard Defaults[.autoUpdateEnabled] else { return }
+    guard shouldRunAutoCheckToday() else { return }
+    Defaults[.lastUpdateCheckDate] = Date()
+    updaterController.updater.checkForUpdatesInBackground()
+  }
+
+  /// Gọi khi user bật/tắt toggle trong Cài đặt.
+  static func applyAutomaticUpdatePreference() {
+    delegate.applyPreferences()
+  }
 
   static func checkForUpdates(manual: Bool = false) {
     if manual {
-      // User explicitly clicked "Check for Updates..." in settings or menu
-      guard let appcastURL = URL(
-        string: "https://api.github.com/repos/tuanlongsav/vkey/contents/appcast.xml"
-      ) else {
-        updaterController.checkForUpdates(nil)
-        return
+      guard !manualCheckInProgress else { return }
+      manualCheckInProgress = true
+      DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        manualCheckInProgress = false
       }
-      var request = URLRequest(url: appcastURL)
-      request.cachePolicy = .reloadIgnoringLocalCacheData
-      request.setValue("application/vnd.github.v3.raw", forHTTPHeaderField: "Accept")
+      prepareAppForUserFacingModal {
+        updaterController.checkForUpdates(nil)
+      }
+      return
+    }
 
-      URLSession.shared.dataTask(with: request) { data, response, error in
-        DispatchQueue.main.async {
-          guard error == nil,
-            let httpResponse = response as? HTTPURLResponse,
-            httpResponse.statusCode == 200,
-            let data = data
-          else {
-            // Fallback to native Sparkle on network error or non-200 status
-            updaterController.checkForUpdates(nil)
-            return
-          }
+    guard Defaults[.autoUpdateEnabled] else { return }
+    guard shouldRunAutoCheckToday() else { return }
+    Defaults[.lastUpdateCheckDate] = Date()
+    updaterController.updater.checkForUpdatesInBackground()
+  }
 
-          // 1.5.0: parse the appcast with Foundation's XMLParser instead of
-          // regex. The regex approach broke on multi-line tag values and
-          // didn't honour attribute quoting nuances.
-          let summary = AppcastParser.parseTopItem(data: data)
+  /// HUD xanh sau khi Sparkle cài xong và relaunch app.
+  static func showPostUpdateSuccessHUDIfNeeded() {
+    let pending = Defaults[.pendingUpdateSuccessHUDVersion].trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !pending.isEmpty else { return }
 
-          // 1.5.10: nếu parse XML fail HOẶC thiếu version, fallback ngay sang
-          // native Sparkle (đừng show "đã là mới nhất" sai). Trước đây nếu
-          // appcast.xml có ký tự `&` chưa escape, parser trả nil shortVersion
-          // và Updater báo nhầm "server v1.5.0" với versionCode=0 — user
-          // thấy app báo "đã mới nhất" mặc dù thực ra có bản mới.
-          guard let summary = summary,
-                let serverVersionCodeStr = summary.versionCode,
-                let serverVersionCode = Int(serverVersionCodeStr),
-                serverVersionCode > 0
-          else {
-            updaterController.checkForUpdates(nil)
-            return
-          }
+    let current = Bundle.main.appVersionLong
+    guard pending == current else { return }
 
-          let serverVersionStr = summary.shortVersion ?? "?"
-          _ = summary.enclosureURL  // available if we ever want to deep-link
-
-          let localVersionCodeStr =
-            Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
-          let localVersionStr =
-            Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? "1.5.0"
-
-          let localVersionCode = Int(localVersionCodeStr) ?? 0
-
-          if localVersionCode < serverVersionCode {
-            // There is a real newer version! Let Sparkle handle the native update flow
-            updaterController.checkForUpdates(nil)
-          } else {
-            // Local version is equal to or greater than the server version
-            let alert = NSAlert()
-            alert.messageText = "Bạn đang sử dụng phiên bản mới nhất!"
-            alert.informativeText =
-              "Phiên bản v\(localVersionStr) (Build \(localVersionCodeStr)) là phiên bản mới nhất hiện tại. (Phiên bản server: v\(serverVersionStr))"
-            alert.alertStyle = .informational
-            alert.addButton(withTitle: "Đóng")
-            // v3.3: app accessory không active → alert modal có thể VÔ HÌNH
-            // mà vẫn chặn main thread (treo menu). Ép nổi + activate.
-            NSApp.activate(ignoringOtherApps: true)
-            alert.window.level = .floating
-            alert.window.orderFrontRegardless()
-            alert.runModal()
-          }
-        }
-      }.resume()
-    } else {
-      // 1.6.0: throttle background auto-check thành 1 lần/ngày (user
-      // muốn "lần đầu mở máy buổi sáng", interpret là lần đầu launch
-      // mỗi ngày). Quit+relaunch trong ngày → skip.
-      guard shouldRunAutoCheckToday() else { return }
-      Defaults[.lastUpdateCheckDate] = Date()
-
-      // Sparkle native background check + bổ sung Notification Center
-      // banner cho visibility.
-      updaterController.updater.checkForUpdatesInBackground()
-      scheduleProactiveNotificationCheck()
+    Defaults[.pendingUpdateSuccessHUDVersion] = ""
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+      NoticeHUDWindow.shared.show(
+        message: "vkey \(current) đã sẵn sàng sử dụng.",
+        title: "Cập nhật hoàn tất",
+        style: .success,
+        duration: 4.0
+      )
     }
   }
 
-  // MARK: - 1.6.0: Throttle + Notification Center banner
+  /// Menu-bar accessory cần activation + delay ngắn trước modal Sparkle/NSAlert.
+  private static func prepareAppForUserFacingModal(_ work: @escaping () -> Void) {
+    NSApp.setActivationPolicy(.regular)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+      NSApp.activate(ignoringOtherApps: true)
+      work()
+    }
+  }
+
+  // MARK: - 1.6.0: Throttle
 
   /// Trả true nếu chưa check trong ngày hôm nay.
   private static func shouldRunAutoCheckToday() -> Bool {
     guard let lastCheck = Defaults[.lastUpdateCheckDate] else {
-      return true   // Chưa check bao giờ → check ngay.
+      return true
     }
     return !Calendar.current.isDateInToday(lastCheck)
   }
+}
 
-  /// Sau 5s từ launch, parse appcast lần nữa qua AppcastParser custom.
-  /// Nếu thấy version mới (so với CFBundleVersion local) VÀ chưa hiện
-  /// notification banner cho version đó → post UNNotification banner.
-  /// Layer 2 cho Sparkle's own dialog — đảm bảo user thấy ngay cả khi
-  /// app chạy ẩn ở menu bar.
-  private static func scheduleProactiveNotificationCheck() {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-      fetchAndNotifyIfNewer()
+// MARK: - Sparkle delegate (silent auto-update + suppress scheduled dialogs)
+
+final class VkeyUpdaterDelegate: NSObject, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
+
+  func applyPreferences() {
+    let enabled = Defaults[.autoUpdateEnabled]
+    let updater = Updater.updaterController.updater
+    updater.automaticallyChecksForUpdates = enabled
+    updater.automaticallyDownloadsUpdates = enabled
+  }
+
+  // MARK: SPUUpdaterDelegate
+
+  func updater(_ updater: SPUUpdater, mayPerform updateCheck: SPUUpdateCheck) throws {
+    if !Defaults[.autoUpdateEnabled], updateCheck == .updatesInBackground {
+      throw NSError(
+        domain: "dev.longht.vkey.updater",
+        code: 1,
+        userInfo: [NSLocalizedDescriptionKey: "Automatic update is disabled"]
+      )
     }
   }
 
-  private static func fetchAndNotifyIfNewer() {
-    guard let url = URL(
-      string: "https://api.github.com/repos/tuanlongsav/vkey/contents/appcast.xml"
-    ) else { return }
-    var request = URLRequest(url: url)
-    request.cachePolicy = .reloadIgnoringLocalCacheData
-    request.setValue("application/vnd.github.v3.raw", forHTTPHeaderField: "Accept")
-
-    URLSession.shared.dataTask(with: request) { data, response, error in
-      guard error == nil,
-        let http = response as? HTTPURLResponse,
-        http.statusCode == 200,
-        let data = data,
-        let summary = AppcastParser.parseTopItem(data: data),
-        let codeStr = summary.versionCode,
-        let serverCode = Int(codeStr),
-        serverCode > 0
-      else { return }
-
-      let localCodeStr = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
-      let localCode = Int(localCodeStr) ?? 0
-      guard serverCode > localCode else { return }
-
-      // Đã notify version này rồi → skip.
-      if Defaults[.lastNotifiedUpdateBuild] >= serverCode { return }
-
-      DispatchQueue.main.async {
-        Defaults[.lastNotifiedUpdateBuild] = serverCode
-        postUpdateNotification(
-          version: summary.shortVersion ?? "?",
-          build: serverCode
-        )
-      }
-    }.resume()
+  func updater(_ updater: SPUUpdater, didDownloadUpdate item: SUAppcastItem) {
+    guard Defaults[.autoUpdateEnabled] else { return }
+    DispatchQueue.main.async {
+      Defaults[.pendingUpdateSuccessHUDVersion] = item.displayVersionString
+    }
   }
 
-  private static func postUpdateNotification(version: String, build: Int) {
-    let content = UNMutableNotificationContent()
-    content.title = "Có bản vkey mới: v\(version)"
-    content.body = "Click để xem & cài đặt qua Sparkle."
-    content.sound = .default
-
-    let request = UNNotificationRequest(
-      identifier: "vkey-update-\(build)",
-      content: content,
-      trigger: nil
-    )
-    UNUserNotificationCenter.current().add(request) { _ in
-      // Ignore errors — nếu user chưa cho permission, alert sẽ
-      // không hiện. Sparkle dialog vẫn còn là backup.
+  func updater(
+    _ updater: SPUUpdater,
+    willInstallUpdateOnQuit item: SUAppcastItem,
+    immediateInstallationBlock immediateInstallHandler: @escaping () -> Void
+  ) -> Bool {
+    guard Defaults[.autoUpdateEnabled] else { return false }
+    DispatchQueue.main.async {
+      Defaults[.pendingUpdateSuccessHUDVersion] = item.displayVersionString
     }
+    return false
+  }
+
+  // MARK: SPUStandardUserDriverDelegate
+
+  /// Khi auto-update bật: không hiện dialog Sparkle cho check nền — chỉ tải/cài im lặng.
+  func standardUserDriverShouldHandleShowingScheduledUpdate(
+    _ update: SUAppcastItem,
+    andInImmediateFocus immediateFocus: Bool
+  ) -> Bool {
+    !Defaults[.autoUpdateEnabled]
   }
 }
 
 // MARK: - Appcast parsing
 
 struct AppcastItemSummary: Equatable {
-  let versionCode: String?     // sparkle:version
-  let shortVersion: String?    // sparkle:shortVersionString
-  let enclosureURL: String?    // enclosure[@url]
+  let versionCode: String?
+  let shortVersion: String?
+  let enclosureURL: String?
 }
 
 /// XMLParser-based replacement for the regex parser we shipped through 1.4.x.
-///
-/// Reads only what we actually need: the *first* `<item>` in the feed
-/// (Sparkle appcasts list newest-first), and from it the `sparkle:version`
-/// + `sparkle:shortVersionString` text content plus the `<enclosure url=…>`
-/// attribute. Other tags and items are ignored.
-///
-/// Exposed at file scope (not `private`) so the test target can exercise it.
 final class AppcastParser: NSObject, XMLParserDelegate {
   private var insideFirstItem = false
   fileprivate(set) var seenFirstItem = false
@@ -213,18 +174,9 @@ final class AppcastParser: NSObject, XMLParserDelegate {
     let parser = XMLParser(data: data)
     let delegate = AppcastParser()
     parser.delegate = delegate
-    parser.shouldProcessNamespaces = false   // keep "sparkle:version" as a single qualified name
-    // We deliberately don't surface an error if parse() returns false:
-    // - `abortParsing()` is the documented way to stop after the first <item>,
-    //   and it causes parse() to return false. We've already captured what we
-    //   need by then.
-    // - Genuine XML errors still produce a sensible empty result; callers
-    //   treat nil fields as "no info".
+    parser.shouldProcessNamespaces = false
     _ = parser.parse()
     if delegate.versionCode == nil && delegate.shortVersion == nil && delegate.enclosureURL == nil {
-      // Distinguish "garbage in" from "empty <item> in valid feed":
-      // - Garbage: parser raised an error before any tag was seen.
-      // - Empty item: `seenFirstItem` is true (we entered and exited <item>).
       if !delegate.seenFirstItem && parser.parserError != nil {
         return nil
       }
@@ -236,8 +188,6 @@ final class AppcastParser: NSObject, XMLParserDelegate {
     )
   }
 
-  // MARK: XMLParserDelegate
-
   func parser(
     _ parser: XMLParser,
     didStartElement elementName: String,
@@ -247,7 +197,7 @@ final class AppcastParser: NSObject, XMLParserDelegate {
   ) {
     if elementName == "item" {
       if seenFirstItem {
-        parser.abortParsing()  // we only care about the newest item
+        parser.abortParsing()
         return
       }
       insideFirstItem = true
@@ -258,10 +208,8 @@ final class AppcastParser: NSObject, XMLParserDelegate {
     currentTag = elementName
     currentText = ""
 
-    if elementName == "enclosure" {
-      if let url = attributeDict["url"] {
-        enclosureURL = url
-      }
+    if elementName == "enclosure", let url = attributeDict["url"] {
+      enclosureURL = url
     }
   }
 

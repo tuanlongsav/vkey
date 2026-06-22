@@ -2,13 +2,14 @@
 //  ClipboardHistoryService.swift
 //  vkey
 //
-//  Lịch sử clipboard tùy chỉnh: ⌘C lưu snapshot, ⌥⌘V mở menu chọn mục paste.
-//  Lưu trong RAM (phiên làm việc) — không ghi disk.
+//  Lịch sử clipboard tùy chỉnh: ⌘C lưu snapshot; phím tắt (mặc định ⇧⌘V)
+//  mở menu chọn mục paste. Lưu trong RAM (phiên làm việc) — không ghi disk.
 //
 
 import AppKit
 import Defaults
 import Foundation
+import os
 
 enum ClipboardHistoryContentMode: String, CaseIterable, Codable, Defaults.Serializable {
   case textOnly
@@ -45,6 +46,11 @@ final class ClipboardHistoryService: NSObject {
   }
 
   private(set) var entries: [Entry] = []
+  /// Đọc từ event tap (không phải main thread) — tránh nuốt ⇧⌘V khi history rỗng.
+  private let entryCount = OSAllocatedUnfairLock(initialState: 0)
+  nonisolated var hasEntriesForEventTap: Bool {
+    entryCount.withLock { $0 > 0 }
+  }
   /// Bỏ qua capture khi changeCount khớp lần ghi pasteboard nội bộ (Text Tools restore).
   private var ignoredPasteboardChangeCount: Int?
   /// Tránh HUD cảnh báo oversized lặp liên tục khi user ⌘C nhiều lần.
@@ -59,7 +65,13 @@ final class ClipboardHistoryService: NSObject {
 
   func clear() {
     entries.removeAll()
+    syncEntryCount()
     ignoredPasteboardChangeCount = nil
+  }
+
+  private func syncEntryCount() {
+    let count = entries.count
+    entryCount.withLock { $0 = count }
   }
 
   /// Poll pasteboard sau ⌘C — một số app cập nhật chậm hơn 60ms.
@@ -119,6 +131,7 @@ final class ClipboardHistoryService: NSObject {
     if entries.count > cap {
       entries.removeLast(entries.count - cap)
     }
+    syncEntryCount()
   }
 
   func showPickerAndPaste() {
