@@ -3485,7 +3485,7 @@ final class UserDataMigrationTests: XCTestCase {
       statistics: nil
     )
     let changes = UserDataMigration.importExport(export, replaceLists: false)
-    XCTAssertTrue(changes.contains { $0.contains("Allow words: +1") })
+    XCTAssertTrue(changes.contains { $0.contains("Từ cho phép: +1") })
     XCTAssertEqual(Set(Defaults[.userAllowWords]), Set(["existing", "fresh"]))
   }
 

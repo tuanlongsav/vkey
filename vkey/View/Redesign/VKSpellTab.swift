@@ -241,7 +241,7 @@ struct WordPredictionExcludedAppsSheet: View {
       VStack(alignment: .leading, spacing: 4) {
         Text("Loại trừ app khỏi đoán từ")
           .font(.headline)
-        Text("Click 1 app để thêm vào danh sách loại trừ. App đã loại trừ sẽ hiện ✓.")
+        Text("Nhấn một app để thêm vào danh sách loại trừ. App đã loại trừ sẽ hiện ✓.")
           .font(.caption)
           .foregroundStyle(.secondary)
       }

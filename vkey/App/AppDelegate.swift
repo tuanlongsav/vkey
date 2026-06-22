@@ -29,6 +29,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
   /// then guides them to System Settings.
   private let maxTrustCheckRetries = 30
 
+  func applicationWillFinishLaunching(_ notification: Notification) {
+    // vkey ưu tiên tiếng Việt — dialog Sparkle (Kiểm tra cập nhật) và NSAlert hệ thống
+    // lấy chuỗi từ vi.lproj thay vì theo ngôn ngữ macOS (thường là English).
+    UserDefaults.standard.set(["vi", "en"], forKey: "AppleLanguages")
+  }
+
   func applicationDidFinishLaunching(_ notification: Notification) {
     // v2.3.0: register bundled custom fonts before any view materialises.
     // Tier 1 (Info.plist ATSApplicationFontsPath) đã handle phần lớn — đây

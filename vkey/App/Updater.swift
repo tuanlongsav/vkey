@@ -116,7 +116,7 @@ final class VkeyUpdaterDelegate: NSObject, SPUUpdaterDelegate, SPUStandardUserDr
       throw NSError(
         domain: "dev.longht.vkey.updater",
         code: 1,
-        userInfo: [NSLocalizedDescriptionKey: "Automatic update is disabled"]
+        userInfo: [NSLocalizedDescriptionKey: "Tự động cập nhật đã tắt"]
       )
     }
   }

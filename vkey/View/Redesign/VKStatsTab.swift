@@ -243,7 +243,7 @@ struct VKStatsTab: View {
         VKRow(icon: "arrow.triangle.2.circlepath", iconColor: VK.Color.info,
               label: "Đồng bộ hành vi vào Personal Dictionary",
               hint: "Cần ≥ 5 lần gõ thống nhất cho mỗi từ.") {
-          VKButton(title: "Chạy compute", icon: "wand.and.stars", variant: .secondary, size: .sm) {
+          VKButton(title: "Chạy tính toán", icon: "wand.and.stars", variant: .secondary, size: .sm) {
             runCompute()
           }
         }
@@ -267,7 +267,7 @@ struct VKStatsTab: View {
     VKSection("Quyền riêng tư & chẩn đoán") {
       VKGroupHint("Dữ liệu chỉ lưu cục bộ tại ~/Library/Application Support/vkey/stats/. Không có request mạng nào.")
       HStack {
-        VKButton(title: "Xuất chẩn đoán Stats", icon: "stethoscope",
+        VKButton(title: "Xuất chẩn đoán thống kê", icon: "stethoscope",
                  variant: .secondary, size: .sm) { exportDiagnostic() }
         Spacer()
         VKButton(title: "Xóa toàn bộ dữ liệu thống kê", icon: "trash",

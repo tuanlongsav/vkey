@@ -200,9 +200,9 @@ struct PersonalDictionaryEditorView: View {
                 .padding(.bottom, 8)
                 
             Picker("Loại từ điển", selection: $selectedTab) {
-                Text("Cho phép (Allow)").tag(0)
-                Text("Ưu tiên giữ (Keep)").tag(1)
-                Text("Loại bỏ (Deny)").tag(2)
+                Text("Cho phép").tag(0)
+                Text("Ưu tiên giữ").tag(1)
+                Text("Loại bỏ").tag(2)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, 16)

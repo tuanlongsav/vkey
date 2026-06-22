@@ -35,8 +35,8 @@ final class TextConversionService {
       switch self {
       case .lower: return "chữ thường"
       case .upper: return "CHỮ HOA"
-      case .title: return "Title Case"
-      case .sentence: return "Sentence case"
+      case .title: return "Chữ hoa từng từ"
+      case .sentence: return "Chữ hoa đầu câu"
       case .removeDiacritics: return "Bỏ dấu"
       case .toTelexRaw: return "Sang raw Telex"
       case .toVNIRaw: return "Sang raw VNI"

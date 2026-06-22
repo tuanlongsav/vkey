@@ -571,23 +571,23 @@ enum UserDataMigration {
       changes.append("Kiểu gõ ← \(tm)")
     }
     applyScalar(.newStyleTonePlacement, export.newStyleTonePlacement, label: "Kiểu đặt dấu (mới)")
-    applyScalar(.autoTypoCorrection, export.autoTypoCorrection, label: "Auto typo correction")
+    applyScalar(.autoTypoCorrection, export.autoTypoCorrection, label: "Tự sửa lỗi gõ nhầm")
     applyScalar(.allowedZWJF, export.allowedZWJF, label: "Phụ âm z, w, j, f")
     applyScalar(.hudEnabled, export.hudEnabled, label: "HUD")
     applyScalar(.modifierOnlyToggleHotkey, export.modifierOnlyToggleHotkey,
-                label: "Modifier-only hotkey")
+                label: "Phím tắt chỉ modifier (VI/EN)")
     applyScalar(.modifierOnlyTextToolsHotkey, export.modifierOnlyTextToolsHotkey,
-                label: "Text Tools modifier-only hotkey")
+                label: "Phím tắt chỉ modifier (Text Tools)")
     applyScalar(.clipboardHistoryModifierOnlyHotkey, export.clipboardHistoryModifierOnlyHotkey,
-                label: "Clipboard history modifier-only hotkey")
+                label: "Phím tắt chỉ modifier (lịch sử clipboard)")
 
     // Smart Switch
     applyScalar(.smartSwitchEnabled, export.smartSwitchEnabled, label: "Smart Switch")
     mergeStringList(.smartSwitchApps, export.smartSwitchApps,
-                    replace: replaceLists, label: "Smart Switch apps",
+                    replace: replaceLists, label: "Danh sách app Smart Switch",
                     into: &changes)
     mergeStringDict(.perAppOverride, export.perAppOverride,
-                    replace: replaceLists, label: "Per-app override",
+                    replace: replaceLists, label: "Ghi đè theo từng app",
                     into: &changes)
 
     // Spell check
@@ -595,7 +595,7 @@ enum UserDataMigration {
     applyScalar(.spellCheckInSentenceEnabled, export.spellCheckInSentenceEnabled,
                 label: "Kiểm tra trong câu")
     applyScalar(.englishAutoRestoreEnabled, export.englishAutoRestoreEnabled,
-                label: "Auto restore tiếng Anh")
+                label: "Tự khôi phục tiếng Anh")
     if let rp = export.restorePolicy, let parsed = RestorePolicy(rawValue: rp),
        Defaults[.restorePolicy] != parsed {
       Defaults[.restorePolicy] = parsed
@@ -612,11 +612,11 @@ enum UserDataMigration {
     applyScalar(.personalDictionaryEnabled, export.personalDictionaryEnabled,
                 label: "Từ điển cá nhân")
     mergeStringList(.userAllowWords, export.userAllowWords,
-                    replace: replaceLists, label: "Allow words", into: &changes)
+                    replace: replaceLists, label: "Từ cho phép", into: &changes)
     mergeStringList(.userKeepWords, export.userKeepWords,
-                    replace: replaceLists, label: "Keep words", into: &changes)
+                    replace: replaceLists, label: "Từ ưu tiên giữ", into: &changes)
     mergeStringList(.userDenyWords, export.userDenyWords,
-                    replace: replaceLists, label: "Deny words", into: &changes)
+                    replace: replaceLists, label: "Từ loại bỏ", into: &changes)
 
     // 1.7.7: macros — "Ghi đè" clear+replace toàn bộ; "Kết hợp" union với
     // imported wins khi trùng `from`. Trước đây bug: replace mode append
@@ -628,7 +628,7 @@ enum UserDataMigration {
       if replaceLists {
         if Defaults[.macros] != imported {
           Defaults[.macros] = imported
-          changes.append("Macros: \(imported.count) (overwrite)")
+          changes.append("Macro: \(imported.count) (ghi đè)")
         }
       } else {
         var current = Defaults[.macros]
@@ -637,20 +637,20 @@ enum UserDataMigration {
         current.append(contentsOf: imported)
         if Defaults[.macros] != current {
           Defaults[.macros] = current
-          changes.append("Macros: +\(imported.count) (merge, file ưu tiên)")
+          changes.append("Macro: +\(imported.count) (gộp, file ưu tiên)")
         }
       }
     }
     applyScalar(.macroEnabled, export.macroEnabled, label: "Bật macro")
     applyScalar(.macrosSeeded, export.macrosSeeded, label: "Macro đã seed")
     applyScalar(.defaultMacrosVersion, export.defaultMacrosVersion,
-                label: "Default macros version")
+                label: "Phiên bản macro mặc định")
 
     // 2.16: AppTheme đã xoá — bỏ qua field appTheme trong backup cũ.
     if let raw = export.uiTheme, let parsed = UITheme(rawValue: raw),
        Defaults[.uiTheme] != parsed {
       Defaults[.uiTheme] = parsed
-      changes.append("Theme UI ← \(raw)")
+      changes.append("Giao diện UI ← \(raw)")
     }
     if let raw = export.accentColorChoice, let parsed = AccentColorChoice(rawValue: raw),
        Defaults[.accentColorChoice] != parsed {
@@ -692,13 +692,13 @@ enum UserDataMigration {
     applyScalar(.autoCapitalizeEnabled, export.autoCapitalizeEnabled,
                 label: "Tự viết hoa đầu câu")
     applyScalar(.nonLatinIMEAutoDisable, export.nonLatinIMEAutoDisable,
-                label: "Tự tắt khi dùng IME non-Latin")
+                label: "Tự tắt khi dùng IME không Latin")
     applyScalar(.freeMarkModeEnabled, export.freeMarkModeEnabled,
-                label: "Free Mark Mode")
+                label: "Đặt dấu tự do")
     applyScalar(.cgEventRaceHardeningEnabled, export.cgEventRaceHardeningEnabled,
-                label: "CGEvent race hardening")
+                label: "Cứng hóa race CGEvent")
     applyScalar(.cgEventFlushDelayMs, export.cgEventFlushDelayMs,
-                label: "CGEvent flush delay (ms)")
+                label: "Độ trễ flush CGEvent (ms)")
     applyScalar(.clipboardHistoryEnabled, export.clipboardHistoryEnabled,
                 label: "Lịch sử clipboard")
     applyScalar(.clipboardHistoryCapacity, export.clipboardHistoryCapacity,
@@ -731,7 +731,7 @@ enum UserDataMigration {
       if replaceLists {
         if Defaults[.appSmartSwitchConfigs] != configs {
           Defaults[.appSmartSwitchConfigs] = configs
-          changes.append("Smart Switch per-app: \(configs.count) (overwrite)")
+          changes.append("Smart Switch theo app: \(configs.count) (ghi đè)")
         }
       } else {
         var current = Defaults[.appSmartSwitchConfigs]
@@ -742,7 +742,7 @@ enum UserDataMigration {
         }
         if changed > 0 {
           Defaults[.appSmartSwitchConfigs] = current
-          changes.append("Smart Switch per-app: +\(changed) (merge, file ưu tiên)")
+          changes.append("Smart Switch theo app: +\(changed) (gộp, file ưu tiên)")
         }
       }
     }
@@ -755,13 +755,13 @@ enum UserDataMigration {
     if replaceLists {
       if !importBi.isEmpty || !importTri.isEmpty {
         NGramStore.shared.replaceAll(bigrams: importBi, trigrams: importTri)
-        if !importBi.isEmpty { changes.append("Bigram dự đoán: \(importBi.count) (overwrite)") }
-        if !importTri.isEmpty { changes.append("Trigram dự đoán: \(importTri.count) (overwrite)") }
+        if !importBi.isEmpty { changes.append("Bigram dự đoán: \(importBi.count) (ghi đè)") }
+        if !importTri.isEmpty { changes.append("Trigram dự đoán: \(importTri.count) (ghi đè)") }
       }
     } else if !importBi.isEmpty || !importTri.isEmpty {
       let (biChanged, triChanged) = NGramStore.shared.merge(bigrams: importBi, trigrams: importTri)
-      if biChanged > 0 { changes.append("Bigram dự đoán: +\(biChanged) (merge, file ưu tiên)") }
-      if triChanged > 0 { changes.append("Trigram dự đoán: +\(triChanged) (merge, file ưu tiên)") }
+      if biChanged > 0 { changes.append("Bigram dự đoán: +\(biChanged) (gộp, file ưu tiên)") }
+      if triChanged > 0 { changes.append("Trigram dự đoán: +\(triChanged) (gộp, file ưu tiên)") }
     }
 
     // 1.7.6+: stats restoration. Trước đây bỏ qua hoàn toàn → tab Thống kê
@@ -775,7 +775,7 @@ enum UserDataMigration {
       }
       let restored = UsageStatistics.shared.restoreFromBackup(stats)
       if restored > 0 {
-        let mode = replaceLists ? "(overwrite)" : "(merge)"
+        let mode = replaceLists ? "(ghi đè)" : "(gộp)"
         changes.append("Thống kê: khôi phục \(restored) tuần \(mode)")
       }
     }
@@ -883,7 +883,7 @@ enum UserDataMigration {
     if replace {
       if Defaults[key] != value {
         Defaults[key] = value
-        changes.append("\(label): \(value.count) (overwrite)")
+        changes.append("\(label): \(value.count) (ghi đè)")
       }
       return
     }
@@ -911,7 +911,7 @@ enum UserDataMigration {
     if replace {
       if Defaults[key] != value {
         Defaults[key] = value
-        changes.append("\(label): \(value.count) (overwrite)")
+        changes.append("\(label): \(value.count) (ghi đè)")
       }
       return
     }
@@ -924,7 +924,7 @@ enum UserDataMigration {
     }
     if changed > 0 {
       Defaults[key] = current
-      changes.append("\(label): +\(changed) (merge, file ưu tiên)")
+      changes.append("\(label): +\(changed) (gộp, file ưu tiên)")
     }
   }
 
@@ -937,7 +937,7 @@ enum UserDataMigration {
     if replace {
       if Defaults[.windowTitleRules] != value {
         Defaults[.windowTitleRules] = value
-        changes.append("Window Title Rules: \(value.count) (overwrite)")
+        changes.append("Quy tắc tiêu đề cửa sổ: \(value.count) (ghi đè)")
       }
       return
     }
@@ -963,7 +963,7 @@ enum UserDataMigration {
 
     if changed > 0 {
       Defaults[.windowTitleRules] = current
-      changes.append("Window Title Rules: +\(changed) (merge, file ưu tiên)")
+      changes.append("Quy tắc tiêu đề cửa sổ: +\(changed) (gộp, file ưu tiên)")
     }
   }
 }

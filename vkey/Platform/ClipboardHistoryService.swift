@@ -385,7 +385,7 @@ final class ClipboardHistoryService: NSObject {
     Nội dung \(actual) vượt giới hạn \(limit). \
     Không lưu vào lịch sử — sao chép và dán vẫn như macOS.
     """
-    NoticeHUDWindow.shared.show(message: message, title: "Clipboard quá lớn")
+    NoticeHUDWindow.shared.show(message: message, title: "Nội dung clipboard quá lớn")
   }
 
   static func formatMegabytes(_ bytes: Int) -> String {

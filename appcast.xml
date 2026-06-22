@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.1 — "Việt hoá thông báo + cập nhật tab Chung"</title>
+      <sparkle:version>40100</sparkle:version>
+      <sparkle:shortVersionString>4.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 22 Jun 2026 15:42:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.1/vkey-4.1.dmg"
+        sparkle:edSignature="AIZSRSxYn/W8MTrN1C9rEtb5H9h1pNVAzW1KM/sXhrwA0PCCAT34NF5rzG5gJ9PPacZWmglOuAjJB2q/JL5HAQ=="
+        length="6553091"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.1 — Việt hoá thông báo + cập nhật tab Chung</h2>
+        <ul>
+          <li><b>Dialog Kiểm tra cập nhật tiếng Việt</b> — Sparkle hiển thị đúng ngôn ngữ thay vì tiếng Anh.</li>
+          <li><b>Tự động cập nhật</b> chuyển lên đầu tab Cài đặt → Chung.</li>
+          <li><b>Việt hoá</b> thông báo/HUD còn sót: Text Tools, Smart Switch nâng cao, clipboard, sao lưu.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 267 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.0 — "Tự động cập nhật im lặng + cải thiện kiểm tra phiên bản"</title>
       <sparkle:version>40000</sparkle:version>
       <sparkle:shortVersionString>4.0</sparkle:shortVersionString>

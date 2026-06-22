@@ -512,7 +512,7 @@ struct WindowRulesSection: View {
         VStack(alignment: .leading, spacing: 2) {
           Text("Quy tắc theo cửa sổ (nâng cao)")
             .font(.subheadline).bold()
-          Text("Override theo bundle ID + window title regex — \(rules.count) rule\(rules.isEmpty ? "" : "s")")
+          Text("Ghi đè theo bundle ID + regex tiêu đề cửa sổ — \(rules.count) quy tắc")
             .font(.caption2)
             .foregroundStyle(.secondary)
         }
@@ -531,20 +531,20 @@ struct WindowRuleRow: View {
     DisclosureGroup {
       VStack(alignment: .leading, spacing: 8) {
         HStack {
-          Text("Bundle ID prefix")
+          Text("Tiền tố Bundle ID")
             .frame(width: 130, alignment: .leading)
           TextField("com.google.Chrome", text: $rule.bundleIdPrefix)
             .textFieldStyle(.roundedBorder)
         }
         HStack {
-          Text("Window title regex")
+          Text("Regex tiêu đề cửa sổ")
             .frame(width: 130, alignment: .leading)
           TextField("Google Docs|Notion", text: $rule.titleRegex)
             .textFieldStyle(.roundedBorder)
             .monospaced()
         }
         HStack {
-          Text("Override state")
+          Text("Trạng thái ghi đè")
             .frame(width: 130, alignment: .leading)
           Picker("", selection: Binding(
             get: { rule.overrideState ?? .vietnameseMode },
@@ -556,7 +556,7 @@ struct WindowRuleRow: View {
           }
           .pickerStyle(.menu)
           .frame(width: 200)
-          Toggle("Bật override", isOn: Binding(
+          Toggle("Bật ghi đè", isOn: Binding(
             get: { rule.overrideState != nil },
             set: { newVal in
               if newVal {
@@ -570,7 +570,7 @@ struct WindowRuleRow: View {
         Toggle("Tắt prediction trong context này", isOn: $rule.disablePrediction)
         Toggle("Tắt spell-check trong context này", isOn: $rule.disableSpellCheck)
         HStack {
-          Text("Adaptive delay (ms)")
+          Text("Độ trễ thích ứng (ms)")
             .frame(width: 130, alignment: .leading)
           Stepper(value: $rule.flushDelayMs, in: 0...500, step: 10) {
             Text("\(rule.flushDelayMs) ms").monospacedDigit()
