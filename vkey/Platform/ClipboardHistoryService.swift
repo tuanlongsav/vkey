@@ -47,6 +47,9 @@ final class ClipboardHistoryService: NSObject {
   private(set) var entries: [Entry] = []
   /// Bỏ qua capture khi changeCount khớp lần ghi pasteboard nội bộ (Text Tools restore).
   private var ignoredPasteboardChangeCount: Int?
+  /// Tránh HUD cảnh báo oversized lặp liên tục khi user ⌘C nhiều lần.
+  private var lastOversizedWarningAt: Date?
+  private let oversizedWarningDebounce: TimeInterval = 8
 
   var hasEntries: Bool { !entries.isEmpty }
 
@@ -279,6 +282,35 @@ final class ClipboardHistoryService: NSObject {
     }
   }
 
+  /// Ước lượng byte trên pasteboard gốc — không tạo bản sao NSPasteboardItem.
+  static func pasteboardPayloadBytes(
+    from pasteboard: NSPasteboard,
+    allowFiles: Bool
+  ) -> Int {
+    guard let rawItems = pasteboard.pasteboardItems else { return 0 }
+    return rawItems.reduce(0) { total, item in
+      total + item.types.reduce(0) { sum, type in
+        if !allowFiles, type == .fileURL || type.rawValue.contains("file-url") {
+          return sum
+        }
+        if let data = item.data(forType: type) {
+          return sum + data.count
+        }
+        if let string = item.string(forType: type) {
+          return sum + string.utf8.count
+        }
+        return sum
+      }
+    }
+  }
+
+  static func filePayloadBytes(from urls: [URL]) -> Int {
+    urls.reduce(0) { sum, url in
+      let fileSize = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+      return sum + fileSize
+    }
+  }
+
   static func fileURLs(from pasteboard: NSPasteboard) -> [URL] {
     if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
       return urls
@@ -312,26 +344,28 @@ final class ClipboardHistoryService: NSObject {
     return mb * 1024 * 1024
   }
 
-  /// Ước lượng dung lượng trước khi snapshot — tệp dùng kích thước trên đĩa.
+  /// Ước lượng dung lượng trước khi snapshot — tệp dùng kích thước trên đĩa + payload pasteboard.
   static func estimatedCaptureBytes(
     from pasteboard: NSPasteboard,
     mode: ClipboardHistoryContentMode
   ) -> Int {
+    var total = pasteboardPayloadBytes(from: pasteboard, allowFiles: mode == .textAndFiles)
     if mode == .textAndFiles {
       let urls = fileURLs(from: pasteboard)
       if !urls.isEmpty {
-        return urls.reduce(0) { sum, url in
-          let fileSize = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-          return sum + fileSize
-        }
+        total += filePayloadBytes(from: urls)
       }
     }
-    guard let rawItems = pasteboard.pasteboardItems else { return 0 }
-    let items = snapshotItems(rawItems, allowFiles: mode == .textAndFiles)
-    return totalDataSize(items: items)
+    return total
   }
 
   private func showOversizedWarning(actualBytes: Int, maxBytes: Int) {
+    let now = Date()
+    if let last = lastOversizedWarningAt,
+       now.timeIntervalSince(last) < oversizedWarningDebounce {
+      return
+    }
+    lastOversizedWarningAt = now
     let actual = Self.formatMegabytes(actualBytes)
     let limit = Self.formatMegabytes(maxBytes)
     let message = """

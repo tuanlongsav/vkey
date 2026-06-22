@@ -115,12 +115,18 @@ struct VKGeneralTab: View {
         VKRowGroup {
           VKToggleRow(icon: "doc.on.clipboard.fill", iconColor: VK.Color.brand,
                       label: "Bật lịch sử clipboard",
-                      hint: "⌘C lưu vào danh sách; ⌥⌘V chọn mục để dán. ⌘V và ⇧⌘V dán bình thường.",
+                      hint: "⌘C lưu vào danh sách; phím tắt bên dưới chọn mục để dán. ⌘V dán clipboard hệ thống.",
                       isOn: $clipboardHistory)
             .onChange(of: clipboardHistory) { _, enabled in
               if !enabled { ClipboardHistoryService.shared.clear() }
             }
           if clipboardHistory {
+            VKRow(icon: "keyboard", iconColor: VK.Color.brand,
+                  label: "Mở menu lịch sử clipboard") {
+              FlexibleShortcutRecorder(name: .pasteClipboardHistory)
+                .fixedSize()
+                .frame(height: 26)
+            }
             VKRow(icon: "list.number", iconColor: VK.Color.info,
                   label: "Số mục lưu tối đa") {
               clipboardStepper(value: $clipboardCapacity, range: 3...50)
@@ -143,7 +149,7 @@ struct VKGeneralTab: View {
               }
             }
             VKGroupHint(
-              "Tệp hoặc nội dung lớn hơn mức tối đa không lưu vào lịch sử — hiện HUD cảnh báo; sao chép và dán vẫn như macOS."
+              "Mặc định ⇧⌘V (Paste and Match Style của macOS sẽ bị thay khi bật tính năng này). Tệp vượt dung lượng tối đa không lưu — hiện HUD cảnh báo."
             )
           }
         }

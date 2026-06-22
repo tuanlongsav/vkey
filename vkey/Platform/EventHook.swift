@@ -2,6 +2,7 @@ import ApplicationServices
 import Cocoa
 import Defaults
 import Foundation
+import KeyboardShortcuts
 import os.log
 
 /// v2.14: log chẩn đoán nhận diện app đích (xem qua `log stream`).
@@ -18,6 +19,20 @@ private let kModifierMask: UInt64 =
   UInt64(NSEvent.ModifierFlags.option.rawValue) |
   UInt64(NSEvent.ModifierFlags.control.rawValue) |
   UInt64(NSEvent.ModifierFlags.shift.rawValue)
+
+/// So khớp CGEvent với shortcut đã lưu (KeyboardShortcuts / FlexibleShortcutRecorder).
+func cgEventMatchesKeyboardShortcut(
+  _ event: CGEvent,
+  shortcut: KeyboardShortcuts.Shortcut
+) -> Bool {
+  let keyCode = Int(event.getIntegerValueField(.keyboardEventKeycode))
+  guard keyCode == shortcut.carbonKeyCode else { return false }
+  let eventMods = event.flags.rawValue & kModifierMask
+  let shortcutMods = UInt64(
+    shortcut.modifiers.intersection([.command, .option, .control, .shift]).rawValue
+  )
+  return eventMods == shortcutMods
+}
 
 // EventHook manages keyboard events and interacts with the Telex engine.
 class EventHook {
@@ -339,22 +354,22 @@ func eventTapCallback(
     return Unmanaged.passUnretained(event)
   }
 
-  // ── Clipboard history: ⌘C lưu; ⌥⌘V mở menu chọn (⌘V / ⇧⌘V = dán thường) ──
+  // ── Clipboard history: ⌘C lưu; phím tắt cấu hình mở menu chọn (mặc định ⇧⌘V) ──
   if type == .keyDown, Defaults[.clipboardHistoryEnabled] {
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
     let mods = event.flags
     let commandOnly = mods.contains(.maskCommand)
       && !mods.contains(.maskControl)
       && !mods.contains(.maskAlternate)
-    let optionCommand = mods.contains(.maskCommand)
-      && mods.contains(.maskAlternate)
-      && !mods.contains(.maskControl)
+      && !mods.contains(.maskShift)
     if commandOnly, keyCode == 8 {
       let beforeCount = NSPasteboard.general.changeCount
       DispatchQueue.main.async {
         ClipboardHistoryService.shared.scheduleCaptureAfterCopy(since: beforeCount)
       }
-    } else if optionCommand, !mods.contains(.maskShift), keyCode == 9 {
+    } else if Defaults[.clipboardHistoryModifierOnlyHotkey] == 0,
+              let shortcut = KeyboardShortcuts.getShortcut(for: .pasteClipboardHistory),
+              cgEventMatchesKeyboardShortcut(event, shortcut: shortcut) {
       DispatchQueue.main.async {
         ClipboardHistoryService.shared.showPickerAndPaste()
       }
@@ -370,12 +385,13 @@ func eventTapCallback(
   // 2.0.2 (J3): support 2 modifier-only targets song song.
   let toggleTarget = UInt64(Defaults[.modifierOnlyToggleHotkey])
   let textToolsTarget = UInt64(Defaults[.modifierOnlyTextToolsHotkey])
-  if toggleTarget != 0 || textToolsTarget != 0 {
+  let clipboardTarget = UInt64(Defaults[.clipboardHistoryModifierOnlyHotkey])
+  if toggleTarget != 0 || textToolsTarget != 0 || clipboardTarget != 0 {
     let currentMods = event.flags.rawValue & kModifierMask
     let firedMask = eventHook.processModifierTargets(
       type: type,
       currentMods: currentMods,
-      targets: [toggleTarget, textToolsTarget]
+      targets: [toggleTarget, textToolsTarget, clipboardTarget]
     )
     if firedMask != 0 {
       if firedMask == toggleTarget, let appState = eventHook.appState {
@@ -385,6 +401,10 @@ func eventTapCallback(
       } else if firedMask == textToolsTarget {
         DispatchQueue.main.async {
           TextConversionService.shared.openMenu(near: nil)
+        }
+      } else if firedMask == clipboardTarget, Defaults[.clipboardHistoryEnabled] {
+        DispatchQueue.main.async {
+          ClipboardHistoryService.shared.showPickerAndPaste()
         }
       }
     }

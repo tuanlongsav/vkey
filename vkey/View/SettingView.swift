@@ -43,6 +43,7 @@ func formatModifierMask(_ raw: Int) -> String {
 private func modifierOnlyKey(for name: KeyboardShortcuts.Name) -> Defaults.Key<Int> {
   switch name {
   case .openTextConversionMenu: return .modifierOnlyTextToolsHotkey
+  case .pasteClipboardHistory: return .clipboardHistoryModifierOnlyHotkey
   default:                      return .modifierOnlyToggleHotkey
   }
 }

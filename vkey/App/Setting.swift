@@ -36,6 +36,12 @@ extension KeyboardShortcuts.Name {
   /// 2.0 (B4): mở Text Conversion Tools menu cho selected text.
   static let openTextConversionMenu = Self("openTextConversionMenu")
 
+  /// Mở menu lịch sử clipboard để chọn mục dán (mặc định ⇧⌘V).
+  static let pasteClipboardHistory = Self(
+    "pasteClipboardHistory",
+    default: KeyboardShortcuts.Shortcut(.v, modifiers: [.command, .shift])
+  )
+
   // 2.0.1: `toggleFloatingToolbar` đã bị xoá cùng với Floating Toolbar.
 }
 
@@ -399,6 +405,12 @@ extension Defaults.Keys {
   static let modifierOnlyTextToolsHotkey = Key<Int>(
     "modifier-only-text-tools-hotkey",
     default: kDefaultTextToolsMask
+  )
+
+  /// Modifier-only override cho phím mở menu lịch sử clipboard (0 = dùng key+modifier).
+  static let clipboardHistoryModifierOnlyHotkey = Key<Int>(
+    "clipboard-history-modifier-only-hotkey",
+    default: 0
   )
   
   /// Tuỳ chọn kiểu đặt dấu: false = Kiểu cũ (hòa, khỏe), true = Kiểu mới (hoà, khoẻ).

@@ -137,6 +137,9 @@ private struct NoticeHUDView: View {
 
   @Default(.uiTheme) private var uiTheme
 
+  /// Đồng bộ với setting độ mờ HUD — nền cảnh báo vẫn đủ tương phản ở mọi mức.
+  private var scrimStrength: Double { 0.55 + 0.45 * backgroundStrength }
+
   var body: some View {
     Group {
       switch uiTheme {
@@ -194,7 +197,7 @@ private struct NoticeHUDView: View {
     warningContent
       .background {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
-          .fill(NoticeHUDPalette.scrim)
+          .fill(NoticeHUDPalette.scrim.opacity(scrimStrength))
       }
       .overlay {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -213,7 +216,7 @@ private struct NoticeHUDView: View {
         ZStack {
           HUDBackdrop(cornerRadius: 16)
           RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(NoticeHUDPalette.scrimGlass)
+            .fill(NoticeHUDPalette.scrimGlass.opacity(scrimStrength))
         }
       }
       .overlay {
@@ -236,7 +239,7 @@ private struct NoticeHUDView: View {
     warningContent
       .background {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
-          .fill(Color(vkHex: "#120A06").opacity(0.92))
+          .fill(Color(vkHex: "#120A06").opacity(0.55 + 0.37 * backgroundStrength))
       }
       .background { HUDBackdrop(cornerRadius: 16) }
       .overlay {

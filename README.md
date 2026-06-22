@@ -1,5 +1,5 @@
 <h1>
-  <img src="images/vkey-icon.png?v=32100" alt="vkey logo" width="56" style="vertical-align: middle;">
+  <img src="images/vkey-icon.png?v=32200" alt="vkey logo" width="56" style="vertical-align: middle;">
   &nbsp;vkey
 </h1>
 
@@ -8,7 +8,12 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [3.21](CHANGELOG.md)** — Developer ID signed & notarized · 263 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [3.22](CHANGELOG.md)** — Developer ID signed & notarized · 265 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v3.22
+
+- **Phím mở menu lịch sử clipboard mặc định ⇧⌘V** (thay ⌥⌘V — tránh xung đột Move file macOS); **phím tắt tùy chỉnh** trong Cài đặt → Chung.
+- **Vá giới hạn dung lượng clipboard** — ước lượng đúng khi vừa có văn bản vừa có tệp; tối ưu capture; debounce HUD cảnh báo.
 
 ## Mới ở v3.21
 
@@ -51,7 +56,7 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 | **Thống kê** | Top từ/cụm tuần này · sao lưu/khôi phục JSON · quản lý & xóa cụm (v3.20) |
 | **Giao diện** | Menu bar panel · Cài đặt sidebar 6 tab · 3 theme: **Tonal** / **Liquid Glass** / **Neural AI** |
 | **HUD** | Capsule VI/EN giữa màn hình · pill gợi ý `→ cụm · Tab` · cảnh báo clipboard amber |
-| **Tiện ích** | Lịch sử clipboard (toggle menu bar) · Text Tools ⌃⇧ · cập nhật Sparkle · VietQR donate |
+| **Tiện ích** | Lịch sử clipboard (⇧⌘V mở menu, tùy chỉnh phím tắt) · toggle menu bar · Text Tools ⌃⇧ · Sparkle · VietQR donate |
 | **Tương thích** | Chrome omnibox (axDirect) · Electron/Office/terminal · QWERTZ/AZERTY/Dvorak · bypass ô password |
 
 Dữ liệu thống kê & từ điển cá nhân **chỉ lưu cục bộ** — không telemetry.
@@ -101,7 +106,7 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 
 | Tab | Nội dung chính |
 |-----|----------------|
-| **Chung** | Bật/tắt gõ VN · Telex/VNI · auto sửa lỗi · HUD · phím tắt · clipboard |
+| **Chung** | Bật/tắt gõ VN · Telex/VNI · auto sửa lỗi · HUD · phím tắt · clipboard (⇧⌘V, tùy chỉnh) |
 | **Smart Switch** | Cấu hình VI/EN/tắt theo app · thêm app đang chạy · tự học từ thống kê |
 | **Macro** | Viết tắt → cụm dài · nhập/xuất JSON · gợi ý từ thống kê |
 | **Chính tả** | Spell check · từ điển cá nhân · đoán từ (loại trừ app) · Space Restore · cập nhật lexicon GitHub |

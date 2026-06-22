@@ -2,6 +2,27 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [3.22] - 2026-06-22 — "Phím tắt clipboard ⇧⌘V + vá giới hạn dung lượng"
+
+**Đổi phím mở menu lịch sử clipboard sang ⇧⌘V (tùy chỉnh được); sửa ước lượng dung lượng và tối ưu capture.**
+
+### ✨ Tính năng
+
+- **Phím tắt mở menu lịch sử clipboard** mặc định **⇧⌘V** (thay ⌥⌘V — tránh xung đột Move file của macOS).
+- **Cài đặt → Chung → Clipboard**: recorder phím tắt tùy chỉnh (key+modifier hoặc chỉ modifier).
+
+### 🐛 Sửa lỗi
+
+- **Ước lượng dung lượng** mode văn bản+tệp: cộng cả payload pasteboard lẫn kích thước file (không bỏ sót text khi có file).
+- **Capture clipboard**: bỏ copy `NSPasteboardItem` kép khi đo size; debounce HUD cảnh báo oversized (8s).
+- **HUD cảnh báo**: setting độ mờ HUD áp dụng cho nền notice.
+
+### 🧪 Tests
+
+- Thêm test ước lượng byte pasteboard+tệp. Toàn bộ **265 test pass**.
+
+---
+
 ## [3.21] - 2026-06-20 — "Đoán từ loại trừ app + Clipboard menu bar"
 
 ### Đoán từ

@@ -2155,6 +2155,7 @@ final class ClipboardHistoryTests: XCTestCase {
     Defaults.reset(.clipboardHistoryCapacity)
     Defaults.reset(.clipboardHistoryContentMode)
     Defaults.reset(.clipboardHistoryMaxEntryMegabytes)
+    Defaults.reset(.clipboardHistoryModifierOnlyHotkey)
     ClipboardHistoryService.shared.clear()
   }
 
@@ -2255,6 +2256,34 @@ final class ClipboardHistoryTests: XCTestCase {
     )
     ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
     XCTAssertTrue(ClipboardHistoryService.shared.entries.isEmpty)
+  }
+
+  func testEstimatedBytesSumsPasteboardAndFilePayload() throws {
+    let tempDir = FileManager.default.temporaryDirectory
+    let fileURL = tempDir.appendingPathComponent("vkey-clip-\(UUID().uuidString).txt")
+    try String(repeating: "z", count: 4096).write(to: fileURL, atomically: true, encoding: .utf8)
+    defer { try? FileManager.default.removeItem(at: fileURL) }
+
+    let pb = NSPasteboard.general
+    pb.clearContents()
+    pb.setString("caption", forType: .string)
+    pb.writeObjects([fileURL as NSURL])
+
+    let pasteBytes = ClipboardHistoryService.pasteboardPayloadBytes(from: pb, allowFiles: true)
+    let fileBytes = ClipboardHistoryService.filePayloadBytes(from: [fileURL])
+    let estimated = ClipboardHistoryService.estimatedCaptureBytes(from: pb, mode: .textAndFiles)
+    XCTAssertGreaterThan(pasteBytes, 0)
+    XCTAssertGreaterThan(fileBytes, 0)
+    XCTAssertEqual(estimated, pasteBytes + fileBytes)
+  }
+
+  func testPasteboardPayloadBytesSkipsFilesInTextOnlyMode() {
+    let pb = NSPasteboard.general
+    pb.clearContents()
+    pb.setString("only text", forType: .string)
+    let withFiles = ClipboardHistoryService.pasteboardPayloadBytes(from: pb, allowFiles: true)
+    let textOnly = ClipboardHistoryService.pasteboardPayloadBytes(from: pb, allowFiles: false)
+    XCTAssertEqual(withFiles, textOnly)
   }
 }
 

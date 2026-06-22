@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 3.22 — "Phím tắt clipboard ⇧⌘V + vá giới hạn dung lượng"</title>
+      <sparkle:version>32200</sparkle:version>
+      <sparkle:shortVersionString>3.22</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 22 Jun 2026 11:12:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v3.22/vkey-3.22.dmg"
+        sparkle:edSignature="NJZtC9rgnVv0mA1sZGZBqXnUDZE1wgT7rEZ0OsNz0jGySuJURbNvNLR1INFjlqkmm9qa226xzQc672gdbjDzAQ=="
+        length="6541162"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v3.22 — Phím tắt clipboard ⇧⌘V + vá giới hạn dung lượng</h2>
+        <ul>
+          <li><b>Phím mở menu lịch sử clipboard</b> mặc định ⇧⌘V (thay ⌥⌘V — tránh xung đột Move file macOS).</li>
+          <li><b>Phím tắt tùy chỉnh</b> trong Cài đặt → Chung → Clipboard.</li>
+          <li><b>Vá ước lượng dung lượng</b> text+tệp, tối ưu capture, debounce HUD cảnh báo.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 265 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 3.21 — "Đoán từ loại trừ app + Clipboard menu bar"</title>
       <sparkle:version>32100</sparkle:version>
       <sparkle:shortVersionString>3.21</sparkle:shortVersionString>
