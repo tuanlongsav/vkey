@@ -2,6 +2,23 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.2] - 2026-06-24 — "Viết hoa đầu câu + Sublime/CAD"
+
+**Sửa lỗi gõ tiếng Việt trong editor native, CAD, và viết hoa đầu câu.**
+
+### 🐛 Sửa lỗi gõ
+
+- **Viết hoa đầu câu** — inject chữ hoa trực tiếp sau Enter hoặc `. ! ?` (+ space); không còn pass-through chữ thường.
+- **Sublime Text / editor native** — whitelist NFC (BBEdit, TextMate, MacVim, Bear, iA Writer): hết backspace thừa nuốt newline/dòng kế.
+- **Vectorworks (CAD)** — cùng whitelist NFC; sửa nuốt ký tự Telex (`aw` → ă, từ sắt/cắn/cắt…).
+- **Macro trong Cài đặt** — bypass event tap khi gõ trong app vkey; hết treo khi gõ tiếng Việt vào ô Cụm dài.
+
+### 🧪 Tests
+
+- Thêm test viết hoa đầu câu + NFC whitelist editor. Toàn bộ **271 test pass**.
+
+---
+
 ## [4.1] - 2026-06-22 — "Việt hoá thông báo + cập nhật tab Chung"
 
 **Dialog Sparkle và thông báo tiếng Việt đồng nhất; toggle tự động cập nhật lên đầu tab Chung.**

@@ -9,7 +9,6 @@ import AppKit
 import Defaults
 import Foundation
 import Sparkle
-import UserNotifications
 
 enum Updater {
   static let delegate = VkeyUpdaterDelegate()

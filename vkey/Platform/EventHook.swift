@@ -354,6 +354,13 @@ func eventTapCallback(
     return Unmanaged.passUnretained(event)
   }
 
+  // Không xử lý Telex/VNI khi user đang gõ trong chính vkey (Settings, macro…).
+  if let frontBundle = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+     frontBundle == Bundle.main.bundleIdentifier
+  {
+    return Unmanaged.passUnretained(event)
+  }
+
   // ── Clipboard history: ⌘C lưu; phím tắt cấu hình mở menu chọn (mặc định ⇧⌘V) ──
   if type == .keyDown, Defaults[.clipboardHistoryEnabled] {
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
@@ -367,15 +374,13 @@ func eventTapCallback(
       DispatchQueue.main.async {
         ClipboardHistoryService.shared.scheduleCaptureAfterCopy(since: beforeCount)
       }
-    } else if Defaults[.clipboardHistoryModifierOnlyHotkey] == 0,
-              let shortcut = KeyboardShortcuts.getShortcut(for: .pasteClipboardHistory),
-              cgEventMatchesKeyboardShortcut(event, shortcut: shortcut) {
-      if ClipboardHistoryService.shared.hasEntriesForEventTap {
-        DispatchQueue.main.async {
-          ClipboardHistoryService.shared.showPickerAndPaste()
-        }
-        return nil
+    } else if ClipboardHistoryHotkey.matchesKeyDown(event),
+              ClipboardHistoryService.shared.hasEntriesForEventTap
+    {
+      DispatchQueue.main.async {
+        ClipboardHistoryService.shared.showPickerAndPaste()
       }
+      return nil
     }
   }
 
@@ -387,7 +392,7 @@ func eventTapCallback(
   // 2.0.2 (J3): support 2 modifier-only targets song song.
   let toggleTarget = UInt64(Defaults[.modifierOnlyToggleHotkey])
   let textToolsTarget = UInt64(Defaults[.modifierOnlyTextToolsHotkey])
-  let clipboardTarget = UInt64(Defaults[.clipboardHistoryModifierOnlyHotkey])
+  let clipboardTarget = ClipboardHistoryHotkey.modifierOnlyMask
   if toggleTarget != 0 || textToolsTarget != 0 || clipboardTarget != 0 {
     let currentMods = event.flags.rawValue & kModifierMask
     let firedMask = eventHook.processModifierTargets(
@@ -404,7 +409,10 @@ func eventTapCallback(
         DispatchQueue.main.async {
           TextConversionService.shared.openMenu(near: nil)
         }
-      } else if firedMask == clipboardTarget, Defaults[.clipboardHistoryEnabled] {
+      } else if firedMask == clipboardTarget,
+                Defaults[.clipboardHistoryEnabled],
+                ClipboardHistoryService.shared.hasEntriesForEventTap
+      {
         DispatchQueue.main.async {
           ClipboardHistoryService.shared.showPickerAndPaste()
         }
@@ -520,4 +528,51 @@ func eventTapCallback(
   }
 
   return Unmanaged.passUnretained(event)
+}
+
+// MARK: - Clipboard history hotkey (EventHook)
+
+/// So khớp phím tắt mở menu lịch sử clipboard trong event tap.
+/// Khi lịch sử rỗng, caller không nuốt phím (⇧⌘V vẫn là Paste and Match Style).
+enum ClipboardHistoryHotkey {
+  static var modifierOnlyMask: UInt64 {
+    UInt64(Defaults[.clipboardHistoryModifierOnlyHotkey])
+  }
+
+  static func installDefaultIfNeeded() {
+    guard KeyboardShortcuts.getShortcut(for: .pasteClipboardHistory) == nil,
+          Defaults[.clipboardHistoryModifierOnlyHotkey] == 0
+    else { return }
+    KeyboardShortcuts.setShortcut(
+      KeyboardShortcuts.Shortcut(.v, modifiers: [.shift, .command]),
+      for: .pasteClipboardHistory
+    )
+  }
+
+  static func matchesKeyDown(_ event: CGEvent) -> Bool {
+    guard Defaults[.clipboardHistoryModifierOnlyHotkey] == 0 else { return false }
+    let keyCode = Int(event.getIntegerValueField(.keyboardEventKeycode))
+    let flags = event.flags
+    if let shortcut = KeyboardShortcuts.getShortcut(for: .pasteClipboardHistory),
+       let key = shortcut.key
+    {
+      return keyCode == key.rawValue
+        && modifierFlags(from: flags) == shortcut.modifiers
+    }
+    // Mặc định ⇧⌘V
+    return keyCode == 9
+      && flags.contains(.maskCommand)
+      && flags.contains(.maskShift)
+      && !flags.contains(.maskAlternate)
+      && !flags.contains(.maskControl)
+  }
+
+  private static func modifierFlags(from flags: CGEventFlags) -> NSEvent.ModifierFlags {
+    var mods = NSEvent.ModifierFlags()
+    if flags.contains(.maskCommand) { mods.insert(.command) }
+    if flags.contains(.maskShift) { mods.insert(.shift) }
+    if flags.contains(.maskAlternate) { mods.insert(.option) }
+    if flags.contains(.maskControl) { mods.insert(.control) }
+    return mods
+  }
 }

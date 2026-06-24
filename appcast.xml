@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.2 — "Viết hoa đầu câu + Sublime/CAD"</title>
+      <sparkle:version>40200</sparkle:version>
+      <sparkle:shortVersionString>4.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 24 Jun 2026 10:00:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.2/vkey-4.2.dmg"
+        sparkle:edSignature="jLgHKecBxK9hJ2lOw8ddnzmvmTYTCnHnPVLc9Z/7fNGmdjZZwZa3zzle+75mfpmJf9h3A/ma/jgH0IffRpS2Cw=="
+        length="6556221"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.2 — Viết hoa đầu câu + Sublime/CAD</h2>
+        <ul>
+          <li><b>Viết hoa đầu câu</b> — hoạt động đúng sau Enter hoặc <code>. ! ?</code> (+ space).</li>
+          <li><b>Sublime Text &amp; Vectorworks</b> — sửa nuốt dòng / mất ký tự Telex (NFC whitelist).</li>
+          <li><b>Macro trong Cài đặt</b> — hết treo khi gõ tiếng Việt vào ô Cụm dài.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 271 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.1 — "Việt hoá thông báo + cập nhật tab Chung"</title>
       <sparkle:version>40100</sparkle:version>
       <sparkle:shortVersionString>4.1</sparkle:shortVersionString>

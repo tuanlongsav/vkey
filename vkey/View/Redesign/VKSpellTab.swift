@@ -179,7 +179,8 @@ struct VKSpellTab: View {
       }
       Spacer(minLength: VK.Space.s2)
       Button {
-        predictionExcludedApps.removeAll { $0 == bundleId }
+        let target = normalizedBundleIdentifier(bundleId)
+        predictionExcludedApps.removeAll { normalizedBundleIdentifier($0) == target }
       } label: {
         Image(systemName: "trash").font(.system(size: 13)).foregroundStyle(VK.Color.danger)
       }
@@ -189,8 +190,11 @@ struct VKSpellTab: View {
   }
 
   private func addExcludedApp() {
-    let id = newExcludedBundleId.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !id.isEmpty, !predictionExcludedApps.contains(id) else { return }
+    let id = normalizedBundleIdentifier(newExcludedBundleId)
+    guard !id.isEmpty else { return }
+    guard !predictionExcludedApps.contains(where: { normalizedBundleIdentifier($0) == id }) else {
+      return
+    }
     predictionExcludedApps.append(id)
     newExcludedBundleId = ""
   }
@@ -303,7 +307,7 @@ struct WordPredictionExcludedAppsSheet: View {
                     .truncationMode(.middle)
                 }
                 Spacer()
-                if excludedApps.contains(app.bundleId) {
+                if isExcluded(app.bundleId) {
                   ThemedSymbol(name: "checkmark.circle.fill")
                     .foregroundStyle(.green)
                 } else {
@@ -314,7 +318,7 @@ struct WordPredictionExcludedAppsSheet: View {
               .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .disabled(excludedApps.contains(app.bundleId))
+            .disabled(isExcluded(app.bundleId))
           }
         }
         .listStyle(.inset)
@@ -353,9 +357,15 @@ struct WordPredictionExcludedAppsSheet: View {
       .sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
   }
 
+  private func isExcluded(_ bundleId: String) -> Bool {
+    let target = normalizedBundleIdentifier(bundleId)
+    return excludedApps.contains { normalizedBundleIdentifier($0) == target }
+  }
+
   private func addApp(_ app: RunningApp) {
-    guard !excludedApps.contains(app.bundleId) else { return }
-    excludedApps.append(app.bundleId)
+    let id = normalizedBundleIdentifier(app.bundleId)
+    guard !id.isEmpty, !isExcluded(id) else { return }
+    excludedApps.append(id)
     loadRunningApps()
   }
 }

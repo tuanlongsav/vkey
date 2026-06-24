@@ -2039,6 +2039,47 @@ final class KeyboardUSTests: XCTestCase {
 }
 
 // MARK: - ===========================================
+// MARK: - Word Prediction Exclusion Tests
+// MARK: - ===========================================
+
+final class WordPredictionExclusionTests: XCTestCase {
+
+  override func tearDown() {
+    Defaults.reset(.wordPredictionEnabled)
+    Defaults.reset(.wordPredictionExcludedApps)
+    super.tearDown()
+  }
+
+  func test_isWordPredictionActive_respectsGlobalToggle() {
+    Defaults[.wordPredictionEnabled] = false
+    XCTAssertFalse(InputProcessor.isWordPredictionActive(bundleId: "com.apple.Notes"))
+    Defaults[.wordPredictionEnabled] = true
+    XCTAssertTrue(InputProcessor.isWordPredictionActive(bundleId: "com.apple.Notes"))
+  }
+
+  func test_isWordPredictionActive_respectsExcludedApps_caseInsensitive() {
+    Defaults[.wordPredictionEnabled] = true
+    Defaults[.wordPredictionExcludedApps] = ["com.google.chrome"]
+    XCTAssertFalse(InputProcessor.isWordPredictionActive(bundleId: "com.google.Chrome"))
+    XCTAssertFalse(InputProcessor.isWordPredictionActive(bundleId: " COM.GOOGLE.CHROME "))
+    XCTAssertTrue(InputProcessor.isWordPredictionActive(bundleId: "com.apple.Notes"))
+  }
+
+  func test_isWordPredictionActive_respectsRuleDisablePrediction() {
+    Defaults[.wordPredictionEnabled] = true
+    var overrides = ResolvedRuleOverrides()
+    overrides.disablePrediction = true
+    XCTAssertFalse(InputProcessor.isWordPredictionActive(
+      bundleId: "com.apple.Notes", ruleOverrides: overrides))
+  }
+
+  func test_isWordPredictionActive_inactiveForEmptyBundleId() {
+    Defaults[.wordPredictionEnabled] = true
+    XCTAssertFalse(InputProcessor.isWordPredictionActive(bundleId: ""))
+  }
+}
+
+// MARK: - ===========================================
 // MARK: - Prediction HUD Layout Tests
 // MARK: - ===========================================
 
@@ -3941,6 +3982,71 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     processor.push(char: "a")
     processor.push(char: "n")
     XCTAssertEqual(processor.transformed, "nhân")
+  }
+
+  func testNativeTextEditorsUseNFCGraphemeStorage() throws {
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.sublimetext.4"))
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.sublimetext.3"))
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.barebones.bbedit"))
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.macromates.TextMate"))
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "org.vim.MacVim"))
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "net.nemetschek.vectorworks.2024"))
+    XCTAssertFalse(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.google.Chrome"))
+  }
+
+  func testAutoCapitalizeAfterEnterSwallowsLowercaseKeyEvent() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+
+    let processor = InputProcessor(method: .Telex)
+    processor.changeActiveApp("com.apple.Notes")
+
+    let enter = CGEvent(keyboardEventSource: nil, virtualKey: 36, keyDown: true)!
+    _ = processor.handleEvent(event: enter)
+
+    let eventA = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
+    eventA.flags = []
+    let result = processor.handleEvent(event: eventA)
+    XCTAssertNil(result, "Auto-capitalize must synthesize uppercase, not pass lowercase key")
+    XCTAssertEqual(processor.transformed, "A")
+  }
+
+  func testAutoCapitalizeAfterPeriodAndSpace() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+
+    let processor = InputProcessor(method: .Telex)
+    processor.changeActiveApp("com.apple.Notes")
+
+    // '.' (keycode 47 on US layout)
+    let period = CGEvent(keyboardEventSource: nil, virtualKey: 47, keyDown: true)!
+    _ = processor.handleEvent(event: period)
+
+    let space = CGEvent(keyboardEventSource: nil, virtualKey: 49, keyDown: true)!
+    _ = processor.handleEvent(event: space)
+
+    let eventX = CGEvent(keyboardEventSource: nil, virtualKey: 7, keyDown: true)! // X key
+    eventX.flags = []
+    let result = processor.handleEvent(event: eventX)
+    XCTAssertNil(result)
+    XCTAssertEqual(processor.transformed, "X")
+  }
+
+  func testAutoCapitalizeImmediatelyAfterPeriodWithoutSpace() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+
+    let processor = InputProcessor(method: .Telex)
+    processor.changeActiveApp("com.apple.Notes")
+
+    let period = CGEvent(keyboardEventSource: nil, virtualKey: 47, keyDown: true)!
+    _ = processor.handleEvent(event: period)
+
+    let eventT = CGEvent(keyboardEventSource: nil, virtualKey: 17, keyDown: true)! // T key
+    eventT.flags = []
+    let result = processor.handleEvent(event: eventT)
+    XCTAssertNil(result)
+    XCTAssertEqual(processor.transformed, "T")
   }
 
   /// v3.6: diff NFD không bao giờ được mở đầu bằng combining mark trần —

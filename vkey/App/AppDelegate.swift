@@ -171,7 +171,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       }
     }
     
-    // Check for updates silently on launch
+    // Sparkle prefs + post-update HUD + throttled background check
     Updater.configureOnLaunch()
 
     // Check for dictionary updates on launch

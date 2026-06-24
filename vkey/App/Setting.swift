@@ -341,6 +341,11 @@ struct ThemeConfig: Codable, Defaults.Serializable, Equatable {
   }
 }
 
+/// Chuẩn hoá bundle ID để so sánh/lưu (trim + lowercase).
+func normalizedBundleIdentifier(_ raw: String) -> String {
+  raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+}
+
 extension Defaults.Keys {
   /// v2.1.1: UI theme toàn cục. Switch không cần restart — HUD/Settings/icon
   /// đều đọc qua `Defaults.observe(.uiTheme)`.
@@ -661,7 +666,7 @@ extension Defaults.Keys {
   /// là default fallback.
   static let cgEventFlushDelayMs = Key<Int>("cgevent-flush-delay-ms", default: 0)
 
-  /// Bật lịch sử clipboard: ⌘C lưu; ⌥⌘V mở menu chọn (⌘V / ⇧⌘V = dán thường).
+  /// Bật lịch sử clipboard: ⌘C lưu; phím tắt (mặc định ⇧⌘V) mở menu chọn.
   static let clipboardHistoryEnabled = Key<Bool>("clipboard-history-enabled", default: false)
 
   /// Số mục clipboard tối đa giữ trong RAM (3–50).

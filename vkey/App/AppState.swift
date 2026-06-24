@@ -113,6 +113,7 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// xuất hiện SAU ⌘S/click một nhịp nên refresh ngay tại event còn thấy
     /// focus cũ; nhịp trễ ~0.5s bắt đúng field mới.
     private var pendingDelayedFocusRefresh: DispatchWorkItem?
+    private var wordPredictionSettingsObserver: Defaults.Observation?
 
     init() {
         bundleId = Bundle.main.bundleIdentifier ?? "dev.longht.vkey"
@@ -149,6 +150,8 @@ class AppState: ObservableObject, FileMonitorDelegate {
             }
         }
 
+        ClipboardHistoryHotkey.installDefaultIfNeeded()
+
         // Register application change observer
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(activeApplicationDidChange),
@@ -175,6 +178,13 @@ class AppState: ObservableObject, FileMonitorDelegate {
             self?.handleInputSourceCategoryChange(category)
         }
         inputSourceMonitor.start()
+
+        wordPredictionSettingsObserver = Defaults.observe(
+            keys: .wordPredictionEnabled, .wordPredictionExcludedApps,
+            options: []
+        ) { [weak self] in
+            self?.inputProcessor.refreshWordPredictionState()
+        }
     }
 
     deinit {
@@ -370,6 +380,7 @@ class AppState: ObservableObject, FileMonitorDelegate {
         activeRuleOverridesBundleId = appName
         inputProcessor.ruleOverrides = activeRuleOverrides
         inputProcessor.updateAdaptiveFlushDelay()
+        inputProcessor.refreshWordPredictionState()
     }
 
     @discardableResult

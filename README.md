@@ -1,5 +1,5 @@
 <h1>
-  <img src="images/vkey-icon.png?v=40100" alt="vkey logo" width="56" style="vertical-align: middle;">
+  <img src="images/vkey-icon.png?v=40200" alt="vkey logo" width="56" style="vertical-align: middle;">
   &nbsp;vkey
 </h1>
 
@@ -8,7 +8,13 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.1](CHANGELOG.md)** — Developer ID signed & notarized · 267 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.2](CHANGELOG.md)** — Developer ID signed & notarized · 271 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.2
+
+- **Viết hoa đầu câu** — hoạt động đúng sau Enter hoặc `. ! ?` (+ space).
+- **Sublime Text & Vectorworks** — sửa nuốt dòng / mất ký tự khi gõ tiếng Việt (NFC whitelist).
+- **Macro trong Cài đặt** — hết treo khi gõ trực tiếp tiếng Việt vào ô Cụm dài.
 
 ## Mới ở v4.1
 
@@ -41,18 +47,18 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 ## Hình ảnh
 
 <p align="center">
-  <img src="images/menubar-menu.png?v=32100" width="200" alt="Menu bar">
-  <img src="images/hud-toggle-vi.png?v=32100" width="300" alt="HUD VI/EN">
-  <img src="images/hud-prediction.png?v=32100" width="220" alt="HUD gợi ý cụm">
+  <img src="images/menubar-menu.png?v=32200" width="200" alt="Menu bar">
+  <img src="images/hud-toggle-vi.png?v=32200" width="300" alt="HUD VI/EN">
+  <img src="images/hud-prediction.png?v=32200" width="220" alt="HUD gợi ý cụm">
 </p>
 
 <p align="center">
-  <img src="images/general-settings.png?v=32100" width="200" alt="Tab Chung">
-  <img src="images/smart-switch-settings.png?v=32100" width="200" alt="Tab Smart Switch">
-  <img src="images/macro-settings.png?v=32100" width="200" alt="Tab Macro">
-  <img src="images/spellcheck-settings.png?v=32100" width="200" alt="Tab Chính tả">
-  <img src="images/statistics-settings.png?v=32100" width="200" alt="Tab Thống kê">
-  <img src="images/theme-settings.png?v=32100" width="200" alt="Tab Giao diện">
+  <img src="images/general-settings.png?v=32200" width="200" alt="Tab Chung">
+  <img src="images/smart-switch-settings.png?v=32200" width="200" alt="Tab Smart Switch">
+  <img src="images/macro-settings.png?v=32200" width="200" alt="Tab Macro">
+  <img src="images/spellcheck-settings.png?v=32200" width="200" alt="Tab Chính tả">
+  <img src="images/statistics-settings.png?v=32200" width="200" alt="Tab Thống kê">
+  <img src="images/theme-settings.png?v=32200" width="200" alt="Tab Giao diện">
 </p>
 
 ## Tính năng chính

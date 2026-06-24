@@ -802,7 +802,13 @@ class InputProcessor {
     activeApp = app
     strategyTracker.resetForApp(app)
     updateAdaptiveFlushDelay()
-    if !Self.isWordPredictionActive(bundleId: app, ruleOverrides: ruleOverrides) {
+    refreshWordPredictionState()
+  }
+
+  /// Ẩn HUD / xoá prediction khi đoán từ không còn active (đổi app,
+  /// rule, hoặc danh sách loại trừ).
+  public func refreshWordPredictionState() {
+    if !Self.isWordPredictionActive(bundleId: activeApp, ruleOverrides: ruleOverrides) {
       activePrediction = nil
       DispatchQueue.main.async {
         PredictionHUDWindow.shared.hide()
@@ -818,8 +824,15 @@ class InputProcessor {
   ) -> Bool {
     guard Defaults[.wordPredictionEnabled] else { return false }
     guard !ruleOverrides.disablePrediction else { return false }
-    guard !bundleId.isEmpty else { return true }
-    return !Defaults[.wordPredictionExcludedApps].contains(bundleId)
+    guard !bundleId.isEmpty else { return false }
+    return !isExcludedFromWordPrediction(bundleId: bundleId)
+  }
+
+  static func isExcludedFromWordPrediction(bundleId: String) -> Bool {
+    let normalized = normalizedBundleIdentifier(bundleId)
+    guard !normalized.isEmpty else { return false }
+    return Defaults[.wordPredictionExcludedApps]
+      .contains { normalizedBundleIdentifier($0) == normalized }
   }
 
   private func isWordPredictionActive() -> Bool {
@@ -982,26 +995,36 @@ class InputProcessor {
       return Unmanaged.passUnretained(event)
     }
 
-    // 2.0 (A5): nếu đang pending capitalize và char là chữ cái lowercase,
-    // uppercase nó trước khi push vào buffer. Engine xử lý 'W' như 'w'
-    // (Telex case-insensitive cho phụ âm). Output sẽ có chữ hoa đầu câu.
+    // 2.0 (A5): viết hoa chữ cái đầu sau Enter hoặc . ! ? (+ space tùy chọn).
+    // Luôn inject uppercase qua sendReplacement — engine Telex/VNI thường
+    // trả transformed lowercase nên diff/pass-through dễ gửi nhầm chữ thường.
+    var didAutoCapitalize = false
     if Defaults[.autoCapitalizeEnabled],
-       pendingCapitalize,
+       (pendingCapitalize || sentenceJustEnded),
        newChar.isLetter,
-       newChar.isLowercase {
-      let upperString = String(newChar).uppercased()
-      if let upperChar = upperString.first {
+       newChar.isLowercase
+    {
+      if let upperChar = String(newChar).uppercased().first {
         newChar = upperChar
       }
       pendingCapitalize = false
       sentenceJustEnded = false
+      didAutoCapitalize = true
     } else if !newChar.isWhitespace {
-      // Mọi char không phải whitespace → reset state (đã không còn ở đầu câu).
       pendingCapitalize = false
       sentenceJustEnded = false
     }
 
     push(char: newChar)
+
+    if didAutoCapitalize {
+      sendTypedReplacement(
+        backspaceCount: 0,
+        diffChars: [newChar],
+        appLikelySensitive: isFixAutocompleteApp()
+      )
+      return nil
+    }
     // v2.3.14: revert v2.3.13 NFD diff. User confirmed still bug
     // "gooogle, foooter ở claude desktop hay bất kỳ đâu" ngay cả v2.3.13
     // → hypothesis "Chromium NFD scalar backspace" SAI.
@@ -1418,10 +1441,27 @@ class InputProcessor {
   /// Whitelist NFC apps theo bundle prefix. Mọi thứ khác giả định NFD.
   /// Lý do whitelist (conservative): NFC chỉ ở Apple + Office native — đếm được.
   /// Chromium/Electron app vô số, không enum nổi → default NFD.
+  ///
+  /// Native text editors / CAD (Sublime, BBEdit, Vectorworks…) lưu grapheme NFC —
+  /// NFD diff gây backspace thừa, nuốt newline/ký tự dòng kế (Sublime Text).
+  private static let nfcNativeEditorBundlePrefixes: [String] = [
+    "com.sublimetext.",
+    "com.barebones.bbedit",
+    "com.macromates.TextMate",
+    "org.vim.MacVim",
+    "net.shinyfrog.bear",
+    "pro.writer.mac",
+    "net.nemetschek.vectorworks",
+    "net.vectorworks.",
+  ]
+
   static func usesNFCGraphemeStorage(bundleId: String) -> Bool {
     if bundleId.isEmpty { return true }  // fallback safe (Apple native)
     // Apple native apps (NSTextView/NSTextField/UITextView based)
     if bundleId.hasPrefix("com.apple.") { return true }
+    for prefix in nfcNativeEditorBundlePrefixes {
+      if bundleId.hasPrefix(prefix) { return true }
+    }
     // Microsoft Office native (NOT Edge which is Chromium)
     let officeNative: Set<String> = [
       "com.microsoft.Word",
