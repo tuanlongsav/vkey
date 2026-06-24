@@ -743,12 +743,10 @@ class InputProcessor {
   // 2.0.2 (J1): xoá `activePredictionCandidates: [String]` — predict về top-1
   // only, không cần lưu danh sách candidates.
 
-  // 2.0 (A5): auto-capitalize state machine — tracking khi user gõ
-  // sentence-ending punctuation (. ! ?) hoặc Enter, để uppercase chữ cái
-  // đầu của từ kế tiếp.
-  // - `sentenceJustEnded`: punctuation . ! ? vừa được commit (chưa thấy space).
-  // - `pendingCapitalize`: đã ở vị trí "đầu câu" (sau Enter hoặc . ! ?+space)
-  //   — chữ cái text kế tiếp sẽ được uppercase.
+  // 2.0 (A5): auto-capitalize state machine.
+  // - `sentenceJustEnded`: `. ! ?` vừa commit, chưa có space — chờ promote.
+  // - `pendingCapitalize`: đầu câu thật (sau Enter, hoặc `. ! ?` rồi space).
+  //   Chỉ khi flag này bật mới inject chữ hoa — tránh google.com.vn, 3.14…
   private var sentenceJustEnded = false
   private var pendingCapitalize = false
 
@@ -995,12 +993,11 @@ class InputProcessor {
       return Unmanaged.passUnretained(event)
     }
 
-    // 2.0 (A5): viết hoa chữ cái đầu sau Enter hoặc . ! ? (+ space tùy chọn).
-    // Luôn inject uppercase qua sendReplacement — engine Telex/VNI thường
-    // trả transformed lowercase nên diff/pass-through dễ gửi nhầm chữ thường.
+    // 2.0 (A5): viết hoa chữ cái đầu sau Enter hoặc sau . ! ? kèm space.
+    // Không viết hoa ngay sau dấu chấm (domain 3.14, google.com.vn…).
     var didAutoCapitalize = false
     if Defaults[.autoCapitalizeEnabled],
-       (pendingCapitalize || sentenceJustEnded),
+       pendingCapitalize,
        newChar.isLetter,
        newChar.isLowercase
     {
@@ -1145,7 +1142,8 @@ class InputProcessor {
 
   /// Cập nhật capitalize state khi gặp TaskKey (Space/Enter/Tab).
   /// - Enter: ALWAYS đánh dấu đầu câu kế tiếp.
-  /// - Space: promote `sentenceJustEnded` thành `pendingCapitalize`.
+  /// - Space: promote `sentenceJustEnded` thành `pendingCapitalize`;
+  ///   space thừa khi đã `pendingCapitalize` thì giữ nguyên.
   /// - Tab: bảo toàn state hiện tại (Tab thường dùng cho prediction
   ///   accept, không thay đổi cảm nhận câu).
   private func updateCapitalizeStateForTaskKey(_ taskKey: TaskKey) {
@@ -1157,6 +1155,9 @@ class InputProcessor {
       if sentenceJustEnded {
         pendingCapitalize = true
         sentenceJustEnded = false
+      } else if pendingCapitalize {
+        // Space thừa sau đầu câu (vd ".  ") — vẫn chờ chữ hoa kế tiếp.
+        break
       } else {
         // Space giữa các từ → reset pending nếu trước đó có lỡ set.
         pendingCapitalize = false

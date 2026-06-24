@@ -3997,16 +3997,9 @@ final class NFDvsNFCDiffingTests: XCTestCase {
   func testAutoCapitalizeAfterEnterSwallowsLowercaseKeyEvent() throws {
     Defaults[.autoCapitalizeEnabled] = true
     defer { Defaults.reset(.autoCapitalizeEnabled) }
-
-    let processor = InputProcessor(method: .Telex)
-    processor.changeActiveApp("com.apple.Notes")
-
-    let enter = CGEvent(keyboardEventSource: nil, virtualKey: 36, keyDown: true)!
-    _ = processor.handleEvent(event: enter)
-
-    let eventA = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
-    eventA.flags = []
-    let result = processor.handleEvent(event: eventA)
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 36) // Enter
+    let result = typeLetter(processor, code: 0) // a
     XCTAssertNil(result, "Auto-capitalize must synthesize uppercase, not pass lowercase key")
     XCTAssertEqual(processor.transformed, "A")
   }
@@ -4014,39 +4007,127 @@ final class NFDvsNFCDiffingTests: XCTestCase {
   func testAutoCapitalizeAfterPeriodAndSpace() throws {
     Defaults[.autoCapitalizeEnabled] = true
     defer { Defaults.reset(.autoCapitalizeEnabled) }
-
-    let processor = InputProcessor(method: .Telex)
-    processor.changeActiveApp("com.apple.Notes")
-
-    // '.' (keycode 47 on US layout)
-    let period = CGEvent(keyboardEventSource: nil, virtualKey: 47, keyDown: true)!
-    _ = processor.handleEvent(event: period)
-
-    let space = CGEvent(keyboardEventSource: nil, virtualKey: 49, keyDown: true)!
-    _ = processor.handleEvent(event: space)
-
-    let eventX = CGEvent(keyboardEventSource: nil, virtualKey: 7, keyDown: true)! // X key
-    eventX.flags = []
-    let result = processor.handleEvent(event: eventX)
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 47) // .
+    typeKey(processor, code: 49) // space
+    let result = typeLetter(processor, code: 7) // x
     XCTAssertNil(result)
     XCTAssertEqual(processor.transformed, "X")
   }
 
-  func testAutoCapitalizeImmediatelyAfterPeriodWithoutSpace() throws {
+  func testAutoCapitalizeDoesNotCapitalizeImmediatelyAfterPeriodWithoutSpace() throws {
     Defaults[.autoCapitalizeEnabled] = true
     defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 47) // .
+    let result = typeLetter(processor, code: 17) // t
+    XCTAssertTrue(result != nil, "No space after period → pass-through lowercase")
+    XCTAssertEqual(processor.transformed, "t")
+  }
 
+  func testAutoCapitalizeDoesNotCapitalizeImmediatelyAfterExclamationWithoutSpace() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 18, shift: true) // !
+    let result = typeLetter(processor, code: 17) // t
+    XCTAssertTrue(result != nil)
+    XCTAssertEqual(processor.transformed, "t")
+  }
+
+  func testAutoCapitalizeDoesNotCapitalizeImmediatelyAfterQuestionWithoutSpace() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 44, shift: true) // ?
+    let result = typeLetter(processor, code: 17) // t
+    XCTAssertTrue(result != nil)
+    XCTAssertEqual(processor.transformed, "t")
+  }
+
+  func testAutoCapitalizeAfterExclamationAndSpace() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 18, shift: true) // !
+    typeKey(processor, code: 49) // space
+    let result = typeLetter(processor, code: 7) // x
+    XCTAssertNil(result)
+    XCTAssertEqual(processor.transformed, "X")
+  }
+
+  func testAutoCapitalizeAfterQuestionAndSpace() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 44, shift: true) // ?
+    typeKey(processor, code: 49) // space
+    let result = typeLetter(processor, code: 7) // x
+    XCTAssertNil(result)
+    XCTAssertEqual(processor.transformed, "X")
+  }
+
+  func testAutoCapitalizeAfterPeriodAndDoubleSpace() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 47) // .
+    typeKey(processor, code: 49) // space
+    typeKey(processor, code: 49) // second space
+    let result = typeLetter(processor, code: 7) // x
+    XCTAssertNil(result)
+    XCTAssertEqual(processor.transformed, "X")
+  }
+
+  func testAutoCapitalizePreservesDomainSegments() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+
+    for code: UInt16 in [5, 31, 31, 5, 37, 14] { typeKey(processor, code: code) }
+    XCTAssertEqual(processor.transformed, "google")
+
+    typeKey(processor, code: 47) // .
+    typeKey(processor, code: 8) // c
+    XCTAssertEqual(processor.transformed, "c", "First letter after dot must stay lowercase")
+    typeKey(processor, code: 31) // o
+    typeKey(processor, code: 46) // m
+    XCTAssertEqual(processor.transformed, "com")
+
+    typeKey(processor, code: 47) // .
+    typeKey(processor, code: 9) // v
+    XCTAssertEqual(processor.transformed, "v", "Second dot segment must stay lowercase")
+    typeKey(processor, code: 45) // n
+    XCTAssertEqual(processor.transformed, "vn")
+  }
+
+  // MARK: - Auto-capitalize helpers
+  // CGEvent virtualKey codes below assume US keyboard layout (KeyboardUS).
+
+  private func makeNotesProcessor() -> InputProcessor {
     let processor = InputProcessor(method: .Telex)
     processor.changeActiveApp("com.apple.Notes")
+    return processor
+  }
 
-    let period = CGEvent(keyboardEventSource: nil, virtualKey: 47, keyDown: true)!
-    _ = processor.handleEvent(event: period)
+  private func typeKey(
+    _ processor: InputProcessor,
+    code: UInt16,
+    shift: Bool = false
+  ) {
+    let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(code), keyDown: true)!
+    event.flags = shift ? [.maskShift] : []
+    _ = processor.handleEvent(event: event)
+  }
 
-    let eventT = CGEvent(keyboardEventSource: nil, virtualKey: 17, keyDown: true)! // T key
-    eventT.flags = []
-    let result = processor.handleEvent(event: eventT)
-    XCTAssertNil(result)
-    XCTAssertEqual(processor.transformed, "T")
+  @discardableResult
+  private func typeLetter(
+    _ processor: InputProcessor,
+    code: UInt16
+  ) -> Unmanaged<CGEvent>? {
+    let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(code), keyDown: true)!
+    event.flags = []
+    return processor.handleEvent(event: event)
   }
 
   /// v3.6: diff NFD không bao giờ được mở đầu bằng combining mark trần —

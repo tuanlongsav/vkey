@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.3 — "Viết hoa đầu câu: không phá domain"</title>
+      <sparkle:version>40300</sparkle:version>
+      <sparkle:shortVersionString>4.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 24 Jun 2026 21:42:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.3/vkey-4.3.dmg"
+        sparkle:edSignature="vpspYk9I/VFtPrXzba+b7osX5k6ascoVq54IkbTVVKlvg0D/Teu6lmuMcW9Tn71PV8NK7DFrW8uNXQa2DBzAAA=="
+        length="6556238"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.3 — Viết hoa đầu câu: không phá domain</h2>
+        <ul>
+          <li><b>Viết hoa đầu câu</b> — chỉ sau Enter hoặc <code>. ! ?</code> kèm dấu cách; <code>google.com.vn</code> và <code>3.14</code> giữ chữ thường.</li>
+          <li><b>Space thừa</b> sau dấu câu (vd <code>Xong.  Tiếp</code>) vẫn viết hoa đúng.</li>
+          <li><b>Hint Cài đặt</b> mô tả đúng hành vi (cần dấu cách sau dấu câu).</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 281 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.2 — "Viết hoa đầu câu + Sublime/CAD"</title>
       <sparkle:version>40200</sparkle:version>
       <sparkle:shortVersionString>4.2</sparkle:shortVersionString>

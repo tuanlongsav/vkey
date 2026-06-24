@@ -1,5 +1,5 @@
 <h1>
-  <img src="images/vkey-icon.png?v=40200" alt="vkey logo" width="56" style="vertical-align: middle;">
+  <img src="images/vkey-icon.png?v=40300" alt="vkey logo" width="56" style="vertical-align: middle;">
   &nbsp;vkey
 </h1>
 
@@ -8,11 +8,15 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.2](CHANGELOG.md)** — Developer ID signed & notarized · 271 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.3](CHANGELOG.md)** — Developer ID signed & notarized · 281 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.3
+
+- **Viết hoa đầu câu** — chỉ sau Enter hoặc `. ! ?` **kèm dấu cách**; `google.com.vn` và `3.14` giữ chữ thường. Viết tắt không space (`Mr.Smith`) cũng không bị viết hoa — cố ý để không phá domain.
 
 ## Mới ở v4.2
 
-- **Viết hoa đầu câu** — hoạt động đúng sau Enter hoặc `. ! ?` (+ space).
+- **Viết hoa đầu câu** — hoạt động đúng sau Enter hoặc `. ! ?` (+ space); không viết hoa ngay sau dấu chấm (domain).
 - **Sublime Text & Vectorworks** — sửa nuốt dòng / mất ký tự khi gõ tiếng Việt (NFC whitelist).
 - **Macro trong Cài đặt** — hết treo khi gõ trực tiếp tiếng Việt vào ô Cụm dài.
 

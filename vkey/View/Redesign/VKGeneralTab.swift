@@ -77,7 +77,7 @@ struct VKGeneralTab: View {
                       isOn: $autoTypo)
           VKToggleRow(icon: "textformat", iconColor: VK.Color.info,
                       label: "Viết hoa đầu câu",
-                      hint: "Tự động viết hoa sau dấu chấm, chấm than, chấm hỏi hoặc xuống dòng.",
+                      hint: "Sau Enter, hoặc sau dấu chấm / chấm than / chấm hỏi kèm dấu cách.",
                       isOn: $autoCapitalize)
           VKToggleRow(icon: "character.bubble.fill", iconColor: VK.Color.success,
                       label: "Tự tắt khi đổi sang bộ gõ khác",

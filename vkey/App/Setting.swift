@@ -618,9 +618,8 @@ extension Defaults.Keys {
 
   // MARK: - 2.0 — Track 1: Foundation & Quick Wins
 
-  /// A5 (2.0): tự động viết hoa chữ cái đầu sau `.`, `!`, `?`, Enter/Return.
-  /// Áp dụng trong `InputProcessor.handleTextChar` trước khi push char vào
-  /// buffer — đơn giản, không can thiệp engine state machine.
+  /// A5 (2.0): viết hoa chữ đầu sau Enter, hoặc sau `.` `!` `?` kèm space.
+  /// Không viết hoa ngay sau dấu câu (domain, số thập phân, viết tắt).
   static let autoCapitalizeEnabled = Key<Bool>("auto-capitalize-enabled", default: true)
 
   /// B2 (2.0): tự động disable vkey khi user chuyển input source sang
