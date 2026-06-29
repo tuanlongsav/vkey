@@ -354,13 +354,6 @@ func eventTapCallback(
     return Unmanaged.passUnretained(event)
   }
 
-  // Không xử lý Telex/VNI khi user đang gõ trong chính vkey (Settings, macro…).
-  if let frontBundle = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-     frontBundle == Bundle.main.bundleIdentifier
-  {
-    return Unmanaged.passUnretained(event)
-  }
-
   // ── Clipboard history: ⌘C lưu; phím tắt cấu hình mở menu chọn (mặc định ⇧⌘V) ──
   if type == .keyDown, Defaults[.clipboardHistoryEnabled] {
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
@@ -520,7 +513,13 @@ func eventTapCallback(
     }
   }
 
-  if type == .keyDown && eventHook.processing {
+  // Không chạy Telex/VNI khi user đang gõ trong chính vkey (Settings, macro…).
+  // Clipboard / modifier-only / focus vẫn xử lý phía trên.
+  let skipVietnameseIME =
+    NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+    == Bundle.main.bundleIdentifier
+
+  if type == .keyDown && eventHook.processing && !skipVietnameseIME {
     eventHook.appState?.syncFocusedContextForKeystroke()
     return input.handleEvent(event: event)
   } else if type == .leftMouseDown || type == .rightMouseDown {

@@ -2,6 +2,26 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.4] - 2026-06-29 — "Tab thụt dòng ổn định"
+
+**Tab đầu dòng trở lại đúng nghĩa: thụt dòng/chuyển focus, không chèn gợi ý cũ.**
+
+### 🐛 Sửa lỗi gõ
+
+- **Tab ở đầu dòng / sau Enter** — không còn nhận prediction cũ rồi chèn chữ vào đầu dòng; Tab pass-through để app đích thụt dòng hoặc chuyển focus.
+- **Prediction HUD** — chỉ hiện sau commit bằng Space, khớp với hướng dẫn `Tab`; commit bằng dấu câu sẽ clear HUD thay vì hiển thị gợi ý không nhận được.
+- **Boundary bằng click/caret** — reset prediction stale khi có ranh giới mới, tránh Tab sau khi di chuyển con trỏ chèn nhầm text.
+
+### 🧰 Clipboard & hotkey
+
+- **Phím tắt Clipboard / modifier-only** vẫn được xử lý khi cửa sổ vkey đang focus, trong khi Telex/VNI tiếp tục bypass ô Cài đặt để không tự biến đổi text nội bộ.
+
+### 🧪 Tests
+
+- Thêm test Tab nhận prediction ngay sau Space, nhưng pass-through sau Enter hoặc boundary. Toàn bộ **295 test pass**.
+
+---
+
 ## [4.3] - 2026-06-24 — "Viết hoa đầu câu: không phá domain"
 
 **Chỉ viết hoa sau dấu câu khi có space; giữ nguyên domain và số thập phân.**

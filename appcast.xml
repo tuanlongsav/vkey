@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.4 — "Tab thụt dòng ổn định"</title>
+      <sparkle:version>40400</sparkle:version>
+      <sparkle:shortVersionString>4.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 29 Jun 2026 18:41:54 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.4/vkey-4.4.dmg"
+        sparkle:edSignature="b+gV1samSuQGoFLnb49lTa28yq+I5vfuAtdLuLp62CzYOvU/nbulUQbzthL3y/pS0brFf6uvEP0uvF8Js43qBg=="
+        length="6551229"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.4 — Tab thụt dòng ổn định</h2>
+        <ul>
+          <li><b>Tab đầu dòng</b> — sau Enter hoặc khi bắt đầu dòng mới, Tab được trả về app để thụt dòng thay vì chèn gợi ý cũ.</li>
+          <li><b>Gợi ý từ</b> — HUD chỉ hiện sau Space và chỉ Tab ngay lúc đó mới nhận gợi ý.</li>
+          <li><b>Clipboard/hotkey</b> — phím tắt clipboard và modifier-only vẫn hoạt động ổn định khi cửa sổ vkey đang focus.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 295 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.3 — "Viết hoa đầu câu: không phá domain"</title>
       <sparkle:version>40300</sparkle:version>
       <sparkle:shortVersionString>4.3</sparkle:shortVersionString>

@@ -8,6 +8,7 @@
 import XCTest
 import Defaults
 import AppKit
+import KeyboardShortcuts
 
 @testable import vkey
 
@@ -2080,6 +2081,80 @@ final class WordPredictionExclusionTests: XCTestCase {
 }
 
 // MARK: - ===========================================
+// MARK: - Word Prediction Tab Acceptance Tests
+// MARK: - ===========================================
+
+final class WordPredictionTabAcceptanceTests: XCTestCase {
+
+  override func setUp() {
+    super.setUp()
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.wordPredictionEnabled] = true
+    Defaults[.wordPredictionExcludedApps] = []
+  }
+
+  override func tearDown() {
+    Defaults.reset(.spellCheckEnabled)
+    Defaults.reset(.wordPredictionEnabled)
+    Defaults.reset(.wordPredictionExcludedApps)
+    super.tearDown()
+  }
+
+  func testTabImmediatelyAfterSpaceAcceptsFreshPrediction() {
+    let processor = makeNotesProcessor()
+
+    typeKeys([40, 34, 45, 4, 1], into: processor) // kinhs -> kính
+    _ = typeKey(49, into: processor) // Space creates a prediction from "kính".
+
+    let tabResult = typeKey(48, into: processor)
+    XCTAssertTrue(tabResult == nil, "Fresh prediction after Space should be accepted by Tab")
+  }
+
+  func testTabAfterEnterPassesThroughInsteadOfAcceptingStalePrediction() {
+    let processor = makeNotesProcessor()
+
+    typeKeys([40, 34, 45, 4, 1], into: processor) // kinhs -> kính
+    XCTAssertEqual(processor.transformed, "kính")
+
+    _ = typeKey(49, into: processor) // Space creates a prediction from "kính".
+    XCTAssertEqual(processor.transformed, "")
+    XCTAssertTrue(typeKey(36, into: processor) != nil) // Enter starts a new line.
+
+    let tabResult = typeKey(48, into: processor)
+    XCTAssertTrue(tabResult != nil, "Tab at a new line must pass through for indentation")
+  }
+
+  func testTabAfterExplicitWordBoundaryPassesThrough() {
+    let processor = makeNotesProcessor()
+
+    typeKeys([40, 34, 45, 4, 1], into: processor) // kinhs -> kính
+    _ = typeKey(49, into: processor) // Space creates a prediction from "kính".
+    processor.newWord()
+
+    let tabResult = typeKey(48, into: processor)
+    XCTAssertTrue(tabResult != nil, "Tab after a caret/mouse boundary must not accept stale text")
+  }
+
+  private func makeNotesProcessor() -> InputProcessor {
+    let processor = InputProcessor(method: .Telex)
+    processor.changeActiveApp("com.apple.Notes")
+    return processor
+  }
+
+  private func typeKeys(_ codes: [UInt16], into processor: InputProcessor) {
+    for code in codes {
+      _ = typeKey(code, into: processor)
+    }
+  }
+
+  @discardableResult
+  private func typeKey(_ code: UInt16, into processor: InputProcessor) -> Unmanaged<CGEvent>? {
+    let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(code), keyDown: true)!
+    return processor.handleEvent(event: event)
+  }
+}
+
+// MARK: - ===========================================
 // MARK: - Prediction HUD Layout Tests
 // MARK: - ===========================================
 
@@ -2325,6 +2400,66 @@ final class ClipboardHistoryTests: XCTestCase {
     let withFiles = ClipboardHistoryService.pasteboardPayloadBytes(from: pb, allowFiles: true)
     let textOnly = ClipboardHistoryService.pasteboardPayloadBytes(from: pb, allowFiles: false)
     XCTAssertEqual(withFiles, textOnly)
+  }
+}
+
+// MARK: - Clipboard history hotkey
+
+final class ClipboardHistoryHotkeyTests: XCTestCase {
+
+  override func setUp() {
+    super.setUp()
+    Defaults.reset(.clipboardHistoryModifierOnlyHotkey)
+    KeyboardShortcuts.setShortcut(nil, for: .pasteClipboardHistory)
+  }
+
+  private func keyDown(keyCode: UInt16, flags: CGEventFlags = []) -> CGEvent {
+    let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(keyCode), keyDown: true)!
+    event.flags = flags
+    return event
+  }
+
+  func testDefaultShiftCommandVMatches() {
+    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
+    let event = keyDown(keyCode: 9, flags: [.maskCommand, .maskShift])
+    XCTAssertTrue(ClipboardHistoryHotkey.matchesKeyDown(event))
+  }
+
+  func testDoesNotMatchWhenModifierOnlyHotkeyConfigured() {
+    Defaults[.clipboardHistoryModifierOnlyHotkey] = 456
+    let event = keyDown(keyCode: 9, flags: [.maskCommand, .maskShift])
+    XCTAssertFalse(ClipboardHistoryHotkey.matchesKeyDown(event))
+  }
+
+  func testDoesNotMatchPlainCommandV() {
+    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
+    let event = keyDown(keyCode: 9, flags: [.maskCommand])
+    XCTAssertFalse(ClipboardHistoryHotkey.matchesKeyDown(event))
+  }
+
+  func testDoesNotMatchWhenOptionHeld() {
+    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
+    let event = keyDown(keyCode: 9, flags: [.maskCommand, .maskShift, .maskAlternate])
+    XCTAssertFalse(ClipboardHistoryHotkey.matchesKeyDown(event))
+  }
+
+  func testInstallDefaultIfNeededSetsShiftCommandV() {
+    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
+    ClipboardHistoryHotkey.installDefaultIfNeeded()
+    let shortcut = KeyboardShortcuts.getShortcut(for: .pasteClipboardHistory)
+    XCTAssertNotNil(shortcut)
+    XCTAssertEqual(shortcut?.key?.rawValue, KeyboardShortcuts.Key.v.rawValue)
+    XCTAssertEqual(shortcut?.modifiers, [.shift, .command])
+  }
+
+  func testCustomShortcutMatchesKeyDown() {
+    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
+    KeyboardShortcuts.setShortcut(
+      KeyboardShortcuts.Shortcut(.c, modifiers: [.command, .option]),
+      for: .pasteClipboardHistory
+    )
+    let event = keyDown(keyCode: 8, flags: [.maskCommand, .maskAlternate])
+    XCTAssertTrue(ClipboardHistoryHotkey.matchesKeyDown(event))
   }
 }
 
@@ -3994,13 +4129,36 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertFalse(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.google.Chrome"))
   }
 
+  /// v4.2: Sublime/BBEdit lưu grapheme NFC — pop phải giống Notes (bs=1),
+  /// không phải NFD (bs=0) vì NFD diff gây backspace thừa / nuốt newline.
+  func testSublimeTextPopUsesNFCGraphemeBackspace() throws {
+    let sublime = InputProcessor(method: .Telex)
+    sublime.changeActiveApp("com.sublimetext.4")
+    sublime.push(char: "g")
+    sublime.push(char: "o")
+    sublime.push(char: "o")
+    XCTAssertEqual(sublime.transformed, "gô")
+    let (sublimeBs, sublimeDiff) = sublime.pop()
+    XCTAssertEqual(sublimeBs, 1, "Sublime must NFC-pop like Notes")
+    XCTAssertEqual(sublimeDiff, ["o"])
+
+    let chrome = InputProcessor(method: .Telex)
+    chrome.changeActiveApp("com.google.Chrome")
+    chrome.push(char: "g")
+    chrome.push(char: "o")
+    chrome.push(char: "o")
+    let (chromeBs, chromeDiff) = chrome.pop()
+    XCTAssertEqual(chromeBs, 0, "Chrome stays NFD-pop")
+    XCTAssertEqual(chromeDiff, [])
+  }
+
   func testAutoCapitalizeAfterEnterSwallowsLowercaseKeyEvent() throws {
     Defaults[.autoCapitalizeEnabled] = true
     defer { Defaults.reset(.autoCapitalizeEnabled) }
     let processor = makeNotesProcessor()
     typeKey(processor, code: 36) // Enter
     let result = typeLetter(processor, code: 0) // a
-    XCTAssertNil(result, "Auto-capitalize must synthesize uppercase, not pass lowercase key")
+    XCTAssertSwallowed(result, "Auto-capitalize must synthesize uppercase, not pass lowercase key")
     XCTAssertEqual(processor.transformed, "A")
   }
 
@@ -4011,7 +4169,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     typeKey(processor, code: 47) // .
     typeKey(processor, code: 49) // space
     let result = typeLetter(processor, code: 7) // x
-    XCTAssertNil(result)
+    XCTAssertSwallowed(result)
     XCTAssertEqual(processor.transformed, "X")
   }
 
@@ -4021,7 +4179,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     let processor = makeNotesProcessor()
     typeKey(processor, code: 47) // .
     let result = typeLetter(processor, code: 17) // t
-    XCTAssertTrue(result != nil, "No space after period → pass-through lowercase")
+    XCTAssertPassThrough(result, "No space after period → pass-through lowercase")
     XCTAssertEqual(processor.transformed, "t")
   }
 
@@ -4031,7 +4189,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     let processor = makeNotesProcessor()
     typeKey(processor, code: 18, shift: true) // !
     let result = typeLetter(processor, code: 17) // t
-    XCTAssertTrue(result != nil)
+    XCTAssertPassThrough(result)
     XCTAssertEqual(processor.transformed, "t")
   }
 
@@ -4041,7 +4199,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     let processor = makeNotesProcessor()
     typeKey(processor, code: 44, shift: true) // ?
     let result = typeLetter(processor, code: 17) // t
-    XCTAssertTrue(result != nil)
+    XCTAssertPassThrough(result)
     XCTAssertEqual(processor.transformed, "t")
   }
 
@@ -4052,7 +4210,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     typeKey(processor, code: 18, shift: true) // !
     typeKey(processor, code: 49) // space
     let result = typeLetter(processor, code: 7) // x
-    XCTAssertNil(result)
+    XCTAssertSwallowed(result)
     XCTAssertEqual(processor.transformed, "X")
   }
 
@@ -4063,7 +4221,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     typeKey(processor, code: 44, shift: true) // ?
     typeKey(processor, code: 49) // space
     let result = typeLetter(processor, code: 7) // x
-    XCTAssertNil(result)
+    XCTAssertSwallowed(result)
     XCTAssertEqual(processor.transformed, "X")
   }
 
@@ -4075,8 +4233,54 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     typeKey(processor, code: 49) // space
     typeKey(processor, code: 49) // second space
     let result = typeLetter(processor, code: 7) // x
-    XCTAssertNil(result)
+    XCTAssertSwallowed(result)
     XCTAssertEqual(processor.transformed, "X")
+  }
+
+  func testAutoCapitalizePreservesDecimalNumbers() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 20) // 3
+    typeKey(processor, code: 47) // .
+    typeKey(processor, code: 18) // 1
+    XCTAssertEqual(processor.transformed, "1")
+    typeKey(processor, code: 21) // 4
+    XCTAssertEqual(processor.transformed, "14")
+  }
+
+  func testAutoCapitalizePreservesAbbreviationWithoutSpace() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 46) // m
+    typeKey(processor, code: 15) // r
+    typeKey(processor, code: 47) // .
+    let result = typeLetter(processor, code: 1) // s (mr.smith)
+    XCTAssertPassThrough(result, "No space after period → pass-through lowercase")
+    XCTAssertEqual(processor.transformed, "s")
+  }
+
+  func testAutoCapitalizeAfterPeriodAndEnter() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 47) // .
+    typeKey(processor, code: 36) // Enter
+    let result = typeLetter(processor, code: 17) // t
+    XCTAssertSwallowed(result, "Enter after period still marks sentence start")
+    XCTAssertEqual(processor.transformed, "T")
+  }
+
+  func testAutoCapitalizeVietnameseAfterPeriodAndSpace() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 47) // .
+    typeKey(processor, code: 49) // space
+    let result = typeLetter(processor, code: 9) // v
+    XCTAssertSwallowed(result)
+    XCTAssertEqual(processor.transformed, "V")
   }
 
   func testAutoCapitalizePreservesDomainSegments() throws {
@@ -4103,6 +4307,27 @@ final class NFDvsNFCDiffingTests: XCTestCase {
 
   // MARK: - Auto-capitalize helpers
   // CGEvent virtualKey codes below assume US keyboard layout (KeyboardUS).
+  //
+  // Never use XCTAssertNotNil / XCTAssertNil directly on `Unmanaged<CGEvent>?` —
+  // XCTest bridges the value for failure messages and can SIGABRT the test host.
+
+  private func XCTAssertPassThrough(
+    _ result: Unmanaged<CGEvent>?,
+    _ message: @autoclosure () -> String = "Expected CGEvent pass-through",
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    XCTAssertTrue(result != nil, message(), file: file, line: line)
+  }
+
+  private func XCTAssertSwallowed(
+    _ result: Unmanaged<CGEvent>?,
+    _ message: @autoclosure () -> String = "Expected CGEvent to be swallowed",
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    XCTAssertTrue(result == nil, message(), file: file, line: line)
+  }
 
   private func makeNotesProcessor() -> InputProcessor {
     let processor = InputProcessor(method: .Telex)
@@ -4115,9 +4340,18 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     code: UInt16,
     shift: Bool = false
   ) {
+    _ = typeKeyReturning(processor, code: code, shift: shift)
+  }
+
+  @discardableResult
+  private func typeKeyReturning(
+    _ processor: InputProcessor,
+    code: UInt16,
+    shift: Bool = false
+  ) -> Unmanaged<CGEvent>? {
     let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(code), keyDown: true)!
     event.flags = shift ? [.maskShift] : []
-    _ = processor.handleEvent(event: event)
+    return processor.handleEvent(event: event)
   }
 
   @discardableResult

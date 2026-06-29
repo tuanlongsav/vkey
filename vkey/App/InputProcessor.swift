@@ -736,10 +736,12 @@ class InputProcessor {
 
   // 1.6.0: Word prediction state — track 2 previous committed words để
   // feed bigram + trigram model. `activePrediction` lưu prediction đang
-  // hiển thị trên HUD; nếu user nhấn Tab → accept và inject.
+  // hiển thị trên HUD; `activePredictionAcceptsTab` chặn Tab nhận gợi ý stale
+  // sau Enter/click/caret boundary.
   private var prev1Committed: String? = nil
   private var prev2Committed: String? = nil
   private var activePrediction: String? = nil
+  private var activePredictionAcceptsTab = false
   // 2.0.2 (J1): xoá `activePredictionCandidates: [String]` — predict về top-1
   // only, không cần lưu danh sách candidates.
 
@@ -799,6 +801,7 @@ class InputProcessor {
   public func changeActiveApp(_ app: String) {
     activeApp = app
     strategyTracker.resetForApp(app)
+    clearActivePrediction()
     updateAdaptiveFlushDelay()
     refreshWordPredictionState()
   }
@@ -807,10 +810,7 @@ class InputProcessor {
   /// rule, hoặc danh sách loại trừ).
   public func refreshWordPredictionState() {
     if !Self.isWordPredictionActive(bundleId: activeApp, ruleOverrides: ruleOverrides) {
-      activePrediction = nil
-      DispatchQueue.main.async {
-        PredictionHUDWindow.shared.hide()
-      }
+      clearActivePrediction()
     }
   }
 
@@ -851,6 +851,9 @@ class InputProcessor {
 
   public func newWord(storePrevious: Bool = false) {
     wordBuffer.newWord(storePrevious: storePrevious)
+    if !storePrevious {
+      clearActivePrediction()
+    }
   }
 
   public func pop() -> (Int, [Character]) {
@@ -904,10 +907,11 @@ class InputProcessor {
     // - Buffer có từ chưa commit: commit từ qua spell decision (emit space)
     //   rồi chèn prediction (không leading space — space đã được emit).
     //   User có thể gõ "viet" + Tab → "việt Nam" (commit + insert prediction).
-    // - Nếu không có activePrediction → fall-through cho Tab pass-through
+    // - Nếu không có activePrediction hợp lệ → fall-through cho Tab pass-through
     //   (legitimate form navigation / tab indent).
     if taskKey == .Tab,
        isWordPredictionActive(),
+       activePredictionAcceptsTab,
        let prediction = activePrediction
     {
       if injectAcceptedPrediction(prediction) {
@@ -917,6 +921,7 @@ class InputProcessor {
     }
 
     if InputProcessor.NewWordTaskKeys.contains(taskKey) {
+      let hadBufferedWord = !wordBuffer.keys.isEmpty || !wordBuffer.wordState.isBlank
       // 2.0 (A5): Enter ALWAYS đánh dấu đầu câu kế tiếp. Space chỉ propagate
       // pendingCapitalize nếu sentence-ending punctuation vừa được commit.
       updateCapitalizeStateForTaskKey(taskKey)
@@ -936,6 +941,9 @@ class InputProcessor {
       // giữ `previousWordState` để cho phép Backspace re-edit từ vừa commit.
       // Enter/Tab tạo ranh giới (xuống dòng / chuyển field) → KHÔNG giữ history,
       // tránh Backspace-sau-Enter khôi phục từ dòng trước gây desync.
+      if taskKey == .Space, !hadBufferedWord {
+        clearActivePrediction()
+      }
       newWord(storePrevious: taskKey == .Space)
     } else if taskKey == .Escape {
       let orig = String(wordBuffer.keys)
@@ -1057,6 +1065,24 @@ class InputProcessor {
 
   // MARK: - 2.0 (A2): Prediction Acceptance
 
+  private func setActivePrediction(_ prediction: String, acceptsTab: Bool) {
+    activePrediction = prediction
+    activePredictionAcceptsTab = acceptsTab
+    DispatchQueue.main.async {
+      PredictionHUDWindow.shared.show(prediction: prediction)
+    }
+  }
+
+  private func clearActivePrediction() {
+    let hadPrediction = activePrediction != nil || activePredictionAcceptsTab
+    activePrediction = nil
+    activePredictionAcceptsTab = false
+    guard hadPrediction else { return }
+    DispatchQueue.main.async {
+      PredictionHUDWindow.shared.hide()
+    }
+  }
+
   /// Chấp nhận một prediction (Tab hoặc digit 1/2/3) — inject vào caret,
   /// cập nhật n-gram window, ẩn HUD. Re-fetches top-1 prediction nếu
   /// buffer còn từ chưa commit (commit qua space trước rồi chèn dự đoán).
@@ -1082,10 +1108,7 @@ class InputProcessor {
       }
     } else {
       guard applySpellDecisionOnCommit(endingChar: " ", swallowEndingChar: true) else {
-        activePrediction = nil
-        DispatchQueue.main.async {
-          PredictionHUDWindow.shared.hide()
-        }
+        clearActivePrediction()
         return false
       }
       newWord(storePrevious: true)
@@ -1113,10 +1136,7 @@ class InputProcessor {
         prev1Committed = last
       }
     }
-    activePrediction = nil
-    DispatchQueue.main.async {
-      PredictionHUDWindow.shared.hide()
-    }
+    clearActivePrediction()
     return true
   }
 
@@ -1297,28 +1317,20 @@ class InputProcessor {
     prev1Committed = committedToken
 
     // 2.0 (B1): Window Title Rule có thể force tắt prediction cho context này.
-    if isWordPredictionActive() {
+    // Prediction HUD luôn hướng dẫn nhận bằng Tab, nên chỉ hiện sau Space.
+    if isWordPredictionActive(), endingChar == " " {
       // 2.0.2 (J1): chỉ top-1 prediction. Multi-candidate UI đã được xoá
       // (digit 1/2/3 dễ nhầm với gõ số trong văn bản).
       if let prediction = PredictionEngine.shared.topPhrasePrediction(
         prev2: prev2Committed,
         prev1: prev1Committed ?? ""
       ) {
-        activePrediction = prediction
-        DispatchQueue.main.async {
-          PredictionHUDWindow.shared.show(prediction: prediction)
-        }
+        setActivePrediction(prediction, acceptsTab: true)
       } else {
-        activePrediction = nil
-        DispatchQueue.main.async {
-          PredictionHUDWindow.shared.hide()
-        }
+        clearActivePrediction()
       }
     } else {
-      activePrediction = nil
-      DispatchQueue.main.async {
-        PredictionHUDWindow.shared.hide()
-      }
+      clearActivePrediction()
     }
 
     switch decision {

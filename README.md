@@ -1,5 +1,5 @@
 <h1>
-  <img src="images/vkey-icon.png?v=40300" alt="vkey logo" width="56" style="vertical-align: middle;">
+  <img src="images/vkey-icon.png?v=40400" alt="vkey logo" width="56" style="vertical-align: middle;">
   &nbsp;vkey
 </h1>
 
@@ -8,7 +8,12 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.3](CHANGELOG.md)** — Developer ID signed & notarized · 281 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.4](CHANGELOG.md)** — Developer ID signed & notarized · 295 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.4
+
+- **Tab đầu dòng ổn định** — bấm Tab để thụt dòng / chuyển focus không còn chèn gợi ý cũ; prediction chỉ nhận bằng Tab ngay sau khi commit bằng Space.
+- **Clipboard hotkey trong app vkey** — phím tắt lịch sử clipboard và modifier-only vẫn được xử lý khi cửa sổ vkey đang focus, nhưng Telex/VNI không can thiệp vào ô Cài đặt.
 
 ## Mới ở v4.3
 
@@ -73,7 +78,7 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 | **Song ngữ** | Space Restore · ESC hoàn tác · gõ tiếng Anh ổn định trong mode VN · nhớ VI/EN theo từng app |
 | **Smart Switch** | 3 trạng thái/app: 🇻🇳 VN · 🇺🇸 EN · ⛔ tắt · tự học từ thống kê · Spotlight/Raycast/Alfred |
 | **Chính tả** | Kiểm tra 6 bước · từ điển VN 8 960 âm tiết + EN 9 826 từ · từ điển cá nhân · cập nhật từ GitHub |
-| **Gợi ý & macro** | HUD gợi ý cụm 2–3 từ (`Tab` chèn) · macro viết tắt · đề xuất từ thống kê |
+| **Gợi ý & macro** | HUD gợi ý cụm 2–3 từ sau Space (`Tab` chèn) · macro viết tắt · đề xuất từ thống kê |
 | **Thống kê** | Top từ/cụm tuần này · sao lưu/khôi phục JSON · quản lý & xóa cụm (v3.20) |
 | **Giao diện** | Menu bar panel · Cài đặt sidebar 6 tab · 3 theme: **Tonal** / **Liquid Glass** / **Neural AI** |
 | **HUD** | Capsule VI/EN giữa màn hình · pill gợi ý `→ cụm · Tab` · cảnh báo clipboard amber |
