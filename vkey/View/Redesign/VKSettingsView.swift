@@ -302,6 +302,8 @@ private struct VKNeuralBackdrop: View {
 private struct VKSidebar: View {
   @EnvironmentObject var appState: AppState
   @Binding var selectedRaw: String
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var hoverTab: VKTab?
 
   var body: some View {
     VStack(alignment: .leading, spacing: VK.Space.s3) {
@@ -389,6 +391,7 @@ private struct VKSidebar: View {
 
   private func navItem(_ tab: VKTab) -> some View {
     let active = selectedRaw == tab.rawValue
+    let isHover = hoverTab == tab && !active
     return Button {
       selectedRaw = tab.rawValue
     } label: {
@@ -403,7 +406,8 @@ private struct VKSidebar: View {
       .padding(.vertical, 7)
       .background(
         RoundedRectangle(cornerRadius: VK.Radius.sm, style: .continuous)
-          .fill(active ? AnyShapeStyle(VK.Color.brandGradient) : AnyShapeStyle(Color.clear))
+          .fill(active ? AnyShapeStyle(VK.Color.brandGradient)
+                       : AnyShapeStyle(isHover ? VK.Color.bgHover : Color.clear))  // v4.8 hover
       )
       // Halo violet quanh nav active (Neural — ai.css 0.7*k)
       .shadow(color: (active && VK.isNeural) ? VK.Color.glow.opacity(0.55 * VK.glowK) : .clear,
@@ -411,6 +415,9 @@ private struct VKSidebar: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
+    .vkFocusRing(radius: VK.Radius.sm, onBrand: active)   // v4.8 focus
+    .onHover { hoverTab = $0 ? tab : (hoverTab == tab ? nil : hoverTab) }
+    .animation(reduceMotion ? nil : VK.Motion.easeOut, value: hoverTab)
   }
 
   /// Tile icon nav: Tonal → vuông đặc; Liquid Glass / Neural → tinted mờ.

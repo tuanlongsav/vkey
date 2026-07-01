@@ -185,6 +185,27 @@ enum AccentColorChoice: String, CaseIterable, Codable, Defaults.Serializable {
     case .purple: return "#8B5CF6"
     }
   }
+
+  // v4.8: mỗi accent có ramp 5 stop [500,600,700,400,300] để dựng hover/press/
+  // pill nhất quán (trước đây accent chỉ có 1 hex → brand600 phải trả trùng 500).
+  /// `[500, 600, 700, 400, 300]` (hex, không có '#') — dùng qua `ramp`.
+  var ramp: (s500: String, s600: String, s700: String, s400: String, s300: String) {
+    switch self {
+    case .red:    return ("#E04434", "#C8341F", "#A52817", "#EB6249", "#F18A74")
+    case .gold:   return ("#E5AE1C", "#B5860D", "#8A6608", "#F5C645", "#FAD37A")
+    case .green:  return ("#2BB673", "#1F9E62", "#17794B", "#4FC98D", "#7FD9AC")
+    case .blue:   return ("#2D89E5", "#1E6FC4", "#17559A", "#5AA4EC", "#8FC1F3")
+    case .purple: return ("#8B5CF6", "#7440E0", "#5B2FB8", "#A67DF9", "#C3A6FC")
+    }
+  }
+  /// Stop tối hơn cho hover nút primary.
+  var hex600: String { ramp.s600 }
+  /// Stop tối nhất cho press nút primary.
+  var hex700: String { ramp.s700 }
+  /// Stop sáng hơn (dùng cho chữ accent trên nền tối).
+  var hex400: String { ramp.s400 }
+  var hex300: String { ramp.s300 }
+
   var displayName: String {
     switch self {
     case .red:    return "Đỏ Saigon"

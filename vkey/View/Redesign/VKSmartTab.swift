@@ -46,12 +46,12 @@ struct VKSmartTab: View {
 
           VKRowGroup {
             if sortedConfigs.isEmpty {
-              HStack {
-                Text("Chưa có app nào được cấu hình.")
-                  .font(.vk(.small)).foregroundStyle(VK.Color.fgMuted)
-                Spacer()
-              }
-              .padding(.horizontal, VK.Space.s4).padding(.vertical, 12)
+              VKEmptyState(
+                systemImage: "shuffle",
+                title: "Chưa có app nào được cấu hình",
+                message: "Đặt chế độ gõ riêng cho từng ứng dụng để vkey tự chuyển khi bạn đổi app.",
+                actionTitle: "Chọn từ ứng dụng đang chạy",
+                action: { showingRunningApps = true })
             } else {
               ForEach(sortedConfigs, id: \.key) { entry in
                 appRow(bundleId: entry.key, config: entry.value)

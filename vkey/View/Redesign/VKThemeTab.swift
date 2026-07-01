@@ -10,6 +10,9 @@ import SwiftUI
 struct VKThemeTab: View {
   @Default(.uiTheme) private var theme
   @Default(.themeConfigs) private var configs
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var hoverAccent: AccentColorChoice?
+  @State private var hoverTheme: UITheme?
 
   /// Cấu hình của theme đang chọn.
   private var cfg: ThemeConfig { configs[theme.rawValue] ?? .defaultFor(theme) }
@@ -57,8 +60,12 @@ struct VKThemeTab: View {
                               .opacity(cfg.accent == c ? 1 : 0))
                     .overlay(Circle().strokeBorder(VK.Color.fg2,
                                                    lineWidth: cfg.accent == c ? 2 : 0).padding(-3))
+                    .scaleEffect(hoverAccent == c ? 1.12 : 1)   // v4.8 hover
                 }
                 .buttonStyle(.plain)
+                .vkFocusRing(radius: 12)                        // v4.8 focus (radio)
+                .onHover { hoverAccent = $0 ? c : (hoverAccent == c ? nil : hoverAccent) }
+                .animation(reduceMotion ? nil : VK.Motion.easeOut, value: hoverAccent)
                 .help(c.displayName)
               }
             }
@@ -136,7 +143,7 @@ struct VKThemeTab: View {
   private func themeCard(_ t: UITheme) -> some View {
     let active = theme == t
     return Button {
-      withAnimation(VK.Motion.easeOut) { theme = t }
+      withAnimation(reduceMotion ? nil : VK.Motion.easeOut) { theme = t }
     } label: {
       VStack(alignment: .leading, spacing: 8) {
         // preview swatch
@@ -192,7 +199,11 @@ struct VKThemeTab: View {
                     .strokeBorder(active ? VK.Color.brand : VK.Color.border1,
                                   lineWidth: active ? 2 : 1))
       )
+      .offset(y: hoverTheme == t && !active ? -1 : 0)   // v4.8 hover lift
     }
     .buttonStyle(.plain)
+    .vkFocusRing(radius: VK.Radius.lg)                   // v4.8 focus
+    .onHover { hoverTheme = $0 ? t : (hoverTheme == t ? nil : hoverTheme) }
+    .animation(reduceMotion ? nil : VK.Motion.easeOut, value: hoverTheme)
   }
 }

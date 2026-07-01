@@ -96,11 +96,11 @@ private struct VKMenuRow<Trailing: View>: View {
       .frame(height: 30)
       .frame(maxWidth: .infinity, alignment: .leading)
       .background(
-        RoundedRectangle(cornerRadius: 7, style: .continuous)
+        RoundedRectangle(cornerRadius: VK.Radius.scaled(7), style: .continuous)
           // Neural: hover gradient trí tuệ; theme khác: màu accent phẳng.
           .fill(hover ? AnyShapeStyle(VK.Color.brandGradient) : AnyShapeStyle(Color.clear))
       )
-      .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+      .contentShape(RoundedRectangle(cornerRadius: VK.Radius.scaled(7), style: .continuous))
     }
     .buttonStyle(VKMenuPressStyle())
     .onHover { h in
@@ -199,14 +199,14 @@ struct VKMenuPanel: View {
           startPoint: .top, endPoint: .center)
       }
     )
-    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    .clipShape(RoundedRectangle(cornerRadius: VK.Radius.scaled(12), style: .continuous))
     .overlay(
-      RoundedRectangle(cornerRadius: 12, style: .continuous)
+      RoundedRectangle(cornerRadius: VK.Radius.scaled(12), style: .continuous)
         .strokeBorder(Color.white.opacity(VK.Glass.isOn ? 0.25 : 0.12),
                       lineWidth: VK.Glass.isOn ? 1 : 0.5))
     // Neural: nhẫn gradient trí tuệ quanh panel (ai.css .win::after)
     .overlay(
-      RoundedRectangle(cornerRadius: 12, style: .continuous)
+      RoundedRectangle(cornerRadius: VK.Radius.scaled(12), style: .continuous)
         .strokeBorder(VK.Color.brandGradient, lineWidth: 1)
         .opacity(VK.isNeural ? 0.45 : 0))
     .id(uiTheme.rawValue) // re-render khi đổi theme (màu brand đọc per-theme)
@@ -341,10 +341,10 @@ struct VKMenuPanel: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background(
-          RoundedRectangle(cornerRadius: 8, style: .continuous)
+          RoundedRectangle(cornerRadius: VK.Radius.scaled(8), style: .continuous)
             .fill(Color.white.opacity(hover ? 0.08 : 0.04))
         )
-        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: VK.Radius.scaled(8), style: .continuous))
       }
       .buttonStyle(VKMenuPressStyle())
       .onHover { h in withAnimation(.easeOut(duration: 0.12)) { hover = h } }
@@ -408,10 +408,10 @@ struct VKMenuPanel: View {
           .foregroundStyle(Color.white.opacity(hover ? 1 : 0.65))
           .frame(width: 30, height: 26)
           .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+            RoundedRectangle(cornerRadius: VK.Radius.scaled(6), style: .continuous)
               .fill(Color.white.opacity(hover ? 0.10 : 0))
           )
-          .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+          .contentShape(RoundedRectangle(cornerRadius: VK.Radius.scaled(6), style: .continuous))
       }
       .buttonStyle(VKMenuPressStyle())
       .onHover { h in withAnimation(.easeOut(duration: 0.12)) { hover = h } }

@@ -41,12 +41,12 @@ struct VKMacroTab: View {
           .padding(.vertical, 9)
 
           if macros.isEmpty {
-            HStack {
-              Text("Chưa có macro nào. Nhấn \"Thêm\" để tạo.")
-                .font(.vk(.small)).foregroundStyle(VK.Color.fgMuted)
-              Spacer()
-            }
-            .padding(.horizontal, VK.Space.s4).padding(.vertical, 12)
+            VKEmptyState(
+              systemImage: "text.badge.plus",
+              title: "Chưa có macro nào",
+              message: "Thêm cụm viết tắt đầu tiên — vkey sẽ tự bung khi bạn gõ.",
+              actionTitle: "Thêm macro",
+              action: { macros.append(Macro(from: "", to: "")) })
           } else {
             ForEach($macros) { $m in
               HStack(spacing: VK.Space.s3) {

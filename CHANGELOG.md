@@ -2,6 +2,22 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.8] - 2026-07-01 — "Nâng cấp giao diện: token, tương phản & tương tác"
+
+**Tinh chỉnh hệ thống thiết kế theo bản design v4.8 — dễ đọc hơn, phản hồi tương tác rõ hơn.**
+
+### 🎨 Giao diện
+
+- **Tương phản đạt chuẩn AA** — chữ phụ (hint/muted) và chữ trên badge được nâng độ tương phản (WCAG AA) ở cả 3 theme, dễ đọc hơn.
+- **Màu nhấn có chiều sâu** — mỗi màu nhấn (Đỏ Saigon/Vàng/Xanh lá/Xanh dương/Tím) nay có đủ dải đậm/nhạt; nút bấm đổi màu khi rê chuột (đậm hơn) và nhấn giữ (đậm nhất) — trước đây không phản hồi.
+- **Phản hồi tương tác & bàn phím** — nút, ô chọn, thẻ theme, ô màu nhấn, mục điều hướng và menu có **hiệu ứng rê chuột + viền focus** (điều hướng bằng bàn phím thấy rõ), tất cả **tôn trọng "Giảm chuyển động"** của hệ thống.
+- **Bo góc đồng bộ theo theme** — tuỳ chọn "Sắc/Vừa/Tròn" nay ảnh hưởng cả menu, keycap, ô icon (trước đây chỉ một phần).
+- **Trạng thái rỗng thân thiện** — tab Macro và Smart Switch khi chưa có dữ liệu hiển thị hướng dẫn + nút hành động rõ ràng.
+
+### 🧹 Kỹ thuật
+
+- Chuẩn hoá token (dải màu nhấn 5 mức, token chữ semantic AA, tracking/leading, `fgMuted`); gỡ file thừa `GlassTile`. 305/305 test pass.
+
 ## [4.7] - 2026-07-01 — "Vá viết hoa đầu câu & đặt dấu tự do"
 
 **Rà soát toàn diện bộ gõ (workflow đa tác nhân) → vá 2 lỗi thật.**

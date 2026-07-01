@@ -17,6 +17,26 @@ import AppKit
 import SwiftUI
 import Defaults
 
+/// v4.8 FIX ("Tiếng Việt" bị cắt "..."): font tiêu đề HUD dùng CHUNG cho cả ĐO
+/// panel (`contentSize`) lẫn RENDER (`ToggleHUDView`), nên bề rộng đo == bề rộng
+/// vẽ, không thể lệch. `NotoSansDisplay-Bold` KHÔNG bundled (variable font chỉ có
+/// `-Regular`) → áp bold trait cho face đã resolve; nếu NotoSansDisplay không
+/// resolve thì dùng SF Rounded bold (khớp fallback của `VKeyDesign.display`).
+func hudTitleNSFont(_ size: CGFloat) -> NSFont {
+    let base: NSFont
+    if let noto = NSFont(name: "NotoSansDisplay", size: size) {
+        base = noto
+    } else if let roundedDesc = NSFont.systemFont(ofSize: size, weight: .regular)
+                .fontDescriptor.withDesign(.rounded),
+              let rounded = NSFont(descriptor: roundedDesc, size: size) {
+        base = rounded
+    } else {
+        base = NSFont.systemFont(ofSize: size, weight: .regular)
+    }
+    let boldDesc = base.fontDescriptor.withSymbolicTraits(.bold)
+    return NSFont(descriptor: boldDesc, size: size) ?? base
+}
+
 /// HUD overlay shown when the input mode toggles between VI and EN.
 @MainActor
 final class ToggleHUDWindow {
@@ -104,52 +124,30 @@ final class ToggleHUDWindow {
         let hotkeyGlyphs = hotkeyGlyphs(from: modifierHotkey)
         let keycapRowWidth = keycapRowWidth(glyphCount: hotkeyGlyphs.count)
 
-        switch theme {
-        case .glass, .neural:
-            let titleFont = hudDisplayFont(size: 18)
-            let titleWidth = max(
-                measureText("Tiếng Việt", font: titleFont).width,
-                measureText("English", font: titleFont).width
-            )
-            let badgeFont = NSFont.systemFont(ofSize: 12, weight: .semibold)
-            let badgeWidth = max(
-                measureText("VI", font: badgeFont).width,
-                measureText("EN", font: badgeFont).width
-            ) + 22 // .padding(.horizontal, 11) × 2
-            let flagWidth: CGFloat = 40
-            let spacing: CGFloat = 14
-            let innerWidth = flagWidth + spacing + titleWidth
-                + (keycapRowWidth > 0 ? spacing + keycapRowWidth : 0)
-                + spacing + badgeWidth
-            let innerHeight = max(40, measureText("Tiếng Việt", font: titleFont).height, 28)
-            return CGSize(
-                width: ceil(innerWidth + 11 + 16),
-                height: ceil(innerHeight + 22)
-            )
-
-        case .tonal:
-            let titleFont = hudDisplayFont(size: 17)
-            let subtitleFont = NSFont.systemFont(ofSize: 12, weight: .regular)
-            let viSubtitle = "\(typingMethod.rawValue) · \(newStyleTonePlacement ? "Kiểu mới" : "Kiểu cũ")"
-            let enSubtitle = "vkey tạm tắt"
-            let textColumnWidth = max(
-                measureText("Tiếng Việt", font: titleFont).width,
-                measureText("English", font: titleFont).width,
-                measureText(viSubtitle, font: subtitleFont).width,
-                measureText(enSubtitle, font: subtitleFont).width
-            )
-            let flagWidth: CGFloat = 48
-            let spacing: CGFloat = 14
-            let innerWidth = flagWidth + spacing + textColumnWidth
-                + (keycapRowWidth > 0 ? spacing + keycapRowWidth : 0)
-            let titleHeight = measureText("Tiếng Việt", font: titleFont).height
-            let subtitleHeight = measureText(viSubtitle, font: subtitleFont).height
-            let innerHeight = max(36, titleHeight + 4 + subtitleHeight)
-            return CGSize(
-                width: ceil(innerWidth + 48),
-                height: ceil(innerHeight + 36)
-            )
-        }
+        // v4.8: cả 3 theme dùng CHUNG bố cục Tonal (cờ + tiêu đề/phụ đề + keycap)
+        // → đo chung một công thức. Hết lệch giữa đo và render như layout badge cũ.
+        _ = theme
+        let titleFont = hudTitleNSFont(17)
+        let subtitleFont = NSFont.systemFont(ofSize: 12, weight: .regular)
+        let viSubtitle = "\(typingMethod.rawValue) · \(newStyleTonePlacement ? "Kiểu mới" : "Kiểu cũ")"
+        let enSubtitle = "vkey tạm tắt"
+        let textColumnWidth = max(
+            measureText("Tiếng Việt", font: titleFont).width,
+            measureText("English", font: titleFont).width,
+            measureText(viSubtitle, font: subtitleFont).width,
+            measureText(enSubtitle, font: subtitleFont).width
+        )
+        let flagWidth: CGFloat = 48
+        let spacing: CGFloat = 14
+        let innerWidth = flagWidth + spacing + textColumnWidth
+            + (keycapRowWidth > 0 ? spacing + keycapRowWidth : 0)
+        let titleHeight = measureText("Tiếng Việt", font: titleFont).height
+        let subtitleHeight = measureText(viSubtitle, font: subtitleFont).height
+        let innerHeight = max(36, titleHeight + 4 + subtitleHeight)
+        return CGSize(
+            width: ceil(innerWidth + 48 + 8),
+            height: ceil(innerHeight + 36)
+        )
     }
 
     private func applyPanelGeometry(contentSize: CGSize, panel: NSPanel) {
@@ -179,14 +177,6 @@ final class ToggleHUDWindow {
         let keycapUnit: CGFloat = 44 // minWidth 28 + horizontal padding 16
         let spacing: CGFloat = 6
         return CGFloat(glyphCount) * keycapUnit + CGFloat(glyphCount - 1) * spacing
-    }
-
-    nonisolated private static func hudDisplayFont(size: CGFloat) -> NSFont {
-        if let font = NSFont(name: "NotoSansDisplay-Bold", size: size)
-            ?? NSFont(name: "NotoSansDisplay", size: size) {
-            return font
-        }
-        return NSFont.systemFont(ofSize: size, weight: .bold)
     }
 
     nonisolated private static func measureText(_ text: String, font: NSFont) -> CGSize {
@@ -280,93 +270,79 @@ private struct ToggleHUDView: View {
     @Default(.uiTheme) private var uiTheme
 
     var body: some View {
-        Group {
-            switch uiTheme {
-            case .glass:  glassBody
-            case .neural: neuralBody
-            case .tonal:  tonalBody
-            }
-        }
-        .scaleEffect(viewModel.appeared ? 1 : 0.94)
-        .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
+        // v4.8: BỐ CỤC CHUNG cho cả 3 theme (theo Tonal — đang chạy đúng): cờ +
+        // (tiêu đề / phụ đề) + keycap. Chỉ KHÁC ở HIỆU ỨNG NỀN theo theme. Trước
+        // đây glass/neural dùng layout badge riêng → đo panel lệch render → cắt chữ.
+        applyThemeBackground(to: hudCore)
+            .scaleEffect(viewModel.appeared ? 1 : 0.94)
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: viewModel.isEnabled)
     }
 
-    // MARK: - Neural AI HUD — viên obsidian + viền gradient trí tuệ + halo violet
-
-    private var neuralBody: some View {
-        HStack(spacing: 14) {
+    /// Nội dung dùng chung (bố cục Tonal): cờ + tiêu đề/phụ đề + keycap.
+    private var hudCore: some View {
+        HStack(alignment: .center, spacing: 14) {
             HUDFlag(viewModel.isEnabled)
-                .frame(width: 40, height: 40)
-                .clipShape(Circle())
-                .overlay(Circle().strokeBorder(VK.Color.brandGradient, lineWidth: 1.5))
-                .shadow(color: VK.Color.glow.opacity(0.5 * VK.glowK), radius: 8, x: 0, y: 3)
                 .vkeySymbolReplacementTransition()
 
-            Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                .font(VKeyDesign.display(18, weight: .bold))
-                .foregroundStyle(Color(vkHex: "#ECECF7"))
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
+                    .font(Font(hudTitleNSFont(17) as CTFont))
+                    .foregroundStyle(titleColor)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+
+                Text(subTitle)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(subtitleColor)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
 
             if !hotkeyGlyphs.isEmpty {
                 HStack(spacing: 6) {
                     ForEach(hotkeyGlyphs, id: \.self) { glyph in Keycap(glyph, size: .md) }
                 }
             }
-
-            Text(viewModel.isEnabled ? "VI" : "EN")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 11).padding(.vertical, 6)
-                .background(Capsule().fill(VK.Color.brandGradient))
-                .overlay(Capsule().strokeBorder(.white.opacity(0.30), lineWidth: 0.5))
         }
-        .padding(EdgeInsets(top: 11, leading: 11, bottom: 11, trailing: 16))
-        .background(Capsule().fill(Color(vkHex: "#0F0F18").opacity(0.88)))
-        .background(HUDBackdrop()) // v2.4.0: blur mask đúng capsule
-        .overlay(Capsule().strokeBorder(VK.Color.brandGradient, lineWidth: 1).opacity(0.65))
-        .compositingGroup()
-        .shadow(color: VK.Color.glow.opacity(0.45 * VK.glowK), radius: 26, x: 0, y: 10)
-        .shadow(color: .black.opacity(0.5), radius: 24, x: 0, y: 14)
+        .padding(.vertical, 18)
+        .padding(.horizontal, 24)
     }
 
-    // MARK: - Liquid Glass HUD — viên kính nổi (per design `.hud-glass`)
-
-    private var glassBody: some View {
-        HStack(spacing: 14) {
-            HUDFlag(viewModel.isEnabled)
-                .frame(width: 40, height: 40)
-                .clipShape(Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(0.5), lineWidth: 1))
-                .shadow(color: .black.opacity(0.35), radius: 8, x: 0, y: 3)
-                .vkeySymbolReplacementTransition()
-
-            Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                .font(VKeyDesign.display(18, weight: .bold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
-
-            if !hotkeyGlyphs.isEmpty {
-                HStack(spacing: 6) {
-                    ForEach(hotkeyGlyphs, id: \.self) { glyph in Keycap(glyph, size: .md) }
-                }
-            }
-
-            Text(viewModel.isEnabled ? "VI" : "EN")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 11).padding(.vertical, 6)
-                .background(Capsule().fill(VK.Color.brand))
-                .overlay(Capsule().strokeBorder(.white.opacity(0.35), lineWidth: 0.5))
+    /// Nền + HIỆU ỨNG riêng theo theme (shape bo góc 20 chung cho cả 3).
+    @ViewBuilder
+    private func applyThemeBackground(to content: some View) -> some View {
+        switch uiTheme {
+        case .tonal:
+            content.tonalScrimBackground(radius: 20, scrimOpacity: tonalScrimOpacity)
+        case .glass:
+            content.refractiveGlassBackground(radius: 20, scrimOpacity: tonalScrimOpacity)
+        case .neural:
+            content
+                .background(RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(vkHex: "#0F0F18").opacity(0.88)))
+                .background(HUDBackdrop(cornerRadius: 20))
+                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(VK.Color.brandGradient, lineWidth: 1).opacity(0.65))
+                .compositingGroup()
+                .shadow(color: VK.Color.glow.opacity(0.45 * VK.glowK), radius: 26, x: 0, y: 10)
+                .shadow(color: .black.opacity(0.5), radius: 24, x: 0, y: 14)
         }
-        .padding(EdgeInsets(top: 11, leading: 11, bottom: 11, trailing: 16))
-        .background(HUDBackdrop()) // v2.4.0: blur mask đúng capsule
-        .overlay(Capsule().strokeBorder(.white.opacity(0.25), lineWidth: 1))
-        // v2.4.0: bỏ .blendMode(.screen) — thay bằng stroke trắng đậm hơn
-        .overlay(Capsule().strokeBorder(.white.opacity(0.6), lineWidth: 0.5))
-        .compositingGroup()
-        .shadow(color: .black.opacity(0.40), radius: 24, x: 0, y: 12)
+    }
+
+    /// Màu chữ tiêu đề/phụ đề theo theme (nền tối → chữ sáng; glass → adaptive).
+    private var titleColor: Color {
+        switch uiTheme {
+        case .tonal:  return .white
+        case .glass:  return .primary
+        case .neural: return Color(vkHex: "#ECECF7")
+        }
+    }
+    private var subtitleColor: Color {
+        switch uiTheme {
+        case .tonal:  return Color.white.opacity(0.65)
+        case .glass:  return .secondary
+        case .neural: return Color(vkHex: "#ECECF7").opacity(0.6)
+        }
     }
 
     // MARK: - Sub-title + keycap helpers (v2.3.0)
@@ -385,40 +361,6 @@ private struct ToggleHUDView: View {
         guard raw != 0 else { return [] }
         let formatted = formatModifierMask(raw)
         return formatted.map { String($0) }
-    }
-
-    // MARK: - Tonal HUD — horizontal layout, deep-ink scrim
-
-    private var tonalBody: some View {
-        HStack(alignment: .center, spacing: 14) {
-            HUDFlag(viewModel.isEnabled)
-                .vkeySymbolReplacementTransition()
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(viewModel.isEnabled ? "Tiếng Việt" : "English")
-                    .font(VKeyDesign.display(17, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-
-                Text(subTitle)
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(Color.white.opacity(0.65))
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-            }
-
-            if !hotkeyGlyphs.isEmpty {
-                HStack(spacing: 6) {
-                    ForEach(hotkeyGlyphs, id: \.self) { glyph in
-                        Keycap(glyph, size: .md)
-                    }
-                }
-            }
-        }
-        .padding(.vertical, 18)
-        .padding(.horizontal, 24)
-        .tonalScrimBackground(radius: 20, scrimOpacity: tonalScrimOpacity)
     }
 
     private var tonalScrimOpacity: Double {

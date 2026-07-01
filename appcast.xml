@@ -6,6 +6,30 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.8 — "Nâng cấp giao diện: token, tương phản &amp; tương tác"</title>
+      <sparkle:version>40800</sparkle:version>
+      <sparkle:shortVersionString>4.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 01 Jul 2026 18:01:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.8/vkey-4.8.dmg"
+        sparkle:edSignature="ldJ5/tU/OpSp31b+EkOgIBNxC3JFpgXbMgAS/aC9SNkkN7YuUKXENs92NVoHOkdPcL5dEgiPfK2+uvTROTgDAA=="
+        length="6585767"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.8 — Nâng cấp giao diện</h2>
+        <ul>
+          <li><b>Tương phản đạt chuẩn AA</b> — chữ phụ và chữ trên badge dễ đọc hơn ở cả 3 theme.</li>
+          <li><b>Phản hồi tương tác</b> — nút/ô chọn/thẻ theme/điều hướng có hiệu ứng rê chuột + viền focus bàn phím, tôn trọng "Giảm chuyển động".</li>
+          <li><b>Màu nhấn có chiều sâu</b> (dải 5 mức) và bo góc "Sắc/Vừa/Tròn" đồng bộ hơn.</li>
+          <li><b>Trạng thái rỗng</b> thân thiện ở tab Macro và Smart Switch.</li>
+          <li><b>HUD chuyển Việt/Anh</b> đồng nhất bố cục cả 3 theme, sửa lỗi cắt chữ "Tiếng Việt".</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 305 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.7 — "Vá viết hoa đầu câu &amp; đặt dấu tự do"</title>
       <sparkle:version>40700</sparkle:version>
       <sparkle:shortVersionString>4.7</sparkle:shortVersionString>

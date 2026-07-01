@@ -6,6 +6,34 @@
 
 import SwiftUI
 
+// MARK: - Focus ring (v4.8 a11y)
+
+extension View {
+  /// Vòng focus 2px khi control được focus bằng bàn phím — bù cho `.plain`/custom
+  /// ButtonStyle làm mất ring mặc định. `onBrand`: nền brand → ring trắng.
+  func vkFocusRing(radius: CGFloat, onBrand: Bool = false) -> some View {
+    modifier(VKFocusRingModifier(radius: radius, onBrand: onBrand))
+  }
+}
+
+private struct VKFocusRingModifier: ViewModifier {
+  var radius: CGFloat
+  var onBrand: Bool
+  @FocusState private var focused: Bool
+  func body(content: Content) -> some View {
+    content
+      .focused($focused)
+      .overlay(
+        RoundedRectangle(cornerRadius: radius + 2, style: .continuous)
+          .strokeBorder(
+            onBrand ? Color.white.opacity(0.9) : VK.Color.brand.opacity(0.9),
+            lineWidth: focused ? 2 : 0)
+          .padding(-3)
+          .allowsHitTesting(false)
+      )
+  }
+}
+
 // MARK: - Section (nhãn eyebrow + nội dung)
 
 struct VKSection<Content: View>: View {
@@ -97,7 +125,7 @@ struct VKIconTile: View {
     if VK.Glass.isOn || VK.isNeural {
       // Liquid Glass / Neural: tile tinted — nền màu nhạt + blur + glyph theo
       // màu + viền specular (per design `.icon-tile`).
-      let shape = RoundedRectangle(cornerRadius: 11, style: .continuous)
+      let shape = RoundedRectangle(cornerRadius: VK.Radius.scaled(11), style: .continuous)
       shape.fill(accent.opacity(0.20))
         .frame(width: size, height: size)
         .background(.ultraThinMaterial, in: shape)
@@ -110,7 +138,7 @@ struct VKIconTile: View {
                   .blendMode(.screen))
         .shadow(color: .black.opacity(0.18), radius: 3, x: 0, y: 2)
     } else {
-      RoundedRectangle(cornerRadius: 8, style: .continuous)
+      RoundedRectangle(cornerRadius: VK.Radius.scaled(8), style: .continuous)
         .fill(accent)
         .frame(width: size, height: size)
         .overlay(
@@ -118,7 +146,7 @@ struct VKIconTile: View {
             .font(.system(size: size * 0.5, weight: .semibold))
             .foregroundStyle(.white))
         .overlay(
-          RoundedRectangle(cornerRadius: 8, style: .continuous)
+          RoundedRectangle(cornerRadius: VK.Radius.scaled(8), style: .continuous)
             .strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.12), radius: 1.5, x: 0, y: 1)
     }
@@ -211,30 +239,36 @@ struct VKGroupHint: View {
 struct VKSegmented<T: Hashable>: View {
   @Binding var selection: T
   var options: [(value: T, label: String)]
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var hovered: T?
 
   var body: some View {
     HStack(spacing: 2) {
       ForEach(options, id: \.value) { opt in
         let active = selection == opt.value
+        let isHover = hovered == opt.value && !active
         Button {
-          withAnimation(VK.Motion.easeOut) { selection = opt.value }
+          // v4.8: thumb spring (0.3/0.75), tôn trọng reduced-motion.
+          withAnimation(reduceMotion ? nil : VK.Motion.spring) { selection = opt.value }
         } label: {
           Text(opt.label)
             .font(VK.Font.sans(12.5, .medium))
-            .foregroundStyle(active ? VK.Color.fg1 : VK.Color.fg2)
+            .foregroundStyle(active || isHover ? VK.Color.fg1 : VK.Color.fg2)
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
             .background(
-              RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(active ? VK.Color.bgElevated : .clear)
+              RoundedRectangle(cornerRadius: VK.Radius.scaled(7), style: .continuous)
+                .fill(active ? VK.Color.bgElevated : (isHover ? VK.Color.bgHover : .clear))
                 .overlay(
-                  RoundedRectangle(cornerRadius: 7, style: .continuous)
+                  RoundedRectangle(cornerRadius: VK.Radius.scaled(7), style: .continuous)
                     .strokeBorder(active ? VK.Color.border1 : .clear, lineWidth: 1)
                 )
                 .shadow(color: active ? .black.opacity(0.08) : .clear, radius: 1, y: 1)
             )
         }
         .buttonStyle(.plain)
+        .vkFocusRing(radius: VK.Radius.scaled(7))
+        .onHover { hovered = $0 ? opt.value : (hovered == opt.value ? nil : hovered) }
       }
     }
     .padding(2)
@@ -263,10 +297,10 @@ struct VKKeycap: View {
       .frame(minWidth: large ? 36 : 24, minHeight: large ? 36 : 24)
       .padding(.horizontal, large ? 10 : 6)
       .background(
-        RoundedRectangle(cornerRadius: large ? 8 : 6, style: .continuous)
+        RoundedRectangle(cornerRadius: VK.Radius.scaled(large ? 8 : 6), style: .continuous)
           .fill(VK.Color.bgElevated)
           .overlay(
-            RoundedRectangle(cornerRadius: large ? 8 : 6, style: .continuous)
+            RoundedRectangle(cornerRadius: VK.Radius.scaled(large ? 8 : 6), style: .continuous)
               .strokeBorder(VK.Color.border2, lineWidth: 1)
           )
       )
@@ -281,13 +315,14 @@ struct VKBadge: View {
   var variant: Variant = .neutral
 
   private var fg: Color {
+    // v4.8 a11y: chữ badge dùng token `*Text` (đậm) để đạt AA trên soft-fill.
     switch variant {
     case .neutral: return VK.Color.fg2
-    case .success: return VK.Color.success
-    case .warning: return VK.Color.warning
-    case .danger:  return VK.Color.danger
-    case .info:    return VK.Color.info
-    case .gold:    return VK.Color.gold
+    case .success: return VK.Color.successText
+    case .warning: return VK.Color.warningText
+    case .danger:  return VK.Color.dangerText
+    case .info:    return VK.Color.infoText
+    case .gold:    return VK.Color.warningText
     }
   }
   private var bg: Color {
@@ -308,6 +343,75 @@ struct VKBadge: View {
       .padding(.horizontal, 8)
       .padding(.vertical, 3)
       .background(Capsule().fill(bg))
+  }
+}
+
+// MARK: - Empty state (v4.8)
+
+/// Trạng thái rỗng chuẩn: icon mờ + tiêu đề + mô tả + 1 CTA chính (tuỳ chọn).
+struct VKEmptyState: View {
+  var systemImage: String
+  var title: String
+  var message: String?
+  var actionTitle: String?
+  var action: (() -> Void)?
+
+  init(systemImage: String, title: String, message: String? = nil,
+       actionTitle: String? = nil, action: (() -> Void)? = nil) {
+    self.systemImage = systemImage; self.title = title; self.message = message
+    self.actionTitle = actionTitle; self.action = action
+  }
+
+  var body: some View {
+    VStack(spacing: VK.Space.s3) {
+      Image(systemName: systemImage)
+        .font(.system(size: 30, weight: .regular))
+        .foregroundStyle(VK.Color.fgMuted.opacity(0.7))
+      VStack(spacing: VK.Space.s1) {
+        Text(title).font(.vk(.h4)).foregroundStyle(VK.Color.fg1)
+        if let message {
+          Text(message).font(.vk(.small)).foregroundStyle(VK.Color.fgMuted)
+            .multilineTextAlignment(.center)
+        }
+      }
+      if let actionTitle, let action {
+        VKButton(title: actionTitle, variant: .secondary, size: .sm, action: action)
+      }
+    }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, VK.Space.s7)
+    .padding(.horizontal, VK.Space.s4)
+  }
+}
+
+// MARK: - Skeleton loader (v4.8)
+
+/// Placeholder khi đang tải — giữ chiều cao layout, shimmer nhẹ (tắt reduced-motion).
+struct VKSkeleton: View {
+  var width: CGFloat?
+  var height: CGFloat = 12
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var shimmer = false
+
+  init(width: CGFloat? = nil, height: CGFloat = 12) { self.width = width; self.height = height }
+
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: VK.Radius.sm, style: .continuous)
+    shape.fill(VK.Color.bgSunken)
+      .frame(width: width, height: height)
+      .frame(maxWidth: width == nil ? .infinity : nil)
+      .overlay(
+        shape.fill(LinearGradient(
+          colors: [.clear, VK.Color.fgMuted.opacity(0.12), .clear],
+          startPoint: .leading, endPoint: .trailing))
+          .offset(x: shimmer ? 160 : -160)
+          .opacity(reduceMotion ? 0 : 1)
+      )
+      .clipShape(shape)
+      .onAppear {
+        guard !reduceMotion else { return }
+        withAnimation(.linear(duration: 1.15).repeatForever(autoreverses: false)) { shimmer = true }
+      }
   }
 }
 
@@ -359,21 +463,52 @@ struct VKButton: View {
       .frame(maxWidth: fullWidth ? .infinity : nil)
       .frame(height: size == .sm ? 30 : 36)
       .padding(.horizontal, 14)
-      .background(
-        RoundedRectangle(cornerRadius: VK.Radius.md, style: .continuous)
-          .fill(variant == .primary ? AnyShapeStyle(VK.Color.brandGradient) : AnyShapeStyle(bg))
-          .overlay(
-            RoundedRectangle(cornerRadius: VK.Radius.md, style: .continuous)
-              .strokeBorder(border, lineWidth: 1)
-          )
-      )
-      // Halo gradient cho nút primary ở Neural (ai.css 0.7*k)
-      .shadow(color: (variant == .primary && VK.isNeural)
-                ? VK.Color.glow.opacity(0.5 * VK.glowK) : .clear,
-              radius: 9, x: 0, y: 4)
-      .opacity(disabled ? 0.45 : 1)
     }
-    .buttonStyle(.plain)
+    // v4.8: state matrix (hover/press) + focus ring + reduced-motion.
+    .buttonStyle(VKButtonStyle(variant: variant, baseBG: bg, border: border, disabled: disabled))
+    .vkFocusRing(radius: VK.Radius.md, onBrand: variant == .primary)
     .disabled(disabled)
+  }
+}
+
+/// v4.8: ButtonStyle chuẩn cho VKButton — hover/press đổi màu + nhún nhẹ, tôn
+/// trọng reduced-motion. primary: brand→brand600 (hover)→brand700 (press).
+struct VKButtonStyle: ButtonStyle {
+  let variant: VKButton.Variant
+  let baseBG: Color
+  let border: Color
+  let disabled: Bool
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var hovering = false
+
+  func makeBody(configuration: Configuration) -> some View {
+    let pressed = configuration.isPressed
+    let shape = RoundedRectangle(cornerRadius: VK.Radius.md, style: .continuous)
+    let fill: AnyShapeStyle = {
+      switch variant {
+      case .primary:
+        if pressed { return AnyShapeStyle(VK.Color.brand700) }
+        if hovering { return AnyShapeStyle(VK.Color.brand600) }
+        return AnyShapeStyle(VK.Color.brandGradient)
+      case .danger:
+        if pressed { return AnyShapeStyle(VK.Color.danger.opacity(0.22)) }
+        if hovering { return AnyShapeStyle(VK.Color.danger.opacity(0.14)) }
+        return AnyShapeStyle(baseBG)
+      case .secondary, .ghost:
+        if pressed { return AnyShapeStyle(VK.Color.bgPress) }
+        if hovering { return AnyShapeStyle(VK.Color.bgHover) }
+        return AnyShapeStyle(baseBG)
+      }
+    }()
+    return configuration.label
+      .background(shape.fill(fill).overlay(shape.strokeBorder(border, lineWidth: 1)))
+      .shadow(color: (variant == .primary && VK.isNeural)
+                ? VK.Color.glow.opacity(0.5 * VK.glowK) : .clear, radius: 9, x: 0, y: 4)
+      .scaleEffect(pressed && !reduceMotion ? 0.985 : 1)
+      .opacity(disabled ? 0.45 : 1)
+      .contentShape(shape)
+      .onHover { hovering = $0 && !disabled }
+      .animation(reduceMotion ? nil : VK.Motion.easeOut, value: pressed)
+      .animation(reduceMotion ? nil : VK.Motion.easeOut, value: hovering)
   }
 }

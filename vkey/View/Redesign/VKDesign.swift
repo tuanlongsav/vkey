@@ -115,7 +115,16 @@ enum VK {
 
     /// 2.16: brand = màu accent của theme đang chọn (lưu per-theme).
     static var brand: SwiftUI.Color { C(vkHex: VK.theme.accent.hex) }
-    static var brand600: SwiftUI.Color { C(vkHex: VK.theme.accent.hex) }
+    /// v4.8: 600/700 lấy đúng stop ramp của accent (hover/press). Trước đây
+    /// `brand600` trả TRÙNG brand500 nên hover/press không đổi màu.
+    static var brand600: SwiftUI.Color { C(vkHex: VK.theme.accent.hex600) }
+    static var brand700: SwiftUI.Color { C(vkHex: VK.theme.accent.hex700) }
+    static var brand400: SwiftUI.Color { C(vkHex: VK.theme.accent.hex400) }
+    static var brand300: SwiftUI.Color { C(vkHex: VK.theme.accent.hex300) }
+    /// Accent DÙNG LÀM CHỮ: 600 trên nền sáng / 300 trên nền tối (a11y).
+    static var brandText: SwiftUI.Color {
+      C(lightVK: C(vkHex: VK.theme.accent.hex600), darkVK: C(vkHex: VK.theme.accent.hex300))
+    }
     static var accent: SwiftUI.Color {
       let base = C(vkHex: VK.theme.accent.hex)
       return C(lightVK: base, darkVK: base.opacity(0.92))
@@ -178,9 +187,10 @@ enum VK {
       neural ? C(lightVK: C(vkHex: "#8A8AA6"), darkVK: C(vkHex: "#71718E"))
              : C(lightVK: Palette.ink100, darkVK: C(vkHex: "#9B978B"))
     }
+    /// v4.8 a11y: nâng tương phản đạt AA (cũ #7C7768 / #8A8AA6 dưới 4.5:1).
     static var fgMuted: C {
-      neural ? C(lightVK: C(vkHex: "#8A8AA6"), darkVK: C(vkHex: "#71718E"))
-             : C(lightVK: Palette.paper500, darkVK: C(vkHex: "#7C7768"))
+      neural ? C(lightVK: C(vkHex: "#6C6C82"), darkVK: C(vkHex: "#8585A0"))
+             : C(lightVK: C(vkHex: "#757058"), darkVK: C(vkHex: "#8A8578"))
     }
     static let fgInverse = C(lightVK: Palette.paper0, darkVK: Palette.ink600)
 
@@ -208,6 +218,13 @@ enum VK {
     static let dangerSoft  = C(lightVK: C(vkHex: "#FBE0E3"), darkVK: Palette.danger.opacity(0.18))
     static let infoSoft    = C(lightVK: C(vkHex: "#DDEBF9"), darkVK: Palette.info.opacity(0.18))
 
+    // v4.8 a11y: CHỮ badge (đủ tương phản AA trên soft-fill). KHÔNG dùng màu
+    // semantic base làm chữ trên nền soft của chính nó — chỉ dùng cho fill/viền/icon.
+    static let successText = C(lightVK: C(vkHex: "#126B45"), darkVK: C(vkHex: "#7FD9AC"))
+    static let warningText = C(lightVK: C(vkHex: "#7E5B07"), darkVK: Palette.gold300)
+    static let dangerText  = C(lightVK: C(vkHex: "#8E1F2E"), darkVK: C(vkHex: "#F0909E"))
+    static let infoText    = C(lightVK: C(vkHex: "#1A579E"), darkVK: C(vkHex: "#8FC1F3"))
+
     /// Màu icon trên tile — remap màu tối tĩnh (ink*) khi Glass/Neural để glyph không bị chìm.
     static func tileAccent(_ base: C) -> C {
       guard VK.Glass.isOn || VK.isNeural else { return base }
@@ -228,6 +245,11 @@ enum VK {
     static var xl: CGFloat  { max(7, 20 * k) }
     static var xxl: CGFloat { max(9, 28 * k) }
     static let pill: CGFloat = 999
+
+    /// v4.8: bo góc tuỳ biến theo cùng hệ số "Sắc/Vừa/Tròn". Giữ nguyên giá trị
+    /// gốc ở mức "Vừa" (k=1) nhưng vẫn co/giãn theo theme. Dùng cho các radius
+    /// từng hard-code (menu/keycap/icon-tile/HUD) để "Tròn/Sắc" chi phối toàn hệ.
+    static func scaled(_ base: CGFloat) -> CGFloat { max(2, base * k) }
   }
 
   // MARK: Density — 2.16: mật độ dòng menu cài đặt (gọn/vừa/thoáng)
@@ -266,6 +288,24 @@ enum VK {
     static let s6: CGFloat = 24
     static let s7: CGFloat = 32
     static let s8: CGFloat = 40
+  }
+
+  // MARK: Tracking (letter-spacing, em) — v4.8. Dùng qua `.vkTracking(_:size:)`.
+  enum Tracking {
+    static let tight: CGFloat  = -0.02
+    static let snug: CGFloat   = -0.01
+    static let normal: CGFloat = 0
+    static let wide: CGFloat   = 0.06
+    static let wider: CGFloat  = 0.14
+  }
+
+  // MARK: Leading (line-height multiplier) — v4.8. Dùng qua `.vkLeading(_:size:)`.
+  enum Leading {
+    static let none: CGFloat    = 1.0
+    static let tight: CGFloat   = 1.2
+    static let snug: CGFloat    = 1.35
+    static let normal: CGFloat  = 1.5
+    static let relaxed: CGFloat = 1.6
   }
 
   // MARK: Typography (SF system — bám size/weight design tokens)
@@ -321,6 +361,18 @@ enum VK {
 
 extension SwiftUI.Font {
   static func vk(_ s: VK.TypeStyle) -> SwiftUI.Font { VK.Font.style(s) }
+}
+
+extension View {
+  /// v4.8: letter-spacing theo token em (`VK.Tracking`) tại cỡ chữ.
+  /// SwiftUI `.tracking` nhận points nên quy đổi `em * size`.
+  func vkTracking(_ em: CGFloat, size: CGFloat) -> some View { self.tracking(em * size) }
+
+  /// v4.8: line-height multiplier (`VK.Leading`) → `lineSpacing` xấp xỉ
+  /// (line-height mặc định ~1.2·size nên phần thêm = (mult − 1.2)·size).
+  func vkLeading(_ mult: CGFloat, size: CGFloat) -> some View {
+    self.lineSpacing(max(0, (mult - 1.2) * size))
+  }
 }
 
 // MARK: - Liquid Glass blur (behind-window VisualEffect)
