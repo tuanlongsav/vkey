@@ -110,9 +110,31 @@ struct TiengVietState {
   /// 2.0 (A6): nếu user bật Free Mark Mode (`freeMarkModeEnabled`), bỏ
   /// qua validator — cho phép đặt dấu ở vị trí bất kỳ, không kiểm tra
   /// cấu trúc âm tiết. Hữu ích cho linguist, tên riêng, tiếng dân tộc.
+  ///
+  /// v4.6 FIX: NGOẠI LỆ cho input camelCase/hoa-thường lẫn lộn (vd "DaoTao",
+  /// "BaoCao") — đó là văn bản NHIỀU âm tiết, KHÔNG phải một âm tiết để đặt dấu.
+  /// Nếu Free Mark Mode nuốt recovery ở đây, engine sẽ bịa dấu (Telex 'a' làm mũ:
+  /// "DaoTa"→"DaôT") rồi phát replacement (xoá+gõ lại) — với dấu đa-scalar + gửi
+  /// bất đồng bộ, hiển thị bị hỏng thành "DaoTaao". Có ranh giới hoa/thường giữa
+  /// chừng ⇒ vẫn recover như chế độ thường (giữ nguyên chữ gõ).
   var needsRecovery: Bool {
-    if Defaults[.freeMarkModeEnabled] { return false }
-    return TiengVietValidator.needsRecovery(thanhPhanTieng, dauMu: dauMu)
+    let structural = TiengVietValidator.needsRecovery(thanhPhanTieng, dauMu: dauMu)
+    if Defaults[.freeMarkModeEnabled] {
+      return hasInternalCaseBoundary ? structural : false
+    }
+    return structural
+  }
+
+  /// True nếu có chữ HOA đứng sau một chữ thường trong chuỗi gõ (ranh giới
+  /// camelCase giữa từ, vd "DaoTao") — tín hiệu input là nhiều âm tiết/không phải
+  /// một âm tiết tiếng Việt đơn.
+  private var hasInternalCaseBoundary: Bool {
+    var sawLower = false
+    for ch in chuKhongDau {
+      if ch.isLowercase { sawLower = true }
+      else if ch.isUppercase && sawLower { return true }
+    }
+    return false
   }
 
   /// Chuỗi gốc (dùng khi cần recovery)

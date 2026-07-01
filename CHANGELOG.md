@@ -2,6 +2,18 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.6] - 2026-07-01 — "Vá lỗi gõ camelCase (chế độ dấu tự do)"
+
+**Sửa lỗi gõ chữ camelCase (vd "DaoTao") bị nhân đôi thành "DaoTaao" khi bật Chế độ dấu tự do.**
+
+### 🐛 Sửa lỗi gõ
+
+- **camelCase không còn bị bịa dấu khi bật "Chế độ dấu tự do" (Free Mark Mode)** — trước đây gõ "DaoTao" rồi Space bị hỏng thành "DaoTaao" ở **mọi app**: Free Mark Mode nuốt cơ chế recovery nên engine Telex bịa dấu ("DaoTa"→"DaôT") rồi phát lệnh xoá+gõ-lại (dấu đa-scalar, gửi bất đồng bộ) làm hỏng hiển thị. Nay input có **ranh giới hoa/thường giữa từ** (camelCase) vẫn giữ nguyên chữ gõ như chế độ thường; Free Mark Mode vẫn hoạt động bình thường cho tên riêng/âm tiết đơn.
+
+### 🧪 Kỹ thuật
+
+- 304/304 test pass (thêm regression cho ca Free Mark Mode + camelCase).
+
 ## [4.5] - 2026-07-01 — "Gia cố bảo mật & riêng tư"
 
 **Siết bảo mật/riêng tư toàn diện + vá vài lỗi gõ hiếm; thao tác gõ hằng ngày không đổi.**

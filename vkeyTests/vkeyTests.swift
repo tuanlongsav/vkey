@@ -1540,6 +1540,24 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "baos"), "báo")
   }
 
+  /// v4.6 Regression: bug "gõ DaoTao, ấn space → DaoTaao" khi bật **Free Mark Mode**.
+  /// Free Mark Mode nuốt recovery ⇒ engine bịa dấu ("DaoTa"→"DaôT") rồi phát
+  /// replacement (xoá+gõ lại dấu đa-scalar, gửi bất đồng bộ) → hỏng hiển thị ở
+  /// mọi app. Fix: input có ranh giới hoa/thường giữa từ (camelCase) vẫn recover
+  /// về raw ngay cả khi Free Mark Mode bật.
+  func testFreeMarkModeKeepsCamelCaseWords() throws {
+    let old = Defaults[.freeMarkModeEnabled]
+    Defaults[.freeMarkModeEnabled] = true
+    defer { Defaults[.freeMarkModeEnabled] = old }
+
+    // camelCase phải giữ nguyên (không bịa dấu) kể cả khi Free Mark Mode bật.
+    XCTAssertEqual(transform_text_telex(for: "DaoTao"), "DaoTao")
+    XCTAssertEqual(transform_text_telex(for: "BaoCao"), "BaoCao")
+    // Free Mark Mode KHÔNG đụng từ tiếng Việt hợp lệ.
+    XCTAssertEqual(transform_text_telex(for: "tieengs"), "tiếng")
+    XCTAssertEqual(transform_text_telex(for: "xin"), "xin")
+  }
+
   // MARK: - E1: luật auto-ă cho "a…k" chỉ áp cho địa danh d/đ/l (Đắk/Lắk)
 
   func testAutoBreveAkRestrictedToPlaceNameInitials() throws {
