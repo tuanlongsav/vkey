@@ -111,16 +111,21 @@ struct TiengVietState {
   /// qua validator — cho phép đặt dấu ở vị trí bất kỳ, không kiểm tra
   /// cấu trúc âm tiết. Hữu ích cho linguist, tên riêng, tiếng dân tộc.
   ///
-  /// v4.6 FIX: NGOẠI LỆ cho input camelCase/hoa-thường lẫn lộn (vd "DaoTao",
-  /// "BaoCao") — đó là văn bản NHIỀU âm tiết, KHÔNG phải một âm tiết để đặt dấu.
-  /// Nếu Free Mark Mode nuốt recovery ở đây, engine sẽ bịa dấu (Telex 'a' làm mũ:
-  /// "DaoTa"→"DaôT") rồi phát replacement (xoá+gõ lại) — với dấu đa-scalar + gửi
-  /// bất đồng bộ, hiển thị bị hỏng thành "DaoTaao". Có ranh giới hoa/thường giữa
-  /// chừng ⇒ vẫn recover như chế độ thường (giữ nguyên chữ gõ).
+  /// v4.6/v4.7 FIX: Free Mark Mode CHỈ được nuốt recovery cho MỘT âm tiết tiếng
+  /// Việt sạch (đặt dấu tự do đúng mục đích). Với input KHÔNG phải một âm tiết
+  /// đơn thì vẫn recover như chế độ thường, nếu không engine sẽ bịa dấu (Telex
+  /// 'a'/'aa'/'oo' làm mũ) rồi phát replacement (xoá+gõ lại, dấu đa-scalar, gửi
+  /// bất đồng bộ) làm hỏng hiển thị ở mọi app. Hai tín hiệu "không phải âm tiết đơn":
+  ///   • `conLai` không rỗng — còn ký tự dư ⇒ nhiều âm tiết/loanword (vd "banana"
+  ///     → "bânna", "cooperate" → "côperate"). (v4.7)
+  ///   • có ranh giới hoa/thường giữa từ (camelCase "DaoTao", "BaoCao"). (v4.6)
+  /// Cả hai đều recover về chữ gõ thô; đặt dấu tự do cho tên riêng/âm tiết đơn
+  /// (conLai rỗng, không camelCase) vẫn hoạt động như trước.
   var needsRecovery: Bool {
     let structural = TiengVietValidator.needsRecovery(thanhPhanTieng, dauMu: dauMu)
     if Defaults[.freeMarkModeEnabled] {
-      return hasInternalCaseBoundary ? structural : false
+      let notSingleSyllable = hasInternalCaseBoundary || !thanhPhanTieng.conLai.isEmpty
+      return notSingleSyllable ? structural : false
     }
     return structural
   }

@@ -1553,9 +1553,45 @@ final class vkeyTests: XCTestCase {
     // camelCase phải giữ nguyên (không bịa dấu) kể cả khi Free Mark Mode bật.
     XCTAssertEqual(transform_text_telex(for: "DaoTao"), "DaoTao")
     XCTAssertEqual(transform_text_telex(for: "BaoCao"), "BaoCao")
-    // Free Mark Mode KHÔNG đụng từ tiếng Việt hợp lệ.
+    // v4.7: từ thường nhiều âm tiết (loanword/English) cũng phải recover về raw —
+    // trước đây bị bịa dấu: banana→"bânna", cooperate→"côperate", area→"ảea".
+    XCTAssertEqual(transform_text_telex(for: "banana"), "banana")
+    XCTAssertEqual(transform_text_telex(for: "cooperate"), "cooperate")
+    XCTAssertEqual(transform_text_telex(for: "coordinate"), "coordinate")
+    XCTAssertEqual(transform_text_telex(for: "area"), "area")
+    XCTAssertEqual(transform_text_telex(for: "kangaroo"), "kangaroo")
+    // Free Mark Mode KHÔNG đụng từ tiếng Việt hợp lệ / âm tiết đơn.
     XCTAssertEqual(transform_text_telex(for: "tieengs"), "tiếng")
     XCTAssertEqual(transform_text_telex(for: "xin"), "xin")
+  }
+
+  /// v4.7 Regression: viết hoa đầu câu KHÔNG được "rò" qua thao tác dời con trỏ.
+  /// Sau ". " (đầu câu), nếu user dời con trỏ (mũi tên/Esc/click/Cmd) rồi gõ chữ
+  /// thường ở vị trí mới thì chữ đó KHÔNG được viết hoa nhầm ("sviet"→"Sviet").
+  func testAutoCapitalizeClearedOnCaretJump() throws {
+    let old = Defaults[.autoCapitalizeEnabled]
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults[.autoCapitalizeEnabled] = old }
+    func key(_ p: InputProcessor, _ code: UInt16) {
+      let ev = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(code), keyDown: true)!
+      _ = p.handleEvent(event: ev)
+    }
+    // Gõ "a. " → pendingCapitalize = true; rồi <jump>; rồi 's'.
+    func typeThenJump(_ jumpCode: UInt16) -> String {
+      let p = InputProcessor(method: .Telex)
+      key(p, 0); key(p, 47); key(p, 49)   // a . <space>
+      key(p, jumpCode)                     // dời con trỏ
+      key(p, 1)                            // s
+      return p.transformed
+    }
+    XCTAssertEqual(typeThenJump(123), "s", "Sau mũi tên trái, 's' không được viết hoa")
+    XCTAssertEqual(typeThenJump(53), "s", "Sau Escape, 's' không được viết hoa")
+
+    // Kiểm soát: KHÔNG dời con trỏ thì đầu câu VẪN viết hoa (tính năng còn nguyên).
+    let p = InputProcessor(method: .Telex)
+    key(p, 0); key(p, 47); key(p, 49)      // a . <space>
+    key(p, 1)                              // s (ngay đầu câu)
+    XCTAssertEqual(p.transformed, "S", "Đầu câu (không dời con trỏ) phải viết hoa")
   }
 
   // MARK: - E1: luật auto-ă cho "a…k" chỉ áp cho địa danh d/đ/l (Đắk/Lắk)

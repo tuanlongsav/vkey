@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.7 — "Vá viết hoa đầu câu &amp; đặt dấu tự do"</title>
+      <sparkle:version>40700</sparkle:version>
+      <sparkle:shortVersionString>4.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 01 Jul 2026 14:51:22 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.7/vkey-4.7.dmg"
+        sparkle:edSignature="13KEQBrhmK0dvdt4Ds/Q15ZHwvf1yN9AgXm3r5KETf6gBkmVDghnTePAxa5F3x92Q4VOUfhmkbGGRWNv9aRTBw=="
+        length="6570682"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.7 — Vá viết hoa đầu câu & đặt dấu tự do</h2>
+        <ul>
+          <li><b>Viết hoa đầu câu</b> — sau ". "/"! "/"? " nếu dời con trỏ (mũi tên, chuột, Esc, đổi app) rồi gõ tiếp, chữ không còn bị viết hoa nhầm giữa từ.</li>
+          <li><b>Đặt dấu tự do</b> — gõ từ vay mượn/tiếng Anh nhiều âm tiết (banana, cooperate, area…) không còn bị bịa dấu; chỉ áp cho một âm tiết tiếng Việt đơn.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 305 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.6 — "Vá lỗi gõ camelCase (chế độ dấu tự do)"</title>
       <sparkle:version>40600</sparkle:version>
       <sparkle:shortVersionString>4.6</sparkle:shortVersionString>

@@ -2,6 +2,19 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.7] - 2026-07-01 — "Vá viết hoa đầu câu & đặt dấu tự do"
+
+**Rà soát toàn diện bộ gõ (workflow đa tác nhân) → vá 2 lỗi thật.**
+
+### 🐛 Sửa lỗi gõ
+
+- **Viết hoa đầu câu không còn "rò" qua thao tác dời con trỏ** — sau dấu `. ! ?` + Space, nếu bạn dời con trỏ (phím mũi tên / Home / End / Esc / click chuột / tổ hợp Cmd-Ctrl-Alt / đổi app) rồi gõ chữ thường ở vị trí mới, chữ đó không còn bị viết hoa nhầm giữa từ (vd "sviet" → "Sviet"). Đường Enter/Space (cố ý viết hoa từ kế) giữ nguyên.
+- **"Đặt dấu tự do" không còn phá từ thường nhiều âm tiết** — khi bật Chế độ dấu tự do, gõ từ vay mượn/tiếng Anh toàn chữ thường (vd "banana", "cooperate", "area") không còn bị bịa dấu ("bânna", "côperate", "ảea"). Chế độ dấu tự do chỉ nuốt kiểm tra cho một âm tiết tiếng Việt đơn; input nhiều âm tiết vẫn giữ nguyên chữ gõ như chế độ thường. (Nối tiếp fix camelCase v4.6.)
+
+### 🧪 Kỹ thuật
+
+- 305/305 test pass (thêm 2 regression). Rà soát cả tầng tương thích Chromium/Electron: không phát hiện lỗi mới (các nghi vấn đã xác minh là chủ đích hoặc không tái hiện).
+
 ## [4.6] - 2026-07-01 — "Vá lỗi gõ camelCase (chế độ dấu tự do)"
 
 **Sửa lỗi gõ chữ camelCase (vd "DaoTao") bị nhân đôi thành "DaoTaao" khi bật Chế độ dấu tự do.**

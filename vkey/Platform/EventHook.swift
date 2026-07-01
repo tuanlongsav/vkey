@@ -524,6 +524,7 @@ func eventTapCallback(
     return input.handleEvent(event: event)
   } else if type == .leftMouseDown || type == .rightMouseDown {
     input.newWord()
+    input.resetSentenceCapitalizeState()  // click dời con trỏ → huỷ chờ viết hoa (A5 fix)
   }
 
   return Unmanaged.passUnretained(event)

@@ -806,6 +806,16 @@ class InputProcessor {
     refreshWordPredictionState()
   }
 
+  /// 2.0 (A5) fix: mọi thao tác DI CHUYỂN con trỏ / gián đoạn (click chuột, phím
+  /// mũi tên, Home/End, Escape, tổ hợp Cmd/Ctrl/Alt, đổi app) làm mất ngữ cảnh
+  /// "đầu câu". Phải huỷ trạng thái chờ viết hoa, nếu không chữ thường gõ ở vị trí
+  /// con trỏ MỚI (giữa từ có sẵn) bị viết hoa nhầm (vd "sviet" → "Sviet").
+  /// KHÔNG gọi trong đường commit Enter/Space (chúng cố ý đặt cờ để viết hoa từ kế).
+  public func resetSentenceCapitalizeState() {
+    pendingCapitalize = false
+    sentenceJustEnded = false
+  }
+
   /// Ẩn HUD / xoá prediction khi đoán từ không còn active (đổi app,
   /// rule, hoặc danh sách loại trừ).
   public func refreshWordPredictionState() {
@@ -880,6 +890,7 @@ class InputProcessor {
       || flags.contains(.maskAlternate)
     {
       newWord()
+      resetSentenceCapitalizeState()  // lệnh/điều hướng = gián đoạn ngữ cảnh câu
       return Unmanaged.passUnretained(event)
     }
 
@@ -946,6 +957,7 @@ class InputProcessor {
       }
       newWord(storePrevious: taskKey == .Space)
     } else if taskKey == .Escape {
+      resetSentenceCapitalizeState()  // Esc = gián đoạn, huỷ chờ viết hoa
       let orig = String(wordBuffer.keys)
       let currentTransformed = wordBuffer.transformed
       if !wordBuffer.wordState.isBlank && currentTransformed != orig {
@@ -974,6 +986,7 @@ class InputProcessor {
       }
     } else if InputProcessor.JumpTaskKeys.contains(taskKey) {
       newWord()
+      resetSentenceCapitalizeState()  // mũi tên/Home/End dời con trỏ → huỷ chờ viết hoa
     }
     return Unmanaged.passUnretained(event)
   }
