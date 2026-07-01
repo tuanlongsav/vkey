@@ -64,6 +64,9 @@ final class NGramStore {
     try? FileManager.default.createDirectory(
       at: resolved, withIntermediateDirectories: true, attributes: nil
     )
+    // Privacy: ngrams.json chứa cặp/bộ-ba từ người dùng đã gõ (plaintext) →
+    // loại khỏi backup iCloud/Time Machine (L7).
+    UsageStatistics.excludeFromBackup(resolved)
     self.storageDir = resolved
     loadFromDisk()
     migrateFromDefaultsIfNeeded()

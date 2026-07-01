@@ -80,8 +80,13 @@ struct TiengVietState {
       finalDauMu = .muUp
     }
     
-    // Auto-correct missing 'ă' for "ak" final consonant (ethnic minority names support like đắk, lắk)
-    if dauMu == .khongMu, nguyenAmLower == "a", String(thanhPhanTieng.phuAmCuoi).lowercased() == "k" {
+    // Auto-correct missing 'ă' for "ak" final consonant (ethnic minority names support like đắk, lắk).
+    // CHỈ áp cho mẫu địa danh có phụ âm đầu d/đ/l (Đắk, Lắk) — KHÔNG áp cho mọi
+    // âm tiết "a…k", nếu không "Dak/Zak/Mak/Nak/flak/tak/AK" bị đổi nhầm thành có dấu ă.
+    let phuAmDauLower = String(thanhPhanTieng.phuAmDau).lowercased()
+    if dauMu == .khongMu, nguyenAmLower == "a",
+       String(thanhPhanTieng.phuAmCuoi).lowercased() == "k",
+       phuAmDauLower == "d" || phuAmDauLower == "l" {
       finalDauMu = .muNgua
     }
     

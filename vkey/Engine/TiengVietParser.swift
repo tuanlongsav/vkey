@@ -138,6 +138,18 @@ enum TiengVietParser {
 
   /// Auto-correct common adjacent-key ordering mistakes before validation.
   private static func applyTypoCorrections(to result: inout ThanhPhanTieng, originalInput: [Character]) {
+    // Fast path (perf, chạy mỗi phím): nếu âm tiết đã có nguyên âm, không còn
+    // ký tự thừa (`conLai` rỗng) và KHÔNG cần recovery thì không rule nào bên
+    // dưới có thể fire — các rule swap đều đòi `conLai` không rỗng hoặc nguyên
+    // âm đặc thù; rule "ao"+phụ-âm-cuối chỉ gặp khi "ao"+phụ-âm-cuối là bất hợp
+    // lệ (⇒ needsRecovery=true); Rule 5 chỉ chạy khi nguyên-âm-rỗng / conLai
+    // không rỗng / needsRecovery. Bỏ qua sớm để tránh re-parse thừa. Đây là
+    // no-op về hành vi (điều kiện chính là phủ định điều kiện kích hoạt mọi rule).
+    if !result.nguyenAm.isEmpty,
+       result.conLai.isEmpty,
+       !TiengVietValidator.needsRecovery(result) {
+      return
+    }
     // "veit" -> "viet": users sometimes type the second "e" before "i"
     // when aiming for "việt". The first parse sees "e" + leftover "i...";
     // reparsing the tail lets final consonants such as "t" or "ng" attach normally.
@@ -239,8 +251,9 @@ enum TiengVietParser {
     // "haoc" -> "hoac" (to become "hoác").
     // Vowel trie parses "ao" -> nguyenAm = ["a", "o"].
     // If we have "ao" and either phuAmCuoi or conLai is not empty, we try to re-parse with "oa" as the vowel group.
-    // If the re-parsed result successfully extracts a final consonant (phuAmCuoi is not empty),
-    // then this was indeed a typo of "oa" followed by final consonant!
+    // If the re-parsed result extracts a final consonant AND consumes everything
+    // (conLai rỗng), then this was indeed a typo of "oa" followed by a final
+    // consonant → apply the swap.
     if result.nguyenAm.count == 2,
       result.nguyenAm[0].lowercased() == "a",
       result.nguyenAm[1].lowercased() == "o",
@@ -253,7 +266,16 @@ enum TiengVietParser {
       var reparsed = ThanhPhanTieng()
       reparsed.nguyenAm = [oChar, aChar]
       reparsed = finishParsing(result: &reparsed, remaining: remainingStr)
-      if !reparsed.phuAmCuoi.isEmpty {
+      // Guard 1 (regression "DaoTao" → "DoaTao", bản gõ tăng dần): phụ âm cuối
+      // viết HOA trong khi nguyên âm "ao" viết thường ⇒ đây là ranh giới âm tiết
+      // mới kiểu camelCase ("Dao|Tao"), KHÔNG phải "oa" + phụ âm cuối ("hoác").
+      // Ở bước gõ tới "DaoT", reparse "oa"+"T" cho conLai rỗng nên Guard 2 không
+      // chặn được; case-mismatch là tín hiệu tách âm tiết đáng tin ở đây.
+      let capitalBoundary = (reparsed.phuAmCuoi.first?.isUppercase ?? false) && oChar.isLowercase
+      // Guard 2 (đồng bộ 3 rule anh em phía trên): chỉ swap khi reparse "oa"+phụ-âm-cuối
+      // tiêu hoá HẾT (conLai rỗng); nếu còn ký tự thừa thì phần "ao" là âm tiết riêng.
+      // "haoc"→"hoac" / "haong"→"hoang" (toàn chữ thường, conLai rỗng) vẫn fire.
+      if !reparsed.phuAmCuoi.isEmpty && reparsed.conLai.isEmpty && !capitalBoundary {
         result.nguyenAm = reparsed.nguyenAm
         result.phuAmCuoi = reparsed.phuAmCuoi
         result.conLai = reparsed.conLai

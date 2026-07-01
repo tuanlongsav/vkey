@@ -233,6 +233,12 @@ final class PredictionEngine {
 
   /// Học từ commit hoặc khi user chấp nhận gợi ý nhiều từ.
   func learnTransition(prev2: String?, prev1: String?, current: String) {
+    // Privacy: tôn trọng công tắc Thống kê (giống `UsageStatistics.recordCommit`).
+    // Tắt Thống kê ⇒ KHÔNG ghi nội dung n-gram từ chữ đã gõ. Thêm guard
+    // secure-input phòng race khi vừa thoát ô mật khẩu (EventHook đã bypass
+    // trong lúc secure input, đây là defense-in-depth cho cửa sổ thoát).
+    guard Defaults[.statisticsEnabled] else { return }
+    guard !UsageStatistics.isSecureInputActive() else { return }
     let cur = current.lowercased()
     guard cur.count >= 2,
           !cur.contains(where: { !$0.isLetter && !$0.isWhitespace })

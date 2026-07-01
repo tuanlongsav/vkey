@@ -339,7 +339,12 @@ struct UserDataExport: Codable {
     self.autoBackupOnUpgrade = try c.decodeIfPresent(Bool.self, forKey: .autoBackupOnUpgrade)
     self.autoUpdateEnabled = try c.decodeIfPresent(Bool.self, forKey: .autoUpdateEnabled)
     // Statistics — try v2 ([WeekBucketExport]) trước, fallback v1 ([UsageSummary]).
-    if let buckets = try? c.decodeIfPresent([WeekBucketExport].self, forKey: .statistics) {
+    // U3: phân biệt "khóa không có / JSON null" (bỏ qua êm) vs "có value nhưng
+    // hỏng" (báo lỗi, KHÔNG âm thầm bỏ) để UI không hiện "thành công" trong khi
+    // mất lịch sử. JSON `null` tường minh coi như "không có thống kê", KHÔNG hỏng.
+    if !c.contains(.statistics) || (try? c.decodeNil(forKey: .statistics)) == true {
+      self.statistics = nil
+    } else if let buckets = try? c.decodeIfPresent([WeekBucketExport].self, forKey: .statistics) {
       self.statistics = buckets
     } else if let summaries = try? c.decodeIfPresent([UsageSummary].self, forKey: .statistics) {
       // Bridge v1 → v2: raw maps rỗng, chỉ giữ top words counts.
@@ -362,7 +367,15 @@ struct UserDataExport: Codable {
         )
       }
     } else {
-      self.statistics = nil
+      // Khóa `statistics` CÓ trong file nhưng không khớp cả hai định dạng →
+      // file hỏng. Ném lỗi để `loadFrom` rethrow và UI báo "Lỗi nhập" thay vì
+      // báo thành công rồi mất toàn bộ lịch sử thống kê một cách âm thầm.
+      throw DecodingError.dataCorrupted(
+        DecodingError.Context(
+          codingPath: [CodingKeys.statistics],
+          debugDescription: "Khối 'statistics' có trong file nhưng không đọc được (sai định dạng)."
+        )
+      )
     }
   }
 }

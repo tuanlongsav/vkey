@@ -292,20 +292,8 @@ struct VKStatsTab: View {
   }
 
   private func isCleanTopWord(_ word: String, category: UsageStatistics.StatCategory) -> Bool {
-    let normalized = word.normalizedDictionaryToken
-    guard normalized.count >= 2 else { return false }
-    let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
-    if denied.contains(normalized) { return false }
-    switch category {
-    case .vietnamese, .vietnamesePhrase:
-      return LexiconManager.shared.isVietnameseWord(normalized)
-        || LexiconManager.shared.shouldKeepVietnamese(normalized)
-    case .english, .englishPhrase:
-      if LexiconManager.shared.isVietnameseWord(normalized) { return false }
-      return true
-    case .app:
-      return true
-    }
+    // #12: logic dùng chung với StatisticsView, đã tách về UsageStatistics để tránh trùng lặp.
+    UsageStatistics.isCleanTopWord(word, category: category)
   }
 
   private func detailWords(for category: TopWordsDetailCategory) -> [WordCount] {

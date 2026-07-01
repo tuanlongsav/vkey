@@ -6,6 +6,30 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.5 — "Gia cố bảo mật &amp; riêng tư"</title>
+      <sparkle:version>40500</sparkle:version>
+      <sparkle:shortVersionString>4.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 01 Jul 2026 10:45:51 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.5/vkey-4.5.dmg"
+        sparkle:edSignature="1/5s6j6+jiO5hrQw79+iIYc7Z5chMzrKebj//xUWkkeRfs8L98a3IcOvjqonTg/cfw9ScaQA5zncijBKPh3zAg=="
+        length="6569034"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.5 — Gia cố bảo mật & riêng tư</h2>
+        <ul>
+          <li><b>Riêng tư clipboard</b> — mật khẩu do trình quản lý mật khẩu đánh dấu bí mật không còn lọt vào lịch sử clipboard.</li>
+          <li><b>Bảo vệ dữ liệu đã gõ</b> — Thống kê + n-gram loại khỏi sao lưu iCloud/Time Machine; không học n-gram khi ở ô nhập bảo mật.</li>
+          <li><b>Cập nhật từ điển an toàn hơn</b> — giới hạn kích thước, kiểm tra cấu trúc, và cơ chế xác minh chữ ký Ed25519 (sẵn sàng bật).</li>
+          <li><b>Sửa lỗi gõ</b> — "Đắk/Lắk" vẫn đúng, "AK-47/tak/flak" không còn bị thêm ă sai; "DaoTao/BaoCao" không bị đảo thành "DoaTao".</li>
+          <li><b>Nhập dữ liệu</b> — file thống kê hỏng báo "Lỗi nhập" thay vì âm thầm mất lịch sử.</li>
+        </ul>
+        <p>Bản ký Apple Developer ID + notarized. Toàn bộ 303 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.4 — "Tab thụt dòng ổn định"</title>
       <sparkle:version>40400</sparkle:version>
       <sparkle:shortVersionString>4.4</sparkle:shortVersionString>

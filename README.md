@@ -8,7 +8,7 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.4](CHANGELOG.md)** — Developer ID signed & notarized · 295 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.5](CHANGELOG.md)** — Developer ID signed & notarized · 303 test pass · [Tải bản mới nhất](../../releases/latest)
 
 ## Mới ở v4.4
 

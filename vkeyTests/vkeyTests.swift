@@ -8,6 +8,7 @@
 import XCTest
 import Defaults
 import AppKit
+import CryptoKit
 import KeyboardShortcuts
 
 @testable import vkey
@@ -1518,6 +1519,147 @@ final class vkeyTests: XCTestCase {
     XCTAssertTrue(swappedAoFinal.conLai.isEmpty)
   }
 
+  /// Regression: gõ 2 âm tiết "DaoTao" bị đảo nhầm "ao"→"oa" thành "DoaTao".
+  /// Rule "ao" + phụ âm cuối chỉ được swap khi reparse tiêu hoá HẾT (conLai rỗng);
+  /// ở đây "tao" là âm tiết MỚI (còn "ao" dư trong conLai) nên KHÔNG được đảo
+  /// âm tiết "Dao".
+  func testAoSwapNotAppliedAcrossSyllableBoundary() throws {
+    // Repro chính (camelCase): gõ "DaoTao" phải giữ nguyên, KHÔNG thành "DoaTao".
+    // Ở bước gõ tới "DaoT", phụ âm cuối 'T' viết HOA sau nguyên âm "ao" viết
+    // thường = ranh giới âm tiết mới → không được đảo "ao"→"oa".
+    XCTAssertEqual(transform_text_telex(for: "DaoTao"), "DaoTao")
+    XCTAssertEqual(transform_text_telex(for: "BaoCao"), "BaoCao")
+
+    // Cấp parser: cả cụm "daotao" (âm tiết 'tao' làm conLai dư) không được đảo.
+    XCTAssertEqual(String(TiengVietParser.parse(Array("daotao")).nguyenAm), "ao",
+      "‘daotao’ (2 âm tiết) không được đảo ‘ao’→‘oa’")
+
+    // Regression: "ao" + phụ âm cuối hợp lệ (toàn chữ thường, conLai rỗng) VẪN đảo đúng.
+    XCTAssertEqual(transform_text_telex(for: "haong"), "hoang")
+    XCTAssertEqual(transform_text_telex(for: "haocj"), "hoạc")
+    XCTAssertEqual(transform_text_telex(for: "baos"), "báo")
+  }
+
+  // MARK: - E1: luật auto-ă cho "a…k" chỉ áp cho địa danh d/đ/l (Đắk/Lắk)
+
+  func testAutoBreveAkRestrictedToPlaceNameInitials() throws {
+    // Giữ tính năng: phụ âm đầu d/l → vẫn thêm ă (Đắk Lắk).
+    XCTAssertEqual(transform_text_telex(for: "dak"), "dăk")
+    XCTAssertEqual(transform_text_telex(for: "lak"), "lăk")
+    // Fix: phụ âm đầu khác / không có → KHÔNG thêm ă (tránh phá tên/loanword).
+    XCTAssertEqual(transform_text_telex(for: "ak"), "ak")     // AK-47
+    XCTAssertEqual(transform_text_telex(for: "tak"), "tak")
+    XCTAssertEqual(transform_text_telex(for: "mak"), "mak")
+    XCTAssertEqual(transform_text_telex(for: "nak"), "nak")
+  }
+
+  // MARK: - P1: lọc pasteboard bí mật (mật khẩu) khỏi clipboard history
+
+  @MainActor
+  func testClipboardSkipsConcealedPasteboardType() throws {
+    let concealed = NSPasteboardItem()
+    concealed.setString("hunter2", forType: NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType"))
+    XCTAssertTrue(ClipboardHistoryService.containsSecretPasteboardType([concealed]))
+
+    let normal = NSPasteboardItem()
+    normal.setString("xin chào", forType: .string)
+    XCTAssertFalse(ClipboardHistoryService.containsSecretPasteboardType([normal]))
+  }
+
+  // MARK: - L1: verify chữ ký Ed25519 gói từ điển
+
+  func testLexiconSignatureVerifier() throws {
+    let vi = ["và", "của"], en = ["the"], keep = ["an"]
+    func pkg(vietnamese: [String], sig: String?) -> LexiconUpdatePackage {
+      LexiconUpdatePackage(version: 2, vietnamese: vietnamese, english: en, keep: keep,
+                           enVnMapping: nil, vnEnMapping: nil, macrosRecommended: nil,
+                           meta: nil, signature: sig)
+    }
+    let key = Curve25519.Signing.PrivateKey()
+    let pubB64 = key.publicKey.rawRepresentation.base64EncodedString()
+    let base = pkg(vietnamese: vi, sig: nil)
+    let sig = try key.signature(for: LexiconSignatureVerifier.canonicalPayload(for: base))
+    let signed = pkg(vietnamese: vi, sig: sig.base64EncodedString())
+
+    // Public key rỗng = verify TẮT → luôn chấp nhận (không phá kênh update hiện tại).
+    XCTAssertTrue(LexiconSignatureVerifier.verify(package: signed, publicKeyBase64: ""))
+    // Đã cấu hình key: chữ ký hợp lệ → chấp nhận.
+    XCTAssertTrue(LexiconSignatureVerifier.verify(package: signed, publicKeyBase64: pubB64))
+    // Nội dung bị sửa (thêm từ) → chữ ký cũ không còn khớp → từ chối.
+    let tampered = pkg(vietnamese: vi + ["HACKED"], sig: sig.base64EncodedString())
+    XCTAssertFalse(LexiconSignatureVerifier.verify(package: tampered, publicKeyBase64: pubB64))
+    // Thiếu chữ ký khi đã bật verify → từ chối.
+    XCTAssertFalse(LexiconSignatureVerifier.verify(package: base, publicKeyBase64: pubB64))
+  }
+
+  /// L1 (fix #1): chữ ký phải phủ CẢ en_vn/vn_en mapping và macros — sửa riêng
+  /// một trong các trường này (giữ nguyên word-list) vẫn phải bị phát hiện.
+  func testLexiconSignatureCoversMappingsAndMacros() throws {
+    let key = Curve25519.Signing.PrivateKey()
+    let pubB64 = key.publicKey.rawRepresentation.base64EncodedString()
+    func pkg(enVn: [String: [String]]?, macros: [MacroSeed]?, sig: String?) -> LexiconUpdatePackage {
+      LexiconUpdatePackage(version: 3, vietnamese: ["và"], english: ["the"], keep: ["an"],
+                           enVnMapping: enVn, vnEnMapping: nil, macrosRecommended: macros,
+                           meta: nil, signature: sig)
+    }
+    let enVn = ["hello": ["xin chào"]]
+    let macros = [MacroSeed(from: "@@", to: "email@x.com")]
+    let base = pkg(enVn: enVn, macros: macros, sig: nil)
+    let sig = try key.signature(for: LexiconSignatureVerifier.canonicalPayload(for: base)).base64EncodedString()
+    let signed = pkg(enVn: enVn, macros: macros, sig: sig)
+    XCTAssertTrue(LexiconSignatureVerifier.verify(package: signed, publicKeyBase64: pubB64))
+
+    // Sửa candidate trong en_vn mapping → chữ ký cũ hết khớp.
+    let tamperedMap = pkg(enVn: ["hello": ["HACKED"]], macros: macros, sig: sig)
+    XCTAssertFalse(LexiconSignatureVerifier.verify(package: tamperedMap, publicKeyBase64: pubB64))
+    // Sửa macro `to` → chữ ký cũ hết khớp.
+    let tamperedMacro = pkg(enVn: enVn, macros: [MacroSeed(from: "@@", to: "evil@x.com")], sig: sig)
+    XCTAssertFalse(LexiconSignatureVerifier.verify(package: tamperedMacro, publicKeyBase64: pubB64))
+  }
+
+  // MARK: - L4: giới hạn cấu trúc gói từ điển
+
+  func testLexiconPackageBoundsValidation() throws {
+    func pkg(_ vietnamese: [String] = [],
+             enVn: [String: [String]]? = nil,
+             macros: [MacroSeed]? = nil) -> LexiconUpdatePackage {
+      LexiconUpdatePackage(version: 1, vietnamese: vietnamese, english: [], keep: [],
+                           enVnMapping: enVn, vnEnMapping: nil, macrosRecommended: macros,
+                           meta: nil, signature: nil)
+    }
+    XCTAssertNoThrow(try pkg(["và", "của"]).validated())
+    XCTAssertThrowsError(try pkg(Array(repeating: "x", count: LexiconUpdatePackage.maxEntries + 1)).validated())
+    let longWord = String(repeating: "a", count: LexiconUpdatePackage.maxStringLength + 1)
+    XCTAssertThrowsError(try pkg([longWord]).validated())
+
+    // Fix #3: mapping candidate quá dài & macro `from` quá dài → chặn; macro `to`
+    // (đoạn mở rộng) hợp lệ tới `maxMacroExpansionLength` rồi mới chặn.
+    XCTAssertThrowsError(try pkg(enVn: ["k": [longWord]]).validated())
+    XCTAssertThrowsError(try pkg(macros: [MacroSeed(from: longWord, to: "x")]).validated())
+    XCTAssertNoThrow(try pkg(macros: [MacroSeed(from: "@@", to: String(repeating: "x", count: 1000))]).validated())
+    XCTAssertThrowsError(try pkg(macros: [MacroSeed(
+      from: "@@",
+      to: String(repeating: "x", count: LexiconUpdatePackage.maxMacroExpansionLength + 1))]).validated())
+  }
+
+  // MARK: - U3: import thống kê phân biệt null / thiếu / hỏng / hợp lệ
+
+  func testStatisticsImportDistinguishesNullAbsentAndCorrupt() throws {
+    let dec = JSONDecoder()
+    dec.dateDecodingStrategy = .iso8601
+    func decode(_ json: String) throws -> UserDataExport {
+      try dec.decode(UserDataExport.self, from: Data(json.utf8))
+    }
+    // Khóa không có → statistics nil, không ném.
+    XCTAssertNil(try decode(#"{}"#).statistics)
+    // JSON null tường minh → coi như "không có", KHÔNG ném (regression guard).
+    XCTAssertNil(try decode(#"{"statistics": null}"#).statistics)
+    // Có value nhưng sai kiểu (hỏng) → ném lỗi thay vì âm thầm bỏ.
+    XCTAssertThrowsError(try decode(#"{"statistics": 42}"#))
+    // Có value hợp lệ (mảng rỗng) → decode được.
+    XCTAssertEqual(try decode(#"{"statistics": []}"#).statistics?.count, 0)
+  }
+
   /// v2.3.6 — Loanword consonants (w/z/j/f) KHÔNG được áp swap typo-correction.
   /// Bug: gõ "weight" trong ô tìm kiếm → "wieght" vì rule veit→viet swap "ei" → "ie".
   /// Tiếng Việt không có từ bản địa bắt đầu bằng w/z/j/f → mọi từ w-/z-/j-/f- là loanword.
@@ -2693,6 +2835,24 @@ final class TiengVietValidatorTests: XCTestCase {
     XCTAssertEqual(sources.vn, .updatePackage)
     XCTAssertTrue(manager.isVietnameseWord("thành"))
     XCTAssertTrue(manager.isEnglishWord("deploy"))
+  }
+
+  /// Fix #2: gói ĐÃ LƯU trên đĩa cũng phải qua cổng kiểm tra khi load — gói vi
+  /// phạm giới hạn cấu trúc (L4) bị từ chối, lexicon rơi về bản embedded thay vì
+  /// nuốt gói không an toàn (embedded version = 2 < 999 nên nếu bỏ qua kiểm tra
+  /// thì gói này SẼ được adopt — chứng minh cổng load thực sự chặn).
+  func testLexiconLoadRejectsInvalidOnDiskPackage() throws {
+    let path = URL(fileURLWithPath: "/tmp/vkey-lexicon-invalid-ondisk.json")
+    let longWord = String(repeating: "a", count: LexiconUpdatePackage.maxStringLength + 1)
+    let bad = #"{"version": 999, "vietnamese": ["\#(longWord)"], "english": [], "keep": []}"#
+    try Data(bad.utf8).write(to: path)
+    defer { try? FileManager.default.removeItem(at: path) }
+
+    let manager = LexiconManager(updatePackageURL: path)
+    manager.reload()
+
+    XCTAssertNotEqual(manager.snapshotVersions().vn, 999)
+    XCTAssertEqual(manager.snapshotSources().vn, .embedded)
   }
 
   func testLexiconManagerUserAllowAndDenyOverride() throws {

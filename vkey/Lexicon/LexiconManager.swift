@@ -161,13 +161,14 @@ final class LexiconManager {
   }
 
   private func loadUpdatePackage() -> LexiconUpdatePackage? {
-    guard FileManager.default.fileExists(atPath: updatePackageURL.path) else { return nil }
-    do {
-      let data = try Data(contentsOf: updatePackageURL)
-      return try JSONDecoder().decode(LexiconUpdatePackage.self, from: data)
-    } catch {
-      return nil
-    }
+    // File đã lưu KHÔNG được tin mù: mọi lần load đều phải qua cùng cổng kiểm tra
+    // (size + cấu trúc + chữ ký) như đường tải mạng. Nếu không, ai ghi được file
+    // này (vd vị trí world-writable, hoặc gói cũ chưa ký sau khi bật L1) sẽ bypass
+    // hoàn toàn L1/L4. Gói không đạt → trả nil → reload rơi về lexicon embedded.
+    guard FileManager.default.fileExists(atPath: updatePackageURL.path),
+          let data = try? Data(contentsOf: updatePackageURL)
+    else { return nil }
+    return validatedPackage(data)
   }
 
   /// Endpoint shared by `downloadAndUpdateLexicon` and
@@ -182,6 +183,34 @@ final class LexiconManager {
   /// - **Đơn giản hơn**: không cần Accept header đặc biệt.
   private static let lexiconUpdateEndpoint =
     "https://raw.githubusercontent.com/tuanlongsav/vkey/main/lexicon-update.json"
+
+  /// L2: kích thước tối đa của gói từ điển tải về (defense-in-depth chống
+  /// endpoint bị chiếm trả body khổng lồ → OOM). ~25 MB dư cho hàng chục nghìn entry.
+  private static let maxLexiconPackageBytes = 25 * 1024 * 1024
+
+  /// L1: Ed25519 public key (base64) để verify gói ĐÃ KÝ. RỖNG = tắt verify
+  /// (hành vi hiện tại, không phá kênh update đang chạy). Xem hướng dẫn bật ở
+  /// `LexiconSignatureVerifier`.
+  private static let lexiconPublicKeyBase64 = ""
+
+  /// Cổng kiểm tra an toàn CHUNG cho 1 gói từ điển — dùng cho CẢ đường tải mạng
+  /// và đường load file đã lưu: cap kích thước (L2), decode, giới hạn cấu trúc
+  /// (L4), và verify chữ ký khi đã cấu hình key (L1). Trả `nil` nếu gói không đạt.
+  private func validatedPackage(_ data: Data) -> LexiconUpdatePackage? {
+    guard data.count <= Self.maxLexiconPackageBytes,
+          let package = try? JSONDecoder().decode(LexiconUpdatePackage.self, from: data),
+          (try? package.validated()) != nil,
+          LexiconSignatureVerifier.verify(package: package, publicKeyBase64: Self.lexiconPublicKeyBase64)
+    else { return nil }
+    return package
+  }
+
+  /// Như `validatedPackage` nhưng thêm early-reject theo `Content-Length` để khỏi
+  /// buffer nguyên body khổng lồ (chỉ đường tải mạng mới có header này).
+  private func validatedDownloadedPackage(_ data: Data, expectedContentLength: Int64) -> LexiconUpdatePackage? {
+    if expectedContentLength > Int64(Self.maxLexiconPackageBytes) { return nil }
+    return validatedPackage(data)
+  }
 
   /// In-flight task. Cancelled in `applicationWillTerminate` (via
   /// `cancelInFlightDownloads`) so the app can exit cleanly without the
@@ -213,17 +242,21 @@ final class LexiconManager {
         return
       }
 
-      do {
-        let package = try JSONDecoder().decode(LexiconUpdatePackage.self, from: data)
-        let currentVersion = self.snapshotVersions().vn
-
-        if package.version > currentVersion {
+      guard let package = self.validatedDownloadedPackage(
+              data, expectedContentLength: httpResponse.expectedContentLength)
+      else {
+        completion?(false)
+        return
+      }
+      let currentVersion = self.snapshotVersions().vn
+      if package.version > currentVersion {
+        do {
           try self.setUpdatePackageData(data)
           completion?(true)
-        } else {
+        } catch {
           completion?(false)
         }
-      } catch {
+      } else {
         completion?(false)
       }
     }
@@ -266,17 +299,17 @@ final class LexiconManager {
         return
       }
 
-      do {
-        let package = try JSONDecoder().decode(LexiconUpdatePackage.self, from: data)
-        let currentVersion = self.snapshotVersions().vn
-
-        if package.version > currentVersion {
-          // Apply im lặng. Nếu ghi file lỗi (rất hiếm — full disk / perm),
-          // bỏ qua; lần check kế tiếp 24h sau sẽ thử lại.
-          try? self.setUpdatePackageData(data)
-        }
-      } catch {
-        // Silent error — sẽ thử lại lần kế tiếp.
+      guard let package = self.validatedDownloadedPackage(
+              data, expectedContentLength: httpResponse.expectedContentLength)
+      else {
+        // Gói không đạt (quá lớn / hỏng / sai chữ ký) → bỏ qua, thử lại lần sau.
+        return
+      }
+      let currentVersion = self.snapshotVersions().vn
+      if package.version > currentVersion {
+        // Apply im lặng. Nếu ghi file lỗi (rất hiếm — full disk / perm),
+        // bỏ qua; lần check kế tiếp 24h sau sẽ thử lại.
+        try? self.setUpdatePackageData(data)
       }
     }
     inFlightDictionaryTask = task

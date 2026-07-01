@@ -208,8 +208,39 @@ final class UsageStatistics {
     try? FileManager.default.createDirectory(
       at: resolved, withIntermediateDirectories: true, attributes: nil
     )
+    // Privacy: thư mục này chứa từ/cụm người dùng đã gõ (plaintext JSON) →
+    // loại khỏi backup iCloud/Time Machine để không rò ra bản sao lưu.
+    UsageStatistics.excludeFromBackup(resolved)
     self.storageDir = resolved
     loadCurrentWeekIfNeeded()
+  }
+
+  /// Đánh dấu URL không đưa vào backup (iCloud / Time Machine).
+  static func excludeFromBackup(_ url: URL) {
+    var mutableURL = url
+    var values = URLResourceValues()
+    values.isExcludedFromBackup = true
+    try? mutableURL.setResourceValues(values)
+  }
+
+  /// Lọc từ "sạch" để hiển thị trong bảng Top words. Dùng chung cho
+  /// `StatisticsView` và `VKStatsTab` (trước đây trùng lặp ở cả hai).
+  static func isCleanTopWord(_ word: String, category: StatCategory) -> Bool {
+    let normalized = word.normalizedDictionaryToken
+    guard normalized.count >= 2 else { return false }
+    let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
+    if denied.contains(normalized) { return false }
+    switch category {
+    case .vietnamese, .vietnamesePhrase:
+      return LexiconManager.shared.isVietnameseWord(normalized)
+        || LexiconManager.shared.shouldKeepVietnamese(normalized)
+    case .english, .englishPhrase:
+      // Chỉ hiển thị từ THỰC SỰ ngoài tiếng Việt (loại từ VN gõ không dấu).
+      if LexiconManager.shared.isVietnameseWord(normalized) { return false }
+      return true
+    case .app:
+      return true
+    }
   }
 
   /// Pending flush task token — set when a counter changes, cleared when
@@ -277,7 +308,9 @@ final class UsageStatistics {
   /// File-scoped declaration sang `CGSIsSecureEventInputSet` không
   /// access được cross-file, nên dùng public API `IsSecureEventInputEnabled`
   /// từ HIToolbox (Carbon framework).
-  private static func isSecureInputActive() -> Bool {
+  /// Internal (không private) để `PredictionEngine.learnTransition` tái dùng
+  /// làm secure-input guard cho việc học n-gram.
+  static func isSecureInputActive() -> Bool {
     // `IsSecureEventInputEnabled` là public API trong HIToolbox/Carbon,
     // không cần private @_silgen_name như CGSIsSecureEventInputSet.
     return IsSecureEventInputEnabled()
