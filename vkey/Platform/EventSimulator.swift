@@ -128,6 +128,15 @@ class EventSimulator {
     // không sync với CGEvent injection thông thường).
     AppSendingConfig(bundlePrefix: "com.anthropic.claudefordesktop", strategy: .stepByStep, name: "Claude"),
 
+    // Telegram for macOS (native Swift/AppKit, "ru.keepcoder.Telegram"). Ô soạn
+    // tin là custom NSTextInputClient view: batch/hybrid gửi cụm backspace +
+    // retype async không sync với text engine của nó → khi thay cả cụm nó nuốt/
+    // xoá lố → mất chữ ("gửi" → "ửi", mất chữ ĐẦU; khác lỗi NFD "điều"→"đều" cũ
+    // đã whitelist NFC). stepByStep gửi từng phím (delay 2ms) nên đồng bộ đúng —
+    // cùng lớp Dock/Launchpad + Claude. NFC grapheme diff giữ nguyên qua
+    // usesNFCGraphemeStorage (Telegram vẫn nằm trong whitelist đó).
+    AppSendingConfig(bundlePrefix: "ru.keepcoder.Telegram", strategy: .stepByStep, name: "Telegram"),
+
     // Launchpad / Spotlight search field chạy trong tiến trình Dock. Ô tìm kiếm
     // này có input model nhạy: batch/hybrid backspace+replace không sync → gõ
     // tiếng Việt bị loạn (lặp/mất chữ, dấu sai). stepByStep gửi từng phím nên

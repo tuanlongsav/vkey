@@ -1506,6 +1506,18 @@ class InputProcessor {
     // "com.google.gemini" → rơi về NFD → mất chữ "nhập" → "nḥ̂p").
     // So sánh lowercased prefix để chịu được biến thể viết hoa/đuôi.
     if bundleId.lowercased().hasPrefix("com.google.gemini") { return true }
+    // Telegram for macOS — native Swift/AppKit (bundle "ru.keepcoder.Telegram",
+    // KHÔNG phải Qt "org.telegram.desktop"). Lưu NFC precomposed & xoá theo
+    // GRAPHEME như app Apple, nhưng ô soạn tin là custom view nên AX không phân
+    // loại được thành .windowField → rơi về NFD scalar diff → backspace THỪA ở
+    // bước bỏ dấu cuối của cụm nguyên âm mở (iêu…): "điều" → "đều" (mất chữ "i").
+    // Whitelist NFC để bypass field-kind (giống tiền lệ Gemini).
+    if bundleId.lowercased().hasPrefix("ru.keepcoder.telegram") { return true }
+    // ChatGPT (OpenAI) cho macOS — native Swift/AppKit, ô soạn là NSTextView
+    // (lưu NFC, xóa theo grapheme; KHÔNG Electron). Cùng lớp Gemini/Telegram:
+    // AX không phân loại field thành .windowField → rơi NFD → mất chữ. Whitelist.
+    // (lowercased để nhất quán với nhánh Gemini, chịu biến thể hoa/thường.)
+    if bundleId.lowercased() == "com.openai.chat" { return true }
     return false
   }
 

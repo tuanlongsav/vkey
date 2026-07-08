@@ -91,6 +91,47 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "khoans"), "khoán")
   }
 
+  /// Regression — Telegram gõ "điều" ra "đều" (mất chữ "i").
+  /// Engine LUÔN sinh đúng chuỗi NFC cho cụm nguyên âm mở + dấu muộn (iêu/iểu…);
+  /// lỗi thật nằm ở tầng emit (Telegram bị định tuyến nhầm sang NFD scalar diff
+  /// nên backspace thừa 1). Test khoá cả hai nửa: (1) engine đúng, (2) Telegram
+  /// native nằm trong whitelist NFC grapheme-delete.
+  func testDieuTelegramFix() throws {
+    // (1) Engine: cụm "iêu"/"iểu" mang dấu — trước đây chưa có test bao phủ.
+    XCTAssertEqual(transform_text_telex(for: "ddieeuf"), "điều")
+    XCTAssertEqual(transform_text_telex(for: "nhieeuf"), "nhiều")
+    XCTAssertEqual(transform_text_telex(for: "chieeuf"), "chiều")
+    XCTAssertEqual(transform_text_telex(for: "kieeur"), "kiểu")
+    XCTAssertEqual(transform_text_telex(for: "hieeur"), "hiểu")
+    // "điểm" (có coda) không thuộc lớp lỗi này — vẫn đúng.
+    XCTAssertEqual(transform_text_telex(for: "ddieemr"), "điểm")
+
+    // (2) App-compat: app native NFC grapheme-delete → whitelist (bypass
+    // field-kind mong manh). Telegram + ChatGPT cùng lớp Gemini.
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "ru.keepcoder.Telegram"))
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.openai.chat"))
+    // KHÔNG whitelist: Qt tdesktop (delete-unit chưa xác minh), Electron/Chromium
+    // (Zalo, Cursor, Slack) vốn NFD scalar-delete đúng sẵn — bảo đảm cô lập.
+    XCTAssertFalse(InputProcessor.usesNFCGraphemeStorage(bundleId: "org.telegram.desktop"))
+    XCTAssertFalse(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.vng.zalo"))
+    XCTAssertFalse(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.tinyspeck.slackmacgap"))
+  }
+
+  /// Regression — Telegram gõ "gửi" ra "ửi" (mất chữ ĐẦU). Khác lớp với
+  /// testDieuTelegramFix: đây KHÔNG phải NFC/NFD (Telegram đã whitelist NFC), mà
+  /// là race của synthetic backspace + retype ở `.hybrid` — compose view custom
+  /// của Telegram xử lý async nên rớt ký tự đầu khi thay cả cụm. Fix: định tuyến
+  /// `.stepByStep` (gửi từng phím) như Dock/Launchpad + Claude. Test khoá entry.
+  func testTelegramUsesStepByStep() throws {
+    guard case .stepByStep = EventSimulator.getStrategy(for: "ru.keepcoder.Telegram") else {
+      return XCTFail("Telegram phải dùng .stepByStep để tránh rớt chữ đầu ('gửi'→'ửi')")
+    }
+    // Đối chứng: app không khai báo vẫn fallback .hybrid (default).
+    guard case .hybrid = EventSimulator.getStrategy(for: "com.example.khongkhaibao") else {
+      return XCTFail("App không khai báo phải fallback .hybrid")
+    }
+  }
+
   func testPerformance() throws {
     // This is an example of a performance test case.
     //    self.measure {
@@ -4650,5 +4691,38 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     processor.changeActiveApp("com.apple.Notes")
     processor.focusedFieldKind = .windowField
     XCTAssertFalse(processor.focusedFieldIsBrowserChrome())
+  }
+
+  /// Regression (Telegram/ChatGPT "điều"→"đều", mất chữ "i"): app native NFC
+  /// grapheme-delete mà AX phân loại field thành .unknown (cảnh AX thật lỗi)
+  /// PHẢI được định tuyến NFC — nếu không, NFD scalar-diff backspace thừa ở phím
+  /// dấu của cụm nguyên âm mở → xóa nhầm chữ giữa. Khóa TẦNG EMIT (không chỉ
+  /// engine): (1) số học diff thật, (2) predicate định tuyến, (3) gõ trọn từ.
+  /// Nếu ai đó gỡ whitelist mà giữ nguyên test engine, test này vẫn phải FAIL.
+  func testTelegramChatGPTRouteThroughNFC() throws {
+    // (1) Số học tầng emit — chính là chỗ lỗi: điêu→điều.
+    //     NFC (grapheme) xóa 2 grapheme (u, ê); NFD (scalar) đếm THỪA thành 3 →
+    //     app xóa-grapheme sẽ xóa nhầm cả "i" → "đều".
+    let (nfcBs, _) = EventSimulator.calcKeyStrokes(from: "điêu", to: "điều")
+    XCTAssertEqual(nfcBs, 2, "NFC grapheme diff: backspace 2 (u, ê)")
+    let (nfdBs, _) = EventSimulator.calcKeyStrokesNFD(from: "điêu", to: "điều")
+    XCTAssertEqual(nfdBs, 3, "NFD scalar diff đếm thừa (3) → phá app grapheme")
+
+    // (2)+(3) Telegram & ChatGPT với field .unknown vẫn PHẢI dùng NFC (nhờ
+    //     whitelist short-circuit) và gõ ra "điều" nguyên vẹn.
+    for app in ["ru.keepcoder.Telegram", "com.openai.chat"] {
+      let p = InputProcessor(method: .Telex)
+      p.changeActiveApp(app)
+      p.focusedFieldKind = .unknown
+      XCTAssertTrue(p.usesNFCForFocusedField(), "\(app): field .unknown vẫn phải NFC")
+      for c in "ddieeuf" { p.push(char: c) }
+      XCTAssertEqual(p.transformed, "điều", "\(app): gõ ddieeuf phải ra điều")
+    }
+
+    // Đối chứng: app NFD thật (Chrome, web content) KHÔNG bị kéo sang NFC.
+    let chrome = InputProcessor(method: .Telex)
+    chrome.changeActiveApp("com.google.Chrome")
+    chrome.focusedFieldKind = .webContent
+    XCTAssertFalse(chrome.usesNFCForFocusedField(), "Chrome web content giữ NFD")
   }
 }
