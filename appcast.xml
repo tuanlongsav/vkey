@@ -6,6 +6,26 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.9 — "Vá gõ tiếng Việt trên Telegram &amp; ChatGPT"</title>
+      <sparkle:version>40900</sparkle:version>
+      <sparkle:shortVersionString>4.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 09 Jul 2026 00:07:06 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.9/vkey-4.9.dmg"
+        sparkle:edSignature="+2sxthB8ObnmrWh6+U7ixOdNSwJ6e/7Y78sXMAvORbSPmvkVl6OE1h12dtCsSqH/BrhtkLmrrW+Ko8WXPI09CA=="
+        length="6585227"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.9 — Vá gõ tiếng Việt trên Telegram & ChatGPT</h2>
+        <ul>
+          <li><b>Telegram: hết mất chữ đầu khi gõ</b> — "gửi" giờ ra đúng "gửi" (trước bị mất chữ đầu thành "ửi").</li>
+          <li><b>Telegram &amp; ChatGPT: hết mất chữ giữa</b> — "điều" ra đúng "điều" (trước bị "đều"), nhờ xoá ký tự theo grapheme.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.8 — "Nâng cấp giao diện: token, tương phản &amp; tương tác"</title>
       <sparkle:version>40800</sparkle:version>
       <sparkle:shortVersionString>4.8</sparkle:shortVersionString>
