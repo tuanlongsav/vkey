@@ -278,6 +278,10 @@ class AppState: ObservableObject, FileMonitorDelegate {
         skipHUDNotification = true
         defer { skipHUDNotification = wasSkippingHUD }
 
+        // v4.10: đổi app thật = overlay (Spotlight…) đã đóng → nhả overlay latch
+        // để lần gõ kế trong app thật không bị coi là jitter và bỏ qua.
+        eventHook.overlayLatchBundleId = nil
+
         if let activeApp = NSWorkspace.shared.frontmostApplication,
             let appName = activeApp.bundleIdentifier,
             appName != bundleId

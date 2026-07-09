@@ -415,6 +415,13 @@ class EventSimulator {
     "com.apple.dock",
   ]
 
+  /// v4.10: bundle có phải overlay luôn-chạy (Spotlight/Dock/menu bar) không —
+  /// dùng cho "overlay latch" ở EventHook để chống flicker Smart Switch khi
+  /// `eventTargetUnixProcessID` dao động giữa PID overlay và PID app nền.
+  static func isOverlayBundle(_ bundleId: String) -> Bool {
+    return overlayBundleIds.contains { bundleId == $0 || bundleId.hasPrefix($0) }
+  }
+
   /// Element focus đọc qua app-element của 1 pid (timeout ngắn, không treo).
   private static func focusedElement(ofPID pid: pid_t) -> AXUIElement? {
     guard pid > 0 else { return nil }

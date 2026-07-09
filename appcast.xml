@@ -6,6 +6,25 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.10 — "Hết nháy icon khi gõ Spotlight"</title>
+      <sparkle:version>41000</sparkle:version>
+      <sparkle:shortVersionString>4.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 09 Jul 2026 09:29:12 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.10/vkey-4.10.dmg"
+        sparkle:edSignature="ktrzggcWjSFYMf4cyYKqFu1HojRKsNJYLO6sC81vszYlz2uScS99EPNmYYsSNxh+QDfWMMf1GMMrXZiHKGsKAw=="
+        length="6586158"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.10 — Hết nháy icon khi gõ Spotlight</h2>
+        <ul>
+          <li><b>Icon menu bar đứng yên khi gõ trong Spotlight</b> — trước đây icon nháy Việt↔Anh liên tục (dù kết quả gõ vẫn đúng) do PID đích của Spotlight dao động trên macOS 26. Đã ghim đúng overlay để Smart Switch không đảo trạng thái.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.9 — "Vá gõ tiếng Việt trên Telegram &amp; ChatGPT"</title>
       <sparkle:version>40900</sparkle:version>
       <sparkle:shortVersionString>4.9</sparkle:shortVersionString>

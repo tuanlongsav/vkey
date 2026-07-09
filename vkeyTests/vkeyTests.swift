@@ -132,6 +132,18 @@ final class vkeyTests: XCTestCase {
     }
   }
 
+  /// v4.10 — overlay latch (chống icon menu bar nháy Việt↔Anh khi gõ Spotlight).
+  /// Khoá danh sách overlay dùng cho latch: eventTargetUnixProcessID dao động
+  /// overlay↔app nền trên macOS 26 → phải nhận diện đúng overlay để ghim.
+  func testIsOverlayBundle() throws {
+    XCTAssertTrue(EventSimulator.isOverlayBundle("com.apple.Spotlight"))
+    XCTAssertTrue(EventSimulator.isOverlayBundle("com.apple.dock"))
+    XCTAssertTrue(EventSimulator.isOverlayBundle("com.apple.systemuiserver"))
+    XCTAssertFalse(EventSimulator.isOverlayBundle("com.google.Chrome"))
+    XCTAssertFalse(EventSimulator.isOverlayBundle("ru.keepcoder.Telegram"))
+    XCTAssertFalse(EventSimulator.isOverlayBundle(""))
+  }
+
   func testPerformance() throws {
     // This is an example of a performance test case.
     //    self.measure {

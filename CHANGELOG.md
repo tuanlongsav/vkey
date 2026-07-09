@@ -2,6 +2,19 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.10] - 2026-07-09 — "Hết nháy icon khi gõ Spotlight"
+
+**Vá icon menu bar nháy Việt↔Anh khi gõ trong Spotlight (macOS 26).**
+
+### 🐛 Sửa lỗi
+
+- **Icon menu bar đứng yên khi gõ Spotlight** — trước đây icon nháy Việt↔Anh liên tục dù kết quả gõ vẫn đúng tiếng Anh. Nguyên nhân: trên macOS 26, `eventTargetUnixProcessID` của Spotlight dao động giữa PID Spotlight và PID app nền giữa các phím → Smart Switch đảo trạng thái mỗi phím. Fix: "overlay latch" — ghim vào overlay khi phát hiện, bỏ qua các đọc app-nền xen kẽ (nhả khi Esc/Enter/click/đổi app).
+
+### 🧹 Kỹ thuật
+
+- Thêm test `testIsOverlayBundle`. 309/309 test pass.
+- Đã rà soát 2 lỗi khác nhưng là **giới hạn ngoài tầm vá sạch**, không đổi hành vi: (a) Google Sheets thừa chữ khi có autocomplete — Chrome KHÔNG phơi bày ô Sheets qua Accessibility nên bộ gõ "mù", không đọc được vùng bôi đen; (b) thanh địa chỉ Chrome "goo→gooogle" — thực chất là Telex đúng (`oo`→`ô`) nên phải gõ thêm để ra chữ đôi, không phải lỗi tầng gửi (axDirect đã hoạt động đúng).
+
 ## [4.9] - 2026-07-09 — "Vá gõ tiếng Việt trên Telegram & ChatGPT"
 
 **Vá lỗi gõ tiếng Việt trên Telegram (và ChatGPT) — app native có ô soạn tuỳ biến.**
