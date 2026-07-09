@@ -2,6 +2,22 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.11] - 2026-07-09 — "Spotlight: hết nháy & theo mode bạn chọn"
+
+**Fix TRIỆT ĐỂ nháy Việt↔Anh khi gõ Spotlight (v4.10 chưa trị gốc), + để Spotlight theo mode người dùng.**
+
+### 🐛 Sửa lỗi
+
+- **Hết nháy Việt↔Anh khi gõ Spotlight (Smart Switch bật)** — gốc rễ thật (chẩn bằng file-diag): trên macOS 26, `eventTargetUnixProcessID` cho phím Spotlight trả **PID app nền** (vd Excel), KHÔNG phải Spotlight, trong khi systemwide-focused mới đúng là Spotlight. Hai nguồn ghi `currentFocusedBundleId` lệch nhau → Smart Switch lật `enabled` mỗi phím. Fix: ưu tiên **systemwide-focused** (`focusedOverlayBundle`) làm nguồn khi focused là overlay → nhất quán, hết lật. (Overlay-latch v4.10 vô dụng vì event-target không bao giờ = overlay → đã gỡ.)
+
+### ✨ Thay đổi
+
+- **Spotlight theo mode hiện tại của bạn** — bỏ Spotlight khỏi danh sách ép-English mặc định. Đang gõ tiếng Việt thì Spotlight cũng tiếng Việt; lựa chọn Việt/Anh do người dùng quyết định (Spotlight là overlay, không cấu hình được qua UI nên trước đây kẹt English). Migration 1 lần gỡ Spotlight khỏi config cũ nếu đã seed. Launcher (Raycast/Alfred/LaunchBar) giữ nguyên — đổi được qua Settings.
+
+### 🧹 Kỹ thuật
+
+- 309/309 test pass. Dọn sạch overlay-latch v4.10 + code chẩn đoán tạm.
+
 ## [4.10] - 2026-07-09 — "Hết nháy icon khi gõ Spotlight"
 
 **Vá icon menu bar nháy Việt↔Anh khi gõ trong Spotlight (macOS 26).**

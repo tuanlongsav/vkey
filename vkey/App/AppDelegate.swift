@@ -72,6 +72,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // 1.7.0: migrate smartSwitchApps (list) → appSmartSwitchConfigs (3-state map).
     // Idempotent — chỉ chạy nếu configs đang rỗng.
     AppState.migrateSmartSwitchTo3State()
+    // v4.11: Spotlight theo-mode (không ép English) — gỡ khỏi Smart Switch 1 lần.
+    AppState.migrateSpotlightKeepMode()
 
     // 1.7.x: bootstrap NGramStore (singleton lazy init). Touch shared để
     // chạy migration từ Defaults[.userBigrams]/[.userTrigrams] sang file

@@ -415,11 +415,29 @@ class EventSimulator {
     "com.apple.dock",
   ]
 
-  /// v4.10: bundle có phải overlay luôn-chạy (Spotlight/Dock/menu bar) không —
-  /// dùng cho "overlay latch" ở EventHook để chống flicker Smart Switch khi
-  /// `eventTargetUnixProcessID` dao động giữa PID overlay và PID app nền.
+  /// v4.10: bundle có phải overlay luôn-chạy (Spotlight/Dock/menu bar) không.
   static func isOverlayBundle(_ bundleId: String) -> Bool {
     return overlayBundleIds.contains { bundleId == $0 || bundleId.hasPrefix($0) }
+  }
+
+  /// v4.11: bundle của overlay ĐANG thực-focus qua systemwide AX (nguồn ĐÁNG
+  /// TIN), hoặc nil nếu focused không phải overlay. Dùng để fix nháy Smart
+  /// Switch khi gõ Spotlight: `eventTargetUnixProcessID` trả PID APP NỀN cho
+  /// Spotlight trên macOS 26 (sai), còn hàm này đọc đúng Spotlight. Nhẹ —
+  /// KHÔNG walk field-kind, timeout ngắn để không treo callback.
+  static func focusedOverlayBundle() -> String? {
+    let sw = AXUIElementCreateSystemWide()
+    AXUIElementSetMessagingTimeout(sw, 0.05)
+    var ref: CFTypeRef?
+    guard
+      AXUIElementCopyAttributeValue(sw, kAXFocusedUIElementAttribute as CFString, &ref) == .success,
+      let r = ref, CFGetTypeID(r) == AXUIElementGetTypeID()
+    else { return nil }
+    let el = r as! AXUIElement
+    var pid: pid_t = 0
+    guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return nil }
+    let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
+    return isOverlayBundle(bundle) ? bundle : nil
   }
 
   /// Element focus đọc qua app-element của 1 pid (timeout ngắn, không treo).

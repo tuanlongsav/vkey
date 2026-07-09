@@ -6,6 +6,26 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.11 — "Spotlight: hết nháy &amp; theo mode bạn chọn"</title>
+      <sparkle:version>41100</sparkle:version>
+      <sparkle:shortVersionString>4.11</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 09 Jul 2026 23:54:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.11/vkey-4.11.dmg"
+        sparkle:edSignature="kSMwjkSjxBhBhwRwsWGEYXr/J7XKnuheJOAMChYJFquA5n7U3+mNMfYVb0k3yQMx/AV4k6kshNKvpVY2uXEpBQ=="
+        length="6588824"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.11 — Spotlight: hết nháy &amp; theo mode bạn chọn</h2>
+        <ul>
+          <li><b>Hết nháy Việt↔Anh khi gõ Spotlight</b> — fix triệt để (v4.10 chưa trị được gốc). Nguyên nhân thật: macOS 26 báo sai app đích của phím Spotlight (trả app nền) làm Smart Switch lật liên tục; nay dùng đúng ô đang focus.</li>
+          <li><b>Spotlight theo mode bạn đang bật</b> — không còn bị ép sang tiếng Anh. Đang gõ tiếng Việt thì Spotlight cũng tiếng Việt; lựa chọn Việt/Anh do bạn quyết định.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.10 — "Hết nháy icon khi gõ Spotlight"</title>
       <sparkle:version>41000</sparkle:version>
       <sparkle:shortVersionString>4.10</sparkle:shortVersionString>

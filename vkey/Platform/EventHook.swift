@@ -71,15 +71,6 @@ class EventHook {
   var lastEventTargetPID: pid_t = 0
   var lastEventTargetBundleId: String?
 
-  /// v4.10: "overlay latch" — trên macOS 26, `eventTargetUnixProcessID` cho
-  /// Spotlight DAO ĐỘNG giữa PID Spotlight và PID app nền giữa các phím (xem
-  /// `EventSimulator.overlayBundleIds`). Mỗi lần đổi làm Smart Switch toggle
-  /// `enabled` → icon menu bar nháy Việt↔Anh dù kết quả gõ vẫn đúng. Khi thấy
-  /// target là overlay ta GHIM vào đây; trong lúc ghim, bỏ qua các đọc "app
-  /// nền" xen kẽ (jitter). Nhả (= nil) khi Spotlight bị dismiss: Esc/Enter/
-  /// click/đổi app.
-  var overlayLatchBundleId: String?
-
   /// State for modifier-only hotkey detection (e.g. press Shift+Control then
   /// release without any key in between → toggle Vi/En). Tracking is done
   /// inside the event tap so it works while another app has focus and
@@ -432,15 +423,6 @@ func eventTapCallback(
     // không phát didActivateApplicationNotification, còn AX refresh thì race
     // (chạy lúc ⌘Space keyDown, TRƯỚC khi overlay mở). v2.10 dựa vào 2 đường
     // đó nên sending strategy không bao giờ được áp cho Spotlight → ký tự đôi.
-    // v4.10: nhả overlay latch khi Spotlight bị dismiss (click / Esc / Enter) —
-    // từ đây các đọc target-PID là thật, không còn jitter overlay↔app nền.
-    if type == .leftMouseDown || type == .rightMouseDown {
-      eventHook.overlayLatchBundleId = nil
-    } else if type == .keyDown {
-      let kc = event.getIntegerValueField(.keyboardEventKeycode)
-      if kc == 53 || kc == 36 { eventHook.overlayLatchBundleId = nil }  // Esc / Enter
-    }
-
     if type == .keyDown || type == .leftMouseDown || type == .rightMouseDown {
       let targetPID = pid_t(event.getIntegerValueField(.eventTargetUnixProcessID))
       if targetPID > 0 {
@@ -453,20 +435,25 @@ func eventTapCallback(
             NSRunningApplication(processIdentifier: targetPID)?.bundleIdentifier
         }
         if let bid = eventHook.lastEventTargetBundleId {
-          // v4.10: overlay latch chống flicker Smart Switch. Thấy target là
-          // overlay (Spotlight…) → GHIM. Đang ghim mà target là app-nền
-          // (không overlay) = jitter của eventTargetUnixProcessID → BỎ QUA,
-          // giữ nguyên overlay làm activeApp nên Smart Switch không toggle
-          // enabled → icon menu bar đứng yên (đúng tiếng Anh trong Spotlight).
-          let bidIsOverlay = EventSimulator.isOverlayBundle(bid)
-          if bidIsOverlay { eventHook.overlayLatchBundleId = bid }
-          let jitter = !bidIsOverlay && eventHook.overlayLatchBundleId != nil
-          if !jitter, bid != input.activeApp {
-            input.changeActiveApp(bid)
-            // Đồng bộ luôn cache focused-bundle để Smart Switch per-keystroke
-            // (block bên dưới) thấy đúng app đích — vd Spotlight auto-English
-            // theo config mặc định giờ mới thực sự hoạt động trong overlay.
-            appState.noteFocusedBundleId(bid)
+          // v4.11: FIX GỐC nháy Việt↔Anh khi gõ Spotlight (Smart Switch bật).
+          // macOS 26: `eventTargetUnixProcessID` cho phím Spotlight trả PID APP
+          // NỀN (vd Excel), KHÔNG phải Spotlight — trong khi systemwide-focused
+          // MỚI đúng là Spotlight. Trước đây hai nguồn ghi `currentFocusedBundleId`
+          // lệch nhau (event-target=Excel vs snapshot=Spotlight) → Smart Switch
+          // lật `enabled` mỗi phím → nháy liên tục. Sửa: hỏi systemwide-focused;
+          // nếu là overlay editable thì DÙNG overlay đó làm focused bundle (nguồn
+          // đúng) → activeApp + currentFocusedBundleId NHẤT QUÁN. Chỉ tốn 1 AX
+          // check nhẹ (không walk field-kind) khi Smart Switch bật. (Overlay latch
+          // v4.10 đã gỡ — vô dụng vì event-target không bao giờ = overlay.)
+          var focusedBid = bid
+          if Defaults[.smartSwitchEnabled], let ov = EventSimulator.focusedOverlayBundle() {
+            focusedBid = ov
+          }
+          if focusedBid != input.activeApp {
+            input.changeActiveApp(focusedBid)
+            // Đồng bộ cache focused-bundle để Smart Switch per-keystroke (block
+            // bên dưới) thấy đúng app/overlay đích.
+            appState.noteFocusedBundleId(focusedBid)
           }
         }
       }

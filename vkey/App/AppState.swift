@@ -278,10 +278,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
         skipHUDNotification = true
         defer { skipHUDNotification = wasSkippingHUD }
 
-        // v4.10: đổi app thật = overlay (Spotlight…) đã đóng → nhả overlay latch
-        // để lần gõ kế trong app thật không bị coi là jitter và bỏ qua.
-        eventHook.overlayLatchBundleId = nil
-
         if let activeApp = NSWorkspace.shared.frontmostApplication,
             let appName = activeApp.bundleIdentifier,
             appName != bundleId
@@ -470,6 +466,23 @@ class AppState: ObservableObject, FileMonitorDelegate {
             )
         }
         Defaults[.appSmartSwitchConfigs] = newConfigs
+    }
+
+    /// v4.11: Spotlight giờ THEO MODE hiện tại (không ép English). Gỡ nó khỏi
+    /// cả `smartSwitchApps` (list) lẫn `appSmartSwitchConfigs` (nếu bản cũ đã
+    /// seed vào) — chạy 1 lần. An toàn vì Spotlight không cấu hình được qua UI
+    /// (luôn là auto-seed, không phải lựa chọn có chủ đích của user). KHÔNG đụng
+    /// tới launcher (Raycast/Alfred/LaunchBar) vì đó là app thường user tự chỉnh.
+    public static func migrateSpotlightKeepMode() {
+        guard !Defaults[.didMigrateSpotlightKeepMode] else { return }
+        let spotlight = "com.apple.Spotlight"
+        if Defaults[.smartSwitchApps].contains(spotlight) {
+            Defaults[.smartSwitchApps].removeAll { $0 == spotlight }
+        }
+        if Defaults[.appSmartSwitchConfigs][spotlight] != nil {
+            Defaults[.appSmartSwitchConfigs].removeValue(forKey: spotlight)
+        }
+        Defaults[.didMigrateSpotlightKeepMode] = true
     }
 
     /// 1.7.0: User manual override → ghi vào appSmartSwitchConfigs với source=.user.
