@@ -2,6 +2,23 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.12] - 2026-07-16 — "Giữ từ HOA tiếng Việt & launcher theo mode"
+
+**Sửa gõ từ tiếng Việt viết HOA bị đổi thành phím thô khi ấn Space, + mở rộng "theo mode" cho launcher.**
+
+### 🐛 Sửa lỗi
+
+- **Từ tiếng Việt viết HOA không còn bị "khôi phục" thành phím thô** — gõ Caps Lock "TOÁN" + Space trước đây ra "TOASN" (tương tự BÁN→BASN, HỌC→HOJC, VÀNG→VAFNG, PHÁP→PHASP, SÁCH→SASCH). Nguyên nhân: heuristic acronym tiếng Anh (v1.7.4, cho ARM/USA) coi mọi từ 2–5 phím toàn chữ HOA có phím dấu ở giữa là initialism và restore raw — chạy trước cả check từ điển. Nay chỉ restore khi kết quả không phải từ tiếng Việt hợp lệ, hoặc phím thô là từ tiếng Anh thật — **ARM→ARM, USA→USA vẫn giữ đúng như cũ**.
+- **Auto-suggestion giữ kiểu hoa/thường** — gợi ý sửa chính tả tự áp dụng (độ tin cậy cao) trước đây thay từ bằng chữ thường từ từ điển, làm mất chữ hoa đầu câu / ALL-CAPS. Nay khớp kiểu hoa/thường của từ bạn gõ (`matchCase`).
+
+### ✨ Thay đổi
+
+- **Launcher (Raycast / Alfred / LaunchBar) theo mode hiện tại của bạn** — tiếp nối Spotlight ở v4.11: bỏ toàn bộ launcher khỏi danh sách ép-English mặc định (danh sách mặc định nay RỖNG). Đang gõ tiếng Việt thì mở launcher vẫn tiếng Việt; muốn ép English app nào thì tự thêm qua Settings → Smart Switch. Migration 1 lần gỡ config englishMode đã seed (giữ nguyên nếu bạn tự đặt VN/tắt).
+
+### 🧹 Kỹ thuật
+
+- 311/311 test pass (2 test mới: từ HOA giữ tiếng Việt, `matchCase`; test acronym ARM/USA chuyển sang inject lexicon hermetic — không phụ thuộc file update đã tải trên máy chạy test).
+
 ## [4.11] - 2026-07-09 — "Spotlight: hết nháy & theo mode bạn chọn"
 
 **Fix TRIỆT ĐỂ nháy Việt↔Anh khi gõ Spotlight (v4.10 chưa trị gốc), + để Spotlight theo mode người dùng.**

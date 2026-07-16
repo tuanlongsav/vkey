@@ -1414,8 +1414,10 @@ class InputProcessor {
         return false
       }
 
+      // 4.12: giữ kiểu hoa/thường của từ user gõ — suggestion từ lexicon là
+      // chữ thường, thay thẳng làm "Dinjhd" đầu câu thành "định" (mất hoa).
       let target = Self.commitReplacementTarget(
-        word: top.word,
+        word: Self.matchCase(of: current, to: top.word),
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
@@ -1571,6 +1573,22 @@ class InputProcessor {
     includeEndingChar: Bool
   ) -> String {
     includeEndingChar ? word + String(endingChar) : word
+  }
+
+  /// 4.12: áp kiểu hoa/thường của từ user gõ lên từ thay thế. Lexicon lưu
+  /// chữ thường nên auto-suggestion trả về chữ thường — thay thẳng sẽ hạ
+  /// "ĐINHJ"/"Dinhj" về "định". ALL-CAPS → uppercase cả từ; chữ đầu hoa →
+  /// viết hoa chữ đầu; còn lại giữ nguyên replacement.
+  static func matchCase(of source: String, to replacement: String) -> String {
+    guard source.first(where: { $0.isLetter })?.isUppercase == true else {
+      return replacement
+    }
+    let letters = source.filter { $0.isLetter }
+    if letters.count > 1, letters.allSatisfy({ $0.isUppercase }) {
+      return replacement.uppercased()
+    }
+    guard let first = replacement.first else { return replacement }
+    return String(first).uppercased() + replacement.dropFirst()
   }
 
   /// Expands the current word using the user's macro table if it matches.

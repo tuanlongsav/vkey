@@ -74,6 +74,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     AppState.migrateSmartSwitchTo3State()
     // v4.11: Spotlight theo-mode (không ép English) — gỡ khỏi Smart Switch 1 lần.
     AppState.migrateSpotlightKeepMode()
+    // v4.12: launcher (Raycast/Alfred/LaunchBar) theo-mode — gỡ 1 lần.
+    AppState.migrateLaunchersKeepMode()
 
     // 1.7.x: bootstrap NGramStore (singleton lazy init). Touch shared để
     // chạy migration từ Defaults[.userBigrams]/[.userTrigrams] sang file

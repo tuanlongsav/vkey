@@ -485,6 +485,30 @@ class AppState: ObservableObject, FileMonitorDelegate {
         Defaults[.didMigrateSpotlightKeepMode] = true
     }
 
+    /// v4.12: launcher (Raycast/Alfred/LaunchBar) giờ THEO MODE hiện tại (không
+    /// ép English). Gỡ khỏi `smartSwitchApps` + `appSmartSwitchConfigs` nếu đang
+    /// ở englishMode (trạng thái auto-seed từ default cũ) — chạy 1 lần. Chỉ gỡ
+    /// entry englishMode để KHÔNG đè lựa chọn có chủ đích của user (vd họ tự đặt
+    /// một launcher = vietnameseMode / disabled thì giữ nguyên).
+    public static func migrateLaunchersKeepMode() {
+        guard !Defaults[.didMigrateLaunchersKeepMode] else { return }
+        let launchers = [
+            "com.raycast.macos",
+            "com.runningwithcrayons.Alfred",
+            "com.runningwithcrayons.Alfred-Preferences",
+            "com.obdev.LaunchBar",
+        ]
+        var apps = Defaults[.smartSwitchApps]
+        apps.removeAll { launchers.contains($0) }
+        Defaults[.smartSwitchApps] = apps
+        var configs = Defaults[.appSmartSwitchConfigs]
+        for id in launchers where configs[id]?.state == .englishMode {
+            configs.removeValue(forKey: id)
+        }
+        Defaults[.appSmartSwitchConfigs] = configs
+        Defaults[.didMigrateLaunchersKeepMode] = true
+    }
+
     /// 1.7.0: User manual override → ghi vào appSmartSwitchConfigs với source=.user.
     /// Gọi từ UI khi user click chuyển state thủ công, hoặc từ menu bar toggle.
     public func setAppSmartSwitchState(_ state: AppSmartSwitchState, bundleId: String) {

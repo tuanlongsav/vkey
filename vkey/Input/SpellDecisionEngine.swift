@@ -115,9 +115,21 @@ final class SpellDecisionEngine {
     // 1.7.4: English acronym pattern (ARM, USA, API, OK, ...). User gõ all
     // caps short word mà Telex vô tình áp tone (R/S/X/F/J giữa các consonant
     // → tone hỏi/sắc/...). Restore raw để giữ initialism tiếng Anh.
+    // 4.12: từ VN viết HOA với phím dấu GIỮA từ ("TOASN"→"TOÁN", "HOJC"→
+    // "HỌC") cũng khớp pattern all-caps này và từng bị restore nhầm thành
+    // phím thô. Chỉ restore khi transformed không phải từ VN hợp lệ, hoặc
+    // raw là từ EN thật (ARM→Ảm, USA→Úa); ngược lại rơi xuống nhánh thường
+    // (từ VN hợp lệ → keepVietnamese).
     if Defaults[.englishAutoRestoreEnabled],
        Self.isLikelyEnglishAcronym(rawInput) {
-      return .restoreRawEnglish(rawInput)
+      var rawLooksEnglish = lexiconManager.isEnglishWord(rawInput)
+      if !rawLooksEnglish, Defaults[.useEnVnReference],
+         EnVnReference.shared.lookupEnglish(rawInput) != nil {
+        rawLooksEnglish = true
+      }
+      if rawLooksEnglish || !lexiconManager.isVietnameseWord(transformed) {
+        return .restoreRawEnglish(rawInput)
+      }
     }
 
     // Doubled Tone Mark Preservation: if raw input contains consecutive doubled tone marks, keep it raw

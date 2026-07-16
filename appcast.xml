@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.12 — "Giữ từ HOA tiếng Việt &amp; launcher theo mode"</title>
+      <sparkle:version>41200</sparkle:version>
+      <sparkle:shortVersionString>4.12</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 16 Jul 2026 10:15:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.12/vkey-4.12.dmg"
+        sparkle:edSignature="r+bjdjxVUBBLQAQfFhTLDvdSsDwhoTGdCAW5/YE3VBcB4apmLYEwiF1VUviIGQMjcYcu4XfaY5NjL0q0VUjTAg=="
+        length="6592838"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.12 — Giữ từ HOA tiếng Việt &amp; launcher theo mode</h2>
+        <ul>
+          <li><b>Từ tiếng Việt viết HOA gõ chuẩn</b> — Caps Lock "TOÁN" + Space không còn bị đổi thành "TOASN" (tương tự BÁN/HỌC/VÀNG/PHÁP/SÁCH). Acronym tiếng Anh thật (ARM, USA) vẫn giữ nguyên như cũ.</li>
+          <li><b>Launcher theo mode bạn chọn</b> — Raycast/Alfred/LaunchBar (tiếp nối Spotlight v4.11) không còn bị ép tiếng Anh mặc định; muốn ép English app nào thì thêm qua Settings → Smart Switch.</li>
+          <li><b>Auto-suggestion giữ kiểu hoa/thường</b> — gợi ý sửa chính tả tự áp dụng không còn hạ chữ hoa đầu câu / ALL-CAPS về chữ thường.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.11 — "Spotlight: hết nháy &amp; theo mode bạn chọn"</title>
       <sparkle:version>41100</sparkle:version>
       <sparkle:shortVersionString>4.11</sparkle:shortVersionString>

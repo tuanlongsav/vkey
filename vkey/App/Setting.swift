@@ -393,21 +393,19 @@ extension Defaults.Keys {
   /// Tự động chuyển sang tiếng Anh khi launcher app (Spotlight/Raycast/Alfred…) lên foreground.
   static let smartSwitchEnabled = Key<Bool>("smart-switch-enabled", default: true)
   /// Danh sách các ứng dụng tự động chuyển sang gõ Tiếng Anh khi kích hoạt.
-  /// v4.11: BỎ "com.apple.Spotlight" — Spotlight giờ THEO MODE hiện tại của
-  /// người dùng (không ép English), lựa chọn VN/EN do người dùng quyết định.
-  /// Spotlight là overlay, không cấu hình được qua UI (bị lọc `activationPolicy
-  /// == .regular`) nên trước đây kẹt English. Launcher (Raycast/Alfred/LaunchBar)
-  /// là app thường → giữ trong default, đổi được qua Settings. Migration dọn
-  /// config đã seed: `AppState.migrateSpotlightKeepMode`.
-  static let smartSwitchApps = Key<[String]>("smart-switch-apps", default: [
-    "com.raycast.macos",
-    "com.runningwithcrayons.Alfred",
-    "com.runningwithcrayons.Alfred-Preferences",
-    "com.obdev.LaunchBar",
-  ])
+  /// v4.11: bỏ Spotlight. v4.12: default RỖNG — Spotlight + launcher (Raycast/
+  /// Alfred/LaunchBar) giờ đều THEO MODE hiện tại của người dùng (không ép
+  /// English mặc định); lựa chọn VN/EN do người dùng quyết định, tự thêm app
+  /// vào danh sách ép-English qua Settings nếu muốn. Migration dọn config đã
+  /// seed: `AppState.migrateSpotlightKeepMode` + `migrateLaunchersKeepMode`.
+  static let smartSwitchApps = Key<[String]>("smart-switch-apps", default: [])
   /// v4.11: cờ một lần — đã gỡ Spotlight khỏi Smart Switch (theo-mode) chưa.
   static let didMigrateSpotlightKeepMode =
     Key<Bool>("did-migrate-spotlight-keep-mode", default: false)
+  /// v4.12: cờ một lần — đã gỡ launcher (Raycast/Alfred/LaunchBar) khỏi Smart
+  /// Switch (theo-mode) chưa.
+  static let didMigrateLaunchersKeepMode =
+    Key<Bool>("did-migrate-launchers-keep-mode", default: false)
   /// Bảng macro thay thế chữ viết tắt → cụm dài.
   static let macros = Key<[Macro]>("macros", default: [])
   /// Bật / Tắt toàn bộ macro engine (không xoá list). Khi tắt, `macros` vẫn

@@ -1093,7 +1093,25 @@ final class vkeyTests: XCTestCase {
     Defaults[.spellCheckEnabled] = true
     Defaults[.englishAutoRestoreEnabled] = true
 
-    let engine = SpellDecisionEngine.shared
+    // 4.12: acronym restore khi transformed là từ VN hợp lệ (ARM→Ảm, USA→Úa)
+    // giờ yêu cầu raw là từ EN thật. Embedded EN chỉ 126 từ (không có
+    // arm/usa) → inject package hermetic thay vì phụ thuộc lexicon-update
+    // .json đã tải trên máy chạy test.
+    let path = URL(fileURLWithPath: "/tmp/vkey-lexicon-acronym-test.json")
+    let manager = LexiconManager(updatePackageURL: path)
+    let package = """
+    {
+      "version": 5,
+      "vietnamese": ["ảm","úa","đỏ","đo","việt"],
+      "english": ["arm","usa"],
+      "keep": []
+    }
+    """
+    try manager.setUpdatePackageData(Data(package.utf8))
+    manager.reload()
+    defer { try? FileManager.default.removeItem(at: path) }
+    let engine = SpellDecisionEngine(lexiconManager: manager)
+
     XCTAssertEqual(
       engine.evaluate(rawInput: "ARM", transformed: "Ảm", needsRecovery: false),
       .restoreRawEnglish("ARM")
@@ -1121,6 +1139,53 @@ final class vkeyTests: XCTestCase {
       engine.evaluate(rawInput: "DDO", transformed: "Đo", needsRecovery: false),
       .restoreRawEnglish("DDO")
     )
+  }
+
+  /// Regression 4.12: từ tiếng Việt viết HOA (Caps Lock heading) với phím
+  /// dấu GIỮA từ khớp pattern acronym → từng bị restore nhầm thành phím thô:
+  /// "TOÁN" + Space → "TOASN" (tương tự BÁN/HỌC/VÀNG/PHÁP/SÁCH). Acronym
+  /// giờ chỉ restore khi transformed KHÔNG phải từ VN hợp lệ hoặc raw là từ
+  /// EN thật — từ VN hợp lệ với raw vô nghĩa phải giữ nguyên.
+  func testSpellDecisionAllCapsVietnameseWordKept() throws {
+    let oldSpell = Defaults[.spellCheckEnabled]
+    let oldRestore = Defaults[.englishAutoRestoreEnabled]
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+      Defaults[.englishAutoRestoreEnabled] = oldRestore
+    }
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.englishAutoRestoreEnabled] = true
+
+    // Engine mặc định: VN lexicon từ syllables asset (có đủ toán/bán/học/
+    // vàng/pháp/sách), raw "toasn"… không có trong bất kỳ list EN nào.
+    let engine = SpellDecisionEngine.shared
+    let cases: [(raw: String, transformed: String)] = [
+      ("TOASN", "TOÁN"),
+      ("BASN", "BÁN"),
+      ("HOJC", "HỌC"),
+      ("VAFNG", "VÀNG"),
+      ("PHASP", "PHÁP"),
+      ("SASCH", "SÁCH"),
+    ]
+    for c in cases {
+      XCTAssertEqual(
+        engine.evaluate(rawInput: c.raw, transformed: c.transformed, needsRecovery: false),
+        .keepVietnamese,
+        "\(c.raw) → \(c.transformed) phải giữ tiếng Việt, không restore raw"
+      )
+    }
+  }
+
+  /// 4.12: matchCase — auto-suggestion từ lexicon là chữ thường; thay thế
+  /// phải giữ kiểu hoa/thường của từ user gõ (ALL-CAPS / hoa chữ đầu).
+  func testMatchCasePreservesSourceCapitalization() throws {
+    XCTAssertEqual(InputProcessor.matchCase(of: "TOASN", to: "toán"), "TOÁN")
+    XCTAssertEqual(InputProcessor.matchCase(of: "Dinhj", to: "định"), "Định")
+    XCTAssertEqual(InputProcessor.matchCase(of: "dinhj", to: "định"), "định")
+    XCTAssertEqual(InputProcessor.matchCase(of: "ĐINHJ", to: "định"), "ĐỊNH")
+    // 1 chữ cái hoa → chỉ viết hoa chữ đầu (không đủ tín hiệu ALL-CAPS).
+    XCTAssertEqual(InputProcessor.matchCase(of: "A", to: "à"), "À")
+    XCTAssertEqual(InputProcessor.matchCase(of: "", to: "định"), "định")
   }
 
   /// Test mixed case

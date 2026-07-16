@@ -8,7 +8,13 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.11](CHANGELOG.md)** — Developer ID signed & notarized · 309 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.12](CHANGELOG.md)** — Developer ID signed & notarized · 311 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.12
+
+- **Từ tiếng Việt viết HOA gõ chuẩn** — Caps Lock "TOÁN" + Space không còn bị đổi thành "TOASN" (tương tự BÁN/HỌC/VÀNG/PHÁP/SÁCH); acronym tiếng Anh thật (ARM, USA) vẫn giữ nguyên như cũ.
+- **Launcher theo mode bạn chọn** — Raycast/Alfred/LaunchBar (tiếp nối Spotlight v4.11) không còn bị ép tiếng Anh mặc định; muốn ép English app nào thì thêm qua Settings → Smart Switch.
+- **Auto-suggestion giữ kiểu hoa/thường** — gợi ý sửa chính tả tự áp dụng không còn hạ chữ hoa đầu câu về chữ thường.
 
 ## Mới ở v4.4
 
@@ -76,7 +82,7 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 |------|----------------|
 | **Gõ** | Telex & VNI · kiểu đặt dấu mới/cũ · auto sửa gõ nhầm · Unicode UTF-8 · keypad VNI & Caps Lock chuẩn macOS |
 | **Song ngữ** | Space Restore · ESC hoàn tác · gõ tiếng Anh ổn định trong mode VN · nhớ VI/EN theo từng app |
-| **Smart Switch** | 3 trạng thái/app: 🇻🇳 VN · 🇺🇸 EN · ⛔ tắt · tự học từ thống kê · Spotlight/Raycast/Alfred |
+| **Smart Switch** | 3 trạng thái/app: 🇻🇳 VN · 🇺🇸 EN · ⛔ tắt · tự học từ thống kê · Spotlight & launcher theo mode bạn chọn (v4.12) |
 | **Chính tả** | Kiểm tra 6 bước · từ điển VN 8 960 âm tiết + EN 9 826 từ · từ điển cá nhân · cập nhật từ GitHub |
 | **Gợi ý & macro** | HUD gợi ý cụm 2–3 từ sau Space (`Tab` chèn) · macro viết tắt · đề xuất từ thống kê |
 | **Thống kê** | Top từ/cụm tuần này · sao lưu/khôi phục JSON · quản lý & xóa cụm (v3.20) |
