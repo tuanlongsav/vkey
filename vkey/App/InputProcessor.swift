@@ -1317,7 +1317,10 @@ class InputProcessor {
     let telemetry = EventSimulator.sendReplacement(
       backspaceCount: backspaceCount,
       diffChars: diffChars,
-      strategy: strategy
+      strategy: strategy,
+      // v4.15: dạng gửi bám theo field (cùng trục quyết định calcKeyStrokes
+      // vs calcKeyStrokesNFD ở các caller) — NFC precompose, NFD giữ nguyên.
+      normalizeToNFC: usesNFCForFocusedField()
     )
     observeTelemetry(telemetry, appLikelySensitive: appLikelySensitive)
     return telemetry
@@ -1483,11 +1486,16 @@ class InputProcessor {
       // - Option+Backspace: delete word "gooogle" hoặc "google" → "".
       // - sendString "google ": insert correct word + space → "google ". ✓
       let source = CGEventSource(stateID: .privateState)
+      // v4.15: cùng nguyên tắc — dạng gửi bám theo field. Path này chủ yếu cho
+      // app NFD (Chromium/Claude/Notes) nên gửi nguyên; field NFC precompose.
+      let typed = usesNFCForFocusedField()
+        ? target.precomposedStringWithCanonicalMapping
+        : target
       EventSimulator.simulationQueueAsync {
         _ = EventSimulator.withAdaptiveFlush {
           EventSimulator.sendOptionBackspace(source: source)
           usleep(10_000)  // 10ms delay — đủ cho app process word deletion
-          EventSimulator.sendString(target, source: source)
+          EventSimulator.sendString(typed, source: source)
         }
       }
       observeTelemetry(EventSendTelemetry(

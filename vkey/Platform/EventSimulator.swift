@@ -323,10 +323,12 @@ class EventSimulator {
   static func sendString(_ str: String, source: CGEventSource? = nil) -> Bool {
     guard !str.isEmpty else { return true }
 
-    // Always emit NFC so Spotlight / Google / Finder search match precomposed text,
-    // even when the diff path produced NFD combining marks.
-    let nfc = str.precomposedStringWithCanonicalMapping
-    let uniChars = nfc.utf16.map { UniChar($0) }
+    // v4.15: transport gửi ĐÚNG bytes được giao — KHÔNG tự chuẩn hoá. Việc
+    // chọn NFC/NFD do tầng diff quyết định (sendReplacement, theo field) vì
+    // dạng gửi PHẢI khớp dạng đếm backspace. Ép NFC ở đây làm field NFD lưu ít
+    // scalar hơn model của vkey → backspace dư ăn mất ký tự đứng trước nguyên
+    // âm mang dấu ("gửi"→"ửi"). Xem sendReplacement/emittedCharacters.
+    let uniChars = str.utf16.map { UniChar($0) }
     let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
 
     guard
@@ -362,10 +364,9 @@ class EventSimulator {
     }
 
     var createdAnyEvent = false
-    // Normalize the whole string first so combining marks fold into base chars
-    // before we split into Character units (do not NFC each char in isolation).
-    let nfc = str.precomposedStringWithCanonicalMapping
-    let chars = Array(nfc)
+    // v4.15: gửi đúng bytes được giao (xem sendString). Chuẩn hoá NFC/NFD đã
+    // do sendReplacement xử lý theo field TRƯỚC khi tới đây.
+    let chars = Array(str)
     for (index, char) in chars.enumerated() {
       let uniChars = unicodeUnits(for: char)
       guard !uniChars.isEmpty else { continue }
@@ -393,7 +394,7 @@ class EventSimulator {
   }
 
   static func unicodeUnits(for char: Character) -> [UniChar] {
-    String(char).precomposedStringWithCanonicalMapping.utf16.map { UniChar($0) }
+    String(char).utf16.map { UniChar($0) }
   }
 
   // MARK: - AX-direct injection (v2.12, tham khảo gonhanh.org)
@@ -674,11 +675,24 @@ class EventSimulator {
     return isEditableTextElement(el)
   }
 
+  /// v4.15: dạng ký tự THỰC SỰ phát ra, bám theo dạng lưu của field.
+  /// - Field NFC (Apple/Finder/native panel/omnibox) → gộp combining mark vào
+  ///   base (precomposed) để ô tìm kiếm khớp text precomposed.
+  /// - Field NFD (web content Chromium/Electron) → GIỮ NGUYÊN combining mark
+  ///   như `calcKeyStrokesNFD` đã tính; precompose ở đây làm lệch số scalar so
+  ///   với backspace đã gửi → ăn mất ký tự trước nguyên âm mang dấu ("gửi"→"ửi").
+  static func emittedCharacters(_ diffChars: [Character], normalizeToNFC: Bool) -> [Character] {
+    guard normalizeToNFC else { return diffChars }
+    return Array(String(diffChars).precomposedStringWithCanonicalMapping)
+  }
+
   static func sendReplacement(
     backspaceCount: Int,
-    diffChars: [Character],
-    strategy: SendingStrategy
+    diffChars rawDiffChars: [Character],
+    strategy: SendingStrategy,
+    normalizeToNFC: Bool = false
   ) -> EventSendTelemetry {
+    let diffChars = emittedCharacters(rawDiffChars, normalizeToNFC: normalizeToNFC)
     let touchedCharacters = backspaceCount + diffChars.count
     guard touchedCharacters > 0 else {
       return EventSendTelemetry(

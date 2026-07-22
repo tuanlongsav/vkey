@@ -2,6 +2,22 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.15] - 2026-07-22 — "Hết mất chữ đầu khi gõ (vá regression 4.14)"
+
+**Vá lỗi NGHIÊM TRỌNG do v4.14 gây ra: gõ tiếng Việt trên Chrome/Electron/Slack/Discord/… bị rụng phụ âm đầu ("gửi"→"ửi", "sửa"→"ửa", "nội"→"ội").**
+
+### 🐛 Sửa lỗi
+
+- **Hết mất chữ ĐẦU khi gõ trên mọi app non-Apple** — v4.14 ép `sendString`/`sendStringStepByStep`/`unicodeUnits` **luôn** gửi NFC (precomposed), kể cả field NFD (web content Chromium/Electron). Field NFD lưu ít scalar hơn model NFD của vkey → mỗi nguyên âm mang dấu lệch 1 scalar → backspace dư ăn mất ký tự đứng ngay trước nó ("gửi"→"ửi", "chữ"→"cữ", "hiển"→"hển", "mất"→"ất"). Đây là regression diện rộng, chạm mọi ứng dụng non-Apple.
+- **Nguyên tắc sửa: dạng chuẩn hoá lúc GỬI bám theo dạng của FIELD** — transport gửi đúng bytes; việc precompose NFC do `EventSimulator.sendReplacement` quyết định theo `usesNFCForFocusedField()`. Field NFC (Apple/Finder/native panel/omnibox) vẫn precompose để ô tìm kiếm khớp text precomposed; field NFD giữ nguyên combining mark như `calcKeyStrokesNFD` đã tính. Spotlight/omnibox (`axDirect`) vốn đã NFC — không đổi.
+- **Đánh đổi:** ô tìm kiếm **web** trong Chrome (Google web content) trở lại gửi NFD — cái "Chrome tìm kiếm NFC" của v4.14 vốn không thể áp cho field NFD mà không phá phép đếm backspace. Finder/Spotlight (Apple, NFC) vẫn khớp precomposed như thường.
+
+### 🧪 Tests
+
+- `testNFDFieldReplayKeepsLeadingConsonant` — mô phỏng field NFD, chứng minh emit NFD dựng lại đúng "gửi/sửa/nội/lỗi/mất" và emit NFC vào field NFD mới rụng chữ đầu (khoá regression). `testEmittedCharactersFollowsFieldNormalization`. Giữ nguyên fix pass/horses của 4.14. Toàn bộ **318 test pass**.
+
+---
+
 ## [4.14] - 2026-07-22 — "Chrome tìm kiếm NFC + pass/horses đủ chữ"
 
 **Hai lớp sửa: (1) chữ tiếng Việt gửi ra luôn NFC để khớp ô tìm kiếm/web API; (2) từ EN có phím tone lặp (`pass`/`horses`) giữ đủ chữ.**

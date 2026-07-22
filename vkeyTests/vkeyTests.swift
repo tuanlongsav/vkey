@@ -1289,6 +1289,61 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(String(buffer.keys), "horse")
   }
 
+  /// Regression 4.15: field NFD (web content Chromium/Electron — gồm ô chat
+  /// claude.ai) — chuỗi diff NFD kế tiếp khi gõ một từ có dấu phải DỰNG LẠI
+  /// ĐÚNG từ đó, KHÔNG rụng phụ âm đầu. Bug 4.14 ("Chrome tìm kiếm NFC") ép
+  /// emit NFC vào field NFD → field lưu ít scalar hơn model → backspace dư ăn
+  /// mất ký tự trước nguyên âm mang dấu ("gửi"→"ửi", "sửa"→"ửa", "mất"→"ất").
+  /// Mô phỏng field bằng buffer scalar NFD, áp đúng (backspaceCount, emit) mà
+  /// InputProcessor sinh ra qua calcKeyStrokesNFD + emittedCharacters.
+  func testNFDFieldReplayKeepsLeadingConsonant() throws {
+    let engine = Telex()
+    // (keys Telex, kết quả kỳ vọng) — mỗi từ 1 phụ âm đầu + nguyên âm mang dấu.
+    let cases: [(String, String)] = [
+      ("guiwr", "gửi"),
+      ("suawr", "sửa"),
+      ("nooij", "nội"),
+      ("looix", "lỗi"),
+      ("maast", "mất"),
+    ]
+
+    func replayNFDField(states: [String], normalizeToNFC: Bool) -> String {
+      var fieldScalars: [Unicode.Scalar] = []
+      var prev = ""
+      for s in states {
+        let (bs, diff) = EventSimulator.calcKeyStrokesNFD(from: prev, to: s)
+        fieldScalars.removeLast(min(bs, fieldScalars.count))
+        let emit = EventSimulator.emittedCharacters(diff, normalizeToNFC: normalizeToNFC)
+        fieldScalars.append(contentsOf: String(emit).unicodeScalars)
+        prev = s
+      }
+      return String(String.UnicodeScalarView(fieldScalars))
+        .precomposedStringWithCanonicalMapping
+    }
+
+    for (keys, expected) in cases {
+      var buffer = WordBuffer()
+      var states: [String] = []
+      for c in keys {
+        buffer.push(char: c, engine: engine)
+        states.append(buffer.transformed)
+      }
+      XCTAssertEqual(
+        states.last?.precomposedStringWithCanonicalMapping, expected,
+        "Sanity: engine gõ '\(keys)' phải ra '\(expected)'")
+
+      // Fix 4.15: field NFD nhận emit NFD → dựng đúng, giữ phụ âm đầu.
+      XCTAssertEqual(
+        replayNFDField(states: states, normalizeToNFC: false), expected,
+        "Emit NFD vào field NFD phải dựng đúng '\(expected)'")
+
+      // Tài liệu hoá regression 4.14: emit NFC vào field NFD → rụng phụ âm đầu.
+      XCTAssertNotEqual(
+        replayNFDField(states: states, normalizeToNFC: true), expected,
+        "Emit NFC vào field NFD rụng chữ đầu (bug 4.14) — không được để tái diễn")
+    }
+  }
+
   /// Regression 4.13: "list" đã gỡ khỏi instant-restore ("lít" là từ VN phổ
   /// biến, kết bằng 't' nên guard phím-tone không cover). Escape hatch cho
   /// EN: "lisst" (double-s). Cặp legacy "tê"→"tee" không còn restore ở
@@ -3364,12 +3419,10 @@ final class TiengVietValidatorTests: XCTestCase {
       String("ắ").utf16.map { UniChar($0) }
     )
     XCTAssertEqual(EventSimulator.unicodeUnits(for: "😀").count, 2)
-    // NFD combining input is NFC-normalized at emit — one precomposed unit, not base+mark.
-    XCTAssertEqual(EventSimulator.unicodeUnits(for: Character("a\u{0301}")).count, 1)
-    XCTAssertEqual(
-      EventSimulator.unicodeUnits(for: Character("a\u{0301}")),
-      String("á").utf16.map { UniChar($0) }
-    )
+    // v4.15: transport KHÔNG tự chuẩn hoá — combining mark NFD giữ nguyên 2
+    // unit (base + mark). Chuẩn hoá NFC do sendReplacement quyết định theo
+    // field (xem testEmittedCharactersFollowsFieldNormalization).
+    XCTAssertEqual(EventSimulator.unicodeUnits(for: Character("a\u{0301}")).count, 2)
   }
 
   func testModifierOnlyHotkeyTogglesAfterPurePressAndFullRelease() throws {
@@ -4643,30 +4696,32 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(chromeDiff, [])
   }
 
-  /// Emit path must always send NFC utf16 so search fields match precomposed text,
-  /// even when the NFD diff path produced combining marks.
-  func testEmitPathNormalizesNFDCombiningToNFCUtf16() throws {
-    let nfdESac = "e\u{0301}"  // e + combining acute
-    let nfcESac = "é"
+  /// v4.15: emit-form phải khớp field-form. `emittedCharacters` precompose khi
+  /// field NFC (ô tìm kiếm khớp text precomposed) và GIỮ NGUYÊN combining mark
+  /// khi field NFD — ép NFC vào field NFD là gốc bug "gửi"→"ửi" (mất chữ đầu).
+  func testEmittedCharactersFollowsFieldNormalization() throws {
+    let nfd = Array("e\u{0301}o\u{0300}")  // "é" + "ò" dạng NFD (base + combining)
     XCTAssertNotEqual(
-      Array(nfdESac.utf16),
-      Array(nfcESac.utf16),
-      "Sanity: NFD and NFC must differ before normalization"
+      Array(String(nfd).utf16),
+      Array("éò".utf16),
+      "Sanity: NFD và NFC khác nhau trước khi chuẩn hoá"
     )
 
-    let units = EventSimulator.unicodeUnits(for: Character(nfdESac))
-    XCTAssertEqual(units, nfcESac.utf16.map { UniChar($0) })
-    XCTAssertEqual(units.count, 1)
-    XCTAssertFalse(units.contains(0x0301), "Must not emit combining acute U+0301")
-
-    // Already-NFC and ASCII are unchanged.
-    XCTAssertEqual(
-      EventSimulator.unicodeUnits(for: "é"),
-      String("é").utf16.map { UniChar($0) }
+    // Field NFC → precompose: "éò" mỗi ký tự 1 UTF-16 unit, không còn combining.
+    let nfc = EventSimulator.emittedCharacters(nfd, normalizeToNFC: true)
+    XCTAssertEqual(String(nfc), "éò")
+    XCTAssertEqual(String(nfc).utf16.count, 2)
+    XCTAssertFalse(
+      String(nfc).unicodeScalars.contains { $0.value == 0x0301 || $0.value == 0x0300 },
+      "Field NFC không được phát combining mark"
     )
-    XCTAssertEqual(
-      EventSimulator.unicodeUnits(for: "a"),
-      String("a").utf16.map { UniChar($0) }
+
+    // Field NFD → giữ NGUYÊN combining mark (số scalar không đổi → khớp backspace).
+    let raw = EventSimulator.emittedCharacters(nfd, normalizeToNFC: false)
+    XCTAssertEqual(raw, nfd)
+    XCTAssertTrue(
+      String(raw).unicodeScalars.contains { $0.value == 0x0301 },
+      "Field NFD phải giữ combining mark như calcKeyStrokesNFD đã tính"
     )
   }
 

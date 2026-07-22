@@ -6,6 +6,26 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.15 — "Hết mất chữ đầu khi gõ (vá regression 4.14)"</title>
+      <sparkle:version>41500</sparkle:version>
+      <sparkle:shortVersionString>4.15</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 22 Jul 2026 23:48:46 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.15/vkey-4.15.dmg"
+        sparkle:edSignature="rPX2DuUDEQoulhYgFUsKk9M2Erghr5eDQxW8O/Suw9V5YK1h20Opq01sGVJvak1bgsBPDOBy9KIdgc9ZvaB+BA=="
+        length="6596610"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.15 — Hết mất chữ đầu khi gõ (vá regression 4.14)</h2>
+        <ul>
+          <li><b>Vá lỗi nghiêm trọng của v4.14</b> — gõ tiếng Việt trên Chrome / Electron / Slack / Discord / … bị rụng phụ âm đầu (<code>gửi</code>→<code>ửi</code>, <code>sửa</code>→<code>ửa</code>, <code>nội</code>→<code>ội</code>). Dạng chữ gửi ra giờ bám theo ô nhập: web content giữ NFD, Apple/Finder vẫn NFC.</li>
+        </ul>
+        <p>Bản ký Developer ID &amp; notarized. Toàn bộ 318 test pass. Ai đang dùng v4.14 nên cập nhật ngay.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.14 — "Chrome tìm kiếm NFC + pass/horses đủ chữ"</title>
       <sparkle:version>41400</sparkle:version>
       <sparkle:shortVersionString>4.14</sparkle:shortVersionString>
