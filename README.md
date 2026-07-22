@@ -1,5 +1,5 @@
 <h1>
-  <img src="images/vkey-icon.png?v=40400" alt="vkey logo" width="56" style="vertical-align: middle;">
+  <img src="images/vkey-icon.png?v=41400" alt="vkey logo" width="56" style="vertical-align: middle;">
   &nbsp;vkey
 </h1>
 
@@ -8,7 +8,12 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.13](CHANGELOG.md)** — Developer ID signed & notarized · 314 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.14](CHANGELOG.md)** — Developer ID signed & notarized · 317 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.14
+
+- **Chrome / ô tìm kiếm web gửi NFC** — hết query dạng NFD (`Quy%CC%80nh`) không khớp CSDL; gõ `Quỳnh` ra đúng `Qu%E1%BB%B3nh`.
+- **pass / horses / nurses** — từ EN có phím tone lặp giữ đủ chữ (không còn `pas`/`hoe`); backspace sau khoá EN về raw prefix đúng.
 
 ## Mới ở v4.13
 

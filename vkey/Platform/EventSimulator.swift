@@ -323,7 +323,10 @@ class EventSimulator {
   static func sendString(_ str: String, source: CGEventSource? = nil) -> Bool {
     guard !str.isEmpty else { return true }
 
-    let uniChars = str.utf16.map { UniChar($0) }
+    // Always emit NFC so Spotlight / Google / Finder search match precomposed text,
+    // even when the diff path produced NFD combining marks.
+    let nfc = str.precomposedStringWithCanonicalMapping
+    let uniChars = nfc.utf16.map { UniChar($0) }
     let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
 
     guard
@@ -359,7 +362,10 @@ class EventSimulator {
     }
 
     var createdAnyEvent = false
-    let chars = Array(str)
+    // Normalize the whole string first so combining marks fold into base chars
+    // before we split into Character units (do not NFC each char in isolation).
+    let nfc = str.precomposedStringWithCanonicalMapping
+    let chars = Array(nfc)
     for (index, char) in chars.enumerated() {
       let uniChars = unicodeUnits(for: char)
       guard !uniChars.isEmpty else { continue }
@@ -387,7 +393,7 @@ class EventSimulator {
   }
 
   static func unicodeUnits(for char: Character) -> [UniChar] {
-    String(char).utf16.map { UniChar($0) }
+    String(char).precomposedStringWithCanonicalMapping.utf16.map { UniChar($0) }
   }
 
   // MARK: - AX-direct injection (v2.12, tham khảo gonhanh.org)

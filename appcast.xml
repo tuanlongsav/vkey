@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.14 — "Chrome tìm kiếm NFC + pass/horses đủ chữ"</title>
+      <sparkle:version>41400</sparkle:version>
+      <sparkle:shortVersionString>4.14</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 22 Jul 2026 23:20:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.14/vkey-4.14.zip"
+        sparkle:edSignature="9+4Bh14FXt7ivtN0TrpEr89TT08BhOI1gzD5r6a16kDFZen3FfGSlIH6ZPRcQgk6Lu06XKLXAWpQlFWDlghNAA=="
+        length="6205563"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.14 — Chrome tìm kiếm NFC + pass/horses đủ chữ</h2>
+        <ul>
+          <li><b>Chrome / ô tìm kiếm web gửi NFC</b> — hết query dạng NFD (<code>Quy%CC%80nh</code>) không khớp CSDL; gõ <code>Quỳnh</code> ra đúng <code>Qu%E1%BB%B3nh</code>.</li>
+          <li><b>pass / horses / nurses</b> — từ EN có phím tone lặp giữ đủ chữ; backspace sau khoá EN về raw prefix đúng.</li>
+        </ul>
+        <p>Bản ký Developer ID. Toàn bộ 317 test pass. (Gói zip Sparkle — mở zip ra kéo vkey.app vào Applications.)</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.13 — "Hết bị từ tiếng Anh chiếm chỗ: thí, lít, tê"</title>
       <sparkle:version>41300</sparkle:version>
       <sparkle:shortVersionString>4.13</sparkle:shortVersionString>

@@ -147,6 +147,7 @@ struct WordBuffer {
       keys = valid.keys
       transformed = valid.transformed
       stopProcessing = valid.stopProcessing
+      stoppedByEnglishWord = valid.stoppedByEnglishWord
       lastValidSnapshot = nil
 
       let (numBackspaces, diffChars) = usesNFC
@@ -292,6 +293,16 @@ struct WordBuffer {
 
       let result = engine.push(char: k, state: wordState)
       wordState = result.state
+
+      // 4.14: cancel dấu (tone key lặp) + keys khớp instant-restore EN →
+      // khoá raw đầy đủ như forward path ("pass" replay → "pass", không
+      // "pas"). Cùng giới hạn ≥ 4 phím — giữ semantics cancel ngắn.
+      // Snapshot = raw prefix (không phải state có dấu) để BS "pass"→"pas".
+      if isPossibleToneCancel, wordState.dauThanh == .bang, currentKeys.count >= 4,
+         LexiconManager.shared.isInstantRestoreEnglish(keysStr) {
+        applyToneCancelEnglishLock(fullKeys: currentKeys, lastChar: k)
+        continue
+      }
 
       if wordState.needsRecovery {
         stopProcessing = true
@@ -475,9 +486,13 @@ struct WordBuffer {
         // 4.13: nếu phím CUỐI là tone key và kết quả replay là từ VN hợp lệ
         // ≥ 2 ký tự ("this" replay → "thí") thì giữ VN — nhất quán forward
         // path (of→ò/if→ì 1 ký tự vẫn instant-restore như cũ).
+        // 4.14: chỉ khi kết quả CÒN dấu (dauThanh != bang) — phím tone cuối
+        // mà kết quả hết dấu nghĩa là nó vừa CANCEL ("horses" → "hoe"),
+        // không phải hoàn thành từ VN → vẫn restore raw EN.
         let lastKeyIsToneKey = keys.last.map { "sSfFrRxXjJ".contains($0) } ?? false
         if LexiconManager.shared.isInstantRestoreEnglish(keysStr),
-           !(lastKeyIsToneKey && transformed.count >= 2
+           !(lastKeyIsToneKey && wordState.dauThanh != .bang
+             && transformed.count >= 2
              && LexiconManager.shared.isVietnameseWord(transformed)) {
           stopProcessing = true
           transformed = String(keys)
@@ -557,6 +572,23 @@ struct WordBuffer {
     let result = engine.push(char: char, state: wordState)
     wordState = result.state
 
+    // 4.14: phím tone lặp lại vừa CANCEL dấu (post-push hết dấu) và toàn bộ
+    // keys khớp instant-restore EN → user đang gõ từ EN có phím tone lặp
+    // ("pass", "horses", "nurses", "business") → khoá raw ĐẦY ĐỦ ngay.
+    // Trước đây đường append-1-phím cho ra "pas"/"hoe" (thiếu phím tone đầu
+    // đã bị consume). GIỚI HẠN ≥ 4 phím: giữ nguyên semantics cancel ngắn
+    // (testTelexToneToggle/testTelexToneCancelArrm: "ass"→"as", "arr"+m→
+    // "arm" — flow VN double-tap xoá dấu rồi gõ tiếp; "ass"/"aff"/"arr"/
+    // "axx"/"ajj" trong list KHÔNG được khoá). Cancel không khớp list
+    // ("lisst"→"list", "thiss"→"this") cũng giữ nguyên.
+    // Snapshot = raw prefix (không phải state có dấu trước cancel) để
+    // backspace "pass"→"pas", không "pá".
+    if isPossibleToneCancel, wordState.dauThanh == .bang, keys.count >= 4,
+       LexiconManager.shared.isInstantRestoreEnglish(keysStr) {
+      applyToneCancelEnglishLock(fullKeys: keys, lastChar: char)
+      return
+    }
+
     // Check if we need to recover original input (invalid Vietnamese syllable)
     if wordState.needsRecovery {
       stopProcessing = true
@@ -606,6 +638,33 @@ struct WordBuffer {
     let nfdOld = oldTransformed.decomposedStringWithCanonicalMapping.unicodeScalars.count
     // NFD tăng = combining diacritic vừa thêm → engine consumed → KHÔNG append.
     return nfdNew <= nfdOld
+  }
+
+  /// 4.14: khoá raw EN sau tone-cancel. Snapshot rollback phải là raw prefix
+  /// (`"pas"`), không phải state Telex còn dấu (`"pá"`) — nếu lưu snapshot
+  /// trước `engine.push` thì BS `"pass"` sẽ nhảy về `"pá"`.
+  mutating func applyToneCancelEnglishLock(fullKeys: [Character], lastChar: Character) {
+    stopProcessing = true
+    stoppedByEnglishWord = true
+    transformed = String(fullKeys)
+    wordState = wordState.push(lastChar)
+    lastValidSnapshot = Self.rawEnglishPrefixSnapshot(fullKeys: fullKeys)
+  }
+
+  /// Raw-keys prefix snapshot cho single-step rollback sau tone-cancel EN lock.
+  static func rawEnglishPrefixSnapshot(fullKeys: [Character]) -> Snapshot {
+    let prefixKeys = Array(fullKeys.dropLast())
+    var prefixState = TiengVietState.empty
+    for k in prefixKeys {
+      prefixState = prefixState.push(k)
+    }
+    return Snapshot(
+      wordState: prefixState,
+      keys: prefixKeys,
+      transformed: String(prefixKeys),
+      stopProcessing: true,
+      stoppedByEnglishWord: true
+    )
   }
 
   /// 4.13: phím tone (s/f/r/x/j) áp vào state hiện tại cho ra từ VN hợp lệ

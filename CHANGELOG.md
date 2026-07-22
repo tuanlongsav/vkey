@@ -2,6 +2,22 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.14] - 2026-07-22 — "Chrome tìm kiếm NFC + pass/horses đủ chữ"
+
+**Hai lớp sửa: (1) chữ tiếng Việt gửi ra luôn NFC để khớp ô tìm kiếm/web API; (2) từ EN có phím tone lặp (`pass`/`horses`) giữ đủ chữ.**
+
+### 🐛 Sửa lỗi
+
+- **Chrome / Cốc Cốc / ô tìm kiếm web: hết gửi NFD** — trước đây path Chromium dùng diff NFD rồi emit lại dạng tổ hợp (`ỳ` = `y` + `U+0300`), làm query kiểu `Quy%CC%80nh` không khớp CSDL NFC (`Qu%E1%BB%B3nh` → “Không có dữ liệu”). Nay `sendString` / `sendStringStepByStep` / `unicodeUnits` luôn `precomposedStringWithCanonicalMapping` trước khi gửi; **không đổi** thuật toán đếm backspace NFC/NFD theo app. `axDirect` (Spotlight/omnibox) vốn đã NFC từ trước.
+- **"pass" không còn thành "pas", "horses"/"nurses"/"business" giữ đủ chữ** — phím tone lặp vừa cancel dấu + keys ≥ 4 khớp instant-restore EN → khoá raw đầy đủ. Cancel ngắn (`ass`→`as`, `arrm`→`arm`) và escape hatch (`thiss`→`this`, `lisst`→`list`) giữ nguyên.
+- **Backspace sau khoá EN tone-cancel** — `"pass"` + BS về `"pas"` (raw), không nhảy về `"pá"` (snapshot còn dấu).
+
+### 🧪 Tests
+
+- Regression NFC emit, tone-cancel EN lock + backspace raw prefix. Toàn bộ **317 test pass**.
+
+---
+
 ## [4.13] - 2026-07-22 — "Hết bị từ tiếng Anh chiếm chỗ: thí, lít, tê"
 
 **Sửa lớp lỗi từ tiếng Anh trong danh sách khôi phục tức thì "chiếm chỗ" từ tiếng Việt hợp lệ khi gõ Telex.**

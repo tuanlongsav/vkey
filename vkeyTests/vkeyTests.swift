@@ -1203,8 +1203,13 @@ final class vkeyTests: XCTestCase {
   func testInstantRestoreConflictsAreAllDecided() throws {
     // EN thắng CÓ CHỦ ĐÍCH: hể/thể/thế/sê chỉ bị chiếm khi gõ dấu-TRƯỚC-mũ
     // (thứ tự hiếm; kiểu chuẩn heer/theer/thees không ảnh hưởng), còn
-    // here/there/these/three/see là từ EN cực phổ biến.
-    let intendedEnglishWinners: Set<String> = ["here", "there", "these", "three", "see"]
+    // here/there/these/three/see là từ EN cực phổ biến. 4.14: pass/horses
+    // — phím tone lặp CANCEL dấu + keys khớp list → khoá raw đầy đủ (fix
+    // "pas"/"hoe"); pure transform "pa"/"hoe" là VN nhưng chỉ gõ được qua
+    // thứ tự phím vô nghĩa với người gõ VN.
+    let intendedEnglishWinners: Set<String> = [
+      "here", "there", "these", "three", "see", "pass", "horses",
+    ]
 
     let engine = Telex()
     var undecided: [String] = []
@@ -1229,6 +1234,59 @@ final class vkeyTests: XCTestCase {
       undecided.isEmpty,
       "Từ EN trong instant-restore đè từ VN hợp lệ mà chưa được quyết định: \(undecided)"
     )
+  }
+
+  /// Regression 4.14: phím tone lặp lại CANCEL dấu + toàn bộ keys khớp
+  /// instant-restore EN → khoá raw ĐẦY ĐỦ. Trước đây "pass" ra "pas" (mất
+  /// 1 chữ s — phím s đầu bị consume làm dấu), "horses" ra "hoe", "nurses"
+  /// ra sai tương tự. Escape hatch VN ("thiss"→"this", "lisst"→"list",
+  /// không khớp list) và các từ đi đường khác (off/staff/class qua instant
+  /// lock/cluster) giữ nguyên.
+  func testDoubledToneEnglishWordsKeptFull() throws {
+    XCTAssertEqual(transform_text_telex(for: "pass"), "pass")
+    XCTAssertEqual(transform_text_telex(for: "PASS"), "PASS")
+    XCTAssertEqual(transform_text_telex(for: "horses"), "horses")
+    XCTAssertEqual(transform_text_telex(for: "nurses"), "nurses")
+    XCTAssertEqual(transform_text_telex(for: "business"), "business")
+    // Không đổi hành vi cũ:
+    XCTAssertEqual(transform_text_telex(for: "off"), "off")
+    XCTAssertEqual(transform_text_telex(for: "staff"), "staff")
+    XCTAssertEqual(transform_text_telex(for: "class"), "class")
+    XCTAssertEqual(transform_text_telex(for: "thiss"), "this")
+    XCTAssertEqual(transform_text_telex(for: "lisst"), "list")
+    // Cancel ngắn (< 4 phím) giữ semantics cũ — double-tap xoá dấu rồi gõ
+    // tiếp vẫn hoạt động (xem testTelexToneToggle/testTelexToneCancelArrm):
+    XCTAssertEqual(transform_text_telex(for: "ass"), "as")
+    XCTAssertEqual(transform_text_telex(for: "arrm"), "arm")
+  }
+
+  /// Regression 4.14: sau tone-cancel EN lock, backspace phải về raw prefix
+  /// ("pass"→"pas"), không rollback về state Telex còn dấu ("pá").
+  func testToneCancelEnglishLockBackspaceKeepsRawPrefix() throws {
+    var buffer = WordBuffer()
+    let engine = Telex()
+
+    for c in "pass" { buffer.push(char: c, engine: engine) }
+    XCTAssertEqual(buffer.transformed, "pass")
+    XCTAssertTrue(buffer.stopProcessing)
+    XCTAssertTrue(buffer.stoppedByEnglishWord)
+
+    _ = buffer.pop(engine: engine)
+    XCTAssertEqual(buffer.transformed, "pas")
+    XCTAssertEqual(String(buffer.keys), "pas")
+    XCTAssertTrue(buffer.stopProcessing)
+    XCTAssertTrue(buffer.stoppedByEnglishWord)
+
+    _ = buffer.pop(engine: engine)
+    XCTAssertEqual(buffer.transformed, "pa")
+    XCTAssertEqual(String(buffer.keys), "pa")
+
+    buffer = WordBuffer()
+    for c in "horses" { buffer.push(char: c, engine: engine) }
+    XCTAssertEqual(buffer.transformed, "horses")
+    _ = buffer.pop(engine: engine)
+    XCTAssertEqual(buffer.transformed, "horse")
+    XCTAssertEqual(String(buffer.keys), "horse")
   }
 
   /// Regression 4.13: "list" đã gỡ khỏi instant-restore ("lít" là từ VN phổ
@@ -1559,11 +1617,11 @@ final class vkeyTests: XCTestCase {
     // vẫn pass do "of" được lexicon nhận diện sớm ở line 286 (lock raw
     // trước khi second f tới). "class" và "staff" cũng pass vì prefix
     // "cl"/"st" là impossible-cluster → vào path raw từ sớm.
-    // Riêng "pass" (prefix "pa" hợp lệ VN, không impossible) bị tone-cancel
-    // catch ở second 's' → "pas". Trade-off chấp nhận được.
+    // 4.14: "pass" hết trade-off "pas" — cancel dấu + keys ≥ 4 phím khớp
+    // instant-restore EN → khoá raw đầy đủ (xem testDoubledToneEnglishWordsKeptFull).
     XCTAssertEqual(transform_text_telex(for: "off"), "off")
     XCTAssertEqual(transform_text_telex(for: "class"), "class")
-    XCTAssertEqual(transform_text_telex(for: "pass"), "pas")
+    XCTAssertEqual(transform_text_telex(for: "pass"), "pass")
     XCTAssertEqual(transform_text_telex(for: "staff"), "staff")
   }
 
@@ -3306,7 +3364,12 @@ final class TiengVietValidatorTests: XCTestCase {
       String("ắ").utf16.map { UniChar($0) }
     )
     XCTAssertEqual(EventSimulator.unicodeUnits(for: "😀").count, 2)
-    XCTAssertEqual(EventSimulator.unicodeUnits(for: Character("a\u{0301}")).count, 2)
+    // NFD combining input is NFC-normalized at emit — one precomposed unit, not base+mark.
+    XCTAssertEqual(EventSimulator.unicodeUnits(for: Character("a\u{0301}")).count, 1)
+    XCTAssertEqual(
+      EventSimulator.unicodeUnits(for: Character("a\u{0301}")),
+      String("á").utf16.map { UniChar($0) }
+    )
   }
 
   func testModifierOnlyHotkeyTogglesAfterPurePressAndFullRelease() throws {
@@ -4578,6 +4641,33 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     let (chromeBs, chromeDiff) = chrome.pop()
     XCTAssertEqual(chromeBs, 0, "Chrome stays NFD-pop")
     XCTAssertEqual(chromeDiff, [])
+  }
+
+  /// Emit path must always send NFC utf16 so search fields match precomposed text,
+  /// even when the NFD diff path produced combining marks.
+  func testEmitPathNormalizesNFDCombiningToNFCUtf16() throws {
+    let nfdESac = "e\u{0301}"  // e + combining acute
+    let nfcESac = "é"
+    XCTAssertNotEqual(
+      Array(nfdESac.utf16),
+      Array(nfcESac.utf16),
+      "Sanity: NFD and NFC must differ before normalization"
+    )
+
+    let units = EventSimulator.unicodeUnits(for: Character(nfdESac))
+    XCTAssertEqual(units, nfcESac.utf16.map { UniChar($0) })
+    XCTAssertEqual(units.count, 1)
+    XCTAssertFalse(units.contains(0x0301), "Must not emit combining acute U+0301")
+
+    // Already-NFC and ASCII are unchanged.
+    XCTAssertEqual(
+      EventSimulator.unicodeUnits(for: "é"),
+      String("é").utf16.map { UniChar($0) }
+    )
+    XCTAssertEqual(
+      EventSimulator.unicodeUnits(for: "a"),
+      String("a").utf16.map { UniChar($0) }
+    )
   }
 
   func testAutoCapitalizeAfterEnterSwallowsLowercaseKeyEvent() throws {
