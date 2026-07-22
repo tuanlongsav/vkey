@@ -8,7 +8,11 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.12](CHANGELOG.md)** — Developer ID signed & notarized · 311 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.13](CHANGELOG.md)** — Developer ID signed & notarized · 314 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.13
+
+- **Hết bị từ tiếng Anh chiếm chỗ** — "thí điểm" không còn thành "this điểm", "lít" không còn thành "list", "tê tay" + Space không còn thành "tee tay". Quy tắc mới: phím dấu hoàn thành từ tiếng Việt hợp lệ thì tiếng Việt thắng khôi phục tức thì tiếng Anh. Muốn gõ literal "this"/"list": gõ `thiss`/`lisst` (double-s, chuẩn Telex).
 
 ## Mới ở v4.12
 

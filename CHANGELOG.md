@@ -2,6 +2,22 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.13] - 2026-07-22 — "Hết bị từ tiếng Anh chiếm chỗ: thí, lít, tê"
+
+**Sửa lớp lỗi từ tiếng Anh trong danh sách khôi phục tức thì "chiếm chỗ" từ tiếng Việt hợp lệ khi gõ Telex.**
+
+### 🐛 Sửa lỗi
+
+- **"thí điểm" không còn thành "this điểm"** — chuỗi phím `t-h-i-s` khớp từ "this" trong danh sách instant-restore tiếng Anh (có từ v1.5.0) nên bị khoá raw ngay khi gõ, không ra "thí". Fix tổng quát bằng guard mới: **phím dấu (s/f/r/x/j) hoàn thành một từ tiếng Việt hợp lệ ≥ 2 ký tự → tiếng Việt thắng**, bỏ qua instant-restore (áp cả 3 đường: gõ xuôi, replay từng phím, replay sau Backspace). Cũng cover chữ HOA ("THIS"→"THÍ") và "sax"→"sã". Muốn gõ literal "this": gõ `thiss` (double-s xoá dấu, chuẩn Telex).
+- **"lít" không còn thành "list"** — rà soát toàn bộ 126 từ instant-restore bằng engine thật tìm ra thêm case này ("lít" kết bằng phím `t` nên guard phím-dấu không cover). Gỡ "list" khỏi danh sách (đúng tiền lệ v2.8/v2.9 từng gỡ docs→dóc, theme→thêm). Gõ EN "list": `lisst` hoặc chuyển mode. Cả hai kiểu gõ `list`/`lits` giờ đều ra "lít".
+- **"tê tay" + Space không còn thành "tee tay"** — cặp legacy-restore "tê"→"tee" khôi phục vô điều kiện ở commit-time. Nay bỏ qua khi từ là tiếng Việt hợp lệ ≥ 2 ký tự; cặp 1 ký tự "ò"→"of", "ì"→"if" giữ nguyên (of/if phổ biến hơn hẳn).
+
+### 🧹 Kỹ thuật
+
+- Giữ nguyên có chủ đích: here/there/these/three/see (chỉ va chạm khi gõ dấu-trước-mũ — thứ tự hiếm; kiểu chuẩn `heer/theer/thees` không ảnh hưởng).
+- Test bất biến mới `testInstantRestoreConflictsAreAllDecided`: quét cả danh sách bằng engine — thêm từ EN mới tạo xung đột VN chưa quyết định sẽ fail test ngay.
+- 314/314 test pass. Ghi nhận 2 lỗi phía EN có sẵn từ lâu, chưa đụng: "pass"→"pas" (double-s cancel trả thiếu 1 phím), "horses"→"hoe" khi gõ (tự sửa đúng lúc Space).
+
 ## [4.12] - 2026-07-16 — "Giữ từ HOA tiếng Việt & launcher theo mode"
 
 **Sửa gõ từ tiếng Việt viết HOA bị đổi thành phím thô khi ấn Space, + mở rộng "theo mode" cho launcher.**

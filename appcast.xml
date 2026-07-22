@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.13 — "Hết bị từ tiếng Anh chiếm chỗ: thí, lít, tê"</title>
+      <sparkle:version>41300</sparkle:version>
+      <sparkle:shortVersionString>4.13</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 22 Jul 2026 15:10:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.13/vkey-4.13.dmg"
+        sparkle:edSignature="10Tlkv3VLwXpsb/c70xYO/loyjW6CEKM31dqmlQAF6sn8phrb8MheD2eDgcwxy1bf5mLT/DiRydrbkaUxDG9CA=="
+        length="6594369"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.13 — Hết bị từ tiếng Anh chiếm chỗ: thí, lít, tê</h2>
+        <ul>
+          <li><b>"thí điểm" không còn thành "this điểm"</b> — phím dấu hoàn thành từ tiếng Việt hợp lệ thì tiếng Việt thắng khôi phục tức thì tiếng Anh (cover cả chữ HOA). Muốn gõ literal "this": gõ "thiss".</li>
+          <li><b>"lít" không còn thành "list"</b> — gỡ "list" khỏi danh sách khôi phục tức thì; cả hai kiểu gõ "list"/"lits" đều ra "lít". Gõ EN "list": "lisst".</li>
+          <li><b>"tê tay" + Space không còn thành "tee tay"</b> — cặp khôi phục legacy "tê"→"tee" không còn đè từ tiếng Việt hợp lệ.</li>
+        </ul>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.12 — "Giữ từ HOA tiếng Việt &amp; launcher theo mode"</title>
       <sparkle:version>41200</sparkle:version>
       <sparkle:shortVersionString>4.12</sparkle:shortVersionString>

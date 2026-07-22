@@ -229,7 +229,10 @@ struct WordBuffer {
       let isPossibleToneCancel = wordState.dauThanh != .bang && telexToneKeys.contains(k)
 
       // 1. Check instant restore English
-      if LexiconManager.shared.isInstantRestoreEnglish(keysStr), !isPossibleToneCancel {
+      // 4.13: cùng guard với forward path — phím tone hoàn thành từ VN hợp
+      // lệ ("thi"+s → "thí") thì không khoá raw English khi replay.
+      if LexiconManager.shared.isInstantRestoreEnglish(keysStr), !isPossibleToneCancel,
+         !Self.toneKeyCompletesVietnameseWord(char: k, state: wordState, engine: engine) {
         stopProcessing = true
         stoppedByEnglishWord = true
         transformed = keysStr
@@ -469,7 +472,13 @@ struct WordBuffer {
         // philosophy ở line 359-360 (doubled tone check). Tránh regression
         // v1.7.9 khi full enLexicon 9826 chứa "teen"/"men"/"tens"/... match
         // Telex VN pattern → bị nhầm sang raw English thay vì giữ VN.
-        if LexiconManager.shared.isInstantRestoreEnglish(keysStr) {
+        // 4.13: nếu phím CUỐI là tone key và kết quả replay là từ VN hợp lệ
+        // ≥ 2 ký tự ("this" replay → "thí") thì giữ VN — nhất quán forward
+        // path (of→ò/if→ì 1 ký tự vẫn instant-restore như cũ).
+        let lastKeyIsToneKey = keys.last.map { "sSfFrRxXjJ".contains($0) } ?? false
+        if LexiconManager.shared.isInstantRestoreEnglish(keysStr),
+           !(lastKeyIsToneKey && transformed.count >= 2
+             && LexiconManager.shared.isVietnameseWord(transformed)) {
           stopProcessing = true
           transformed = String(keys)
           if !snapshot.stopProcessing {
@@ -514,8 +523,13 @@ struct WordBuffer {
 
     // Instantaneous English word restoration: if the raw keys form a known
     // English word, preserve it raw. 1.7.10: dùng instant-restore narrow list.
+    // 4.13: "thi"+s → "thí" là từ VN hợp lệ trong khi keys "this" khớp
+    // instant-restore — phím tone hoàn thành từ VN hợp lệ thì tiếng Việt
+    // thắng (tiền lệ v2.8/v2.9: queen→quên, theme→thêm đã loại khỏi list
+    // vì lý do này; "this" bị sót vì thêm từ v1.5.0 trước khi có quy tắc).
     if LexiconManager.shared.isInstantRestoreEnglish(keysStr),
-       !isPossibleToneCancel {
+       !isPossibleToneCancel,
+       !Self.toneKeyCompletesVietnameseWord(char: char, state: wordState, engine: engine) {
       stopProcessing = true
       stoppedByEnglishWord = true
       transformed = String(keys)
@@ -592,6 +606,27 @@ struct WordBuffer {
     let nfdOld = oldTransformed.decomposedStringWithCanonicalMapping.unicodeScalars.count
     // NFD tăng = combining diacritic vừa thêm → engine consumed → KHÔNG append.
     return nfdNew <= nfdOld
+  }
+
+  /// 4.13: phím tone (s/f/r/x/j) áp vào state hiện tại cho ra từ VN hợp lệ
+  /// → tiếng Việt thắng instant-restore ("thi"+s → "thí" thay vì giữ raw
+  /// "this"). Chỉ tính khi engine không cần recovery; VNI không dùng chữ
+  /// cái làm tone key nên push chỉ append → không bao giờ ra từ VN → guard
+  /// vô hại. Yêu cầu từ VN ≥ 2 ký tự: "of"→"ò", "if"→"ì" (1 ký tự, có cặp
+  /// legacyRestorePairs riêng) phải giữ instant-restore như trước. Chi phí
+  /// chỉ phát sinh khi keys ĐÃ khớp list instant-restore (hiếm) nên không
+  /// ảnh hưởng độ trễ gõ phím.
+  static func toneKeyCompletesVietnameseWord(
+    char: Character,
+    state: TiengVietState,
+    engine: TypingMethod
+  ) -> Bool {
+    let telexToneKeys: Set<Character> = ["s", "S", "f", "F", "r", "R", "x", "X", "j", "J"]
+    guard telexToneKeys.contains(char) else { return false }
+    let result = engine.push(char: char, state: state)
+    guard !result.state.needsRecovery else { return false }
+    let word = result.state.transformed
+    return word.count >= 2 && LexiconManager.shared.isVietnameseWord(word)
   }
 }
 

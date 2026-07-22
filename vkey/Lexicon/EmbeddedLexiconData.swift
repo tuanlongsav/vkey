@@ -7221,8 +7221,12 @@ bửa
   }()
 
   static let englishWords: Set<String> = Set([
+    // 4.13: "list" đã loại — Telex thuần "list" → "lít" (từ VN phổ biến),
+    // cùng quy tắc v2.8/v2.9 bên dưới (như docs→dóc). EN "list" gõ "lisst"
+    // (double-s) hoặc chuyển mode. "this"→"thí", "sax"→"sã" vẫn ở list nhưng
+    // bị guard toneKeyCompletesVietnameseWord (WordBuffer) cho VN thắng.
     "of", "if", "see", "text", "expect", "choose", "business", "address", "email",
-    "long", "example", "com", "view", "list", "about", "keep", "deep", "sleep", "risk",
+    "long", "example", "com", "view", "about", "keep", "deep", "sleep", "risk",
     "desk", "disk", "cursor", "param", "career", "peer", "sax", "toto",
     "nurses", "horses", "house", "metric", "off", "class", "pass", "staff",
     "ass", "aff", "arr", "axx", "ajj",

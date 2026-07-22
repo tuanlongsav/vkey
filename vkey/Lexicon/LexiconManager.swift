@@ -358,6 +358,12 @@ final class LexiconManager {
     guard let expectedRaw = EmbeddedLexiconData.legacyRestorePairs[transformed.lowercased()] else {
       return false
     }
+    // 4.13: không restore khi transformed là từ VN hợp lệ ≥ 2 ký tự — cặp
+    // "tê"→"tee" làm gõ "tê tay" + Space thành "tee tay". Cặp 1 ký tự
+    // ("ò"→"of", "ì"→"if") giữ nguyên: "of"/"if" tiếng Anh phổ biến hơn hẳn.
+    if transformed.count >= 2, isVietnameseWord(transformed) {
+      return false
+    }
     return expectedRaw == rawInput.normalizedDictionaryToken
   }
 

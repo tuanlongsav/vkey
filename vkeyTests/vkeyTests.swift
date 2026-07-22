@@ -1194,6 +1194,102 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "DDuowngf"), "Đường")
   }
 
+  /// Bất biến 4.13 — quét TOÀN BỘ instant-restore list bằng engine thật:
+  /// từ EN nào mà Telex thuần biến ra từ VN hợp lệ ≥2 ký tự VÀ vẫn thắng
+  /// lúc gõ (giữ raw EN) thì PHẢI nằm trong danh sách ngoại lệ đã quyết
+  /// định bên dưới. Thêm từ EN mới tạo xung đột chưa quyết → test này fail,
+  /// buộc phải cân nhắc (VN thắng qua guard toneKeyCompletesVietnameseWord /
+  /// gỡ khỏi list, hay EN thắng có chủ đích thì thêm vào ngoại lệ).
+  func testInstantRestoreConflictsAreAllDecided() throws {
+    // EN thắng CÓ CHỦ ĐÍCH: hể/thể/thế/sê chỉ bị chiếm khi gõ dấu-TRƯỚC-mũ
+    // (thứ tự hiếm; kiểu chuẩn heer/theer/thees không ảnh hưởng), còn
+    // here/there/these/three/see là từ EN cực phổ biến.
+    let intendedEnglishWinners: Set<String> = ["here", "there", "these", "three", "see"]
+
+    let engine = Telex()
+    var undecided: [String] = []
+    for w in EmbeddedLexiconData.englishWords.sorted() {
+      var state = TiengVietState.empty
+      var broke = false
+      for c in w {
+        let r = engine.push(char: c, state: state)
+        state = r.state
+        if state.needsRecovery { broke = true; break }
+      }
+      if broke { continue }
+      let pure = state.transformed
+      guard pure != w, pure.count >= 2,
+            LexiconManager.shared.isVietnameseWord(pure) else { continue }
+      // EN vẫn thắng lúc gõ (raw giữ nguyên) mà chưa có trong ngoại lệ?
+      if transform_text_telex(for: w) == w, !intendedEnglishWinners.contains(w) {
+        undecided.append("\(w) -> \(pure)")
+      }
+    }
+    XCTAssertTrue(
+      undecided.isEmpty,
+      "Từ EN trong instant-restore đè từ VN hợp lệ mà chưa được quyết định: \(undecided)"
+    )
+  }
+
+  /// Regression 4.13: "list" đã gỡ khỏi instant-restore ("lít" là từ VN phổ
+  /// biến, kết bằng 't' nên guard phím-tone không cover). Escape hatch cho
+  /// EN: "lisst" (double-s). Cặp legacy "tê"→"tee" không còn restore ở
+  /// commit (gõ "tê tay" + Space từng thành "tee tay"); "ò"→"of" 1 ký tự
+  /// giữ nguyên.
+  func testLitNotHijackedAndLegacyTeKeptVietnamese() throws {
+    XCTAssertEqual(transform_text_telex(for: "list"), "lít")
+    XCTAssertEqual(transform_text_telex(for: "lits"), "lít")
+    XCTAssertEqual(transform_text_telex(for: "lisst"), "list")
+
+    XCTAssertFalse(
+      LexiconManager.shared.shouldApplyLegacyRestore(transformed: "tê", rawInput: "tee")
+    )
+    XCTAssertTrue(
+      LexiconManager.shared.shouldApplyLegacyRestore(transformed: "ò", rawInput: "of")
+    )
+
+    let oldSpell = Defaults[.spellCheckEnabled]
+    let oldRestore = Defaults[.englishAutoRestoreEnabled]
+    let oldPolicy = Defaults[.restorePolicy]
+    defer {
+      Defaults[.spellCheckEnabled] = oldSpell
+      Defaults[.englishAutoRestoreEnabled] = oldRestore
+      Defaults[.restorePolicy] = oldPolicy
+    }
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.englishAutoRestoreEnabled] = true
+    Defaults[.restorePolicy] = .vietnameseFirst
+
+    let engine = SpellDecisionEngine.shared
+    XCTAssertEqual(
+      engine.evaluate(rawInput: "tee", transformed: "tê", needsRecovery: false),
+      .keepVietnamese
+    )
+    XCTAssertEqual(
+      engine.evaluate(rawInput: "of", transformed: "ò", needsRecovery: false),
+      .restoreRawEnglish("of")
+    )
+  }
+
+  /// Regression 4.13: "thi"+s phải ra "thí" — trước đây keys "this" khớp
+  /// list instant-restore EN (thêm từ v1.5.0, sót quy tắc dọn v2.8/v2.9)
+  /// nên gõ "thí điểm" ra "this điểm". Phím tone hoàn thành từ VN hợp lệ
+  /// ≥ 2 ký tự → tiếng Việt thắng instant-restore.
+  func testTelexThiNotHijackedByThisInstantRestore() throws {
+    XCTAssertEqual(transform_text_telex(for: "this"), "thí")
+    XCTAssertEqual(transform_text_telex(for: "THIS"), "THÍ")
+    XCTAssertEqual(transform_text_telex(for: "This"), "Thí")
+    // Escape hatch giữ nguyên: double-s cancel tone → literal "this".
+    XCTAssertEqual(transform_text_telex(for: "thiss"), "this")
+    // of/if (từ VN 1 ký tự ò/ì) giữ instant-restore như cũ.
+    XCTAssertEqual(transform_text_telex(for: "of"), "of")
+    XCTAssertEqual(transform_text_telex(for: "if"), "if")
+    // Instant-restore không kết bằng phím tone vẫn hoạt động bình thường.
+    XCTAssertEqual(transform_text_telex(for: "google"), "google")
+    XCTAssertEqual(transform_text_telex(for: "these"), "these")
+    XCTAssertEqual(transform_text_telex(for: "there"), "there")
+  }
+
   // MARK: - Telex: Tricky Words That Previously Had Bugs
 
   /// Test "xuất" and similar words
