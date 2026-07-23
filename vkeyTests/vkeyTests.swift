@@ -5043,4 +5043,36 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     chrome.focusedFieldKind = .webContent
     XCTAssertFalse(chrome.usesNFCForFocusedField(), "Chrome web content giữ NFD")
   }
+
+  /// 4.16: công tắc opt-in "NFC cho ô tìm kiếm web". Khi BẬT, web content của
+  /// app nhóm NFD (Chrome ẩn web khỏi AX → .webContent/.unknown) chuyển NFC để
+  /// ô tìm kiếm khớp text precomposed. Mặc định TẮT → giữ NFD như v4.15.
+  func testNfcWebContentToggleForcesNFC() throws {
+    Defaults[.nfcWebContentEnabled] = false
+    defer { Defaults.reset(.nfcWebContentEnabled) }
+
+    let chrome = InputProcessor(method: .Telex)
+    chrome.changeActiveApp("com.google.Chrome")
+
+    // TẮT (mặc định): web content / unknown giữ NFD.
+    chrome.focusedFieldKind = .webContent
+    XCTAssertFalse(chrome.usesNFCForFocusedField(), "TẮT: Chrome web content phải NFD")
+    chrome.focusedFieldKind = .unknown
+    XCTAssertFalse(chrome.usesNFCForFocusedField(), "TẮT: Chrome unknown phải NFD")
+
+    // BẬT → NFC cho cả .webContent lẫn .unknown (ô search Chrome ẩn AX = .unknown).
+    Defaults[.nfcWebContentEnabled] = true
+    chrome.focusedFieldKind = .webContent
+    XCTAssertTrue(chrome.usesNFCForFocusedField(), "BẬT: Chrome web content phải NFC")
+    chrome.focusedFieldKind = .unknown
+    XCTAssertTrue(chrome.usesNFCForFocusedField(), "BẬT: Chrome unknown phải NFC")
+
+    // App NFC-whitelist (Apple) — đặt cờ TẮT để chứng minh Notes NFC nhờ
+    // WHITELIST (không phải nhờ cờ), cô lập đúng nhánh whitelist.
+    Defaults[.nfcWebContentEnabled] = false
+    let notes = InputProcessor(method: .Telex)
+    notes.changeActiveApp("com.apple.Notes")
+    notes.focusedFieldKind = .webContent
+    XCTAssertTrue(notes.usesNFCForFocusedField(), "Notes NFC nhờ whitelist, không cần cờ")
+  }
 }

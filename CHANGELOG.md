@@ -2,6 +2,22 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.16] - 2026-07-23 — "Công tắc NFC cho ô tìm kiếm web"
+
+**Thêm công tắc trên menu bar để ô tìm kiếm trên web ra kết quả khi gõ tiếng Việt có dấu.**
+
+### ✨ Tính năng
+
+- **NFC cho ô tìm kiếm web (opt-in)** — nhiều ô tìm kiếm trên web (trang quản lý, tra cứu…) tìm bằng text precomposed (NFC), trong khi vkey mặc định gửi NFD cho web content nên "không có kết quả". Bật công tắc **"NFC cho ô tìm kiếm web"** trên menu bar → vkey gửi NFC cho ô web → tìm ra kết quả. Mặc định **TẮT** (không đổi hành vi cũ). **Đánh đổi:** khi bật, gõ trong **Google Docs/Sheets** (canvas lưu NFD) có thể lỗi — tắt công tắc khi dùng Docs.
+  - *Vì sao cần công tắc thủ công:* Chrome không phơi bày web content ra macOS Accessibility (chỉ bật khi có trình đọc màn hình), nên vkey **không "nhìn thấy" được ô `<input>`** để tự quyết định NFC/NFD theo từng ô. Công tắc toàn cục là cách chắc chắn nhất.
+
+### 🧹 Khác
+
+- **Gọn menu bar** — bỏ mục "Sửa lỗi chính tả" khỏi menu bar (vẫn bật/tắt được trong Cài đặt → Chính tả).
+- 319 test pass.
+
+---
+
 ## [4.15] - 2026-07-22 — "Hết mất chữ đầu khi gõ (vá regression 4.14)"
 
 **Vá lỗi NGHIÊM TRỌNG do v4.14 gây ra: gõ tiếng Việt trên Chrome/Electron/Slack/Discord/… bị rụng phụ âm đầu ("gửi"→"ửi", "sửa"→"ửa", "nội"→"ội").**

@@ -1636,6 +1636,11 @@ class InputProcessor {
   ///    - unknown     → giữ default NFD của app
   func usesNFCForFocusedField() -> Bool {
     if InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp) { return true }
+    // 4.16: opt-in — xuất NFC cho web content (ô tìm kiếm web khớp precomposed
+    // → tìm ra kết quả). Chrome ẩn web content khỏi AX nên không phân loại field
+    // được → dùng cờ toàn cục (menu bar). Đánh đổi: có thể ảnh hưởng Google
+    // Docs/Sheets (canvas lưu NFD) → tắt cờ khi dùng Docs. Mặc định OFF.
+    if Defaults[.nfcWebContentEnabled] { return true }
     switch focusedFieldKind {
     case .webContent: return false
     case .nativePanel, .windowField: return true

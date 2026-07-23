@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.16 — "Công tắc NFC cho ô tìm kiếm web"</title>
+      <sparkle:version>41600</sparkle:version>
+      <sparkle:shortVersionString>4.16</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 23 Jul 2026 07:52:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.16/vkey-4.16.dmg"
+        sparkle:edSignature="paPWKfePuL6+dj82LwJQdr5eADpfzd3x+lB2ABYw+BcvlFbCEt8VSDVKvMAu9C+4cCbiqFL1xjdymFOXZLI5Bg=="
+        length="6597219"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.16 — Công tắc NFC cho ô tìm kiếm web</h2>
+        <ul>
+          <li><b>NFC cho ô tìm kiếm web (opt-in)</b> — bật công tắc trên menu bar để ô tìm kiếm trên web ra kết quả khi gõ tiếng Việt có dấu (nhiều trang tìm bằng text precomposed). Mặc định TẮT. Tắt công tắc khi gõ trong Google Docs/Sheets.</li>
+          <li><b>Gọn menu bar</b> — bỏ mục "Sửa lỗi chính tả" (vẫn chỉnh được trong Cài đặt &rarr; Chính tả).</li>
+        </ul>
+        <p>Bản ký Developer ID &amp; notarized. 319 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.15 — "Hết mất chữ đầu khi gõ (vá regression 4.14)"</title>
       <sparkle:version>41500</sparkle:version>
       <sparkle:shortVersionString>4.15</sparkle:shortVersionString>

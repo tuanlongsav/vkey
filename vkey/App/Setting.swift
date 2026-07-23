@@ -506,6 +506,13 @@ extension Defaults.Keys {
   /// Mặc định off vì làm thay đổi hành vi gõ trong context đời thường.
   static let programmingMode = Key<Bool>("programming-mode", default: false)
 
+  /// 4.16: Xuất NFC cho web content (opt-in). Ô tìm kiếm web (vd trang quản lý,
+  /// tra cứu) thường tìm bằng text precomposed (NFC); mặc định vkey gửi NFD cho
+  /// web content nên "không có kết quả". Bật cờ này → gửi NFC cho MỌI ô web của
+  /// app nhóm NFD (browser/Electron). Mặc định OFF vì có thể ảnh hưởng cách gõ
+  /// trong Google Docs/Sheets (canvas lưu NFD). Toggle nhanh trên menu bar.
+  static let nfcWebContentEnabled = Key<Bool>("nfc-web-content-enabled", default: false)
+
   /// Bật ghi thống kê sử dụng (chỉ lưu local, không gửi đi đâu).
   static let statisticsEnabled = Key<Bool>("statistics-enabled", default: true)
 

@@ -164,9 +164,9 @@ struct VKMenuPanel: View {
   @Environment(\.openSettings) private var openSettings
 
   @Default(.smartSwitchEnabled) private var smartSwitchEnabled
-  @Default(.spellCheckEnabled) private var spellCheckEnabled
   @Default(.macroEnabled) private var macroEnabled
   @Default(.clipboardHistoryEnabled) private var clipboardHistoryEnabled
+  @Default(.nfcWebContentEnabled) private var nfcWebContentEnabled
   @Default(.newStyleTonePlacement) private var newStyleTonePlacement
   @Default(.uiTheme) private var uiTheme
   @State private var showThemes = false
@@ -251,11 +251,6 @@ struct VKMenuPanel: View {
                 action: { smartSwitchEnabled.toggle() }) {
         VKMenuCheck(on: smartSwitchEnabled)
       }
-      VKMenuRow("textformat.abc.dottedunderline", "Sửa lỗi chính tả",
-                iconTint: spellCheckEnabled ? VK.Color.brand : nil,
-                action: { spellCheckEnabled.toggle() }) {
-        VKMenuCheck(on: spellCheckEnabled)
-      }
       VKMenuRow("text.append", "Macro",
                 iconTint: macroEnabled ? VK.Color.brand : nil,
                 action: { macroEnabled.toggle() }) {
@@ -270,6 +265,13 @@ struct VKMenuPanel: View {
                   }
                 }) {
         VKMenuCheck(on: clipboardHistoryEnabled)
+      }
+      // 4.16: xuất NFC cho web content — giúp ô tìm kiếm web ra kết quả với
+      // tiếng Việt có dấu. Tắt khi gõ trong Google Docs/Sheets.
+      VKMenuRow("magnifyingglass", "NFC cho ô tìm kiếm web",
+                iconTint: nfcWebContentEnabled ? VK.Color.brand : nil,
+                action: { nfcWebContentEnabled.toggle() }) {
+        VKMenuCheck(on: nfcWebContentEnabled)
       }
 
       // Chuyển giao diện nhanh

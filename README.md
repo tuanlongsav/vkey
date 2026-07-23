@@ -8,7 +8,12 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.15](CHANGELOG.md)** — Developer ID signed & notarized · 318 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.16](CHANGELOG.md)** — Developer ID signed & notarized · 319 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.16
+
+- **Công tắc "NFC cho ô tìm kiếm web"** (menu bar, mặc định TẮT) — bật để ô tìm kiếm trên web ra kết quả khi gõ tiếng Việt có dấu (nhiều trang tìm bằng text precomposed). Tắt khi gõ trong Google Docs/Sheets.
+- **Gọn menu bar** — bỏ mục "Sửa lỗi chính tả" (vẫn chỉnh được trong Cài đặt → Chính tả).
 
 ## Mới ở v4.15
 
@@ -139,7 +144,7 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 |----------|-----------|
 | Chuyển VI ↔ EN | Nhấn + nhả **⇧⌥** (mặc định) hoặc segmented **VI \| EN** trên panel |
 | Kiểu gõ | **Kiểu Telex** / **Kiểu VNI** |
-| Bật/tắt nhanh | Smart Switch · Sửa lỗi chính tả · Macro · Lịch sử Clipboard |
+| Bật/tắt nhanh | Smart Switch · Macro · Lịch sử Clipboard · NFC cho ô tìm kiếm web |
 | Cài đặt | **Cài đặt** (⌘,) |
 | Đổi theme | **Chuyển giao diện** → Tonal / Liquid Glass / Neural AI |
 | Thoát | **Thoát** (⌘Q) |
