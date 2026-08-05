@@ -2,6 +2,23 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.17] - 2026-08-05 — "Vá lỗi gõ: macro, tự sửa, ô tìm kiếm"
+
+**Vá hai lớp lỗi khiến bộ nhớ trong của vkey lệch khỏi chữ đang hiển thị trên màn hình.**
+
+### 🐛 Sửa lỗi
+
+- **Hết hỏng chữ khi bấm Backspace ngay sau khi bung macro** — sau khi macro bung, màn hình hiển thị PHẦN BUNG nhưng vkey vẫn giữ chữ viết tắt trong bộ nhớ. Backspace kế tiếp dựng lại chữ viết tắt vào bộ nhớ, nên mọi thay đổi sau đó được tính trên đoạn chữ KHÔNG có trên màn hình → hỏng từ đang gõ. Vá cho cả phím **Space** (phím bung macro phổ biến nhất) lẫn dấu câu.
+- **Hết hỏng chữ sau khi vkey tự sửa chính tả** — cùng lớp lỗi, ở đường tự sửa lúc kết từ. Cả hai nhánh đều dính chứ không riêng nhánh gợi ý: nhánh trả-về-tiếng-Anh ghi chữ thô lên màn hình (gõ `ARM` → Telex thành `ẢM` → trả về `ARM`) trong khi bộ nhớ giữ bản có dấu.
+- **Hết mất chữ ở ô tìm kiếm / ô địa chỉ** — số ký tự cần xoá, đơn vị lùi khi xoá và dạng chữ gửi ra giờ cùng đi theo MỘT quyết định về ô đang gõ. Trước đây mỗi chỗ tự suy ra riêng, nên khi ô được phân loại một đằng mà cách gửi bị ép một nẻo thì mỗi dấu thanh làm lùi dư một cụm và xoá lố sang ký tự đứng trước.
+
+### 🧹 Khác
+
+- Gộp cặp "quyết định + sang từ mới" thành một bước (`applySpellDecisionAndAdvance`, `expandMacroAndAdvance`) để hai vế không lệch nhau lần nữa.
+- 327 test pass (thêm 4 test hồi quy trong `CommitReplacementPreviousWordStateTests`).
+
+---
+
 ## [4.16] - 2026-07-23 — "Công tắc NFC cho ô tìm kiếm web"
 
 **Thêm công tắc trên menu bar để ô tìm kiếm trên web ra kết quả khi gõ tiếng Việt có dấu.**

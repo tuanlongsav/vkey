@@ -8,7 +8,13 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.16](CHANGELOG.md)** — Developer ID signed & notarized · 319 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.17](CHANGELOG.md)** — Developer ID signed & notarized · 327 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.17
+
+- **Hết hỏng chữ sau khi bung macro** — bấm Backspace ngay sau khi macro bung không còn phá từ gõ tiếp theo (vá cho cả phím Space lẫn dấu câu).
+- **Hết hỏng chữ sau khi vkey tự sửa chính tả** — cùng lỗi trên, ở đường tự sửa lúc kết từ (vd gõ `ARM` bị thành `ẢM` rồi được trả về `ARM`).
+- **Hết mất chữ ở ô tìm kiếm / ô địa chỉ** — số ký tự cần xoá, đơn vị lùi khi xoá và dạng chữ gửi ra giờ luôn thống nhất theo ô đang gõ, không còn xoá lố ăn mất chữ đứng trước.
 
 ## Mới ở v4.16
 

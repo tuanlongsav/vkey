@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.17 — "Vá lỗi gõ: macro, tự sửa, ô tìm kiếm"</title>
+      <sparkle:version>41700</sparkle:version>
+      <sparkle:shortVersionString>4.17</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 05 Aug 2026 16:15:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.17/vkey-4.17.dmg"
+        sparkle:edSignature="aA2M+nCzTi4D6dQGh3ZSv9k4HW4aGpY0T5AKgs3ntnRl8tIlc4067fKdRZLxv5qBu+S5OczLMgrIoCkuqiJZAg=="
+        length="6597795"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.17 — Vá lỗi gõ: macro, tự sửa, ô tìm kiếm</h2>
+        <ul>
+          <li><b>Hết hỏng chữ sau khi bung macro</b> — bấm Backspace ngay sau khi macro bung ra không còn làm hỏng từ gõ tiếp theo. Trước đây vkey giữ lại chữ viết tắt trong bộ nhớ trong khi màn hình đã là phần bung, nên mọi thay đổi sau đó tính sai. Áp cho cả phím Space lẫn dấu câu.</li>
+          <li><b>Hết hỏng chữ sau khi vkey tự sửa chính tả</b> — cùng lỗi trên, ở đường tự sửa (vd gõ "ARM" bị thành "ẢM" rồi được trả về "ARM").</li>
+          <li><b>Hết mất chữ ở ô tìm kiếm và ô địa chỉ</b> — số ký tự cần xoá, đơn vị xoá và dạng chữ gửi ra giờ luôn thống nhất theo ô đang gõ, nên không còn xoá lố ăn mất chữ đứng trước.</li>
+        </ul>
+        <p>Bản ký Developer ID &amp; notarized. 327 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.16 — "Công tắc NFC cho ô tìm kiếm web"</title>
       <sparkle:version>41600</sparkle:version>
       <sparkle:shortVersionString>4.16</sparkle:shortVersionString>
