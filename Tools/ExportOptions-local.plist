@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Ký Developer ID bằng cert CÓ SẴN TRONG KEYCHAIN, không cần Apple ID trong
+       Xcode (RELEASE.md Section 2). Dùng file này thay cho
+       ExportOptions-upload.plist trên máy chưa đăng nhập Xcode — bản upload sẽ
+       fail "error: exportArchive No Accounts".
+
+       destination=export: chỉ ký rồi xuất ra đĩa. Notarize làm riêng ở bước sau
+       bằng `xcrun notarytool submit --keychain-profile vkey --wait`. -->
+  <key>method</key>
+  <string>developer-id</string>
+  <key>teamID</key>
+  <string>U4B264GM2B</string>
+  <key>signingStyle</key>
+  <string>manual</string>
+  <key>signingCertificate</key>
+  <string>Developer ID Application: Long Hoang Tuan (U4B264GM2B)</string>
+  <key>destination</key>
+  <string>export</string>
+</dict>
+</plist>

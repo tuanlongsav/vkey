@@ -10,10 +10,10 @@ Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự. **
 1.  Implement code changes + test suite pass
 2.  Bump version (MARKETING_VERSION + CURRENT_PROJECT_VERSION trong pbxproj) — **chỉ 2 cấp `MAJOR.MINOR`**, xem quy tắc Section 1
 3.  Archive Release: xcodebuild archive -allowProvisioningUpdates (Section 2)
-4.  Ký Developer ID + nộp notarization: xcodebuild -exportArchive
-    (method=developer-id, destination=upload — Tools/ExportOptions-upload.plist)
-5.  Poll xcodebuild -exportNotarizedApp (30s/lần, thường 1-5 phút) → app đã
-    staple ticket; verify spctl ("Notarized Developer ID") + stapler validate
+4.  Ký Developer ID: xcodebuild -exportArchive
+    (method=developer-id, signingStyle=manual — Tools/ExportOptions-local.plist)
+5.  Notarize: ditto -c -k → xcrun notarytool submit --keychain-profile vkey --wait
+    → xcrun stapler staple; verify spctl ("Notarized Developer ID") + stapler validate
 6.  Package DMG (hdiutil) từ app ĐÃ NOTARIZED (không dùng app trong archive!)
 7.  Sign Sparkle (Tools/sparkle_sign_update.sh) → capture edSignature + length
 8.  Update appcast.xml — thêm item mới ở ĐẦU danh sách (escape `&` → `&amp;` trong title)
@@ -67,11 +67,19 @@ Nếu sai một trong các điều kiện trên, Sparkle sẽ từ chối update
 
 ## 2) Build bản phát hành (v3.5+: Developer ID + notarization)
 
-Từ v3.5, app ký bằng **Developer ID Application: Long Hoang Tuan (U4B264GM2B)**
-(cert cloud-managed — private key nằm trên Apple, KHÔNG có trong keychain local;
-`-allowProvisioningUpdates` tự fetch khi export). `DEVELOPMENT_TEAM` đã ghi sẵn
-trong pbxproj. Yêu cầu: Xcode đang đăng nhập Apple ID của team (Settings →
-Accounts) — auth qua session Xcode, KHÔNG cần app-specific password.
+Từ v3.5, app ký bằng **Developer ID Application: Long Hoang Tuan (U4B264GM2B)**.
+Cert này **CÓ trong keychain local** — kiểm bằng `security find-identity -v -p
+codesigning`. `DEVELOPMENT_TEAM` đã ghi sẵn trong pbxproj.
+
+> **⚠️ Xcode trên máy này KHÔNG đăng nhập Apple ID nào** (`defaults read
+> com.apple.dt.Xcode IDEProvisioningTeams` báo không tồn tại). Mọi đường phụ
+> thuộc session Xcode đều hỏng: `-exportArchive` với
+> `Tools/ExportOptions-upload.plist` (`destination=upload`) fail ngay
+> `error: exportArchive No Accounts`, và `-exportNotarizedApp` vô dụng theo.
+> Đường DƯỚI ĐÂY không cần Apple ID trong Xcode — ký bằng cert trong keychain,
+> notarize bằng keychain profile `vkey` của `notarytool`. Xác nhận trên v4.17
+> (2026-08-05). `ExportOptions-upload.plist` giữ lại cho máy nào có đăng nhập
+> Xcode; đừng dùng ở đây.
 
 ```bash
 # 1. Archive
@@ -80,37 +88,43 @@ xcodebuild -project vkey.xcodeproj -scheme vkey -configuration Release archive \
   -destination 'generic/platform=macOS' \
   -allowProvisioningUpdates
 
-# 2. Ký Developer ID + nộp notarization (destination=upload)
+# 2. Ký Developer ID bằng cert trong keychain (signingStyle=manual, KHÔNG cần account)
 xcodebuild -exportArchive \
   -archivePath /tmp/vkey-X.Y.xcarchive \
-  -exportPath /tmp/vkey-X.Y-upload \
-  -exportOptionsPlist Tools/ExportOptions-upload.plist \
-  -allowProvisioningUpdates
-# Lưu ý: bước này thỉnh thoảng fail "The request timed out" — chạy lại là được.
+  -exportPath /tmp/vkey-X.Y-export \
+  -exportOptionsPlist Tools/ExportOptions-local.plist
+# Verify đã đổi từ "Apple Development" sang "Developer ID Application":
+codesign -dvv /tmp/vkey-X.Y-export/vkey.app 2>&1 | grep Authority=
 
-# 3. Poll cho đến khi Apple duyệt (thường 1-5 phút) → export app đã staple ticket
-xcodebuild -exportNotarizedApp \
-  -archivePath /tmp/vkey-X.Y.xcarchive \
-  -exportPath /tmp/vkey-X.Y-notarized
-# Lặp lại mỗi 30s nếu chưa xong ("EXPORT FAILED" = chưa duyệt xong)
+# 3. Notarize + staple (keychain profile "vkey" đã cấu hình sẵn)
+ditto -c -k --keepParent /tmp/vkey-X.Y-export/vkey.app /tmp/vkey-X.Y-notarize.zip
+xcrun notarytool submit /tmp/vkey-X.Y-notarize.zip \
+  --keychain-profile vkey --wait          # chờ tới "status: Accepted", thường 1-5 phút
+xcrun stapler staple /tmp/vkey-X.Y-export/vkey.app
 
 # 4. Verify trước khi đóng gói
-spctl --assess --type exec -vv /tmp/vkey-X.Y-notarized/vkey.app   # "Notarized Developer ID"
-xcrun stapler validate /tmp/vkey-X.Y-notarized/vkey.app
+spctl --assess --type exec -vv /tmp/vkey-X.Y-export/vkey.app   # "Notarized Developer ID"
+xcrun stapler validate /tmp/vkey-X.Y-export/vkey.app
 ```
 
-Sau đó đóng gói `.app` (bản notarized) thành `.dmg`:
+Nếu profile `vkey` mất (máy mới / keychain reset), tạo lại bằng app-specific
+password: `xcrun notarytool store-credentials vkey --apple-id <id> --team-id
+U4B264GM2B --password <app-specific-password>`. Kiểm tra profile còn sống:
+`xcrun notarytool history --keychain-profile vkey`.
+
+Sau đó đóng gói `.app` (bản notarized, đã staple ở bước 3) thành `.dmg`:
 
 ```bash
 mkdir /tmp/vkey-dmg-staging
-cp -R /tmp/vkey-X.Y-notarized/vkey.app /tmp/vkey-dmg-staging/
+cp -R /tmp/vkey-X.Y-export/vkey.app /tmp/vkey-dmg-staging/
 ln -s /Applications /tmp/vkey-dmg-staging/Applications
 hdiutil create -volname "vkey X.Y" -srcfolder /tmp/vkey-dmg-staging -ov -format UDZO vkey-X.Y.dmg
 ```
 
-DMG không ký Developer ID được bằng `codesign` CLI (key cloud-managed) — chấp
-nhận được vì app bên trong đã notarized + stapled, Gatekeeper vẫn pass khi user
-kéo app ra. Ký Sparkle (EdDSA) cho DMG vẫn BẮT BUỘC như Section 3.
+DMG **không** ký Developer ID — chủ ý, không phải hạn chế kỹ thuật (cert có
+trong keychain nên `codesign` CLI ký được nếu muốn). Chấp nhận được vì app bên
+trong đã notarized + stapled, Gatekeeper vẫn pass khi user kéo app ra. Ký
+Sparkle (EdDSA) cho DMG vẫn BẮT BUỘC như Section 3.
 
 ⚠️ Đổi chữ ký (vd ad-hoc → Developer ID, hoặc đổi team) làm macOS đòi cấp lại
 quyền Trợ năng một lần — phải ghi chú trong release notes.
@@ -258,18 +272,21 @@ git commit -m "vX.Y ... | README rà soát ✓"
    - Nguyên nhân: URL release đổi, private, hoặc chưa publish asset.
    - Cách tránh: verify URL truy cập trực tiếp trước khi publish appcast.
 
-5. **(v3.5+) `exportArchive` fail "The request timed out" / "No signing certificate Developer ID Application found"**
-   - Nguyên nhân: request lên dịch vụ cloud signing của Apple bị timeout (cert
-     Developer ID là cloud-managed, mỗi lần export đều gọi Apple).
-   - Cách tránh: chạy lại y nguyên lệnh — thường lần 2 là được. Nếu fail dai
-     dẳng: mở Xcode → Settings → Accounts kiểm tra session Apple ID còn đăng
-     nhập (session hết hạn thì đăng nhập lại) rồi retry.
+5. **(v3.5+) `exportArchive` fail `error: exportArchive No Accounts`**
+   - Nguyên nhân: đang dùng `Tools/ExportOptions-upload.plist`
+     (`destination=upload` + `signingStyle=automatic`) — đường này cần Xcode
+     đăng nhập Apple ID, mà máy này không có account nào.
+   - Cách tránh: dùng `Tools/ExportOptions-local.plist` (`signingStyle=manual`,
+     ký bằng cert trong keychain) rồi notarize riêng bằng `notarytool` —
+     xem Section 2.
 
-6. **(v3.5+) `exportNotarizedApp` báo EXPORT FAILED**
-   - Nguyên nhân: Apple CHƯA duyệt xong notarization — đây không phải lỗi.
-   - Cách tránh: poll lại mỗi 30s (thường 1-5 phút). Nếu >30 phút vẫn fail,
-     kiểm tra log distribution trong `/var/folders/.../xcdistributionlogs` —
-     có thể bị reject thật (entitlement/binary issue).
+6. **(v3.5+) `notarytool submit` fail**
+   - `Error: HTTP status code: 401` → keychain profile `vkey` hỏng/hết hạn.
+     Tạo lại bằng `xcrun notarytool store-credentials` (xem Section 2).
+   - `status: Invalid` → Apple reject thật. Đọc chi tiết bằng
+     `xcrun notarytool log <submission-id> --keychain-profile vkey`
+     (thường do binary chưa bật hardened runtime hoặc thiếu timestamp).
+   - `status: In Progress` lâu → bình thường 1-5 phút; `--wait` tự chờ.
 
 7. **(v3.5+) User báo app đòi cấp lại quyền Trợ năng sau update**
    - Nguyên nhân: chữ ký app đổi so với bản trước (vd ad-hoc → Developer ID
@@ -288,11 +305,17 @@ git commit -m "vX.Y ... | README rà soát ✓"
 
 ### Developer ID key (ký app, v3.5+)
 
-- Cert **Developer ID Application: Long Hoang Tuan (U4B264GM2B)** là
-  **cloud-managed**: private key nằm trong HSM của Apple, KHÔNG có file key
-  local nào để backup/lộ. Keychain local chỉ có cert Apple Development /
-  Apple Distribution (Xcode tự quản).
-- Điều kiện dùng: Xcode đăng nhập Apple ID của Account Holder. Mất máy không
-  mất key — máy mới chỉ cần đăng nhập Xcode là ký tiếp được.
+- 🚨 **Private key của cert Developer ID Application: Long Hoang Tuan
+  (U4B264GM2B) NẰM TRONG `~/Library/Keychains/login.keychain-db` của máy này.**
+  Kiểm chứng: `security find-identity -v -p codesigning` liệt kê nó (chỉ liệt
+  kê identity CÓ private key dùng được), và `codesign -s "Developer ID
+  Application: …"` ký được offline, không cần Apple ID trong Xcode.
+  - Tài liệu này trước v4.17 ghi cert là "cloud-managed, key nằm trong HSM của
+    Apple" — **SAI**. Đã sửa 2026-08-05.
+- **Hệ quả bảo mật:** mất máy / lộ login keychain = lộ khoá ký app. Ai có nó ký
+  được phần mềm mạo danh U4B264GM2B. Đặt mật khẩu mạnh cho login keychain, bật
+  FileVault, và export `.p12` backup (có mật khẩu) cất nơi an toàn — không có
+  bản backup thì mất máy là mất luôn khả năng ký, và mọi user phải cấp lại
+  quyền Trợ năng khi buộc phải đổi cert (xem Section 6.7).
 - KHÔNG tự tạo thêm Developer ID cert qua portal trừ khi có lý do — đổi cert
   = đổi chữ ký = user phải cấp lại quyền Trợ năng (xem Section 6.7).
