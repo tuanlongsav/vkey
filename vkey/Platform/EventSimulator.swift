@@ -248,6 +248,20 @@ class EventSimulator {
     return (backspaceCount, Array(String(remainingScalars)))
   }
 
+  /// Chọn trục diff theo dạng lưu của field — grapheme (`calcKeyStrokes`) cho
+  /// field NFC, scalar NFD (`calcKeyStrokesNFD`) cho field NFD. Gom về một chỗ
+  /// để mọi call site dùng CHUNG một quy tắc thay vì lặp lại ternary.
+  ///
+  /// Giá trị `usesNFC` này phải được truyền tiếp xuống
+  /// `sendReplacement(normalizeToNFC:)` và `axDirectReplace(usesNFC:)`: cả ba
+  /// (đếm backspace / đơn vị xoá / dạng emit) buộc phải cùng một trục, nếu
+  /// không sẽ lệch scalar và ăn mất ký tự — regression v4.14 ("gửi"→"ửi").
+  static func calcKeyStrokes(from: String, to: String, usesNFC: Bool) -> (Int, [Character]) {
+    usesNFC
+      ? calcKeyStrokes(from: from, to: to)
+      : calcKeyStrokesNFD(from: from, to: to)
+  }
+
   @discardableResult
   static func sendBackspace(
     _ count: Int,
@@ -508,7 +522,9 @@ class EventSimulator {
     return nil
   }
 
-  static func axDirectReplace(backspaceCount: Int, insert: String) -> Bool {
+  /// - Parameter usesNFC: trục mà caller đã dùng để đếm `backspaceCount`;
+  ///   quyết định `axDeleteStart` lùi theo grapheme hay theo scalar.
+  static func axDirectReplace(backspaceCount: Int, insert: String, usesNFC: Bool) -> Bool {
     guard let element = axFocusedElement() else {
       os_log("axDirect: no focused element (systemwide + app pid both nil)",
              log: axLog, type: .default)
@@ -551,7 +567,8 @@ class EventSimulator {
       start = caret
       len = selLen
     } else {
-      let deleteStart = axDeleteStart(valueStr, caretUTF16: caret, backspaceCount: backspaceCount)
+      let deleteStart = axDeleteStart(
+        valueStr, caretUTF16: caret, backspaceCount: backspaceCount, usesNFC: usesNFC)
       start = deleteStart
       len = (caret - deleteStart) + (selectionAtEnd ? selLen : 0)
     }
@@ -595,16 +612,38 @@ class EventSimulator {
     return false
   }
 
-  /// Lùi từ caret `backspaceCount` "phím xoá" trong không gian UTF-16, coi mỗi
-  /// cụm grapheme (base + combining marks, surrogate pair) là MỘT đơn vị —
-  /// an toàn với app lưu text dạng NFD (ô = o + ◌̂).
-  static func axDeleteStart(_ value: String, caretUTF16: Int, backspaceCount: Int) -> Int {
+  /// Lùi từ caret `backspaceCount` "phím xoá" trong không gian UTF-16.
+  ///
+  /// Đơn vị lùi PHẢI khớp trục mà caller đã dùng để ĐẾM `backspaceCount`
+  /// (xem `calcKeyStrokes(from:to:usesNFC:)`):
+  /// - `usesNFC == true` → mỗi cụm grapheme (base + combining marks, surrogate
+  ///   pair) là MỘT đơn vị, khớp `calcKeyStrokes`.
+  /// - `usesNFC == false` → mỗi Unicode scalar là MỘT đơn vị, khớp
+  ///   `calcKeyStrokesNFD`. Trước đây luôn lùi theo grapheme, nên khi caller
+  ///   đưa số đếm scalar (field NFD) mà strategy bị ép sang axDirect —
+  ///   `sendReplacement` tự nâng cấp khi `overlaySearchIsFocused()` — thì mỗi
+  ///   dấu thanh làm lùi dư một cụm và xoá lố sang ký tự đứng trước.
+  static func axDeleteStart(
+    _ value: String, caretUTF16: Int, backspaceCount: Int, usesNFC: Bool
+  ) -> Int {
     guard backspaceCount > 0, caretUTF16 > 0 else { return max(0, caretUTF16) }
     let ns = value as NSString
     var idx = min(caretUTF16, ns.length)
     for _ in 0..<backspaceCount {
       guard idx > 0 else { break }
-      idx = ns.rangeOfComposedCharacterSequence(at: idx - 1).location
+      if usesNFC {
+        idx = ns.rangeOfComposedCharacterSequence(at: idx - 1).location
+      } else {
+        // Lùi đúng MỘT scalar: surrogate pair chiếm 2 UTF-16 unit, combining
+        // mark là scalar riêng nên KHÔNG gộp vào base như nhánh grapheme.
+        idx -= 1
+        if idx > 0,
+          UTF16.isTrailSurrogate(ns.character(at: idx)),
+          UTF16.isLeadSurrogate(ns.character(at: idx - 1))
+        {
+          idx -= 1
+        }
+      }
     }
     return idx
   }
@@ -690,7 +729,7 @@ class EventSimulator {
     backspaceCount: Int,
     diffChars rawDiffChars: [Character],
     strategy: SendingStrategy,
-    normalizeToNFC: Bool = false
+    normalizeToNFC: Bool
   ) -> EventSendTelemetry {
     let diffChars = emittedCharacters(rawDiffChars, normalizeToNFC: normalizeToNFC)
     let touchedCharacters = backspaceCount + diffChars.count
@@ -765,7 +804,9 @@ class EventSimulator {
           // 3 lần (5ms/lần, theo gonhanh) rồi mới fallback synthetic.
           for attempt in 0..<3 {
             if attempt > 0 { usleep(5000) }
-            if axDirectReplace(backspaceCount: backspaceCount, insert: String(diffChars)) {
+            if axDirectReplace(
+              backspaceCount: backspaceCount, insert: String(diffChars),
+              usesNFC: normalizeToNFC) {
               return
             }
           }
@@ -907,7 +948,9 @@ class EventSimulator {
         _ = withAdaptiveFlush {
           for attempt in 0..<3 {
             if attempt > 0 { usleep(5000) }
-            if axDirectReplace(backspaceCount: selectLeftCount, insert: String(diffChars)) {
+            if axDirectReplace(
+              backspaceCount: selectLeftCount, insert: String(diffChars),
+              usesNFC: true) {
               return
             }
           }

@@ -1032,7 +1032,7 @@ final class vkeyTests: XCTestCase {
     processor.push(char: "d")
     XCTAssertEqual(processor.transformed, "đi")
     
-    let (backspaces1, diff1) = processor.pop()
+    let (backspaces1, diff1) = processor.pop(usesNFC: processor.usesNFCForFocusedField())
     XCTAssertEqual(backspaces1, 2)
     XCTAssertEqual(String(diff1), "di")
     XCTAssertEqual(processor.transformed, "di")
@@ -1051,13 +1051,13 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(processor.transformed, "dinhjhd") // recovery continues
     
     // Backspace once to get "dinhjh" (keys: "dinhjh")
-    let (backspaces2, diff2) = processor.pop()
+    let (backspaces2, diff2) = processor.pop(usesNFC: processor.usesNFCForFocusedField())
     XCTAssertEqual(backspaces2, 0) // lets OS handle it (1-char delete)
     XCTAssertEqual(String(diff2), "")
     XCTAssertEqual(processor.transformed, "dinhjh")
     
     // Backspace again to restore "dịnh" (keys: "dinjh", from snapshot)
-    let (backspaces3, diff3) = processor.pop()
+    let (backspaces3, diff3) = processor.pop(usesNFC: processor.usesNFCForFocusedField())
     XCTAssertEqual(backspaces3, 5) // deletes "inhjh" (5 chars)
     XCTAssertEqual(String(diff3), "ịnh")
     XCTAssertEqual(processor.transformed, "dịnh")
@@ -1072,7 +1072,7 @@ final class vkeyTests: XCTestCase {
     vniProcessor.push(char: "9")
     XCTAssertEqual(vniProcessor.transformed, "đi")
     
-    let (vniB1, vniD1) = vniProcessor.pop()
+    let (vniB1, vniD1) = vniProcessor.pop(usesNFC: vniProcessor.usesNFCForFocusedField())
     XCTAssertEqual(vniB1, 2)
     XCTAssertEqual(String(vniD1), "di")
     XCTAssertEqual(vniProcessor.transformed, "di")
@@ -1271,20 +1271,20 @@ final class vkeyTests: XCTestCase {
     XCTAssertTrue(buffer.stopProcessing)
     XCTAssertTrue(buffer.stoppedByEnglishWord)
 
-    _ = buffer.pop(engine: engine)
+    _ = buffer.pop(engine: engine, usesNFC: true)
     XCTAssertEqual(buffer.transformed, "pas")
     XCTAssertEqual(String(buffer.keys), "pas")
     XCTAssertTrue(buffer.stopProcessing)
     XCTAssertTrue(buffer.stoppedByEnglishWord)
 
-    _ = buffer.pop(engine: engine)
+    _ = buffer.pop(engine: engine, usesNFC: true)
     XCTAssertEqual(buffer.transformed, "pa")
     XCTAssertEqual(String(buffer.keys), "pa")
 
     buffer = WordBuffer()
     for c in "horses" { buffer.push(char: c, engine: engine) }
     XCTAssertEqual(buffer.transformed, "horses")
-    _ = buffer.pop(engine: engine)
+    _ = buffer.pop(engine: engine, usesNFC: true)
     XCTAssertEqual(buffer.transformed, "horse")
     XCTAssertEqual(String(buffer.keys), "horse")
   }
@@ -2153,7 +2153,7 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(inputProcessor.transformed, "test")
     
     // Backspace from "test"
-    let _ = inputProcessor.pop()
+    let _ = inputProcessor.pop(usesNFC: inputProcessor.usesNFCForFocusedField())
     XCTAssertEqual(inputProcessor.transformed, "tes")
     XCTAssertTrue(inputProcessor.stopProcessing)
   }
@@ -2177,7 +2177,7 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(inputProcessor.transformed, "hoofz")
 
     // Backspace
-    let (numBackspaces, diffChars) = inputProcessor.pop()
+    let (numBackspaces, diffChars) = inputProcessor.pop(usesNFC: inputProcessor.usesNFCForFocusedField())
 
     // "hoofz" and "hồ" share "h"
     // "hoofz" is ["h", "o", "o", "f", "z"] (5 chars)
@@ -2249,14 +2249,14 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(inputProcessor.transformed, "str")
     
     // Press backspace -> rolls back to "st", still in recovery/bypass
-    let (bs1, diff1) = inputProcessor.pop()
+    let (bs1, diff1) = inputProcessor.pop(usesNFC: inputProcessor.usesNFCForFocusedField())
     XCTAssertEqual(bs1, 0)
     XCTAssertEqual(diff1, [])
     XCTAssertTrue(inputProcessor.stopProcessing)
     XCTAssertEqual(inputProcessor.transformed, "st")
     
     // Press backspace again -> rolls back to "s", which is valid, so recovery disarms!
-    let (bs2, diff2) = inputProcessor.pop()
+    let (bs2, diff2) = inputProcessor.pop(usesNFC: inputProcessor.usesNFCForFocusedField())
     XCTAssertEqual(bs2, 0)
     XCTAssertEqual(diff2, [])
     XCTAssertFalse(inputProcessor.stopProcessing)
@@ -2329,7 +2329,7 @@ final class WordBufferTests: XCTestCase {
     for char in "chaof" { buffer.push(char: char, engine: engine) }
     buffer.newWord(storePrevious: true)
 
-    let (backspaces, diff) = buffer.pop(engine: engine)
+    let (backspaces, diff) = buffer.pop(engine: engine, usesNFC: true)
     XCTAssertEqual(backspaces, 0, "OS handles the backspace that triggered restore")
     XCTAssertTrue(diff.isEmpty)
     XCTAssertEqual(buffer.transformed, "chào")
@@ -2350,7 +2350,7 @@ final class WordBufferTests: XCTestCase {
     XCTAssertEqual(buffer.transformed, "hoofz")
 
     // First pop should rollback the recovery, restoring "hồ".
-    _ = buffer.pop(engine: engine)
+    _ = buffer.pop(engine: engine, usesNFC: true)
     XCTAssertFalse(buffer.stopProcessing)
     XCTAssertEqual(buffer.transformed, "hồ")
   }
@@ -2362,7 +2362,7 @@ final class WordBufferTests: XCTestCase {
     for char in "chao" { buffer.push(char: char, engine: engine) }
     XCTAssertEqual(buffer.transformed, "chao")
 
-    _ = buffer.pop(engine: engine)
+    _ = buffer.pop(engine: engine, usesNFC: true)
     XCTAssertEqual(buffer.transformed, "cha")
     XCTAssertEqual(String(buffer.keys), "cha")
   }
@@ -3109,7 +3109,8 @@ final class TiengVietValidatorTests: XCTestCase {
     let replacement = InputProcessor.macroReplacement(
       for: "dc",
       endingChar: " ",
-      macros: macros
+      macros: macros,
+      usesNFC: true
     )
 
     XCTAssertEqual(replacement?.backspaceCount, 2)
@@ -3121,7 +3122,8 @@ final class TiengVietValidatorTests: XCTestCase {
     let replacement = InputProcessor.macroReplacement(
       for: "email",
       endingChar: ".",
-      macros: macros
+      macros: macros,
+      usesNFC: true
     )
 
     XCTAssertEqual(replacement?.backspaceCount, 5)
@@ -3131,7 +3133,8 @@ final class TiengVietValidatorTests: XCTestCase {
   func testMacroReplacementNoMatch() throws {
     let macros = [Macro(from: "dc", to: "địa chỉ")]
 
-    XCTAssertNil(InputProcessor.macroReplacement(for: "dt", endingChar: " ", macros: macros))
+    XCTAssertNil(InputProcessor.macroReplacement(
+        for: "dt", endingChar: " ", macros: macros, usesNFC: true))
   }
 
   func testMacroReplacementIgnoresEmptyCurrentAndFields() throws {
@@ -3139,23 +3142,76 @@ final class TiengVietValidatorTests: XCTestCase {
       InputProcessor.macroReplacement(
         for: "",
         endingChar: " ",
-        macros: [Macro(from: "dc", to: "địa chỉ")]
+        macros: [Macro(from: "dc", to: "địa chỉ")],
+        usesNFC: true
       )
     )
     XCTAssertNil(
       InputProcessor.macroReplacement(
         for: "dc",
         endingChar: " ",
-        macros: [Macro(from: "", to: "địa chỉ")]
+        macros: [Macro(from: "", to: "địa chỉ")],
+        usesNFC: true
       )
     )
     XCTAssertNil(
       InputProcessor.macroReplacement(
         for: "dc",
         endingChar: " ",
-        macros: [Macro(from: "dc", to: "")]
+        macros: [Macro(from: "dc", to: "")],
+        usesNFC: true
       )
     )
+  }
+
+  /// Macro phải dùng CHUNG trục diff với mọi path thay-thế khác: grapheme cho
+  /// field NFC, scalar NFD cho field NFD (Chromium/Electron/Slack). Trigger có
+  /// dấu là chỗ hai trục lệch nhau — "tớ" là 2 grapheme nhưng 4 scalar NFD
+  /// (t + o + ◌̛ + ◌́). Dùng số đếm của trục sai thì field NFD xoá thiếu và sót
+  /// ký tự rơi lại trước phần macro bung ra.
+  func testMacroReplacementFollowsFieldAxis() throws {
+    let macros = [Macro(from: "tớ", to: "tôi")]
+
+    // Diff chung giữ nguyên tiền tố chung "t" thay vì xoá trọn từ.
+    let nfc = InputProcessor.macroReplacement(
+      for: "tớ", endingChar: " ", macros: macros, usesNFC: true)
+    XCTAssertEqual(nfc?.backspaceCount, 1, "Field NFC: grapheme, chung tiền tố 't'")
+    XCTAssertEqual(String(nfc?.diffChars ?? []), "ôi ")
+
+    let nfd = InputProcessor.macroReplacement(
+      for: "tớ", endingChar: " ", macros: macros, usesNFC: false)
+    XCTAssertEqual(nfd?.backspaceCount, 3, "Field NFD: scalar o+◌̛+◌́ sau tiền tố 't'")
+
+    // Mô phỏng field NFD, KHÔNG chuẩn hoá kết quả — để sai lệch dạng lộ ra.
+    func replayNFDField(_ r: (backspaceCount: Int, diffChars: [Character])?) -> String {
+      var field = Array("tớ".decomposedStringWithCanonicalMapping.unicodeScalars)
+      guard let r else { return String(String.UnicodeScalarView(field)) }
+      field.removeLast(min(r.backspaceCount, field.count))
+      // Field NFD nhận đúng dạng mà sendReplacement sẽ phát ra.
+      let emitted = EventSimulator.emittedCharacters(
+        r.diffChars, normalizeToNFC: r.backspaceCount == nfc?.backspaceCount)
+      field.append(contentsOf: String(emitted).unicodeScalars)
+      return String(String.UnicodeScalarView(field))
+    }
+
+    XCTAssertEqual(
+      replayNFDField(nfd), "tôi ".decomposedStringWithCanonicalMapping,
+      "Trục NFD dựng lại đúng 'tôi ' ở dạng NFD của field")
+    XCTAssertEqual(
+      replayNFDField(nfc).precomposedStringWithCanonicalMapping, "tơôi ",
+      "Trục NFC áp lên field NFD xoá thiếu 1 scalar → sót 'ơ' (bug đã vá)")
+  }
+
+  /// Trigger ASCII (đại đa số macro) phải giữ nguyên hành vi trên cả hai trục —
+  /// grapheme và scalar bằng nhau nên diff không đổi.
+  func testMacroReplacementIdenticalForASCIITrigger() throws {
+    let macros = [Macro(from: "dc", to: "địa chỉ")]
+    for usesNFC in [true, false] {
+      let r = InputProcessor.macroReplacement(
+        for: "dc", endingChar: " ", macros: macros, usesNFC: usesNFC)
+      XCTAssertEqual(r?.backspaceCount, 2, "Trigger ASCII: xoá 2 dù trục nào")
+      XCTAssertEqual(String(r?.diffChars ?? []), "địa chỉ ")
+    }
   }
 
   func testCommitReplacementTargetIncludesEndingWhenCallerSwallowsIt() throws {
@@ -4524,20 +4580,54 @@ final class AXDeleteStartTests: XCTestCase {
   func testNFCSimple() throws {
     // "gõ" NFC: g(1) + õ(1) = length 2; xoá 1 → lùi về sau 'g'
     let s = "g\u{00F5}"
-    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 2, backspaceCount: 1), 1)
-    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 2, backspaceCount: 2), 0)
+    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 2, backspaceCount: 1, usesNFC: true), 1)
+    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 2, backspaceCount: 2, usesNFC: true), 0)
   }
 
   func testNFDCombiningMark() throws {
     // "gõ" NFD: g(1) + o(1) + ◌̃(1) = length 3; xoá 1 phải lùi NGUYÊN cụm o+◌̃ → 1
     let s = "go\u{0303}"
-    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 1), 1)
-    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 2), 0)
+    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 1, usesNFC: true), 1)
+    XCTAssertEqual(EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 2, usesNFC: true), 0)
   }
 
   func testClampsAtZeroAndHandlesEmptyValue() throws {
-    XCTAssertEqual(EventSimulator.axDeleteStart("", caretUTF16: 0, backspaceCount: 3), 0)
-    XCTAssertEqual(EventSimulator.axDeleteStart("ab", caretUTF16: 2, backspaceCount: 99), 0)
+    XCTAssertEqual(EventSimulator.axDeleteStart("", caretUTF16: 0, backspaceCount: 3, usesNFC: true), 0)
+    XCTAssertEqual(EventSimulator.axDeleteStart("ab", caretUTF16: 2, backspaceCount: 99, usesNFC: true), 0)
+    XCTAssertEqual(EventSimulator.axDeleteStart("ab", caretUTF16: 2, backspaceCount: 99, usesNFC: false), 0)
+  }
+
+  /// `usesNFC: false` phải lùi theo SCALAR, khớp số đếm của `calcKeyStrokesNFD`.
+  /// Trước đây luôn lùi theo grapheme, nên khi caller đưa số đếm scalar mà
+  /// strategy bị `sendReplacement` ép sang axDirect (overlaySearchIsFocused)
+  /// thì mỗi dấu thanh làm lùi dư một cụm → xoá lố sang ký tự đứng trước.
+  func testNFDScalarAxisDeletesOneScalarPerUnit() throws {
+    // "gõ" NFD: g(1) + o(1) + ◌̃(1) = length 3.
+    let s = "go\u{0303}"
+    XCTAssertEqual(
+      EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 1, usesNFC: false), 2,
+      "1 scalar = chỉ dấu ◌̃, base 'o' còn lại")
+    XCTAssertEqual(
+      EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 2, usesNFC: false), 1,
+      "2 scalar = ◌̃ + o, giữ 'g'")
+    XCTAssertEqual(
+      EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 3, usesNFC: false), 0)
+
+    // Trục scalar khớp đúng số mà calcKeyStrokesNFD sinh ra cho cùng phép thay.
+    let (bs, _) = EventSimulator.calcKeyStrokes(from: "gõ", to: "gó", usesNFC: false)
+    XCTAssertEqual(
+      EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: bs, usesNFC: false),
+      1, "axDirect xoá đúng phần mà calcKeyStrokesNFD đã đếm")
+  }
+
+  /// Surrogate pair là MỘT scalar — không được lùi nửa cặp.
+  func testNFDScalarAxisKeepsSurrogatePairIntact() throws {
+    let s = "a😀"  // 'a'(1) + emoji(2 UTF-16 unit) = length 3
+    XCTAssertEqual(
+      EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 1, usesNFC: false), 1,
+      "Lùi 1 scalar phải nuốt trọn surrogate pair")
+    XCTAssertEqual(
+      EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 2, usesNFC: false), 0)
   }
 }
 
@@ -4625,7 +4715,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(nfcProcessor.transformed, "gô")
     
     // Pop (delete last 'o' to get "go")
-    let (nfcBs, nfcDiff) = nfcProcessor.pop()
+    let (nfcBs, nfcDiff) = nfcProcessor.pop(usesNFC: nfcProcessor.usesNFCForFocusedField())
     XCTAssertEqual(nfcBs, 1) // deletes "ô"
     XCTAssertEqual(nfcDiff, ["o"]) // re-types "o"
     
@@ -4638,7 +4728,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(nfdProcessor.transformed, "gô")
     
     // Pop (delete last 'o' to get "go")
-    let (nfdBs, nfdDiff) = nfdProcessor.pop()
+    let (nfdBs, nfdDiff) = nfdProcessor.pop(usesNFC: nfdProcessor.usesNFCForFocusedField())
     XCTAssertEqual(nfdBs, 0, "NFD should let the OS handle backspace (numBackspaces = 0)")
     XCTAssertEqual(nfdDiff, [], "NFD should not need to retype any character")
   }
@@ -4682,7 +4772,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     sublime.push(char: "o")
     sublime.push(char: "o")
     XCTAssertEqual(sublime.transformed, "gô")
-    let (sublimeBs, sublimeDiff) = sublime.pop()
+    let (sublimeBs, sublimeDiff) = sublime.pop(usesNFC: sublime.usesNFCForFocusedField())
     XCTAssertEqual(sublimeBs, 1, "Sublime must NFC-pop like Notes")
     XCTAssertEqual(sublimeDiff, ["o"])
 
@@ -4691,7 +4781,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     chrome.push(char: "g")
     chrome.push(char: "o")
     chrome.push(char: "o")
-    let (chromeBs, chromeDiff) = chrome.pop()
+    let (chromeBs, chromeDiff) = chrome.pop(usesNFC: chrome.usesNFCForFocusedField())
     XCTAssertEqual(chromeBs, 0, "Chrome stays NFD-pop")
     XCTAssertEqual(chromeDiff, [])
   }
@@ -4976,7 +5066,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     processor.push(char: "o")
     processor.push(char: "o")
     XCTAssertEqual(processor.transformed, "gô")
-    let (webBs, webDiff) = processor.pop()
+    let (webBs, webDiff) = processor.pop(usesNFC: processor.usesNFCForFocusedField())
     XCTAssertEqual(webBs, 0)
     XCTAssertEqual(webDiff, [])
 
@@ -4987,7 +5077,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     processor.push(char: "o")
     processor.push(char: "o")
     XCTAssertEqual(processor.transformed, "gô")
-    let (panelBs, panelDiff) = processor.pop()
+    let (panelBs, panelDiff) = processor.pop(usesNFC: processor.usesNFCForFocusedField())
     XCTAssertEqual(panelBs, 1)
     XCTAssertEqual(panelDiff, ["o"])
 
@@ -5000,7 +5090,7 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     processor.push(char: "o")
     processor.push(char: "o")
     XCTAssertEqual(processor.transformed, "gô")
-    let (omniBs, omniDiff) = processor.pop()
+    let (omniBs, omniDiff) = processor.pop(usesNFC: processor.usesNFCForFocusedField())
     XCTAssertEqual(omniBs, 1)
     XCTAssertEqual(omniDiff, ["o"])
 
@@ -5074,5 +5164,128 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     notes.changeActiveApp("com.apple.Notes")
     notes.focusedFieldKind = .webContent
     XCTAssertTrue(notes.usesNFCForFocusedField(), "Notes NFC nhờ whitelist, không cần cờ")
+  }
+}
+
+
+// MARK: - ===========================================
+// MARK: - Commit-Time Replacement vs previousWordState
+// MARK: - ===========================================
+
+/// Mọi đường commit tự THAY chữ trên màn hình (macro bung, spell auto-correct)
+/// đều để lại `wordState` giữ chữ user gõ chứ không phải chữ đang hiển thị.
+/// Lưu state lệch đó làm `previousWordState` là bug: `WordBuffer.pop` (nhánh
+/// `keys.isEmpty`) dựng nó ngược vào buffer khi user Backspace ngay sau đó, nên
+/// mọi diff kế tiếp được tính trên đoạn text KHÔNG có trên màn hình → phá chữ.
+final class CommitReplacementPreviousWordStateTests: XCTestCase {
+
+  private var savedSpell = true
+  private var savedRestore = true
+
+  override func setUp() {
+    super.setUp()
+    savedSpell = Defaults[.spellCheckEnabled]
+    savedRestore = Defaults[.englishAutoRestoreEnabled]
+    Defaults[.spellCheckEnabled] = true
+    Defaults[.englishAutoRestoreEnabled] = true
+  }
+
+  override func tearDown() {
+    Defaults[.spellCheckEnabled] = savedSpell
+    Defaults[.englishAutoRestoreEnabled] = savedRestore
+    super.tearDown()
+  }
+
+  /// Gõ "ARM": Telex coi R giữa hai phụ âm là dấu hỏi → "ẢM". Ở phím kết từ,
+  /// spell decision nhận ra initialism tiếng Anh và gõ lại "ARM" lên màn hình
+  /// (`.restoreRawEnglish`). Sau bước đó màn hình là "ARM" còn `wordState` vẫn
+  /// là "ẢM" — đúng kiểu lệch đã vá ở macro, nên KHÔNG được lưu previous.
+  func testEnglishRestoreCommitDoesNotStoreStaleWordState() throws {
+    let p = InputProcessor(method: .Telex)
+    p.newWord()
+    for c in "ARM" { p.push(char: c) }
+    XCTAssertEqual(p.transformed, "ẢM", "Telex: R giữa các phụ âm = dấu hỏi")
+
+    XCTAssertTrue(
+      p.applySpellDecisionAndAdvance(endingChar: " ", swallowEndingChar: true),
+      "Spell decision phải restore 'ARM' — vkey tự gửi thay thế")
+    XCTAssertNil(
+      p.previousWordState,
+      "Màn hình đang là 'ARM' còn wordState giữ 'ẢM' — lưu lại là dựng chữ cũ")
+
+    // Backspace ngay sau đó chỉ xoá dấu cách (OS tự xử lý, trả về 0/rỗng) và
+    // buffer phải TRỐNG, không được hồi sinh "ẢM".
+    let (backspaces, diffChars) = p.pop(usesNFC: true)
+    XCTAssertEqual(backspaces, 0)
+    XCTAssertTrue(diffChars.isEmpty)
+    XCTAssertEqual(p.transformed, "", "Buffer phải trống sau Backspace")
+    XCTAssertTrue(p.wordState.isBlank)
+  }
+
+  /// Nhánh `.suggest` (thay từ gõ bằng từ trong từ điển) thoát cùng một cửa
+  /// `return true`, nên dùng chung bảo đảm: hễ `applySpellDecisionAndAdvance`
+  /// báo đã thay chữ thì không có `previousWordState` nào được giữ lại.
+  func testAnyAppliedSpellReplacementLeavesNoPreviousWordState() throws {
+    for word in ["ARM", "USA"] {
+      let p = InputProcessor(method: .Telex)
+      p.newWord()
+      for c in word { p.push(char: c) }
+      guard p.applySpellDecisionAndAdvance(endingChar: " ", swallowEndingChar: true) else {
+        XCTFail("'\(word)' phải đi qua đường thay chữ ở commit")
+        continue
+      }
+      XCTAssertNil(p.previousWordState, "'\(word)': không được giữ state trước khi sửa")
+    }
+  }
+
+  /// Hậu quả cụ thể của hành vi CŨ, pin ở mức `WordBuffer`: `storePrevious:
+  /// true` làm Backspace dựng lại "ẢM" vào buffer trong khi màn hình là "ARM";
+  /// `storePrevious: false` để buffer trống như mong đợi.
+  func testStoredStaleStateResurrectsPreReplacementWord() throws {
+    let engine = Telex()
+
+    var oldBehavior = WordBuffer()
+    for c in "ARM" { oldBehavior.push(char: c, engine: engine) }
+    oldBehavior.newWord(storePrevious: true)
+    _ = oldBehavior.pop(engine: engine, usesNFC: true)
+    XCTAssertEqual(
+      oldBehavior.transformed, "ẢM",
+      "Hành vi cũ: Backspace hồi sinh 'ẢM' dù màn hình hiển thị 'ARM'")
+
+    var newBehavior = WordBuffer()
+    for c in "ARM" { newBehavior.push(char: c, engine: engine) }
+    newBehavior.newWord(storePrevious: false)
+    _ = newBehavior.pop(engine: engine, usesNFC: true)
+    XCTAssertEqual(newBehavior.transformed, "", "Hành vi mới: buffer trống")
+    XCTAssertTrue(newBehavior.keys.isEmpty)
+  }
+
+  /// Macro trên đường Space (`handleTaskKey`) phải cùng quy tắc với đường dấu
+  /// câu (`handleTextChar`): sau khi bung, màn hình là phần bung còn `wordState`
+  /// giữ trigger. Space là phím bung macro phổ biến nhất.
+  func testMacroExpansionOnSpaceKeepsNoPreviousWordState() throws {
+    let savedMacros = Defaults[.macros]
+    let savedEnabled = Defaults[.macroEnabled]
+    defer {
+      Defaults[.macros] = savedMacros
+      Defaults[.macroEnabled] = savedEnabled
+    }
+    Defaults[.macroEnabled] = true
+    Defaults[.macros] = [Macro(from: "dc", to: "địa chỉ")]
+
+    let p = InputProcessor(method: .Telex)
+    p.newWord()
+    for c in "dc" { p.push(char: c) }
+    XCTAssertEqual(p.transformed, "dc")
+
+    XCTAssertTrue(
+      p.expandMacroAndAdvance(endingChar: " "),
+      "Macro 'dc' phải bung ở phím Space")
+    XCTAssertNil(p.previousWordState, "Trigger 'dc' không được lưu sau khi bung macro")
+
+    let (backspaces, diffChars) = p.pop(usesNFC: true)
+    XCTAssertEqual(backspaces, 0)
+    XCTAssertTrue(diffChars.isEmpty)
+    XCTAssertEqual(p.transformed, "", "Backspace sau macro không được hồi sinh 'dc'")
   }
 }

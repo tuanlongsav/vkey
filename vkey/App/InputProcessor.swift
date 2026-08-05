@@ -138,7 +138,7 @@ struct WordBuffer {
 
   // MARK: - Pop (Backspace)
 
-  mutating func pop(engine: TypingMethod, usesNFC: Bool = true) -> (Int, [Character]) {
+  mutating func pop(engine: TypingMethod, usesNFC: Bool) -> (Int, [Character]) {
     lastTransformed = transformed
 
     // Single-step rollback: if we are in recovery and it was caused by the LATEST keystroke
@@ -150,9 +150,8 @@ struct WordBuffer {
       stoppedByEnglishWord = valid.stoppedByEnglishWord
       lastValidSnapshot = nil
 
-      let (numBackspaces, diffChars) = usesNFC
-        ? EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
-        : EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
+      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+        from: lastTransformed, to: transformed, usesNFC: usesNFC)
 
       if numBackspaces == 1 && diffChars.isEmpty {
         return (0, [])
@@ -179,9 +178,8 @@ struct WordBuffer {
     let remainingKeys = Array(keys.dropLast())
     reconstructState(for: remainingKeys, engine: engine)
 
-    let (numBackspaces, diffChars) = usesNFC
-      ? EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
-      : EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
+    let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+      from: lastTransformed, to: transformed, usesNFC: usesNFC)
 
     // If it's a simple 1-char deletion, let the OS handle it
     if numBackspaces == 1 && diffChars.isEmpty {
@@ -960,9 +958,12 @@ class InputProcessor {
     }
   }
 
-  public func pop() -> (Int, [Character]) {
-    return wordBuffer.pop(engine: engine, usesNFC: usesNFCForFocusedField())
+  /// Nhận `usesNFC` từ caller để dạng ĐẾM backspace và dạng EMIT cùng dựa
+  /// trên MỘT quyết định (xem `sendTypedReplacement`) — không đọc field hai lần.
+  public func pop(usesNFC: Bool) -> (Int, [Character]) {
+    return wordBuffer.pop(engine: engine, usesNFC: usesNFC)
   }
+
 
   public func push(char: Character) {
     wordBuffer.push(char: char, engine: engine)
@@ -1033,13 +1034,11 @@ class InputProcessor {
 
       // Only expand macros on Space — Tab/Enter often have form-submission semantics
       // we don't want to swallow.
-      if taskKey == .Space, expandMacroIfMatch(endingChar: " ") {
-        newWord(storePrevious: true)
+      if taskKey == .Space, expandMacroAndAdvance(endingChar: " ") {
         return nil
       }
 
-      if taskKey == .Space, applySpellDecisionOnCommit(endingChar: " ", swallowEndingChar: true) {
-        newWord(storePrevious: true)
+      if taskKey == .Space, applySpellDecisionAndAdvance(endingChar: " ", swallowEndingChar: true) {
         return nil
       }
       // FIX (upstream parity — xkey 20260504 / gonhanh v1.0.131): chỉ Space mới
@@ -1056,12 +1055,12 @@ class InputProcessor {
       let currentTransformed = wordBuffer.transformed
       if !wordBuffer.wordState.isBlank && currentTransformed != orig {
         let usesNFC = usesNFCForFocusedField()
-        let (numBackspaces, diffChars) = usesNFC
-          ? EventSimulator.calcKeyStrokes(from: currentTransformed, to: orig)
-          : EventSimulator.calcKeyStrokesNFD(from: currentTransformed, to: orig)
-        let telemetry = sendTypedReplacement(
+        let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+          from: currentTransformed, to: orig, usesNFC: usesNFC)
+        sendTypedReplacement(
           backspaceCount: numBackspaces,
           diffChars: diffChars,
+          usesNFC: usesNFC,
           appLikelySensitive: isFixAutocompleteApp()
         )
         newWord()
@@ -1069,11 +1068,14 @@ class InputProcessor {
       }
       newWord()
     } else if taskKey == .Delete {
-      let (numBackspaces, diffChars) = pop()
+      // Một lần đọc field, dùng chung cho cả trục diff (trong pop) lẫn emit.
+      let usesNFC = usesNFCForFocusedField()
+      let (numBackspaces, diffChars) = pop(usesNFC: usesNFC)
       if numBackspaces > 0 || !diffChars.isEmpty {
         sendTypedReplacement(
           backspaceCount: numBackspaces,
           diffChars: diffChars,
+          usesNFC: usesNFC,
           appLikelySensitive: isFixAutocompleteApp()
         )
         return nil
@@ -1096,12 +1098,10 @@ class InputProcessor {
       // 2.0 (A5): cập nhật state đánh dấu sentence-ending punctuation.
       updateCapitalizeStateForPunctuation(newChar)
 
-      if expandMacroIfMatch(endingChar: newChar) {
-        newWord(storePrevious: true)
+      if expandMacroAndAdvance(endingChar: newChar) {
         return nil
       }
-      if applySpellDecisionOnCommit(endingChar: newChar, swallowEndingChar: true) {
-        newWord(storePrevious: true)
+      if applySpellDecisionAndAdvance(endingChar: newChar, swallowEndingChar: true) {
         return nil
       }
       newWord(storePrevious: true)
@@ -1133,6 +1133,9 @@ class InputProcessor {
       sendTypedReplacement(
         backspaceCount: 0,
         diffChars: [newChar],
+        // Chèn thuần (backspaceCount 0) — không có trục diff phải khớp; dạng
+        // emit vẫn bám field để ô tìm kiếm NFC nhận text precomposed.
+        usesNFC: usesNFCForFocusedField(),
         appLikelySensitive: isFixAutocompleteApp()
       )
       return nil
@@ -1149,9 +1152,8 @@ class InputProcessor {
     // apps cho đến khi có giải pháp đúng.
     //
     let usesNFC = usesNFCForFocusedField()
-    let (numBackspaces, diffChars) = usesNFC
-      ? EventSimulator.calcKeyStrokes(from: lastTransformed, to: transformed)
-      : EventSimulator.calcKeyStrokesNFD(from: lastTransformed, to: transformed)
+    let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+      from: lastTransformed, to: transformed, usesNFC: usesNFC)
 
     // If the only change is the new character itself, let it pass through
     if let firstDiffChar = diffChars.first,
@@ -1163,6 +1165,7 @@ class InputProcessor {
     sendTypedReplacement(
       backspaceCount: numBackspaces,
       diffChars: diffChars,
+      usesNFC: usesNFC,
       appLikelySensitive: false
     )
     return nil
@@ -1202,6 +1205,7 @@ class InputProcessor {
       sendTypedReplacement(
         backspaceCount: 0,
         diffChars: Array(prediction),
+        usesNFC: usesNFCForFocusedField(),
         appLikelySensitive: isFixAutocompleteApp()
       )
       PredictionEngine.shared.learnAcceptedPhrase(
@@ -1214,11 +1218,10 @@ class InputProcessor {
         prev1Committed = last
       }
     } else {
-      guard applySpellDecisionOnCommit(endingChar: " ", swallowEndingChar: true) else {
+      guard applySpellDecisionAndAdvance(endingChar: " ", swallowEndingChar: true) else {
         clearActivePrediction()
         return false
       }
-      newWord(storePrevious: true)
       let recomputed = PredictionEngine.shared.topPhrasePrediction(
         prev2: prev2Committed,
         prev1: prev1Committed ?? ""
@@ -1226,6 +1229,7 @@ class InputProcessor {
       sendTypedReplacement(
         backspaceCount: 0,
         diffChars: Array(recomputed),
+        usesNFC: usesNFCForFocusedField(),
         appLikelySensitive: isFixAutocompleteApp()
       )
       PredictionEngine.shared.learnAcceptedPhrase(
@@ -1304,10 +1308,19 @@ class InputProcessor {
   }
 
   /// Gửi replacement với chiến lược đúng ngữ cảnh (axDirect cho omnibox Chrome…).
+  ///
+  /// - Parameter usesNFC: quyết định chuẩn hoá của caller — PHẢI là chính giá
+  ///   trị đã dùng để chọn `calcKeyStrokes` (NFC) vs `calcKeyStrokesNFD` (NFD)
+  ///   khi tính `backspaceCount`/`diffChars`. Tham số này KHÔNG có giá trị mặc
+  ///   định: bất biến "dạng EMIT == dạng ĐẾM backspace" (v4.15) là thứ giữ cho
+  ///   bộ gõ không rụng chữ, nên nó phải do compiler ép ở từng call site chứ
+  ///   không phải nhờ hai lần đọc `usesNFCForFocusedField()` tình cờ trùng nhau
+  ///   — đọc hai lần chính là lớp lỗi đã gây regression v4.14 ("gửi"→"ửi").
   @discardableResult
   private func sendTypedReplacement(
     backspaceCount: Int,
     diffChars: [Character],
+    usesNFC: Bool,
     appLikelySensitive: Bool
   ) -> EventSendTelemetry {
     let strategy = effectiveTypingStrategy(
@@ -1318,9 +1331,9 @@ class InputProcessor {
       backspaceCount: backspaceCount,
       diffChars: diffChars,
       strategy: strategy,
-      // v4.15: dạng gửi bám theo field (cùng trục quyết định calcKeyStrokes
-      // vs calcKeyStrokesNFD ở các caller) — NFC precompose, NFD giữ nguyên.
-      normalizeToNFC: usesNFCForFocusedField()
+      // v4.15: dạng gửi bám theo field — cùng MỘT quyết định `usesNFC` mà
+      // caller đã dùng để chọn trục diff. NFC precompose, NFD giữ nguyên.
+      normalizeToNFC: usesNFC
     )
     observeTelemetry(telemetry, appLikelySensitive: appLikelySensitive)
     return telemetry
@@ -1347,11 +1360,41 @@ class InputProcessor {
     return strategyTracker.currentStrategy
   }
 
+  /// Chạy spell decision cho phím kết từ RỒI sang từ mới.
+  ///
+  /// Hai vế phải đi liền nhau nên gộp vào một chỗ: khi hàm trả về true là vkey
+  /// vừa THAY chữ trên màn hình — từ Anh gốc ở `.restoreRawEnglish` ("tẽt" →
+  /// "text"), từ gợi ý ở `.suggest` ("dịnh" → "định") — trong khi `wordState`
+  /// vẫn giữ chữ user gõ. Lưu state lệch đó làm `previousWordState` khiến
+  /// Backspace ngay sau đó dựng lại chữ CŨ vào buffer (`WordBuffer.pop`, nhánh
+  /// `keys.isEmpty`) trong khi màn hình hiển thị chữ ĐÃ SỬA → diff kế tiếp tính
+  /// trên text không tồn tại và phá chữ. Cùng lý do với macro (xem
+  /// `expandMacroIfMatch`), nên cũng KHÔNG lưu previous ở đây.
+  ///
+  /// - Returns: True khi vkey đã tự gửi thay thế — caller phải nuốt phím kết từ.
+  @discardableResult
+  func applySpellDecisionAndAdvance(
+    endingChar: Character,
+    swallowEndingChar: Bool
+  ) -> Bool {
+    guard applySpellDecisionOnCommit(
+      endingChar: endingChar,
+      swallowEndingChar: swallowEndingChar
+    ) else {
+      return false
+    }
+    newWord(storePrevious: false)
+    return true
+  }
+
   /// Applies spell/restore/suggestion rules when a word commit key is pressed.
   /// - Parameters:
   ///   - endingChar: Commit key character (space or punctuation).
   ///   - swallowEndingChar: True when commit key should be emitted by vkey and swallowed by the caller.
   /// - Returns: True when a replacement was sent.
+  ///
+  /// Không gọi thẳng từ đường phím: dùng `applySpellDecisionAndAdvance` để
+  /// bước sang từ mới đúng cách sau khi đã thay chữ.
   @discardableResult
   private func applySpellDecisionOnCommit(
     endingChar: Character,
@@ -1524,12 +1567,12 @@ class InputProcessor {
         includeEndingChar: swallowEndingChar
       )
       let usesNFC = usesNFCForFocusedField()
-      let (numBackspaces, diffChars) = usesNFC
-        ? EventSimulator.calcKeyStrokes(from: current, to: target)
-        : EventSimulator.calcKeyStrokesNFD(from: current, to: target)
+      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+        from: current, to: target, usesNFC: usesNFC)
       sendTypedReplacement(
         backspaceCount: numBackspaces,
         diffChars: diffChars,
+        usesNFC: usesNFC,
         appLikelySensitive: isFixAutocompleteApp()
       )
       return true
@@ -1657,11 +1700,14 @@ class InputProcessor {
       && !InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
   }
 
-  static func macroReplacement(
+  /// Tra macro khớp CHÍNH XÁC từ hiện tại, trả về text thay thế (phần bung ra
+  /// + ký tự kết từ). Tách khỏi việc tính diff để caller chỉ phải đọc trạng
+  /// thái field khi thực sự có macro khớp.
+  static func macroTarget(
     for current: String,
     endingChar: Character,
     macros: [Macro]
-  ) -> (backspaceCount: Int, diffChars: [Character])? {
+  ) -> String? {
     guard !current.isEmpty else { return nil }
     guard
       let macro = macros.first(where: {
@@ -1670,8 +1716,31 @@ class InputProcessor {
     else {
       return nil
     }
+    return macro.to + String(endingChar)
+  }
 
-    return (current.count, Array(macro.to + String(endingChar)))
+  /// Diff thay từ trigger bằng phần macro bung ra.
+  ///
+  /// Dùng ĐÚNG helper mà mọi path thay-thế khác dùng
+  /// (`calcKeyStrokes(from:to:usesNFC:)`) thay vì tự đếm độ dài trigger. Tự
+  /// đếm sinh ra một quy ước thứ ba và sai ở cả hai chiều: đếm grapheme làm
+  /// THIẾU backspace trên field NFD khi trigger có dấu ("tớ" = 2 grapheme
+  /// nhưng 4 scalar NFD) → sót "to"; còn đếm scalar cho TRỌN từ lại xoá LỐ
+  /// sang ký tự đứng trước nếu field bị phân loại nhầm hoặc strategy bị ép
+  /// sang axDirect. Diff chung chỉ đụng phần đuôi khác nhau và thừa hưởng
+  /// guard v3.6 (không bao giờ mở đầu bằng dấu rời).
+  static func macroReplacement(
+    for current: String,
+    endingChar: Character,
+    macros: [Macro],
+    usesNFC: Bool
+  ) -> (backspaceCount: Int, diffChars: [Character])? {
+    guard
+      let target = macroTarget(for: current, endingChar: endingChar, macros: macros)
+    else {
+      return nil
+    }
+    return EventSimulator.calcKeyStrokes(from: current, to: target, usesNFC: usesNFC)
   }
 
   static func commitReplacementTarget(
@@ -1698,6 +1767,22 @@ class InputProcessor {
     return String(first).uppercased() + replacement.dropFirst()
   }
 
+  /// Bung macro cho phím kết từ RỒI sang từ mới.
+  ///
+  /// Sau khi bung, trên màn hình là PHẦN BUNG chứ không phải trigger, trong khi
+  /// `wordState` vẫn giữ trigger. Lưu trigger làm `previousWordState` khiến
+  /// Backspace kế tiếp dựng lại trigger vào buffer trong khi màn hình hiển thị
+  /// phần bung → diff sau đó tính trên text không tồn tại và phá chữ. Cùng lớp
+  /// với spell auto-correct (xem `applySpellDecisionAndAdvance`).
+  ///
+  /// - Returns: True khi đã bung — caller phải nuốt phím kết từ.
+  @discardableResult
+  func expandMacroAndAdvance(endingChar: Character) -> Bool {
+    guard expandMacroIfMatch(endingChar: endingChar) else { return false }
+    newWord(storePrevious: false)
+    return true
+  }
+
   /// Expands the current word using the user's macro table if it matches.
   /// When a match is found, replaces the on-screen word with the expansion plus
   /// the word-ending character, then returns true so the caller can swallow the
@@ -1709,7 +1794,7 @@ class InputProcessor {
 
     let current = wordBuffer.transformed
     guard
-      let replacement = Self.macroReplacement(
+      let target = Self.macroTarget(
         for: current,
         endingChar: endingChar,
         macros: Defaults[.macros]
@@ -1718,9 +1803,16 @@ class InputProcessor {
       return false
     }
 
+    // Chỉ đọc trạng thái field khi CHẮC CHẮN có macro khớp: path này chạy trên
+    // mọi phím kết từ (space + dấu câu) mà không-khớp là trường hợp áp đảo.
+    // Một lần đọc, dùng chung cho cả trục diff lẫn dạng emit.
+    let usesNFC = usesNFCForFocusedField()
+    let (backspaceCount, diffChars) = EventSimulator.calcKeyStrokes(
+      from: current, to: target, usesNFC: usesNFC)
     sendTypedReplacement(
-      backspaceCount: replacement.backspaceCount,
-      diffChars: replacement.diffChars,
+      backspaceCount: backspaceCount,
+      diffChars: diffChars,
+      usesNFC: usesNFC,
       appLikelySensitive: isFixAutocompleteApp()
     )
     return true
