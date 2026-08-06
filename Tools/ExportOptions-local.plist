@@ -2,13 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <!-- Ký Developer ID bằng cert CÓ SẴN TRONG KEYCHAIN, không cần Apple ID trong
-       Xcode (RELEASE.md Section 2). Dùng file này thay cho
-       ExportOptions-upload.plist trên máy chưa đăng nhập Xcode — bản upload sẽ
-       fail "error: exportArchive No Accounts".
+  <!-- Signs with the Developer ID cert ALREADY IN THE LOGIN KEYCHAIN, so no
+       Apple ID needs to be signed into Xcode (RELEASE.md Section 2).
+       This is the export options file to use on this machine; the automatic
+       signing style in ExportOptions-upload.plist fails here with
+       "error: exportArchive No Accounts".
 
-       destination=export: chỉ ký rồi xuất ra đĩa. Notarize làm riêng ở bước sau
-       bằng `xcrun notarytool submit --keychain-profile vkey --wait`. -->
+       destination=export: sign and write to disk only. Notarization is a
+       separate later step: `xcrun notarytool submit --keychain-profile vkey
+       --wait`, and from v4.18 the .dmg itself is signed and notarized too. -->
   <key>method</key>
   <string>developer-id</string>
   <key>teamID</key>

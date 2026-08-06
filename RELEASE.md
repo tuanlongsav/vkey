@@ -9,13 +9,17 @@ Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự. **
 ```
 1.  Implement code changes + test suite pass
 2.  Bump version (MARKETING_VERSION + CURRENT_PROJECT_VERSION trong pbxproj) — **chỉ 2 cấp `MAJOR.MINOR`**, xem quy tắc Section 1
-3.  Archive Release: xcodebuild archive -allowProvisioningUpdates (Section 2)
+3.  **`Tools/release_build.sh X.Y`** chạy gộp bước 3-6 dưới đây và fail cứng nếu
+    verify không đạt (Section 2). Chạy tay thì theo đúng thứ tự 3→6:
+    Archive Release: xcodebuild archive (KHÔNG cần -allowProvisioningUpdates)
 4.  Ký Developer ID: xcodebuild -exportArchive
     (method=developer-id, signingStyle=manual — Tools/ExportOptions-local.plist)
-5.  Notarize: ditto -c -k → xcrun notarytool submit --keychain-profile vkey --wait
+5.  Notarize app: ditto -c -k → xcrun notarytool submit --keychain-profile vkey --wait
     → xcrun stapler staple; verify spctl ("Notarized Developer ID") + stapler validate
-6.  Package DMG (hdiutil) từ app ĐÃ NOTARIZED (không dùng app trong archive!)
+6.  Package DMG (hdiutil) từ app ĐÃ NOTARIZED (không dùng app trong archive!),
+    rồi **ký + notarize + staple CHÍNH FILE DMG** — bắt buộc từ v4.18
 7.  Sign Sparkle (Tools/sparkle_sign_update.sh) → capture edSignature + length
+    **SAU khi DMG đã ký/staple xong** — ký/staple làm đổi bytes ⇒ đổi cả signature lẫn length
 8.  Update appcast.xml — thêm item mới ở ĐẦU danh sách (escape `&` → `&amp;` trong title)
 9.  Validate appcast (Tools/validate_appcast.sh) — XML lint pass
 10. **CHANGELOG.md** — thêm section `## [x.y] - YYYY-MM-DD — "Title"` đầu file
@@ -39,7 +43,9 @@ Mọi release vkey đều phải đi qua chuỗi bước SAU theo thứ tự. **
 
 **Nếu README chưa có diff** → STOP, quay lại Section 5b checklist, sửa README, rồi mới commit. KHÔNG được push nếu chưa pass gate này.
 
-`Tools/validate_release.sh` (sắp có) sẽ check tự động: `git diff HEAD~1 README.md | wc -l > 0`.
+Gate này hiện vẫn kiểm bằng tay. (`Tools/validate_release.sh` được hứa từ
+v1.7.11 nhưng chưa bao giờ tồn tại — đừng gọi nó. Bước build thì đã script hoá
+thật: `Tools/release_build.sh`, Section 2.)
 
 ## 1) Nguyên tắc bắt buộc trước khi phát hành
 
@@ -81,12 +87,28 @@ codesigning`. `DEVELOPMENT_TEAM` đã ghi sẵn trong pbxproj.
 > (2026-08-05). `ExportOptions-upload.plist` giữ lại cho máy nào có đăng nhập
 > Xcode; đừng dùng ở đây.
 
+> 💡 Toàn bộ Section 2 đã được script hoá: **`Tools/release_build.sh X.Y`** chạy
+> đúng chuỗi dưới đây, tự dọn thư mục tạm và **fail cứng** nếu một bước verify
+> không đạt (preflight còn chặn trước cả archive khi cert hết hạn, thiếu
+> keychain profile, hoặc `MARKETING_VERSION` chưa bump). Script từ chối ghi đè
+> `vkey-X.Y.dmg` đã có trừ khi thêm `--force` — rebuild làm đổi bytes, tức làm
+> hỏng `edSignature`/`length` đã ghi vào appcast.
+> Dùng script là đường mặc định; các lệnh dưới đây là tài liệu tham chiếu để
+> hiểu/gỡ lỗi từng bước.
+
 ```bash
+# 0. Dọn artifact của release trước (mọi bước dưới đều từ chối ghi đè)
+rm -rf /tmp/vkey-X.Y.xcarchive /tmp/vkey-X.Y-export /tmp/vkey-X.Y-notarize.zip \
+       /tmp/vkey-dmg-staging
+
 # 1. Archive
+#    KHÔNG cần -allowProvisioningUpdates: app không sandbox nên không cần
+#    provisioning profile, và flag đó chỉ có tác dụng khi Xcode có Apple ID
+#    (máy này không có). Xác nhận trên v4.17: archive pass, ký bằng cert
+#    "Apple Development" sẵn trong keychain, flags=0x10000(runtime).
 xcodebuild -project vkey.xcodeproj -scheme vkey -configuration Release archive \
   -archivePath /tmp/vkey-X.Y.xcarchive \
-  -destination 'generic/platform=macOS' \
-  -allowProvisioningUpdates
+  -destination 'generic/platform=macOS'
 
 # 2. Ký Developer ID bằng cert trong keychain (signingStyle=manual, KHÔNG cần account)
 xcodebuild -exportArchive \
@@ -115,19 +137,46 @@ U4B264GM2B --password <app-specific-password>`. Kiểm tra profile còn sống:
 Sau đó đóng gói `.app` (bản notarized, đã staple ở bước 3) thành `.dmg`:
 
 ```bash
-mkdir /tmp/vkey-dmg-staging
+# 5. Đóng gói DMG — staging PHẢI sạch (xem bước 0)
+#    `cp -R src.app dest/` khi dest/vkey.app đã tồn tại sẽ MERGE hai bundle,
+#    file thừa của version cũ phá _CodeSignature → Gatekeeper reject.
+rm -rf /tmp/vkey-dmg-staging && mkdir -p /tmp/vkey-dmg-staging
 cp -R /tmp/vkey-X.Y-export/vkey.app /tmp/vkey-dmg-staging/
-ln -s /Applications /tmp/vkey-dmg-staging/Applications
+codesign --verify --deep --strict /tmp/vkey-dmg-staging/vkey.app   # phải im lặng
+ln -sfn /Applications /tmp/vkey-dmg-staging/Applications
 hdiutil create -volname "vkey X.Y" -srcfolder /tmp/vkey-dmg-staging -ov -format UDZO vkey-X.Y.dmg
+
+# 6. Ký + notarize CHÍNH FILE DMG (bắt buộc từ v4.18 — xem giải thích dưới)
+codesign --force --timestamp --sign "Developer ID Application: Long Hoang Tuan (U4B264GM2B)" \
+  vkey-X.Y.dmg
+xcrun notarytool submit vkey-X.Y.dmg --keychain-profile vkey --wait
+xcrun stapler staple vkey-X.Y.dmg
+xcrun stapler validate vkey-X.Y.dmg          # "The validate action worked!"
+spctl --assess --type open --context context:primary-signature -vv vkey-X.Y.dmg
 ```
 
-DMG **không** ký Developer ID — chủ ý, không phải hạn chế kỹ thuật (cert có
-trong keychain nên `codesign` CLI ký được nếu muốn). Chấp nhận được vì app bên
-trong đã notarized + stapled, Gatekeeper vẫn pass khi user kéo app ra. Ký
-Sparkle (EdDSA) cho DMG vẫn BẮT BUỘC như Section 3.
+⚠️ **Bước 6 phải xong TRƯỚC khi ký Sparkle (Section 3).** `codesign` và
+`stapler staple` đều ghi vào file DMG → mọi thao tác đó làm đổi bytes, tức đổi
+cả `edSignature` lẫn `length`. Ký Sparkle trước rồi mới ký/staple DMG = appcast
+mang chữ ký của một file không còn tồn tại, mọi client Sparkle từ chối update.
 
-⚠️ Đổi chữ ký (vd ad-hoc → Developer ID, hoặc đổi team) làm macOS đòi cấp lại
-quyền Trợ năng một lần — phải ghi chú trong release notes.
+> 📌 **Vì sao phải notarize chính DMG, không chỉ app bên trong.** Gatekeeper
+> đánh giá **container mà user tải về**. DMG tải bằng browser dính
+> `com.apple.quarantine`; nếu DMG chưa ký + chưa notarize thì lần mở đầu tiên
+> hiện dialog *"Apple could not verify … free of malware"*, user phải vào System
+> Settings → Privacy & Security → Open Anyway — kể cả khi app bên trong đã
+> notarized + stapled.
+> **Máy dev KHÔNG phát hiện được lỗi này**: `spctl --status` ở đây là
+> `assessments disabled`, nên mọi DMG đều trả `accepted` kèm
+> `override=security disabled`. Đừng lấy kết quả `spctl` trên máy này làm bằng
+> chứng rằng user mở được.
+> Các bản ≤ v4.17 ship DMG chưa ký (`codesign -dvv vkey-4.17.dmg` → *"code
+> object is not signed at all"*) vì tài liệu cũ tưởng cert là cloud-managed nên
+> không ký được. Cert nằm sẵn trong keychain nên rào cản đó không có thật.
+
+⚠️ Đổi **team** hoặc đổi **loại** chữ ký (ad-hoc → Developer ID) làm macOS đòi
+cấp lại quyền Trợ năng một lần — phải ghi chú trong release notes. Đổi/renew
+cert trong cùng team U4B264GM2B thì KHÔNG (xem Section 7).
 
 ## 3) Ký Sparkle cho file update
 
@@ -193,8 +242,15 @@ Trước khi publish appcast/release, bắt buộc check:
    - `spctl --assess --type exec -vv <app>` → `source=Notarized Developer ID`
    - `xcrun stapler validate <app>` → "The validate action worked!"
    - `codesign -dvv <app>` → `Authority=Developer ID Application: Long Hoang Tuan (U4B264GM2B)` + `flags=0x10000(runtime)`
-8. **(v3.5+)** Nếu release này ĐỔI chữ ký so với bản trước (đổi cert/team) →
-   release notes + appcast PHẢI có cảnh báo "cấp lại quyền Trợ năng một lần".
+8. **(v4.18+)** Chính file DMG phải đã ký + notarized + stapled:
+   - `codesign -dvv vkey-X.Y.dmg` → `Authority=Developer ID Application: …`
+   - `xcrun stapler validate vkey-X.Y.dmg` → "The validate action worked!"
+   - Verify NÀY chạy TRƯỚC khi ký Sparkle; ký/staple sau đó sẽ làm sai
+     `edSignature` + `length` trong appcast.
+9. **(v3.5+)** Nếu release này đổi **team** hoặc đổi **loại** chữ ký (ad-hoc →
+   Developer ID) → release notes + appcast PHẢI có cảnh báo "cấp lại quyền Trợ
+   năng một lần". Renew/đổi cert trong CÙNG team U4B264GM2B thì KHÔNG cần cảnh
+   báo — TCC không reset (xem Section 7).
 
 ## 5b) 🚨 Checklist README rà soát (v1.7.1+, hardened v1.7.11+)
 
@@ -280,19 +336,50 @@ git commit -m "vX.Y ... | README rà soát ✓"
      ký bằng cert trong keychain) rồi notarize riêng bằng `notarytool` —
      xem Section 2.
 
-6. **(v3.5+) `notarytool submit` fail**
+6. **(v3.5+) `No signing certificate "Developer ID Application" found`, hoặc
+   archive fail `No signing certificate "Apple Development" found`**
+   - Nguyên nhân: cert **hết hạn** hoặc **biến mất khỏi keychain** — KHÔNG liên
+     quan gì tới account hay `notarytool` profile. Đã xảy ra thật một lần: cert
+     Developer ID mất sau khi đăng xuất Xcode (CHANGELOG v3.5).
+   - Kiểm: `security find-identity -v -p codesigning` (chỉ liệt kê identity CÓ
+     private key dùng được) và
+     `security find-certificate -c "Developer ID Application: Long Hoang Tuan" -p | openssl x509 -noout -dates`.
+   - Cách tránh: renew/tải lại cert từ developer.apple.com → Certificates,
+     double-click nạp vào keychain. Xem hạn cert ở Section 7.
+   - ĐỪNG chạy `store-credentials` cho lỗi này — profile `vkey` chỉ dùng cho
+     `notarytool`, không liên quan bước ký.
+
+7. **(v3.5+) `notarytool submit` fail**
+   - Lỗi mạng/upload tạm thời (`Error: Failed to upload`, timeout, connection
+     reset) → chỉ cần **submit lại**; artifact ở `/tmp/vkey-X.Y-export` vẫn dùng
+     được, không phải archive/export lại. Đây là lỗi thoáng qua, không phải 401.
    - `Error: HTTP status code: 401` → keychain profile `vkey` hỏng/hết hạn.
      Tạo lại bằng `xcrun notarytool store-credentials` (xem Section 2).
    - `status: Invalid` → Apple reject thật. Đọc chi tiết bằng
      `xcrun notarytool log <submission-id> --keychain-profile vkey`
      (thường do binary chưa bật hardened runtime hoặc thiếu timestamp).
    - `status: In Progress` lâu → bình thường 1-5 phút; `--wait` tự chờ.
+   - Lỗi ký ở bước `exportArchive` thì `notarytool log` không có gì — log thật
+     nằm ở `/var/folders/.../xcdistributionlogs` (đường dẫn in ra cuối output
+     của `xcodebuild -exportArchive` khi fail).
 
-7. **(v3.5+) User báo app đòi cấp lại quyền Trợ năng sau update**
-   - Nguyên nhân: chữ ký app đổi so với bản trước (vd ad-hoc → Developer ID
-     ở v3.5, hoặc tương lai đổi cert/team) → TCC reset entry.
-   - Cách tránh: GIỮ NGUYÊN cert Developer ID hiện tại cho mọi release sau.
-     Nếu buộc phải đổi → cảnh báo rõ trong release notes + appcast.
+8. **(v3.5+) User báo app đòi cấp lại quyền Trợ năng sau update**
+   - Nguyên nhân: **designated requirement** của app đổi so với bản trước → TCC
+     reset entry. DR chỉ gồm bundle ID + team OU, nên chỉ 2 thứ gây reset:
+     đổi **loại** chữ ký (ad-hoc/unsigned → Developer ID, đã xảy ra ở v3.5) hoặc
+     đổi **team**.
+   - Renew/cấp lại cert trong CÙNG team U4B264GM2B **không** gây reset — DR y
+     hệt. Kiểm bằng `codesign -d -r- /Applications/vkey.app`.
+   - Cách tránh: giữ nguyên team U4B264GM2B. Chỉ cảnh báo trong release notes
+     khi thật sự đổi team/loại chữ ký — cảnh báo thừa làm user đi reset quyền
+     vô ích.
+
+9. **(v4.18+) User báo mở DMG bị "Apple could not verify … free of malware"**
+   - Nguyên nhân: DMG chưa ký/notarize (mọi bản ≤ v4.17). Gatekeeper đánh giá
+     chính disk image, không phải app bên trong.
+   - Cách tránh: làm bước 6 của Section 2 trước khi ký Sparkle.
+   - Không reproduce được trên máy dev vì `spctl --status` = `assessments
+     disabled`; test trên máy khác hoặc tin vào `stapler validate`.
 
 ## 7) Bảo mật key
 
@@ -314,8 +401,29 @@ git commit -m "vX.Y ... | README rà soát ✓"
     Apple" — **SAI**. Đã sửa 2026-08-05.
 - **Hệ quả bảo mật:** mất máy / lộ login keychain = lộ khoá ký app. Ai có nó ký
   được phần mềm mạo danh U4B264GM2B. Đặt mật khẩu mạnh cho login keychain, bật
-  FileVault, và export `.p12` backup (có mật khẩu) cất nơi an toàn — không có
-  bản backup thì mất máy là mất luôn khả năng ký, và mọi user phải cấp lại
-  quyền Trợ năng khi buộc phải đổi cert (xem Section 6.7).
-- KHÔNG tự tạo thêm Developer ID cert qua portal trừ khi có lý do — đổi cert
-  = đổi chữ ký = user phải cấp lại quyền Trợ năng (xem Section 6.7).
+  FileVault, và export `.p12` backup (có mật khẩu) — không có bản backup thì mất
+  máy là mất luôn khả năng ký.
+  - 🚨 **`.p12` PHẢI cất NGOÀI repo** (vd `~/Documents/keys/`, USB, password
+    manager). Repo này là **public** (`github.com/tuanlongsav/vkey`) và Section
+    5b ra lệnh `git add -A` — export `.p12` vào thư mục repo là commit thẳng
+    khoá ký lên GitHub. `.gitignore` đã chặn `*.p12`/`*.pfx`/`*.cer`/`*.pem`
+    làm lưới an toàn, nhưng lưới không thay được chỗ cất đúng.
+- ⏳ **Cert CÓ HẠN — kiểm trước mỗi release:**
+  ```bash
+  security find-certificate -c "Developer ID Application: Long Hoang Tuan" -p \
+    | openssl x509 -noout -dates
+  ```
+  Bản cert đang dùng (cấp 2026-07-08) hết hạn **2027-02-01**. Hết hạn thì bước 2
+  của Section 2 fail vì `signingCertificate` hardcode trong
+  `ExportOptions-local.plist` không khớp identity valid nào — KHÔNG phải lỗi
+  keychain profile, đừng đi chạy lại `store-credentials`. Renew qua
+  developer.apple.com → Certificates, tải về, double-click để nạp vào keychain.
+- KHÔNG tự tạo thêm Developer ID cert qua portal trừ khi có lý do — thêm cert
+  rác làm `signingStyle=manual` chọn nhầm identity.
+- **Đổi cert trong CÙNG team U4B264GM2B KHÔNG làm user mất quyền Trợ năng.**
+  TCC neo theo designated requirement, mà DR của app chỉ ràng buộc bundle ID +
+  team OU, không pin cert cụ thể (kiểm: `codesign -d -r- /Applications/vkey.app`
+  → `identifier "dev.longht.vkey" and … certificate leaf[subject.OU] =
+  U4B264GM2B`). Renew hoặc cấp lại cert cùng team = DR y hệt = TCC giữ nguyên.
+  Chỉ đổi **team** hoặc đổi **loại** chữ ký (ad-hoc/unsigned → Developer ID) mới
+  reset quyền — xem Section 6.8.

@@ -122,7 +122,9 @@ Dữ liệu thống kê & từ điển cá nhân **chỉ lưu cục bộ** — k
 2. **System Settings → Privacy & Security → Accessibility** → bật `vkey`.
 3. Tắt rồi mở lại app lần đầu.
 
-> Từ v3.5 app được **ký Developer ID & notarized** — mở bình thường, không cần chuột phải → Mở. Nâng cấp từ bản ≤3.4 có thể phải cấp lại quyền Trợ năng **một lần**.
+> Từ v3.5 app được **ký Developer ID & notarized** — kéo ra `Applications` rồi mở bình thường, không cần chuột phải → Mở. Nâng cấp từ bản ≤3.4 có thể phải cấp lại quyền Trợ năng **một lần**.
+>
+> Với bản **≤ 4.17**, riêng bước mở file `.dmg` có thể hiện cảnh báo "Apple could not verify…" vì bản thân file DMG chưa được notarize (app bên trong thì có). Chuột phải → Open, hoặc System Settings → Privacy & Security → Open Anyway. Từ **v4.18** file DMG cũng được ký + notarized nên không còn cảnh báo này.
 
 <details>
 <summary>Build từ source</summary>
@@ -185,7 +187,7 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 
 **Khác UniKey/OpenKey?** Engine Swift độc lập (fork [Caffee](https://github.com/khanhicetea/Caffee)), không dùng code UniKey/EVKey. Chỉ Telex + VNI, triết lý tối giản.
 
-**DMG có notarized không?** Có — từ v3.5 trở đi.
+**DMG có notarized không?** App bên trong: có, từ v3.5. Bản thân file DMG: từ v4.18 — bản ≤4.17 mở DMG có thể gặp cảnh báo Gatekeeper một lần (xem mục [Cài đặt](#cài-đặt)).
 
 ## Nguồn gốc & giấy phép
 

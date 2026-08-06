@@ -5,6 +5,14 @@
 *.key
 vkey_private_key.key
 
+# Code-signing identity exports — never commit (RELEASE.md Section 7)
+# Developer ID private key lives in the login keychain; a .p12 backup is only
+# password-protected, so a public repo must never see one.
+*.p12
+*.pfx
+*.cer
+*.pem
+
 # Code coverage artifacts
 *.profraw
 *.profdata

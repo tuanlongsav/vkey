@@ -2,9 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <!-- Ký Developer ID + nộp notarization qua session Xcode (RELEASE.md Section 2).
-       destination=upload: xcodebuild tự upload lên notary service, sau đó
-       poll bằng `xcodebuild -exportNotarizedApp` để lấy app đã staple. -->
+  <!-- DEPRECATED as of v4.18 — DO NOT USE ON THIS MACHINE.
+       Use Tools/ExportOptions-local.plist instead (RELEASE.md Section 2).
+
+       This path signs and uploads to the notary service in one xcodebuild
+       step, then polls with `xcodebuild -exportNotarizedApp`. Both require an
+       Apple ID signed into Xcode. No account is configured here, so
+       -exportArchive fails immediately with "error: exportArchive No
+       Accounts" and -exportNotarizedApp is useless in turn.
+
+       Kept only for a machine that does have Xcode signed in. Nothing in the
+       repo references this file; if no such machine ever materializes, delete
+       it (git history keeps it). -->
   <key>method</key>
   <string>developer-id</string>
   <key>teamID</key>
