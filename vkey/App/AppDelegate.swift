@@ -248,6 +248,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
   /// v3.2: theo dõi quyền Accessibility SUỐT phiên trusted (2s/lần, rẻ).
   /// Thu hồi quyền → tháo tap ngay (hết chặn input hệ thống) + menu chuyển
   /// về hướng dẫn cấp quyền. Cấp lại → tự dựng tap mới, không cần mở lại app.
+  ///
+  /// v4.20: cùng nhịp đó kiểm luôn tap CÒN BẬT không. macOS tự tắt tap khi
+  /// callback chạy quá lâu; handler `.tapDisabledByTimeout` trong callback
+  /// vá được phần lớn ca đó, nhưng KHÔNG vá được ca tap bị tắt mà callback
+  /// không còn được gọi nữa — lúc ấy chẳng còn ai để tự cứu. Watchdog là
+  /// đường phục hồi duy nhất.
   private func startRevocationWatchdog() {
     revocationWatchdog?.invalidate()
     let timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
@@ -262,9 +268,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       } else if trusted && !self.isTrusted {
         // User cấp lại quyền → dựng tap mới.
         self.setupTrustedSession()
+      } else if trusted, let tap = self.appState.eventHook.eventTap,
+        !CGEvent.tapIsEnabled(tap: tap)
+      {
+        // Tap bị macOS tắt ngầm — bật lại. An toàn với ca mất quyền vì
+        // `suspendAfterRevocation` đã set `eventTap = nil`, nên nhánh này
+        // không chạy khi chưa có tap.
+        CGEvent.tapEnable(tap: tap, enable: true)
+        self.appState.eventHook.tapRecoveryCount += 1
+        print("[vkey] Event tap was silently disabled, watchdog re-enabled it "
+          + "(count: \(self.appState.eventHook.tapRecoveryCount))")
       }
     }
     timer.tolerance = 0.5
+    // .common để watchdog vẫn chạy khi user đang giữ menu mở hoặc kéo cửa sổ —
+    // đúng lúc dễ làm callback chậm và bị macOS tắt tap nhất.
+    RunLoop.main.add(timer, forMode: .common)
     revocationWatchdog = timer
   }
 

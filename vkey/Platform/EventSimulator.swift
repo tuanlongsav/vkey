@@ -119,10 +119,16 @@ class EventSimulator {
     AppSendingConfig(bundlePrefix: "com.googlecode.iterm2", strategy: .stepByStep, name: "iTerm2"),
     AppSendingConfig(bundlePrefix: "net.kovidgoyal.kitty", strategy: .stepByStep, name: "Kitty"),
     AppSendingConfig(bundlePrefix: "com.mitchellh.ghostty", strategy: .stepByStep, name: "Ghostty"),
-    AppSendingConfig(bundlePrefix: "com.warp.Warp", strategy: .stepByStep, name: "Warp"),
+    // Warp phát hành theo kênh: bundle ID thật là "dev.warp.Warp-Stable"
+    // (và -Preview). Entry cũ "com.warp.Warp" không khớp gì cả — Warp vẫn chạy
+    // đường batch mặc định suốt. Prefix "dev.warp.Warp" bao mọi kênh.
+    AppSendingConfig(bundlePrefix: "dev.warp.Warp", strategy: .stepByStep, name: "Warp"),
     AppSendingConfig(bundlePrefix: "co.zeit.hyper", strategy: .stepByStep, name: "Hyper"),
     AppSendingConfig(bundlePrefix: "org.tabby", strategy: .stepByStep, name: "Tabby"),
     AppSendingConfig(bundlePrefix: "io.alacritty", strategy: .stepByStep, name: "Alacritty"),
+    AppSendingConfig(bundlePrefix: "com.github.wez.wezterm", strategy: .stepByStep, name: "WezTerm"),
+    AppSendingConfig(bundlePrefix: "com.raphaelamorim.rio", strategy: .stepByStep, name: "Rio"),
+    AppSendingConfig(bundlePrefix: "com.termius-dmg.mac", strategy: .stepByStep, name: "Termius"),
 
     // Electron apps thường cần stepByStep vì input model phức tạp (composition events
     // không sync với CGEvent injection thông thường).

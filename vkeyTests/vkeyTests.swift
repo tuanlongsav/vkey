@@ -5456,3 +5456,32 @@ final class EngineRulesFromGoNhanhTests: XCTestCase {
   }
 }
 
+
+// MARK: - v4.20: bảng app tương thích + manual accessibility
+final class AppCompatV420Tests: XCTestCase {
+
+  /// Bundle ID thật của Warp là "dev.warp.Warp-Stable" (và -Preview). Entry cũ
+  /// "com.warp.Warp" không khớp gì nên Warp âm thầm chạy đường batch mặc định.
+  func testWarpBundleIdMatchesRealChannels() {
+    for bundle in ["dev.warp.Warp-Stable", "dev.warp.Warp-Preview", "dev.warp.Warp"] {
+      guard case .stepByStep = EventSimulator.getStrategy(for: bundle) else {
+        return XCTFail("\(bundle) phải dùng .stepByStep")
+      }
+    }
+    // Bundle ID SAI cũ không được vô tình vẫn khớp.
+    guard case .hybrid = EventSimulator.getStrategy(for: "com.warp.Warp") else {
+      return XCTFail("bundle ID cũ (sai) không nên khớp entry nào")
+    }
+  }
+
+  /// Terminal bổ sung — đều là app dựng cây text riêng, cần gửi từng phím.
+  func testAdditionalTerminalsUseStepByStep() {
+    for bundle in ["com.github.wez.wezterm", "com.raphaelamorim.rio", "com.termius-dmg.mac"] {
+      guard case .stepByStep = EventSimulator.getStrategy(for: bundle) else {
+        return XCTFail("\(bundle) phải dùng .stepByStep")
+      }
+    }
+  }
+
+
+}
