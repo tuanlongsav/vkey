@@ -137,3 +137,8 @@ iOSInjectionProject/
 # End of https://www.toptal.com/developers/gitignore/api/macos,swift
 *.dmg
 .codegraph/
+
+# Build/release artifacts — RELEASE.md step 14 runs `git add -A`, so anything
+# left lying in the repo root gets swept into the release commit.
+build-release/
+vkey-*.zip

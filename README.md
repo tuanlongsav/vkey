@@ -8,13 +8,12 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.17](CHANGELOG.md)** — Developer ID signed & notarized · 327 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.18](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 327 test pass · [Tải bản mới nhất](../../releases/latest)
 
-## Mới ở v4.17
+## Mới ở v4.18
 
-- **Hết hỏng chữ sau khi bung macro** — bấm Backspace ngay sau khi macro bung không còn phá từ gõ tiếp theo (vá cho cả phím Space lẫn dấu câu).
-- **Hết hỏng chữ sau khi vkey tự sửa chính tả** — cùng lỗi trên, ở đường tự sửa lúc kết từ (vd gõ `ARM` bị thành `ẢM` rồi được trả về `ARM`).
-- **Hết mất chữ ở ô tìm kiếm / ô địa chỉ** — số ký tự cần xoá, đơn vị lùi khi xoá và dạng chữ gửi ra giờ luôn thống nhất theo ô đang gõ, không còn xoá lố ăn mất chữ đứng trước.
+- **Mở file DMG không còn bị cảnh báo bảo mật** — từ bản này chính file `.dmg` được ký Developer ID + notarize + staple, không chỉ app bên trong. Các bản ≤ 4.17 tải bằng trình duyệt đều hiện *"Apple could not verify…"* ở lần mở dmg đầu tiên; giờ thì không.
+- **Cách gõ không đổi** — binary của app giống hệt v4.17. Đang dùng 4.17 thì không cần vội cập nhật; bản này có ích nhất cho người tải mới.
 
 Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md)
 
@@ -61,7 +60,7 @@ Dữ liệu thống kê & từ điển cá nhân **chỉ lưu cục bộ** — k
 
 > Từ v3.5 app được **ký Developer ID & notarized** — kéo ra `Applications` rồi mở bình thường, không cần chuột phải → Mở. Nâng cấp từ bản ≤3.4 có thể phải cấp lại quyền Trợ năng **một lần**.
 >
-> Với bản **≤ 4.17**, riêng bước mở file `.dmg` có thể hiện cảnh báo "Apple could not verify…" vì bản thân file DMG chưa được notarize (app bên trong thì có). Chuột phải → Open, hoặc System Settings → Privacy & Security → Open Anyway. Từ **v4.18** file DMG cũng được ký + notarized nên không còn cảnh báo này.
+> Từ **v4.18** chính file `.dmg` cũng được ký + notarize nên mở thẳng được. Với bản **≤ 4.17**, bước mở dmg có thể hiện cảnh báo "Apple could not verify…" — chuột phải → Open, hoặc System Settings → Privacy & Security → Open Anyway.
 
 <details>
 <summary>Build từ source</summary>
@@ -126,7 +125,7 @@ Nút **Sáng / Tối / Hệ thống** nằm trên thanh tiêu đề cửa sổ C
 
 **Khác UniKey/OpenKey?** Engine Swift độc lập (fork [Caffee](https://github.com/khanhicetea/Caffee)), không dùng code UniKey/EVKey. Chỉ Telex + VNI, triết lý tối giản.
 
-**DMG có notarized không?** App bên trong: có, từ v3.5. Bản thân file DMG: từ v4.18 — bản ≤4.17 mở DMG có thể gặp cảnh báo Gatekeeper một lần (xem mục [Cài đặt](#cài-đặt)).
+**DMG có notarized không?** Có — app bên trong từ v3.5, và chính file DMG từ v4.18. Bản ≤ 4.17 mở DMG có thể gặp cảnh báo Gatekeeper một lần (xem mục [Cài đặt](#cài-đặt)).
 
 ## Nguồn gốc & giấy phép
 

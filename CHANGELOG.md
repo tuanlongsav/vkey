@@ -2,6 +2,43 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.18] - 2026-08-06 — "DMG ký & notarize"
+
+**Không đổi cách gõ — bản này sửa khâu đóng gói và phát hành.** Binary của app
+giống hệt v4.17; thay đổi nằm ở file `.dmg` bạn tải về và ở quy trình build.
+
+### 🔐 Phát hành
+
+- **File DMG giờ được ký Developer ID + notarize + staple.** Từ v3.5 chỉ có
+  app BÊN TRONG dmg được notarize, còn bản thân file dmg thì không — mà
+  Gatekeeper lại đánh giá đúng cái file người dùng tải về. Hệ quả: mọi bản
+  ≤ v4.17 tải bằng trình duyệt đều hiện cảnh báo *"Apple could not verify…
+  free of malware"* ở lần mở dmg đầu tiên, phải chuột phải → Open hoặc vào
+  System Settings → Privacy & Security. Từ bản này không còn cảnh báo đó.
+  - Lỗi này không lộ ra trên máy build vì `spctl --status` ở đó là
+    `assessments disabled` — mọi dmg đều được chấp nhận, kể cả bản chưa ký.
+
+### 🧹 Khác
+
+- **`Tools/release_build.sh`** — script hoá toàn bộ khâu build phát hành
+  (archive → ký → notarize → staple → đóng dmg → ký + notarize dmg). Trước đây
+  là 10 lệnh dán tay với chuỗi phiên bản phải sửa đúng 13 chỗ; sót một chỗ là
+  notarize bản mới rồi staple lên bản cũ mà mọi lệnh kiểm tra vẫn báo pass.
+  Preflight chặn trước khi build nếu cert hết hạn, thiếu keychain profile, hoặc
+  số phiên bản chưa bump.
+- **`.gitignore` chặn `*.p12`/`*.pfx`/`*.cer`/`*.pem`** — repo này public và quy
+  trình release có bước `git add -A`, nên khoá ký xuất ra để backup phải không
+  bao giờ lọt vào commit được.
+- **RELEASE.md** — sửa 10 lỗi trong tài liệu quy trình, trong đó có khẳng định
+  sai rằng đổi chứng chỉ ký là mọi người dùng phải cấp lại quyền Trợ năng (thực
+  tế chỉ đổi *team* hoặc đổi *loại* chữ ký mới làm mất quyền).
+- **README** — bỏ lịch sử 13 phiên bản cũ, rà lại toàn bộ mô tả chức năng theo
+  đúng code hiện tại (tên giao diện, số liệu từ điển, số từ gợi ý, nội dung
+  từng tab Cài đặt).
+- 327 test pass (không đổi so với v4.17).
+
+---
+
 ## [4.17] - 2026-08-05 — "Vá lỗi gõ: macro, tự sửa, ô tìm kiếm"
 
 **Vá hai lớp lỗi khiến bộ nhớ trong của vkey lệch khỏi chữ đang hiển thị trên màn hình.**

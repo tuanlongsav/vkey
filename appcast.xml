@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.18 — "DMG ký &amp; notarize"</title>
+      <sparkle:version>41800</sparkle:version>
+      <sparkle:shortVersionString>4.18</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 06 Aug 2026 09:59:02 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.18/vkey-4.18.dmg"
+        sparkle:edSignature="xqT5dQdW8yVuSj+3YwEstn69xrQMhZ1MfKvjWGkZEF5XbKfRr1MZ/NNHLqa7CbkjzOPmE78/QJQbr+bAjkF2BQ=="
+        length="6606705"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.18 — DMG ký &amp; notarize</h2>
+        <p><b>Cách gõ không đổi.</b> Binary của app giống hệt v4.17 — bản này sửa khâu đóng gói.</p>
+        <ul>
+          <li><b>Mở file DMG không còn bị cảnh báo bảo mật</b> — từ bản này chính file .dmg được ký Developer ID, notarize và staple, chứ không chỉ app bên trong. Các bản 4.17 trở về trước tải bằng trình duyệt đều hiện cảnh báo "Apple could not verify..." ở lần mở dmg đầu tiên.</li>
+          <li><b>Quy trình phát hành được script hoá</b> — build, ký, notarize và đóng gói giờ chạy qua một lệnh có kiểm tra chặn ở từng bước, thay cho chuỗi lệnh dán tay.</li>
+        </ul>
+        <p>327 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.17 — "Vá lỗi gõ: macro, tự sửa, ô tìm kiếm"</title>
       <sparkle:version>41700</sparkle:version>
       <sparkle:shortVersionString>4.17</sparkle:shortVersionString>
