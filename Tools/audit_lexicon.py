@@ -19,6 +19,20 @@ Rules (giữ conservative):
   3. Baseline curated 7184 (snapshot từ commit 1.6.0): giữ NGUYÊN — đã
      được audit thủ công + maintainer trusted.
 
+  4. (v4.20) Loại entry BẤT KHẢ VỀ NGỮ ÂM, kể cả khi nằm trong baseline —
+     đây là quy luật tuyệt đối nên không có ngoại lệ nào để miễn trừ:
+     - Nhiều hơn 1 dấu thanh trong một âm tiết (lỗi encode/OCR: "gĩữ",
+       "lưỡì", "ngườì").
+     - Thanh nhập: âm tiết kết bằng p/t/c/ch/k chỉ nhận sắc hoặc nặng
+       ("khảch", "thuổc", "ỏc" là bất khả).
+     - "ă" đứng trước nguyên âm khác — không có vần ăi/ăo/ău/ăy.
+     - Vần "ươ" mở, không âm cuối và không nguyên âm thứ ba ("ngườ");
+       vần mở đúng là "uơ" với u trơn (huơ, thuở).
+     Ba luật sau phản chiếu đúng vkey/Engine/TiengVietValidator.swift
+     (PhuAmCuoiTac, ThanhKhongDiVoiAmTac, Rule 5c, và luật vần uơ trong
+     TiengVietTransformer) — từ điển và engine PHẢI thống nhất, nếu không
+     spell-check sẽ giữ lại chuỗi mà chính engine vừa từ chối tạo ra.
+
 Output: ghi đè lexicon-update.json với:
   - vietnamese[] đã cleaned + sort
   - version bumped +1
@@ -92,6 +106,70 @@ TIER_C_ASCII_LOANWORDS: set[str] = {
 }
 
 
+# --- Rule 4: ngữ âm bất khả (phản chiếu TiengVietValidator.swift) ---
+
+TONE_COMBINING = {0x0301, 0x0300, 0x0309, 0x0303, 0x0323}  # sắc huyền hỏi ngã nặng
+TONE_NAMES = {0x0301: "sac", 0x0300: "huyen", 0x0309: "hoi",
+              0x0303: "nga", 0x0323: "nang"}
+STOP_FINALS = {"c", "ch", "p", "t", "k"}       # TiengVietValidator.PhuAmCuoiTac
+TONES_BANNED_WITH_STOP = {"huyen", "hoi", "nga"}  # ThanhKhongDiVoiAmTac
+FINAL_CLUSTERS = ["ngh", "ng", "nh", "ch", "c", "m", "n", "p", "t", "k"]
+INITIAL_CLUSTERS = ["ngh", "ng", "nh", "ph", "th", "tr", "ch", "gh", "gi",
+                    "kh", "qu", "kr", "b", "c", "d", "đ", "g", "h", "k", "l",
+                    "m", "n", "p", "q", "r", "s", "t", "v", "x"]
+VN_VOWELS = set("aăâeêioôơuưy")
+
+
+def _split_syllable(word: str) -> tuple[str, str, str, str | None]:
+    """Tách âm tiết thành (phụ âm đầu, vần, phụ âm cuối, tên dấu thanh)."""
+    decomposed = unicodedata.normalize("NFD", word)
+    tone = None
+    base_chars = []
+    for ch in decomposed:
+        cp = ord(ch)
+        if cp in TONE_COMBINING:
+            tone = TONE_NAMES[cp]
+        else:
+            base_chars.append(ch)
+    base = unicodedata.normalize("NFC", "".join(base_chars))
+
+    rest = base
+    initial = ""
+    for cluster in INITIAL_CLUSTERS:
+        if rest.startswith(cluster) and len(rest) > len(cluster):
+            initial, rest = cluster, rest[len(cluster):]
+            break
+    final = ""
+    for cluster in FINAL_CLUSTERS:
+        if rest.endswith(cluster) and len(rest) > len(cluster):
+            final, rest = cluster, rest[: -len(cluster)]
+            break
+    return initial, rest, final, tone
+
+
+def phonotactic_violations(word: str) -> list[str]:
+    """Các luật ngữ âm tuyệt đối mà `word` vi phạm (rỗng = không kết luận)."""
+    found: list[str] = []
+
+    if sum(1 for ch in unicodedata.normalize("NFD", word)
+           if ord(ch) in TONE_COMBINING) > 1:
+        found.append("multi_tone")
+
+    _, rime, final, tone = _split_syllable(word)
+    # Không tách được thành vần thuần nguyên âm ⇒ không dám kết luận (loanword,
+    # tên riêng, cụm lạ). Im lặng an toàn hơn xoá nhầm.
+    if not rime or any(ch not in VN_VOWELS for ch in rime):
+        return found
+
+    if final in STOP_FINALS and tone in TONES_BANNED_WITH_STOP:
+        found.append("checked_tone")
+    if "ă" in rime and rime.index("ă") + 1 < len(rime):
+        found.append("breve_before_vowel")
+    if rime == "ươ" and not final:
+        found.append("open_uo")
+    return found
+
+
 def has_vn_diacritic(word: str) -> bool:
     return any(c in VN_DIACRITIC_CHARS for c in word.lower())
 
@@ -118,6 +196,7 @@ def audit(raw: set[str], baseline: set[str]) -> tuple[set[str], dict]:
     final: set[str] = set()
     dropped_single: list[str] = []
     dropped_no_vn_markers: list[str] = []
+    dropped_phonotactic: list[tuple[str, str]] = []
     kept_from_baseline = 0
     kept_new = 0
 
@@ -134,6 +213,14 @@ def audit(raw: set[str], baseline: set[str]) -> tuple[set[str], dict]:
             continue
         if len(word) == 1:
             dropped_single.append(word)
+            continue
+        # Rule 4 chạy TRƯỚC ngoại lệ baseline: bất khả về ngữ âm thì không có
+        # nguồn nào đủ thẩm quyền để giữ lại. Đám rác này (khảch, ỏc, thuổc,
+        # gĩữ...) chính là thứ đã sống sót qua mọi lần audit trước vì nằm
+        # trong baseline curated.
+        pv = phonotactic_violations(word)
+        if pv:
+            dropped_phonotactic.append((word, ",".join(pv)))
             continue
         if word in baseline:
             final.add(word)
@@ -168,15 +255,18 @@ def audit(raw: set[str], baseline: set[str]) -> tuple[set[str], dict]:
     return final, {
         "before": len(raw),
         "after": len(final),
-        "dropped_total": len(dropped_single) + len(dropped_no_vn_markers),
+        "dropped_total": (len(dropped_single) + len(dropped_no_vn_markers)
+                          + len(dropped_phonotactic)),
         "dropped_single_char_latin": len(dropped_single),
         "kept_single_char_vn": kept_single_vn,
         "injected_single_char_vn": injected_single_vn,
         "dropped_no_vn_markers": len(dropped_no_vn_markers),
+        "dropped_phonotactic": len(dropped_phonotactic),
         "kept_from_baseline": kept_from_baseline,
         "kept_new": kept_new,
         "dropped_single_sample": sorted(dropped_single)[:20],
         "dropped_no_vn_sample": sorted(dropped_no_vn_markers)[:30],
+        "dropped_phonotactic_all": sorted(dropped_phonotactic),
     }
 
 
@@ -234,10 +324,13 @@ def main(argv: list[str]) -> int:
     cleanup_log = meta.get("cleanup") or []
     cleanup_log.append({
         "at": datetime.now(timezone.utc).isoformat(),
-        "rule": "audit_lexicon.py — drop single-char + drop new no-VN-marker",
+        "rule": ("audit_lexicon.py — drop single-char + drop new no-VN-marker "
+                 "+ drop phonotactically impossible (Rule 4)"),
         "before": stats["before"],
         "after": stats["after"],
         "baseline_ref": args.baseline_ref,
+        "dropped_phonotactic": stats["dropped_phonotactic"],
+        "dropped_phonotactic_words": [w for w, _ in stats["dropped_phonotactic_all"]],
     })
     meta["cleanup"] = cleanup_log
     pkg["_meta"] = meta
