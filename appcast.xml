@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.20 — "Warp &amp; lưới an toàn cho event tap"</title>
+      <sparkle:version>42000</sparkle:version>
+      <sparkle:shortVersionString>4.20</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 06 Aug 2026 22:01:35 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.20/vkey-4.20.dmg"
+        sparkle:edSignature="AZkFL87qQY2HwFsS9/4BxTYRqqiFkOwyTCOKdruRln6Q5VMr4DDG3Mtf/0azcuPvmogcMo4prISwi5EjWx8uBw=="
+        length="6610236"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.20 — Warp &amp; lưới an toàn cho event tap</h2>
+        <p>Bản nhỏ, hai sửa lỗi tương thích.</p>
+        <ul>
+          <li><b>Warp giờ mới thật sự được nhận diện</b> — bảng tương thích khai bundle ID là <code>com.warp.Warp</code>, trong khi Warp thật là <code>dev.warp.Warp-Stable</code>. Entry đó chưa từng khớp nên Warp vẫn chạy đường gửi mặc định hay làm rối chữ trong terminal. Thêm WezTerm, Rio, Termius cùng lý do.</li>
+          <li><b>Tự bật lại event tap khi macOS tắt ngầm</b> — đường phục hồi cũ nằm trong chính callback của tap, nên không cứu được ca tap bị tắt mà callback không còn được gọi. Watchdog giờ kiểm cả trạng thái tap và chạy cả khi bạn đang mở menu hay kéo cửa sổ.</li>
+        </ul>
+        <p>Cách gõ không đổi so với v4.19. Bộ từ điển vừa được làm sạch riêng qua kênh cập nhật từ điển (loại 32 mục bất khả về ngữ âm).</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.19 — "Bốn quy luật ngữ âm"</title>
       <sparkle:version>41900</sparkle:version>
       <sparkle:shortVersionString>4.19</sparkle:shortVersionString>

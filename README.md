@@ -8,13 +8,12 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.19](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 340 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.20](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 342 test pass · [Tải bản mới nhất](../../releases/latest)
 
-## Mới ở v4.19
+## Mới ở v4.20
 
-- **Gõ được "thuở", "huơ", "khuơ"** — trước đây hai từ này không gõ được bằng bất kỳ thứ tự phím nào, mọi cách đều ra "thưở"/"hươ". Vần "ươ" chỉ đúng khi có âm cuối (hương, được) hoặc nguyên âm thứ ba (tươi, rượu); vần mở là "uơ" với u trơn.
-- **Phím dấu không còn tạo ra âm tiết bất khả** — `otr` từng ra "ỏt", `taiw` từng ra "tăi". Âm tiết kết bằng p/t/c/ch/k chỉ nhận sắc hoặc nặng, và không có vần ăi/ăo/ău/ăy; giờ phím dấu rơi xuống thành chữ thường.
-- **Hết mất chữ khi kéo dài nguyên âm kiểu chat** — gõ "chưaa" từng ra "chuâ", xoá luôn dấu móc đã đúng.
+- **Warp giờ mới thật sự được nhận diện** — bảng tương thích khai sai bundle ID (`com.warp.Warp`, trong khi Warp thật là `dev.warp.Warp-Stable`), nên entry đó chưa từng khớp và Warp vẫn chạy đường gửi mặc định. Thêm WezTerm, Rio, Termius cùng lý do.
+- **Tự bật lại event tap khi macOS tắt ngầm** — đường phục hồi cũ nằm trong chính callback của tap nên không cứu được ca tap tắt mà callback không còn chạy. Watchdog giờ kiểm cả trạng thái tap.
 
 Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md)
 

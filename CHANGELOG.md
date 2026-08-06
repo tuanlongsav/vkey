@@ -2,6 +2,39 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.20] - 2026-08-06 — "Warp & lưới an toàn cho event tap"
+
+**Bản nhỏ, hai sửa lỗi tương thích.**
+
+### 🖥️ Tương thích app
+
+- **Warp giờ mới thật sự được nhận diện.** Bảng chiến lược gõ khai bundle ID là
+  `com.warp.Warp`, trong khi Warp thật là `dev.warp.Warp-Stable` (và
+  `-Preview`) — entry đó chưa từng khớp, nên suốt thời gian qua Warp vẫn chạy
+  đường gửi mặc định vốn hay làm rối chữ trong terminal.
+- **Thêm WezTerm, Rio, Termius** vào nhóm gửi từng phím, cùng lý do.
+
+### 🛡️ Ổn định
+
+- **Tự bật lại event tap khi macOS tắt ngầm nó.** Trước đây chỉ có đường phục
+  hồi nằm trong chính callback của tap — không cứu được ca tap bị tắt mà
+  callback không còn được gọi, vì lúc đó chẳng còn ai để tự cứu. Watchdog 2s
+  giờ kiểm luôn trạng thái tap, và chạy cả khi bạn đang mở menu hay kéo cửa
+  sổ — đúng lúc dễ bị tắt tap nhất.
+
+### 🔍 Ghi chú kỹ thuật
+
+Có một thay đổi thứ ba đã bị loại trước khi phát hành: dùng
+`AXManualAccessibility` để bỏ công tắc "NFC cho ô tìm kiếm web" (v4.16). Đo
+trên app thật thì tiền đề sai — Chrome trả `kAXErrorAttributeUnsupported` cho
+thuộc tính này và vốn đã bật sẵn `AXEnhancedUserInterface`. Nó chỉ có tác dụng
+trên app Electron, không chạm được ca Chrome vốn là lý do tồn tại của nó. Công
+tắc NFC vẫn giữ nguyên.
+
+Bộ từ điển cũng vừa được làm sạch (gói v10): loại 32 mục bất khả về ngữ âm như
+`khảch`, `thuổc`, `ỏc`, `gĩữ`. Phần này đến qua kênh cập nhật từ điển, không
+phụ thuộc phiên bản app.
+
 ## [4.19] - 2026-08-06 — "Bốn quy luật ngữ âm"
 
 **Sửa lỗi gõ thật.** Bốn quy luật ngữ âm tiếng Việt mà engine chưa mã hoá, phát
