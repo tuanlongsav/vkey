@@ -8,12 +8,13 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.18](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 327 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.19](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 340 test pass · [Tải bản mới nhất](../../releases/latest)
 
-## Mới ở v4.18
+## Mới ở v4.19
 
-- **Mở file DMG không còn bị cảnh báo bảo mật** — từ bản này chính file `.dmg` được ký Developer ID + notarize + staple, không chỉ app bên trong. Các bản ≤ 4.17 tải bằng trình duyệt đều hiện *"Apple could not verify…"* ở lần mở dmg đầu tiên; giờ thì không.
-- **Cách gõ không đổi** — binary của app giống hệt v4.17. Đang dùng 4.17 thì không cần vội cập nhật; bản này có ích nhất cho người tải mới.
+- **Gõ được "thuở", "huơ", "khuơ"** — trước đây hai từ này không gõ được bằng bất kỳ thứ tự phím nào, mọi cách đều ra "thưở"/"hươ". Vần "ươ" chỉ đúng khi có âm cuối (hương, được) hoặc nguyên âm thứ ba (tươi, rượu); vần mở là "uơ" với u trơn.
+- **Phím dấu không còn tạo ra âm tiết bất khả** — `otr` từng ra "ỏt", `taiw` từng ra "tăi". Âm tiết kết bằng p/t/c/ch/k chỉ nhận sắc hoặc nặng, và không có vần ăi/ăo/ău/ăy; giờ phím dấu rơi xuống thành chữ thường.
+- **Hết mất chữ khi kéo dài nguyên âm kiểu chat** — gõ "chưaa" từng ra "chuâ", xoá luôn dấu móc đã đúng.
 
 Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md)
 

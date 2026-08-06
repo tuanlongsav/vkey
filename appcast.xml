@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.19 — "Bốn quy luật ngữ âm"</title>
+      <sparkle:version>41900</sparkle:version>
+      <sparkle:shortVersionString>4.19</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 06 Aug 2026 14:20:15 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.19/vkey-4.19.dmg"
+        sparkle:edSignature="emuzyS/RJatstqtthZqfX/vycpP87JBjzsq/IVQH5Zz1NgWswMro4fLK3sLcaqbEoMkBWAwxy+bac6xOoSg+Ag=="
+        length="6609641"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.19 — Bốn quy luật ngữ âm</h2>
+        <p><b>Sửa lỗi gõ thật.</b> Bốn quy luật ngữ âm tiếng Việt mà engine chưa mã hoá.</p>
+        <ul>
+          <li><b>Gõ được "thuở", "huơ", "khuơ"</b> — trước bản này hai từ đó không gõ được bằng bất kỳ thứ tự phím nào, mọi cách đều ra "thưở"/"hươ". Vần "ươ" chỉ đúng khi có âm cuối (hương, được) hoặc nguyên âm thứ ba (tươi, rượu); vần mở là "uơ" với u trơn.</li>
+          <li><b>Phím dấu không còn tạo ra âm tiết bất khả</b> — gõ <code>otr</code> từng ra "ỏt", <code>taiw</code> từng ra "tăi". Âm tiết kết bằng p/t/c/ch/k chỉ nhận sắc hoặc nặng, và không có vần ăi/ăo/ău/ăy.</li>
+          <li><b>Hết mất chữ khi kéo dài nguyên âm kiểu chat</b> — gõ "chưaa" từng ra "chuâ", xoá luôn dấu móc đã đúng.</li>
+        </ul>
+        <p>340 test pass. Ngoài ra còn quét đối chứng ~50.000 chuỗi phím giữa engine cũ và mới: 16 từ thật được cứu, 0 từ thật bị hỏng.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.18 — "DMG ký &amp; notarize"</title>
       <sparkle:version>41800</sparkle:version>
       <sparkle:shortVersionString>4.18</sparkle:shortVersionString>

@@ -2,6 +2,35 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.19] - 2026-08-06 — "Bốn quy luật ngữ âm"
+
+**Sửa lỗi gõ thật.** Bốn quy luật ngữ âm tiếng Việt mà engine chưa mã hoá, phát
+hiện khi đối chiếu với core của [GoNhanh.org](https://github.com/khaphanspace/gonhanh.org).
+
+### ⌨️ Engine
+
+- **Gõ được "thuở", "huơ", "khuơ".** Trước bản này hai từ đó **không gõ được
+  bằng bất kỳ thứ tự phím nào** — mọi cách đều ra "thưở"/"hươ", không phải từ
+  tiếng Việt. Nguyên nhân: vkey móc cả hai nguyên âm vô điều kiện, trong khi
+  vần "ươ" chỉ tồn tại khi có âm cuối (hương, được) hoặc có nguyên âm thứ ba
+  (tươi, rượu); vần mở là "uơ" với chữ u trơn.
+- **Luật thanh nhập.** Âm tiết kết bằng p/t/c/ch/k chỉ nhận được sắc hoặc nặng.
+  Gõ `otr` từng ra "ỏt" — một âm tiết bất khả; giờ phím dấu rơi xuống thành chữ
+  thường (`otr`). Tương tự "òc", "ãch", "ảt"…
+- **Không còn vần "ăi/ăo/ău/ăy".** Gõ `taiw` từng ra "tăi" và commit luôn; giờ
+  trả về phím thô. Vần "oă" (xoăn, hoặc, ngoặc) không ảnh hưởng.
+- **Hết mất chữ khi kéo dài nguyên âm kiểu chat.** Gõ "chưaa" từng ra "chuâ" —
+  không chỉ áp nhầm mũ mà còn **xoá dấu móc đã đúng** (ư → u), vì mỗi từ chỉ
+  giữ một dấu mũ. Giờ ra "chưaa".
+
+### 🧪 Kiểm chứng
+
+- 340 test pass (thêm 13). Ngoài test đơn lẻ còn quét đối chứng **~50.000 chuỗi
+  phím** giữa engine cũ và mới: 16 từ thật được cứu, 0 từ thật bị hỏng.
+- Chính phép quét đó bắt được một regression mà test suite bỏ lọt: luật "ă" ban
+  đầu làm hỏng nguyên nhóm **hoặc, ngoặc, khoăn, choắt** (gõ kiểu a-trước-o),
+  đã sửa trước khi phát hành.
+
 ## [4.18] - 2026-08-06 — "DMG ký & notarize"
 
 **Không đổi cách gõ — bản này sửa khâu đóng gói và phát hành.** Binary của app
