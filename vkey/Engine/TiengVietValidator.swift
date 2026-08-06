@@ -255,7 +255,15 @@ enum TiengVietValidator {
       let nguyenAmDau = thanhPhan.nguyenAm.first,
       String(nguyenAmDau).lowercased() == "a"
     {
-      return true
+      // "ao" khi CHƯA có phụ âm cuối là trạng thái TRUNG GIAN: phụ âm cuối tới
+      // thì parser đảo "ao" → "oa" (hoặc, ngoặc, khoăn, choắt). Bắn ở đây sẽ
+      // chốt stopProcessing và chặn luôn đường đó, vì recovery không nhả ra.
+      // Các cặp còn lại (ai/au/ay) parser không bao giờ đảo nên bắn ngay là đúng.
+      let dangChoPhuAmCuoiDeDao = thanhPhan.phuAmCuoi.isEmpty
+        && String(thanhPhan.nguyenAm).lowercased() == "ao"
+      if !dangChoPhuAmCuoiDeDao {
+        return true
+      }
     }
 
     // Rule 6: Valid Vowel Pattern (Inclusion Vowel Pairs)

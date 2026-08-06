@@ -5427,6 +5427,22 @@ final class EngineRulesFromGoNhanhTests: XCTestCase {
     XCTAssertEqual(telex("wifi"), "wifi")
   }
 
+  /// Lưới an toàn cho cả bốn luật: từ thông dụng có ươ/oă/phụ-âm-tắc phải gõ
+  /// đúng như cũ. Bộ này bắt được lần Rule 5c đầu tiên bắn quá sớm và làm hỏng
+  /// nguyên nhóm "hoặc/ngoặc/khoăn" (chuỗi "ao" chờ phụ âm cuối để đảo ra "oa").
+  func testCommonWordsUnaffected() {
+    let cases = [
+      ("nguwowif", "người"), ("thuowngf", "thường"), ("nguwowngx", "ngưỡng"),
+      ("nuowcs", "nước"), ("truowngf", "trường"), ("dduowngf", "đường"),
+      ("cuwowif", "cười"), ("hoawcj", "hoặc"), ("ngoawcj", "ngoặc"),
+      ("khoawn", "khoăn"), ("choawts", "choắt"), ("hocj", "học"),
+      ("khachs", "khách"), ("thuoocs", "thuốc"), ("bawngf", "bằng"),
+    ]
+    for (keys, want) in cases {
+      XCTAssertEqual(telex(keys), want, "\(keys) phải ra \(want)")
+    }
+  }
+
   /// Đối chứng: đường đặt mũ chuẩn và đường huỷ mũ (aaa/ooo/eee) giữ nguyên.
   func testStandardMuPathsUnaffected() {
     XCTAssertEqual(telex("aa"), "â")
@@ -5439,3 +5455,4 @@ final class EngineRulesFromGoNhanhTests: XCTestCase {
     XCTAssertEqual(telex("ooo"), "oo")
   }
 }
+
