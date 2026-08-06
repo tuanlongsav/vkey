@@ -99,10 +99,16 @@ enum TiengVietTransformer {
       && tieng.nguyenAm[0].lowercased() == "u"
       && tieng.nguyenAm[1].lowercased() == "o"
 
-    // Trường hợp đặc biệt: "uo" + dấu móc → "ươ" (LUÔN đặt dấu cho CẢ HAI nguyên âm)
+    // Vần MỞ hai nguyên âm là "uơ" với u TRƠN (huơ, khuơ, quơ, thuở); "ươ" chỉ
+    // tồn tại khi âm tiết có phụ âm cuối (hương, được) hoặc có nguyên âm thứ ba
+    // (tươi, rượu). Không phân biệt hai vần này thì "thuở" không gõ được bằng
+    // bất kỳ thứ tự phím nào — mọi đường đều ra "thưở".
+    let vanUoMo = (soNguyenAm == 2) && tieng.phuAmCuoi.isEmpty
+
+    // Trường hợp đặc biệt: "uo" + dấu móc → "ươ" (đặt dấu cho CẢ HAI nguyên âm,
+    // trừ vần mở thì chỉ móc chữ o)
     if datDauMocUO && thuDatDauMu(1) {
-      // Luôn đặt dấu móc cho nguyên âm đầu (u → ư) khi đã đặt cho nguyên âm sau (o → ơ)
-      if let dauU = chuyenKyTu(kytu: tieng.nguyenAm[0], quyTac: quyTac) {
+      if !vanUoMo, let dauU = chuyenKyTu(kytu: tieng.nguyenAm[0], quyTac: quyTac) {
         tieng.nguyenAm[0] = dauU
       }
     } else if (soNguyenAm == 3 || (soNguyenAm == 2 && !tieng.phuAmCuoi.isEmpty))

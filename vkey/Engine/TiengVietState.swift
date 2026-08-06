@@ -122,7 +122,8 @@ struct TiengVietState {
   /// Cả hai đều recover về chữ gõ thô; đặt dấu tự do cho tên riêng/âm tiết đơn
   /// (conLai rỗng, không camelCase) vẫn hoạt động như trước.
   var needsRecovery: Bool {
-    let structural = TiengVietValidator.needsRecovery(thanhPhanTieng, dauMu: dauMu)
+    let structural = TiengVietValidator.needsRecovery(
+      thanhPhanTieng, dauMu: dauMu, dauThanh: dauThanh)
     if Defaults[.freeMarkModeEnabled] {
       let notSingleSyllable = hasInternalCaseBoundary || !thanhPhanTieng.conLai.isEmpty
       return notSingleSyllable ? structural : false

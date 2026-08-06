@@ -131,14 +131,29 @@ enum TiengVietValidator {
     "ae", "ea", "ey", "iy", "yi", "yo", "yu",
   ]
 
+  // MARK: - Phụ âm cuối tắc (thanh nhập)
+
+  /// Phụ âm tắc cuối âm tiết. Âm tiết kết bằng các phụ âm này mang **thanh nhập**
+  /// — theo ngữ âm tiếng Việt chỉ nhận được sắc hoặc nặng, không bao giờ nhận
+  /// huyền/hỏi/ngã ("ỏt", "òc", "ãch" không tồn tại).
+  static let PhuAmCuoiTac: Set<String> = ["c", "ch", "p", "t", "k"]
+
+  /// Dấu thanh KHÔNG thể đi với phụ âm cuối tắc.
+  static let ThanhKhongDiVoiAmTac: Set<DauThanh> = [.huyen, .hoi, .nga]
+
   // MARK: - Phương thức kiểm tra
 
   /// Kiểm tra âm tiết có cần recovery không (không hợp lệ tiếng Việt)
   /// - Parameters:
   ///   - thanhPhan: Các thành phần âm tiết đã phân tích
   ///   - dauMu: Dấu mũ hiện tại (mũ, móc, trăng)
+  ///   - dauThanh: Dấu thanh người dùng đã gõ (dùng cho luật thanh nhập)
   /// - Returns: true nếu âm tiết không hợp lệ và cần recovery
-  static func needsRecovery(_ thanhPhan: ThanhPhanTieng, dauMu: DauMu = .khongMu) -> Bool {
+  static func needsRecovery(
+    _ thanhPhan: ThanhPhanTieng,
+    dauMu: DauMu = .khongMu,
+    dauThanh: DauThanh = .bang
+  ) -> Bool {
     // Rule 2: Valid Initial
     if !thanhPhan.phuAmDau.isEmpty {
       let initial = String(thanhPhan.phuAmDau).lowercased()
@@ -159,6 +174,24 @@ enum TiengVietValidator {
         thanhPhan.conLai[0].lowercased() == "g",
         !thanhPhan.nguyenAm.isEmpty,
         thanhPhan.phuAmCuoi.isEmpty
+      {
+        return false
+      }
+
+      // Kéo dài nguyên âm kiểu chat sau khi âm tiết đã mang DẤU MŨ/MÓC
+      // ("chưaa", "chưaaa"): phần dư chỉ gồm chính nguyên âm cuối lặp lại, tức
+      // vẫn là âm tiết hợp lệ cộng đuôi kéo dài — không phải input rác.
+      // `transform` vốn nối `conLai` vào cuối nên hiển thị đúng ngay.
+      //
+      // Gate ở `dauMu` chứ KHÔNG ở `dauThanh`: chỉ dấu thanh thôi thì không đủ
+      // để phân biệt. "wifi" có chuKhongDau "wii" (chữ f bị nuốt làm huyền) —
+      // cấu trúc y hệt "quaa", nên nới theo dấu thanh sẽ biến "wifi" thành
+      // "wìi". Ca chỉ-có-dấu-thanh vẫn đi recovery về phím thô như trước, và
+      // dấu cũ không còn bị phá (xem Telex.push).
+      if thanhPhan.phuAmCuoi.isEmpty,
+        dauMu != .khongMu,
+        let nguyenAmCuoi = thanhPhan.nguyenAm.last?.lowercased(),
+        thanhPhan.conLai.allSatisfy({ $0.lowercased() == nguyenAmCuoi })
       {
         return false
       }
@@ -205,6 +238,24 @@ enum TiengVietValidator {
       if !isValidVowelEnding(nguyenAm: nguyenAm, phuAmCuoi: phuAmCuoi, dauMu: dauMu) {
         return true
       }
+
+      // Rule 5b (thanh nhập): âm tiết kết bằng phụ âm tắc chỉ nhận sắc hoặc
+      // nặng. Gõ trúng huyền/hỏi/ngã ⇒ âm tiết bất khả ("ỏt", "òc", "ãch"),
+      // nên phím dấu phải rơi xuống thành chữ cái thường qua đường recovery.
+      // Đây là quy luật tuyệt đối, không ngoại lệ, nên guard này không bao giờ
+      // chặn nhầm từ thật.
+      if PhuAmCuoiTac.contains(phuAmCuoi), ThanhKhongDiVoiAmTac.contains(dauThanh) {
+        return true
+      }
+    }
+
+    // Rule 5c: không có vần ăi/ăo/ău/ăy — "ă" chỉ đứng trước phụ âm cuối
+    // (ăn, ắp) hoặc đứng SAU o (xoăn). "taiw" → "tăi" phải recovery về phím thô.
+    if dauMu == .muNgua, thanhPhan.nguyenAm.count > 1,
+      let nguyenAmDau = thanhPhan.nguyenAm.first,
+      String(nguyenAmDau).lowercased() == "a"
+    {
+      return true
     }
 
     // Rule 6: Valid Vowel Pattern (Inclusion Vowel Pairs)

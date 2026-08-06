@@ -131,7 +131,22 @@ class Telex: TypingMethod {
         if thanhPhan.nguyenAmChua(char: char)
           || thanhPhan.nguyenAmChua(char: char.uppercased().first!)
         {
-          return (state.withMu(.muUp), true)
+          // Âm tiết ĐÃ mang dấu thì gõ lặp nguyên âm gần như chắc chắn là kéo
+          // dài kiểu chat ("chưaaa", "quáaa"), không phải lệnh đặt mũ — cho ký
+          // tự rơi xuống push thô. Quan trọng với vkey vì mỗi từ chỉ giữ MỘT
+          // dauMu: áp mũ ở đây không chỉ sai mà còn XOÁ dấu móc đã đúng
+          // ("chưa" + a → "chuâ", mất luôn chữ ư).
+          //
+          // Ngoại lệ .muUp: đó chính là đường huỷ mũ aaa/ooo/eee (toggle về
+          // .khongMu), phải giữ nguyên.
+          //
+          // Đánh đổi: mất đường gõ hiếm "tone trước, mũ sau" (tosoi → tối);
+          // thứ tự chuẩn (toosi, tois) không ảnh hưởng.
+          let daCoDau = state.dauThanh != .bang
+            || (state.dauMu != .khongMu && state.dauMu != .muUp)
+          if !daCoDau {
+            return (state.withMu(.muUp), true)
+          }
         }
 
       // Phím w: dấu móc (ơ, ư) hoặc dấu trăng (ă) tùy nguyên âm

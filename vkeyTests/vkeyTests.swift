@@ -5289,3 +5289,153 @@ final class CommitReplacementPreviousWordStateTests: XCTestCase {
     XCTAssertEqual(p.transformed, "", "Backspace sau macro không được hồi sinh 'dc'")
   }
 }
+
+// MARK: - Bốn quy luật ngữ âm còn thiếu trong engine (đối chiếu gonhanh.org)
+//
+// Mỗi nhóm dưới đây là một quy luật tiếng Việt mà engine vkey chưa mã hoá,
+// phát hiện khi so sánh với core Rust của GoNhanh.
+final class EngineRulesFromGoNhanhTests: XCTestCase {
+
+  private var savedFreeMark: Bool = false
+
+  override func setUp() {
+    super.setUp()
+    savedFreeMark = Defaults[.freeMarkModeEnabled]
+    Defaults[.freeMarkModeEnabled] = false
+    Defaults.reset(.autoTypoCorrection)
+    Defaults.reset(.newStyleTonePlacement)
+  }
+
+  override func tearDown() {
+    Defaults[.freeMarkModeEnabled] = savedFreeMark
+    super.tearDown()
+  }
+
+  /// Gõ chuỗi phím Telex qua đúng đường InputProcessor (gồm cả recovery),
+  /// trả về chuỗi hiển thị trên màn hình.
+  private func telex(_ keys: String) -> String {
+    let p = InputProcessor(method: .Telex)
+    p.newWord()
+    for c in keys { p.push(char: c) }
+    return p.transformed
+  }
+
+  // MARK: 1) Thanh nhập — âm tiết kết bằng p/t/c/ch/k chỉ mang sắc hoặc nặng
+
+  /// Tiếng Việt không có âm tiết vừa kết bằng phụ âm tắc vừa mang huyền/hỏi/ngã.
+  /// Gõ trúng tổ hợp đó thì phím dấu phải rơi xuống thành chữ cái thường.
+  func testCheckedToneRejectsHuyenHoiNga() {
+    let cases = [
+      "otr", "atr", "itr", "ocr", "opr", "achr", "ichr", "hotr", "matr",
+      "otf", "atf", "ocf", "opf", "echf", "matf", "hotf",
+      "otx", "itx", "ocx", "opx", "ichx", "hotx", "ochx",
+    ]
+    for keys in cases {
+      XCTAssertEqual(telex(keys), keys, "\(keys): thanh nhập — dấu phải rơi xuống chữ thường")
+    }
+  }
+
+  /// Đối chứng: sắc và nặng trên phụ âm tắc là HỢP LỆ, không được đụng vào.
+  func testCheckedToneKeepsSacAndNang() {
+    let cases = [
+      ("ots", "ót"), ("ocs", "óc"), ("ops", "óp"), ("achs", "ách"),
+      ("otj", "ọt"), ("ocj", "ọc"), ("opj", "ọp"), ("achj", "ạch"),
+      ("hocj", "học"), ("bats", "bát"), ("sachj", "sạch"), ("khacs", "khác"),
+    ]
+    for (keys, want) in cases {
+      XCTAssertEqual(telex(keys), want, "\(keys): sắc/nặng + phụ âm tắc là hợp lệ")
+    }
+  }
+
+  /// Đối chứng: phụ âm cuối vang (m/n/ng/nh) nhận đủ 6 thanh như thường.
+  func testCheckedToneDoesNotTouchSonorantFinals() {
+    let cases = [
+      ("lamf", "làm"), ("banr", "bản"), ("conf", "còn"),
+      ("anhr", "ảnh"), ("mangx", "mãng"), ("nhungwx", "những"),
+    ]
+    for (keys, want) in cases {
+      XCTAssertEqual(telex(keys), want, "\(keys): phụ âm cuối vang nhận mọi thanh")
+    }
+  }
+
+  // MARK: 2) Vần "uơ" mở — chỉ móc chữ o khi chưa có âm cuối
+
+  /// "ươ" chỉ tồn tại khi có âm cuối (hương, được) hoặc có nguyên âm thứ ba
+  /// (tươi, rượu). Vần mở là "uơ" với u trơn: huơ, khuơ, quơ, thuở.
+  /// Trước fix, MỌI thứ tự phím đều ra "hươ"/"thưở" — hai từ này không gõ được.
+  func testOpenUoKeepsBareU() {
+    XCTAssertEqual(telex("huow"), "huơ")
+    XCTAssertEqual(telex("khuow"), "khuơ")
+    XCTAssertEqual(telex("thuowr"), "thuở")
+    XCTAssertEqual(telex("huowr"), "huở")
+  }
+
+  /// Đối chứng: có âm cuối thì móc CẢ HAI (ươ), và ba nguyên âm cũng vậy.
+  func testClosedUoStillGetsDoubleHorn() {
+    XCTAssertEqual(telex("dduowcj"), "được")
+    XCTAssertEqual(telex("huowng"), "hương")
+    XCTAssertEqual(telex("nuowcs"), "nước")
+    XCTAssertEqual(telex("tuowi"), "tươi")
+    XCTAssertEqual(telex("cuowif"), "cười")
+    XCTAssertEqual(telex("ruowuj"), "rượu")
+  }
+
+  /// Đối chứng: "quơ" vốn đã đúng (qu- là phụ âm đầu) — không được vỡ.
+  func testQuoUnchanged() {
+    XCTAssertEqual(telex("quow"), "quơ")
+  }
+
+  // MARK: 3) "ă" không đứng trước nguyên âm khác
+
+  /// Không có vần ăi/ăo/ău/ăy trong tiếng Việt — phải recovery về phím thô.
+  func testBreveBeforeVowelRecovers() {
+    XCTAssertEqual(telex("taiw"), "taiw")
+    XCTAssertEqual(telex("tayw"), "tayw")
+    XCTAssertEqual(telex("maiw"), "maiw")
+  }
+
+  /// Đối chứng: vần oă hợp lệ (ă đứng SAU o) và ă + phụ âm cuối vẫn chạy.
+  func testBreveValidCasesUnaffected() {
+    XCTAssertEqual(telex("xoawn"), "xoăn")
+    XCTAssertEqual(telex("awn"), "ăn")
+    XCTAssertEqual(telex("nawm"), "năm")
+    XCTAssertEqual(telex("quawn"), "quăn")
+  }
+
+  // MARK: 4) Gõ lặp nguyên âm khi âm tiết đã có dấu = kéo dài, không phải đặt mũ
+
+  /// Kiến trúc một-dauMu-cho-cả-từ khiến "chưa"+a không chỉ áp nhầm mũ mà còn
+  /// XOÁ dấu móc đã đúng (ư→u). Người gõ kiểu chat mất chữ.
+  func testRepeatedVowelAfterMarkDoesNotStealMu() {
+    XCTAssertEqual(telex("chuwaa"), "chưaa")
+    XCTAssertEqual(telex("chuwaaa"), "chưaaa")
+  }
+
+  /// Khi âm tiết mới chỉ có dấu THANH (chưa có mũ/móc), gõ lặp nguyên âm rơi
+  /// về phím thô thay vì bịa ra "quấ". Không hiển thị được "quáa" vì ở tầng
+  /// validator ca này không phân biệt được với "wifi" (chuKhongDau "wii" sau
+  /// khi f bị nuốt làm huyền) — nới thêm sẽ biến "wifi" thành "wìi".
+  /// Điều quan trọng vẫn đạt: dấu sắc KHÔNG bị phá thành dấu mũ.
+  func testRepeatedVowelAfterToneFallsBackToRaw() {
+    XCTAssertEqual(telex("quasa"), "quasa")
+    XCTAssertNotEqual(telex("quasa"), "quấ", "không được biến dấu sắc thành mũ")
+  }
+
+  /// Đối chứng cho chính ca đã suýt vỡ khi nới validator: từ mượn có phím dấu
+  /// kẹp giữa hai nguyên âm giống nhau phải giữ nguyên phím thô.
+  func testLoanwordWithToneKeyBetweenSameVowelsUnchanged() {
+    XCTAssertEqual(telex("wifi"), "wifi")
+  }
+
+  /// Đối chứng: đường đặt mũ chuẩn và đường huỷ mũ (aaa/ooo/eee) giữ nguyên.
+  func testStandardMuPathsUnaffected() {
+    XCTAssertEqual(telex("aa"), "â")
+    XCTAssertEqual(telex("oo"), "ô")
+    XCTAssertEqual(telex("ee"), "ê")
+    XCTAssertEqual(telex("caan"), "cân")
+    XCTAssertEqual(telex("toois"), "tối")
+    XCTAssertEqual(telex("been"), "bên")
+    XCTAssertEqual(telex("aaa"), "aa")
+    XCTAssertEqual(telex("ooo"), "oo")
+  }
+}
