@@ -4719,9 +4719,10 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(nfcBs, 1) // deletes "ô"
     XCTAssertEqual(nfcDiff, ["o"]) // re-types "o"
     
-    // 2. NFD app (Chromium)
+    // 2. NFD app (Electron). 4.21: Chrome KHÔNG còn dùng được làm ví dụ NFD —
+    // web content của trình duyệt đã chuyển sang NFC. Electron vẫn giữ NFD.
     let nfdProcessor = InputProcessor(method: .Telex)
-    nfdProcessor.changeActiveApp("com.google.Chrome")
+    nfdProcessor.changeActiveApp("com.tinyspeck.slackmacgap")
     nfdProcessor.push(char: "g")
     nfdProcessor.push(char: "o")
     nfdProcessor.push(char: "o")  // "gô"
@@ -4776,14 +4777,15 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(sublimeBs, 1, "Sublime must NFC-pop like Notes")
     XCTAssertEqual(sublimeDiff, ["o"])
 
-    let chrome = InputProcessor(method: .Telex)
-    chrome.changeActiveApp("com.google.Chrome")
-    chrome.push(char: "g")
-    chrome.push(char: "o")
-    chrome.push(char: "o")
-    let (chromeBs, chromeDiff) = chrome.pop(usesNFC: chrome.usesNFCForFocusedField())
-    XCTAssertEqual(chromeBs, 0, "Chrome stays NFD-pop")
-    XCTAssertEqual(chromeDiff, [])
+    // Đối chứng NFD. 4.21: dùng Electron thay Chrome — trình duyệt đã sang NFC.
+    let electron = InputProcessor(method: .Telex)
+    electron.changeActiveApp("com.tinyspeck.slackmacgap")
+    electron.push(char: "g")
+    electron.push(char: "o")
+    electron.push(char: "o")
+    let (electronBs, electronDiff) = electron.pop(usesNFC: electron.usesNFCForFocusedField())
+    XCTAssertEqual(electronBs, 0, "Electron vẫn NFD-pop")
+    XCTAssertEqual(electronDiff, [])
   }
 
   /// v4.15: emit-form phải khớp field-form. `emittedCharacters` precompose khi
@@ -5052,13 +5054,16 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(diff4, [])
   }
 
-  /// v3.9: kiểu diff theo FieldKind trong app nhóm NFD (Chrome).
+  /// v3.9: kiểu diff theo FieldKind trong app nhóm NFD.
   /// - webContent → NFD (pop "gô"→"go" nhường OS = (0, []))
   /// - nativePanel (NSSavePanel) → NFC = (1, ["o"])
-  /// - windowField (omnibox) → NFC = (1, ["o"]) — dùng kèm axDirect ở runtime
-  func testFieldKindDiffSelectionInChromiumApp() throws {
+  /// - windowField → NFC = (1, ["o"]) — dùng kèm axDirect ở runtime
+  ///
+  /// 4.21: đổi ví dụ từ Chrome sang Electron. Trình duyệt giờ NFC ở MỌI
+  /// fieldKind nên không còn phân biệt được ba nhánh này; Electron thì còn.
+  func testFieldKindDiffSelectionInNFDGroupApp() throws {
     let processor = InputProcessor(method: .Telex)
-    processor.changeActiveApp("com.google.Chrome")
+    processor.changeActiveApp("com.tinyspeck.slackmacgap")
 
     // Web content: NFD — pop "gô"→"go" nhường OS (0, []).
     processor.focusedFieldKind = .webContent
@@ -5127,43 +5132,75 @@ final class NFDvsNFCDiffingTests: XCTestCase {
       XCTAssertEqual(p.transformed, "điều", "\(app): gõ ddieeuf phải ra điều")
     }
 
-    // Đối chứng: app NFD thật (Chrome, web content) KHÔNG bị kéo sang NFC.
-    let chrome = InputProcessor(method: .Telex)
-    chrome.changeActiveApp("com.google.Chrome")
-    chrome.focusedFieldKind = .webContent
-    XCTAssertFalse(chrome.usesNFCForFocusedField(), "Chrome web content giữ NFD")
+    // Đối chứng: app NFD thật KHÔNG bị kéo sang NFC. 4.21: dùng Electron —
+    // Chrome đã sang NFC nên không còn là ví dụ NFD hợp lệ.
+    let electron = InputProcessor(method: .Telex)
+    electron.changeActiveApp("com.tinyspeck.slackmacgap")
+    electron.focusedFieldKind = .webContent
+    XCTAssertFalse(electron.usesNFCForFocusedField(), "Electron web content giữ NFD")
   }
 
-  /// 4.16: công tắc opt-in "NFC cho ô tìm kiếm web". Khi BẬT, web content của
-  /// app nhóm NFD (Chrome ẩn web khỏi AX → .webContent/.unknown) chuyển NFC để
-  /// ô tìm kiếm khớp text precomposed. Mặc định TẮT → giữ NFD như v4.15.
-  func testNfcWebContentToggleForcesNFC() throws {
-    Defaults[.nfcWebContentEnabled] = false
-    defer { Defaults.reset(.nfcWebContentEnabled) }
-
+  /// 4.21: bỏ công tắc thủ công của 4.16 — web content của TRÌNH DUYỆT dùng
+  /// NFC tự động. Cơ sở là phép đo thật: Chrome giữ nguyên NFC ở <input>,
+  /// <input type=search> và contenteditable; Google Docs LƯU NFC (copy ra đếm
+  /// 22 scalar precomposed, NFD sẽ là 29) chứ không phải NFD như 4.16 phỏng đoán.
+  func testBrowserWebContentUsesNFC() throws {
     let chrome = InputProcessor(method: .Telex)
     chrome.changeActiveApp("com.google.Chrome")
-
-    // TẮT (mặc định): web content / unknown giữ NFD.
     chrome.focusedFieldKind = .webContent
-    XCTAssertFalse(chrome.usesNFCForFocusedField(), "TẮT: Chrome web content phải NFD")
-    chrome.focusedFieldKind = .unknown
-    XCTAssertFalse(chrome.usesNFCForFocusedField(), "TẮT: Chrome unknown phải NFD")
+    XCTAssertTrue(chrome.usesNFCForFocusedField(), "web content của Chrome phải NFC")
+    chrome.focusedFieldKind = .windowField
+    XCTAssertTrue(chrome.usesNFCForFocusedField(), "thanh địa chỉ Chrome vẫn NFC")
 
-    // BẬT → NFC cho cả .webContent lẫn .unknown (ô search Chrome ẩn AX = .unknown).
-    Defaults[.nfcWebContentEnabled] = true
+    // Kênh beta/canary khớp theo prefix.
+    for bundle in ["com.google.Chrome.beta", "com.google.Chrome.canary",
+                   "com.brave.Browser.nightly", "com.microsoft.edgemac.Dev"] {
+      let p = InputProcessor(method: .Telex)
+      p.changeActiveApp(bundle)
+      p.focusedFieldKind = .webContent
+      XCTAssertTrue(p.usesNFCForFocusedField(), "\(bundle) phải NFC")
+    }
+  }
+
+  /// `.unknown` phải ĐI CÙNG trục với `.webContent` trong cùng một app: AX
+  /// timeout làm fieldKind rơi về .unknown giữa chừng, hai case khác trục thì
+  /// một từ đang gõ bị đổi trục giữa dòng — đúng lớp lỗi 4.14.
+  func testUnknownFieldKindMatchesWebContentAxisPerApp() throws {
+    let chrome = InputProcessor(method: .Telex)
+    chrome.changeActiveApp("com.google.Chrome")
     chrome.focusedFieldKind = .webContent
-    XCTAssertTrue(chrome.usesNFCForFocusedField(), "BẬT: Chrome web content phải NFC")
+    let web = chrome.usesNFCForFocusedField()
     chrome.focusedFieldKind = .unknown
-    XCTAssertTrue(chrome.usesNFCForFocusedField(), "BẬT: Chrome unknown phải NFC")
+    XCTAssertEqual(chrome.usesNFCForFocusedField(), web, "Chrome: .unknown phải cùng trục .webContent")
 
-    // App NFC-whitelist (Apple) — đặt cờ TẮT để chứng minh Notes NFC nhờ
-    // WHITELIST (không phải nhờ cờ), cô lập đúng nhánh whitelist.
-    Defaults[.nfcWebContentEnabled] = false
+    let slack = InputProcessor(method: .Telex)
+    slack.changeActiveApp("com.tinyspeck.slackmacgap")
+    slack.focusedFieldKind = .webContent
+    let slackWeb = slack.usesNFCForFocusedField()
+    slack.focusedFieldKind = .unknown
+    XCTAssertEqual(slack.usesNFCForFocusedField(), slackWeb, "Slack: .unknown phải cùng trục .webContent")
+  }
+
+  /// Phạm vi hẹp có chủ đích: Electron cũng là web content nhưng CHƯA đo, nên
+  /// giữ NFD như trước. Đây đúng là chỗ công tắc 4.16 phóng quá tay — nó bật
+  /// NFC cho mọi app ngoài whitelist, kể cả Slack/Zalo/Telegram.
+  func testNonBrowserWebViewsStayNFD() throws {
+    for bundle in ["com.tinyspeck.slackmacgap", "com.hnc.Discord",
+                   "com.anthropic.claudefordesktop", "com.vng.zalo"] {
+      let p = InputProcessor(method: .Telex)
+      p.changeActiveApp(bundle)
+      p.focusedFieldKind = .webContent
+      XCTAssertFalse(p.usesNFCForFocusedField(), "\(bundle) (Electron) giữ NFD")
+    }
+  }
+
+  /// Đối chứng: app Apple vẫn NFC nhờ whitelist grapheme-storage, không liên
+  /// quan gì tới luật trình duyệt mới.
+  func testAppleAppsStillNFCViaWhitelist() throws {
     let notes = InputProcessor(method: .Telex)
     notes.changeActiveApp("com.apple.Notes")
     notes.focusedFieldKind = .webContent
-    XCTAssertTrue(notes.usesNFCForFocusedField(), "Notes NFC nhờ whitelist, không cần cờ")
+    XCTAssertTrue(notes.usesNFCForFocusedField(), "Notes NFC nhờ whitelist")
   }
 }
 

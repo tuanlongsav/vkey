@@ -1679,16 +1679,38 @@ class InputProcessor {
   ///    - unknown     → giữ default NFD của app
   func usesNFCForFocusedField() -> Bool {
     if InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp) { return true }
-    // 4.16: opt-in — xuất NFC cho web content (ô tìm kiếm web khớp precomposed
-    // → tìm ra kết quả). Chrome ẩn web content khỏi AX nên không phân loại field
-    // được → dùng cờ toàn cục (menu bar). Đánh đổi: có thể ảnh hưởng Google
-    // Docs/Sheets (canvas lưu NFD) → tắt cờ khi dùng Docs. Mặc định OFF.
-    if Defaults[.nfcWebContentEnabled] { return true }
     switch focusedFieldKind {
-    case .webContent: return false
+    case .webContent, .unknown:
+      // 4.21: web content của TRÌNH DUYỆT dùng NFC. Thay cho công tắc thủ công
+      // "NFC cho ô tìm kiếm web" của 4.16, vốn dựa trên hai tiền đề đều SAI:
+      //   • "Chrome ẩn web content khỏi AX nên không phân loại field được" —
+      //     đo lại thì AXWebArea hiện bình thường, và vkey phân biệt được
+      //     .webContent với .windowField (thanh địa chỉ).
+      //   • "canvas lưu NFD nên bật cờ sẽ hỏng Google Docs" — copy nội dung
+      //     Docs ra đếm scalar: 22 scalar precomposed (NFD sẽ là 29). Docs LƯU
+      //     NFC. Gõ + Backspace trong Docs trên trục NFC chạy đúng.
+      // Chrome giữ nguyên NFC ở <input>, <input type=search> và
+      // contenteditable (đo bằng cách gửi U+1EEF U+1EC1 rồi đọc lại AXValue).
+      //
+      // Giới hạn ở trình duyệt, KHÔNG áp cho mọi web content: Electron
+      // (Slack/Discord/Zalo) cũng là web content nhưng chưa đo, nên giữ NFD
+      // như cũ — đó cũng chính là phạm vi mà cờ 4.16 phóng quá tay.
+      //
+      // `.unknown` đi CÙNG nhánh với `.webContent` là có chủ đích: trong một
+      // trình duyệt, AX timeout làm fieldKind rơi về .unknown giữa chừng; nếu
+      // hai case này khác trục thì một từ đang gõ sẽ bị đổi trục giữa dòng —
+      // đúng lớp lỗi 4.14 (đếm một đằng, phát một nẻo).
+      return InputProcessor.isBrowserApp(bundleId: activeApp)
     case .nativePanel, .windowField: return true
-    case .unknown: return false
     }
+  }
+
+  /// v4.21: app có phải TRÌNH DUYỆT thật không (không phải web-view nói chung).
+  /// Dùng lại `FixAutocompleteApps` — danh sách bundle trình duyệt vốn đã được
+  /// duy trì sẵn trong file này. Khớp theo prefix để bao các kênh beta/canary
+  /// (vd "com.google.Chrome.beta").
+  static func isBrowserApp(bundleId: String) -> Bool {
+    FixAutocompleteApps.contains { bundleId.hasPrefix($0) }
   }
 
   /// v3.9: field hiện tại là browser-chrome (vd thanh địa chỉ Chrome) của app
