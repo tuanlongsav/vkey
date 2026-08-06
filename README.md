@@ -16,70 +16,6 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 - **Hết hỏng chữ sau khi vkey tự sửa chính tả** — cùng lỗi trên, ở đường tự sửa lúc kết từ (vd gõ `ARM` bị thành `ẢM` rồi được trả về `ARM`).
 - **Hết mất chữ ở ô tìm kiếm / ô địa chỉ** — số ký tự cần xoá, đơn vị lùi khi xoá và dạng chữ gửi ra giờ luôn thống nhất theo ô đang gõ, không còn xoá lố ăn mất chữ đứng trước.
 
-## Mới ở v4.16
-
-- **Công tắc "NFC cho ô tìm kiếm web"** (menu bar, mặc định TẮT) — bật để ô tìm kiếm trên web ra kết quả khi gõ tiếng Việt có dấu (nhiều trang tìm bằng text precomposed). Tắt khi gõ trong Google Docs/Sheets.
-- **Gọn menu bar** — bỏ mục "Sửa lỗi chính tả" (vẫn chỉnh được trong Cài đặt → Chính tả).
-
-## Mới ở v4.15
-
-- **Hết mất chữ ĐẦU khi gõ** — vá lỗi nghiêm trọng của v4.14: gõ tiếng Việt trên Chrome / Electron / Slack / Discord / … bị rụng phụ âm đầu (`gửi`→`ửi`, `sửa`→`ửa`, `nội`→`ội`, `mất`→`ất`). Dạng chữ gửi ra giờ bám theo ô nhập: web content giữ NFD như trước, còn Apple/Finder vẫn NFC.
-
-## Mới ở v4.14
-
-- **pass / horses / nurses** — từ EN có phím tone lặp giữ đủ chữ (không còn `pas`/`hoe`); backspace sau khoá EN về raw prefix đúng.
-
-## Mới ở v4.13
-
-- **Hết bị từ tiếng Anh chiếm chỗ** — "thí điểm" không còn thành "this điểm", "lít" không còn thành "list", "tê tay" + Space không còn thành "tee tay". Quy tắc mới: phím dấu hoàn thành từ tiếng Việt hợp lệ thì tiếng Việt thắng khôi phục tức thì tiếng Anh. Muốn gõ literal "this"/"list": gõ `thiss`/`lisst` (double-s, chuẩn Telex).
-
-## Mới ở v4.12
-
-- **Từ tiếng Việt viết HOA gõ chuẩn** — Caps Lock "TOÁN" + Space không còn bị đổi thành "TOASN" (tương tự BÁN/HỌC/VÀNG/PHÁP/SÁCH); acronym tiếng Anh thật (ARM, USA) vẫn giữ nguyên như cũ.
-- **Launcher theo mode bạn chọn** — Raycast/Alfred/LaunchBar (tiếp nối Spotlight v4.11) không còn bị ép tiếng Anh mặc định; muốn ép English app nào thì thêm qua Settings → Smart Switch.
-- **Auto-suggestion giữ kiểu hoa/thường** — gợi ý sửa chính tả tự áp dụng không còn hạ chữ hoa đầu câu về chữ thường.
-
-## Mới ở v4.4
-
-- **Tab đầu dòng ổn định** — bấm Tab để thụt dòng / chuyển focus không còn chèn gợi ý cũ; prediction chỉ nhận bằng Tab ngay sau khi commit bằng Space.
-- **Clipboard hotkey trong app vkey** — phím tắt lịch sử clipboard và modifier-only vẫn được xử lý khi cửa sổ vkey đang focus, nhưng Telex/VNI không can thiệp vào ô Cài đặt.
-
-## Mới ở v4.3
-
-- **Viết hoa đầu câu** — chỉ sau Enter hoặc `. ! ?` **kèm dấu cách**; `google.com.vn` và `3.14` giữ chữ thường. Viết tắt không space (`Mr.Smith`) cũng không bị viết hoa — cố ý để không phá domain.
-
-## Mới ở v4.2
-
-- **Viết hoa đầu câu** — hoạt động đúng sau Enter hoặc `. ! ?` (+ space); không viết hoa ngay sau dấu chấm (domain).
-- **Sublime Text & Vectorworks** — sửa nuốt dòng / mất ký tự khi gõ tiếng Việt (NFC whitelist).
-- **Macro trong Cài đặt** — hết treo khi gõ trực tiếp tiếng Việt vào ô Cụm dài.
-
-## Mới ở v4.1
-
-- **Dialog Kiểm tra cập nhật tiếng Việt** — Sparkle hiển thị "Bạn đang dùng phiên bản mới nhất!" thay vì tiếng Anh.
-- **Tự động cập nhật** lên **đầu tab Chung**; rà soát Việt hoá thông báo/HUD còn sót tiếng Anh.
-
-## Mới ở v4.0
-
-- **Tự động cập nhật phiên bản mới** — bật/tắt trong Cài đặt → Chung; Sparkle tải và cài im lặng, HUD xanh báo hoàn tất sau relaunch.
-- **Kiểm tra cập nhật** thống nhất qua dialog Sparkle căn giữa (menu bar).
-- **Clipboard ⇧⌘V** — không chặn phím khi lịch sử rỗng; backup/restore phím tắt clipboard.
-
-## Mới ở v3.22
-
-- **Phím mở menu lịch sử clipboard mặc định ⇧⌘V** (thay ⌥⌘V — tránh xung đột Move file macOS); **phím tắt tùy chỉnh** trong Cài đặt → Chung.
-- **Vá giới hạn dung lượng clipboard** — ước lượng đúng khi vừa có văn bản vừa có tệp; tối ưu capture; debounce HUD cảnh báo.
-
-## Mới ở v3.21
-
-- **Đoán từ — loại trừ app** — tab Chính tả: chọn app không chạy HUD gợi ý (IDE, terminal, v.v.).
-- **Lịch sử Clipboard trên menu bar** — bật/tắt nhanh cùng Smart Switch / Chính tả / Macro.
-
-## Mới ở v3.20
-
-- **Quản lý & xóa cụm thống kê** — sheet chi tiết cho top cụm VN / ngoài VN; xóa đúng bucket phrase; xóa từ EN thêm deny list.
-- **Icon cài đặt sắc nét** — sidebar/nav không còn mờ trên theme Glass & Neural.
-
 Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md)
 
 ## Hình ảnh
@@ -103,16 +39,17 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 
 | Nhóm | Điểm nổi bật |
 |------|----------------|
-| **Gõ** | Telex & VNI · kiểu đặt dấu mới/cũ · auto sửa gõ nhầm · Unicode UTF-8 · keypad VNI & Caps Lock chuẩn macOS |
-| **Song ngữ** | Space Restore · ESC hoàn tác · gõ tiếng Anh ổn định trong mode VN · nhớ VI/EN theo từng app |
-| **Smart Switch** | 3 trạng thái/app: 🇻🇳 VN · 🇺🇸 EN · ⛔ tắt · tự học từ thống kê · Spotlight & launcher theo mode bạn chọn (v4.12) |
-| **Chính tả** | Kiểm tra 6 bước · từ điển VN 8 960 âm tiết + EN 9 826 từ · từ điển cá nhân · cập nhật từ GitHub |
-| **Gợi ý & macro** | HUD gợi ý cụm 2–3 từ sau Space (`Tab` chèn) · macro viết tắt · đề xuất từ thống kê |
-| **Thống kê** | Top từ/cụm tuần này · sao lưu/khôi phục JSON · quản lý & xóa cụm (v3.20) |
-| **Giao diện** | Menu bar panel · Cài đặt sidebar 6 tab · 3 theme: **Tonal** / **Liquid Glass** / **Neural AI** |
-| **HUD** | Capsule VI/EN giữa màn hình · pill gợi ý `→ cụm · Tab` · cảnh báo clipboard amber |
-| **Tiện ích** | Lịch sử clipboard (⇧⌘V mở menu, tùy chỉnh phím tắt) · **tự động cập nhật im lặng** (v4.0+) · dialog cập nhật tiếng Việt (v4.1) · toggle menu bar · Text Tools ⌃⇧ · Sparkle · VietQR donate |
-| **Tương thích** | Chrome omnibox (axDirect) · Electron/Office/terminal · QWERTZ/AZERTY/Dvorak · bypass ô password |
+| **Gõ** | Telex & VNI · kiểu đặt dấu mới/cũ (`oà` ↔ `òa`) · tự động sửa lỗi gõ nhầm · viết hoa đầu câu · phụ âm vay mượn z/w/j/f · Unicode UTF-8 · keypad VNI & Caps Lock chuẩn macOS |
+| **Song ngữ** | Space Restore · Esc hoàn tác về phím thô · gõ tiếng Anh ổn định trong mode VN · nhớ VI/EN theo từng app |
+| **Smart Switch** | 3 trạng thái mỗi app: 🇻🇳 Tiếng Việt · 🇺🇸 Tiếng Anh · ⛔ Không sử dụng vkey · tự học từ Thống kê · thêm nhanh từ danh sách app đang chạy |
+| **Chính tả** | Kiểm tra chính tả lúc kết từ, **chính sách khôi phục** chọn được (vd Cân bằng) · từ điển tham chiếu Anh–Việt · từ điển cá nhân (giữ tiếng Việt / khôi phục tiếng Anh) · cập nhật từ điển từ GitHub |
+| **Từ điển** | Nhúng sẵn **7 184 âm tiết tiếng Việt**; sau khi nhận gói cập nhật từ GitHub (app tự hỏi lúc khởi động): **8 960 âm tiết + 9 826 từ tiếng Anh** |
+| **Gợi ý & macro** | Đoán từ 6 tầng (trigram/bigram người dùng + corpus nhúng + cụm nhúng) · gợi ý **1–3 từ**, mặc định 2 · `Tab` để chèn · loại trừ app khỏi đoán từ · macro viết tắt → cụm dài, nhập/xuất JSON |
+| **Thống kê** | Top từ/cụm tuần · top cụm 2–3 từ tiếng Việt & ngoài tiếng Việt · top app dùng nhiều · các tuần đã đóng · sao lưu/khôi phục JSON · quản lý & xóa cụm |
+| **Giao diện** | Menu bar panel · Cài đặt sidebar 6 tab · 3 theme: **Mặc định** / **Liquid Glass** / **Neural AI** · màu nhấn · phông chữ · độ bo góc · mật độ dòng · Sáng / Tối / Hệ thống |
+| **HUD** | Capsule VI/EN giữa màn hình · pill gợi ý `→ cụm · Tab` (chỉnh được cỡ chữ + khoảng cách tới con trỏ) · cảnh báo clipboard amber |
+| **Tiện ích** | Lịch sử clipboard (⇧⌘V mở menu, tùy chỉnh phím tắt — **mặc định TẮT**) · tự động cập nhật im lặng qua Sparkle, dialog tiếng Việt · tự khởi động cùng hệ thống · tự tắt khi đổi sang bộ gõ khác · Text Tools ⌃⇧ · VietQR donate |
+| **Tương thích** | Chrome omnibox (axDirect) · Electron/Office/terminal · QWERTZ/AZERTY/Dvorak · bypass ô password (secure input) · công tắc NFC cho ô tìm kiếm web |
 
 Dữ liệu thống kê & từ điển cá nhân **chỉ lưu cục bộ** — không telemetry.
 
@@ -152,9 +89,9 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 |----------|-----------|
 | Chuyển VI ↔ EN | Nhấn + nhả **⇧⌥** (mặc định) hoặc segmented **VI \| EN** trên panel |
 | Kiểu gõ | **Kiểu Telex** / **Kiểu VNI** |
-| Bật/tắt nhanh | Smart Switch · Macro · Lịch sử Clipboard · NFC cho ô tìm kiếm web |
+| Bật/tắt nhanh | Smart Switch · Macro · Lịch sử Clipboard · NFC cho ô tìm kiếm web (mặc định TẮT) |
 | Cài đặt | **Cài đặt** (⌘,) |
-| Đổi theme | **Chuyển giao diện** → Tonal / Liquid Glass / Neural AI |
+| Đổi theme | **Chuyển giao diện** → Mặc định / Liquid Glass / Neural AI |
 | Thoát | **Thoát** (⌘Q) |
 
 **Icon menu bar:** 🇻🇳 gõ VN · 🇺🇸 gõ EN · 🔒 ô password · ⚙️ chưa cấp quyền Trợ năng
@@ -163,12 +100,14 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 
 | Tab | Nội dung chính |
 |-----|----------------|
-| **Chung** | **Tự động cập nhật** (đầu tab) · bật/tắt gõ VN · Telex/VNI · auto sửa lỗi · HUD · phím tắt · clipboard (⇧⌘V, tùy chỉnh) |
-| **Smart Switch** | Cấu hình VI/EN/tắt theo app · thêm app đang chạy · tự học từ thống kê |
-| **Macro** | Viết tắt → cụm dài · nhập/xuất JSON · gợi ý từ thống kê |
-| **Chính tả** | Spell check · từ điển cá nhân · đoán từ (loại trừ app) · Space Restore · cập nhật lexicon GitHub |
-| **Thống kê & Sao lưu** | Top từ/cụm tuần · xuất/nhập JSON · quản lý/xóa cụm |
-| **Quản lý giao diện** | Theme · màu nhấn · font · bo góc · sáng/tối |
+| **Chung** | Cập nhật ứng dụng (tự động cập nhật phiên bản mới) · Bộ gõ (bật/tắt gõ tiếng Việt, Telex/VNI, kiểu đặt dấu mới/cũ, phụ âm z w j f) · Hỗ trợ thông minh (tự động sửa lỗi gõ nhầm, viết hoa đầu câu, thông báo khi chuyển VI/EN) · Cấu hình nâng cao (tự khởi động cùng hệ thống, tự tắt khi đổi sang bộ gõ khác) · Phím tắt chuyển chế độ (⇧⌥) và mở Text Tools (⌃⇧) · Clipboard tùy chỉnh (⇧⌘V, số mục, dung lượng, loại nội dung) |
+| **Smart Switch** | Danh sách ứng dụng với 3 lựa chọn: 🇻🇳 Tiếng Việt · 🇺🇸 Tiếng Anh · Không sử dụng vkey · Tự học từ Thống kê · chọn nhanh từ ứng dụng đang chạy |
+| **Macro** | Bật/tắt Macro · viết tắt → cụm dài · danh sách macro · nhập/xuất `vkey-macros.json` · gợi ý từ thường gõ |
+| **Chính tả** | Kiểm tra chính tả · tự động khôi phục tiếng Anh (Space Restore) · chính sách khôi phục (vd Cân bằng) · gợi ý sửa lỗi chính tả · từ điển tham chiếu Anh–Việt · từ điển cá nhân · bật đoán từ + số từ gợi ý tối đa · loại trừ app khỏi đoán từ · cỡ chữ HUD + khoảng cách HUD đến con trỏ |
+| **Thống kê & Sao lưu** | Ghi nhận thống kê sử dụng · top từ / cụm 2–3 từ tiếng Việt & ngoài tiếng Việt · top app dùng nhiều · Smart Switch kích hoạt · các tuần đã đóng · sao lưu/khôi phục JSON · quyền riêng tư & chẩn đoán |
+| **Quản lý giao diện** | Theme (Mặc định / Liquid Glass / Neural AI) · màu nhấn · phông chữ · độ bo góc · mật độ dòng menu · cường độ phát sáng (Neural AI) |
+
+Nút **Sáng / Tối / Hệ thống** nằm trên thanh tiêu đề cửa sổ Cài đặt, không nằm trong tab.
 
 ### Phím đặc biệt khi gõ
 
@@ -176,7 +115,7 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 |------|----------|
 | **Space** | Khôi phục từ tiếng Anh bị gõ nhầm (Space Restore) |
 | **Esc** | Hoàn tác về phím thô, reset buffer |
-| **Tab** | Chấp nhận gợi ý HUD (từ hoặc cụm 2–3 từ) |
+| **Tab** | Chấp nhận gợi ý HUD (1–3 từ, mặc định 2) — chỉ ngay sau khi kết từ bằng Space |
 | **ss/ff/rr/xx/jj** | Giữ phím đúp cho từ tiếng Anh (`staff`, `off`…) |
 
 ## FAQ
