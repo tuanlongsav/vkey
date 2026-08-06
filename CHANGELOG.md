@@ -2,6 +2,41 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.21] - 2026-08-06 — "Bỏ công tắc NFC"
+
+**Gỡ một công tắc bạn từng phải tự gạt.** Mục "NFC cho ô tìm kiếm web" trên
+menu bar biến mất — vkey tự quyết đúng.
+
+### ⌨️ Gõ
+
+- **Ô tìm kiếm web ra kết quả mà không cần bật gì.** Web content trong trình
+  duyệt giờ dùng NFC tự động, nên gõ tiếng Việt có dấu vào ô tìm kiếm khớp
+  được text precomposed của trang.
+- **Không còn đánh đổi với Google Docs.** Công tắc cũ bật là bật cho tất cả,
+  nên tài liệu Docs bị kéo theo và bạn phải nhớ tắt đi. Giờ không cần.
+
+### 🔍 Vì sao trước đây phải làm bằng tay
+
+Công tắc v4.16 dựa trên hai tiền đề, đo lại thì **cả hai đều sai**:
+
+- *"Chrome ẩn web content khỏi AX nên không phân loại field được"* — `AXWebArea`
+  hiện ra bình thường. Thanh địa chỉ leo lên `AXWindow`, ô web leo qua
+  `AXWebArea`; vkey vốn đã phân biệt được.
+- *"Canvas lưu NFD nên bật cờ có thể hỏng Google Docs"* — Docs **lưu NFC**.
+  Copy tài liệu ra đếm được 22 scalar precomposed, nếu NFD phải là 29. Gõ thật
+  qua vkey vào Docs rồi Backspace hai lần cho kết quả đúng, kể cả bước `ở`→`ơ`
+  vốn buộc phải thay ký tự giữa từ. Chính chữ *"có thể"* trong ghi chú cũ là dấu
+  hiệu: đó là một lo ngại, chưa từng được đo.
+
+### ⚠️ Một thay đổi nếu bạn đang BẬT công tắc
+
+Phạm vi mới hẹp hơn cờ cũ có chủ đích: cờ cũ trả NFC cho **mọi** app ngoài
+whitelist, còn giờ chỉ trình duyệt thật. App Electron (Slack, Discord, Zalo)
+cũng là web content nhưng chưa được đo, nên quay về mặc định NFD mà v4.15 đã
+xác lập. Telegram, ChatGPT, Notes, Word không đổi (đã NFC nhờ whitelist).
+
+345 test pass.
+
 ## [4.20] - 2026-08-06 — "Warp & lưới an toàn cho event tap"
 
 **Bản nhỏ, hai sửa lỗi tương thích.**

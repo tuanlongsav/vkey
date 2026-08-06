@@ -8,12 +8,12 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.20](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 342 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.21](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 345 test pass · [Tải bản mới nhất](../../releases/latest)
 
-## Mới ở v4.20
+## Mới ở v4.21
 
-- **Warp giờ mới thật sự được nhận diện** — bảng tương thích khai sai bundle ID (`com.warp.Warp`, trong khi Warp thật là `dev.warp.Warp-Stable`), nên entry đó chưa từng khớp và Warp vẫn chạy đường gửi mặc định. Thêm WezTerm, Rio, Termius cùng lý do.
-- **Tự bật lại event tap khi macOS tắt ngầm** — đường phục hồi cũ nằm trong chính callback của tap nên không cứu được ca tap tắt mà callback không còn chạy. Watchdog giờ kiểm cả trạng thái tap.
+- **Ô tìm kiếm web ra kết quả mà không cần bật gì** — mục "NFC cho ô tìm kiếm web" trên menu bar đã được gỡ; web content trong trình duyệt tự dùng NFC. Không còn phải nhớ tắt khi mở Google Docs.
+- Công tắc cũ dựa trên hai phỏng đoán, đo lại thì đều sai: Chrome **không** ẩn web content khỏi AX, và Google Docs **lưu NFC** chứ không phải NFD.
 
 Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md)
 
@@ -48,7 +48,7 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 | **Giao diện** | Menu bar panel · Cài đặt sidebar 6 tab · 3 theme: **Mặc định** / **Liquid Glass** / **Neural AI** · màu nhấn · phông chữ · độ bo góc · mật độ dòng · Sáng / Tối / Hệ thống |
 | **HUD** | Capsule VI/EN giữa màn hình · pill gợi ý `→ cụm · Tab` (chỉnh được cỡ chữ + khoảng cách tới con trỏ) · cảnh báo clipboard amber |
 | **Tiện ích** | Lịch sử clipboard (⇧⌘V mở menu, tùy chỉnh phím tắt — **mặc định TẮT**) · tự động cập nhật im lặng qua Sparkle, dialog tiếng Việt · tự khởi động cùng hệ thống · tự tắt khi đổi sang bộ gõ khác · Text Tools ⌃⇧ · VietQR donate |
-| **Tương thích** | Chrome omnibox (axDirect) · Electron/Office/terminal · QWERTZ/AZERTY/Dvorak · bypass ô password (secure input) · công tắc NFC cho ô tìm kiếm web |
+| **Tương thích** | Chrome omnibox (axDirect) · Electron/Office/terminal · QWERTZ/AZERTY/Dvorak · bypass ô password (secure input) |
 
 Dữ liệu thống kê & từ điển cá nhân **chỉ lưu cục bộ** — không telemetry.
 
@@ -88,7 +88,7 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 |----------|-----------|
 | Chuyển VI ↔ EN | Nhấn + nhả **⇧⌥** (mặc định) hoặc segmented **VI \| EN** trên panel |
 | Kiểu gõ | **Kiểu Telex** / **Kiểu VNI** |
-| Bật/tắt nhanh | Smart Switch · Macro · Lịch sử Clipboard · NFC cho ô tìm kiếm web (mặc định TẮT) |
+| Bật/tắt nhanh | Smart Switch · Macro · Lịch sử Clipboard |
 | Cài đặt | **Cài đặt** (⌘,) |
 | Đổi theme | **Chuyển giao diện** → Mặc định / Liquid Glass / Neural AI |
 | Thoát | **Thoát** (⌘Q) |

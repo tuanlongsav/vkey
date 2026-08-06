@@ -6,6 +6,30 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.21 — "Bỏ công tắc NFC"</title>
+      <sparkle:version>42100</sparkle:version>
+      <sparkle:shortVersionString>4.21</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 06 Aug 2026 23:21:02 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.21/vkey-4.21.dmg"
+        sparkle:edSignature="PJSx9Qk0e8NqqMZVHVkXZ3rZEoUApLsbhiqzW0LBjsuo166kitmXRieSvbB3d1D3000HZ1k3caVf0fT0DU7OAQ=="
+        length="6613929"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.21 — Bỏ công tắc NFC</h2>
+        <p><b>Gỡ một công tắc bạn từng phải tự gạt.</b> Mục "NFC cho ô tìm kiếm web" trên menu bar biến mất — vkey tự quyết đúng.</p>
+        <ul>
+          <li><b>Ô tìm kiếm web ra kết quả mà không cần bật gì</b> — web content trong trình duyệt tự dùng NFC.</li>
+          <li><b>Không còn đánh đổi với Google Docs</b> — công tắc cũ bật là bật cho tất cả nên Docs bị kéo theo, phải nhớ tắt. Giờ không cần.</li>
+        </ul>
+        <p>Công tắc v4.16 dựa trên hai tiền đề, đo lại thì cả hai đều sai: Chrome <b>không</b> ẩn web content khỏi AX, và Google Docs <b>lưu NFC</b> (copy ra đếm 22 scalar precomposed, NFD sẽ là 29) chứ không phải NFD.</p>
+        <p><b>Lưu ý nếu bạn đang BẬT công tắc:</b> phạm vi mới hẹp hơn có chủ đích — chỉ trình duyệt thật. App Electron (Slack, Discord, Zalo) quay về mặc định NFD của v4.15. Telegram, ChatGPT, Notes, Word không đổi.</p>
+        <p>345 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.20 — "Warp &amp; lưới an toàn cho event tap"</title>
       <sparkle:version>42000</sparkle:version>
       <sparkle:shortVersionString>4.20</sparkle:shortVersionString>
