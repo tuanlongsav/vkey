@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.22 — "Hết gãy chữ trong hộp thoại Lưu"</title>
+      <sparkle:version>42200</sparkle:version>
+      <sparkle:shortVersionString>4.22</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 07 Aug 2026 10:42:36 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.22/vkey-4.22.dmg"
+        sparkle:edSignature="7GkNVHsmMIETFe/soEyFmiTiqylgv2ahtctCA0hPkrCpQ8ik6yImeQNBhy3tsQgvwad3yhpGvrlR4/ctEnhfAA=="
+        length="6615023"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.22 — Hết gãy chữ trong hộp thoại Lưu</h2>
+        <p>Sửa lỗi gõ trong hộp thoại Lưu / Thư mục mới của các app sandbox (Safari, Mail, Preview…).</p>
+        <ul>
+          <li><b>Không phải bỏ ký tự đầu nữa</b> — gõ tên thư mục trong hộp thoại Lưu của Safari, <code>Haf Nooij</code> giờ ra <b>Hà Nội</b> ngay từ chữ đầu. Trước đây ra nguyên phím thô vì cứ hai phím thì từ đang gõ bị xoá một lần.</li>
+          <li><b>"Nội" không còn thành "Nôị"</b> — dấu nặng vốn không đặt sai chỗ; từ bị <b>cắt đôi</b> giữa chừng nên <code>nô</code> đã kết thúc còn <code>i</code>+<code>j</code> thành từ mới rồi biến thành <code>ị</code>.</li>
+        </ul>
+        <p><b>Nguyên nhân:</b> hộp thoại Lưu của app sandbox chạy ở tiến trình phụ, và hệ thống trả về khi thì <code>com.apple.Safari</code>, khi thì <code>com.apple.Safari.SandboxBroker</code> — đổi qua lại từng phím. vkey hiểu mỗi lần đổi là chuyển app nên áp lại chế độ gõ, và đường đó xoá sạch từ đang gõ dở.</p>
+        <p>349 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.21 — "Bỏ công tắc NFC"</title>
       <sparkle:version>42100</sparkle:version>
       <sparkle:shortVersionString>4.21</sparkle:shortVersionString>

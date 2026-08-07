@@ -2,6 +2,37 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.22] - 2026-08-07 — "Hết gãy chữ trong hộp thoại Lưu"
+
+**Sửa lỗi gõ trong hộp thoại Lưu / Thư mục mới của các app sandbox** (Safari,
+Mail, Preview…).
+
+### ⌨️ Gõ
+
+- **Không phải bỏ ký tự đầu nữa.** Gõ tên thư mục trong hộp thoại Lưu của
+  Safari, `Haf Nooij` giờ ra `Hà Nội` ngay từ chữ đầu. Trước đây nó ra nguyên
+  phím thô vì cứ hai phím thì từ đang gõ bị xoá một lần.
+- **`Nội` không còn thành `Nôị`.** Dấu nặng vốn không hề đặt sai chỗ — từ bị
+  **cắt đôi** giữa chừng: `nô` đã kết thúc, còn `i` + `j` thành một từ mới rồi
+  tự biến thành `ị`. Sửa chỗ cắt thì dấu về đúng vị trí.
+
+### 🔍 Nguyên nhân
+
+Hộp thoại Lưu của app sandbox chạy ở tiến trình phụ. Hệ thống trả về khi thì
+`com.apple.Safari`, khi thì `com.apple.Safari.SandboxBroker` — **đổi qua lại
+từng phím**. vkey hiểu mỗi lần đổi là chuyển sang app khác nên áp lại chế độ
+gõ, và đường áp lại đó xoá sạch từ đang gõ dở.
+
+Sửa hai lớp: tiến trình phụ của chính app đang dùng không còn bị coi là app
+khác; và việc áp lại chế độ chỉ reset khi trạng thái thật sự đổi, thay vì reset
+mỗi lần gán lại cùng một giá trị. Lớp thứ hai là lưới an toàn chung — nó che cả
+những trường hợp "chuyển app giả" khác chưa được phát hiện.
+
+Tìm ra bằng cách gắn log vào bản chạy thật rồi ghi lại từng phím, chứ không
+đoán: log cho thấy bộ đệm từ biến mất đúng sau mỗi lần đổi bundle.
+
+349 test pass.
+
 ## [4.21] - 2026-08-06 — "Bỏ công tắc NFC"
 
 **Gỡ một công tắc bạn từng phải tự gạt.** Mục "NFC cho ô tìm kiếm web" trên
