@@ -5522,3 +5522,68 @@ final class AppCompatV420Tests: XCTestCase {
 
 
 }
+
+// MARK: - v4.22: hộp thoại Lưu của app sandbox làm gãy từ đang gõ
+//
+// Ô "Thư mục mới" trong hộp thoại Lưu của Safari nằm ở tiến trình phụ
+// `com.apple.Safari.SandboxBroker`. AX trả về khi thì bundle đó, khi thì
+// `com.apple.Safari` — đổi qua lại TỪNG PHÍM. vkey coi mỗi lần đổi là chuyển
+// app, áp lại chế độ Smart Switch, và đường đó xoá sạch bộ đệm từ.
+// Hệ quả đo được: gõ "Haf Nooij" ra đúng "Haf Nooij", và "Nooij" ra "Nôị" vì
+// từ bị cắt đôi giữa chừng ("nô" đã commit, "ij" thành từ mới → "ị").
+final class SandboxHelperBundleTests: XCTestCase {
+
+  /// Bundle phụ của chính app đang chạy KHÔNG phải app khác.
+  func testHelperBundleResolvesToParentApp() {
+    XCTAssertEqual(
+      InputProcessor.canonicalAppBundle(focused: "com.apple.Safari.SandboxBroker",
+                                        frontmost: "com.apple.Safari"),
+      "com.apple.Safari",
+      "SandboxBroker là tiến trình phụ của Safari, không phải app riêng")
+    XCTAssertEqual(
+      InputProcessor.canonicalAppBundle(focused: "com.apple.appkit.xpc.openAndSavePanelService",
+                                        frontmost: "com.apple.Safari"),
+      "com.apple.Safari",
+      "hộp thoại Lưu ngoài tiến trình vẫn thuộc app đang dùng")
+  }
+
+  /// Đối chứng: app khác thật thì vẫn phải nhận ra là khác.
+  func testDifferentAppStillSwitches() {
+    XCTAssertEqual(
+      InputProcessor.canonicalAppBundle(focused: "com.google.Chrome",
+                                        frontmost: "com.apple.Safari"),
+      "com.google.Chrome",
+      "Chrome là app khác thật")
+    XCTAssertEqual(
+      InputProcessor.canonicalAppBundle(focused: "com.apple.Safari",
+                                        frontmost: "com.apple.Safari"),
+      "com.apple.Safari")
+  }
+
+  /// Lưới an toàn chung: gán lại CÙNG giá trị enabled không được xoá từ đang gõ.
+  /// `didSet` của Swift bắn cả khi giá trị không đổi, nên mọi lần áp lại chế độ
+  /// Smart Switch đều đi qua đây.
+  func testSetEnabledSameValueKeepsWordBuffer() {
+    let p = InputProcessor(method: .Telex)
+    let hook = EventHook(inputProcessor: p)
+    hook.setEnabled(true)
+    p.newWord()
+    for c in "ha" { p.push(char: c) }
+    XCTAssertEqual(p.transformed, "ha")
+    hook.setEnabled(true)   // gán lại ĐÚNG giá trị cũ
+    XCTAssertEqual(p.transformed, "ha", "gán lại cùng giá trị không được xoá đệm")
+    p.push(char: "f")
+    XCTAssertEqual(p.transformed, "hà", "dấu huyền vẫn áp được sau khi áp lại chế độ")
+  }
+
+  /// Đổi giá trị thật thì vẫn phải reset (hành vi cũ, không được phá).
+  func testSetEnabledValueChangeStillResets() {
+    let p = InputProcessor(method: .Telex)
+    let hook = EventHook(inputProcessor: p)
+    hook.setEnabled(true)
+    p.newWord()
+    for c in "ha" { p.push(char: c) }
+    hook.setEnabled(false)
+    XCTAssertEqual(p.transformed, "", "tắt/bật thật sự vẫn reset đệm")
+  }
+}

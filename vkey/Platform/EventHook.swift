@@ -153,8 +153,14 @@ class EventHook {
   }
 
   func setEnabled(_ value: Bool) {
+    // v4.22: chỉ reset khi trạng thái THẬT SỰ đổi. `AppState.enabled` là
+    // @Published nên `didSet` bắn cả khi gán lại đúng giá trị cũ, và Smart
+    // Switch áp lại chế độ ở mỗi lần chuyển app — kể cả chuyển app "giả" do
+    // AX nhảy giữa app cha và tiến trình phụ của nó. Reset vô điều kiện ở đây
+    // biến mỗi lần áp lại thành một lần xoá từ đang gõ.
+    let changed = self.processing != value
     self.processing = value
-    self.inputProcessor.newWord()
+    if changed { self.inputProcessor.newWord() }
   }
 
   // Checks if the application has accessibility permissions.
@@ -449,6 +455,12 @@ func eventTapCallback(
           if Defaults[.smartSwitchEnabled], let ov = EventSimulator.focusedOverlayBundle() {
             focusedBid = ov
           }
+          // v4.22: tiến trình phụ của chính app đang dùng (hộp thoại Lưu của app
+          // sandbox) không phải app khác — quy về app cha, nếu không mỗi phím là
+          // một lần "chuyển app" và từ đang gõ bị cắt.
+          focusedBid = InputProcessor.canonicalAppBundle(
+            focused: focusedBid,
+            frontmost: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
           if focusedBid != input.activeApp {
             input.changeActiveApp(focusedBid)
             // Đồng bộ cache focused-bundle để Smart Switch per-keystroke (block
@@ -482,9 +494,13 @@ func eventTapCallback(
     // app cũ → backspace/replace sai. Guard `!=` nên chỉ chạy khi focus đổi
     // thật, không reset tracker mỗi phím.
     if type == .keyDown,
-       let focusedBundleId = appState.currentFocusedBundleId,
-       focusedBundleId != input.activeApp {
-      input.changeActiveApp(focusedBundleId)
+       let rawFocusedBundleId = appState.currentFocusedBundleId {
+      let focusedBundleId = InputProcessor.canonicalAppBundle(
+        focused: rawFocusedBundleId,
+        frontmost: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
+      if focusedBundleId != input.activeApp {
+        input.changeActiveApp(focusedBundleId)
+      }
     }
 
     if Defaults[.smartSwitchEnabled],

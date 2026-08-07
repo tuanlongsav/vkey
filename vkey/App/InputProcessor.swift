@@ -890,6 +890,28 @@ class InputProcessor {
     newWord()
   }
 
+  /// v4.22: bundle mà AX trả về cho ô đang focus KHÔNG phải lúc nào cũng là app
+  /// người dùng đang dùng. Hộp thoại Lưu của app sandbox chạy ở tiến trình phụ
+  /// (`com.apple.Safari.SandboxBroker`, `com.apple.appkit.xpc.openAndSavePanelService`),
+  /// và AX trả về khi thì tiến trình phụ, khi thì app cha — đổi qua lại TỪNG PHÍM.
+  ///
+  /// Mỗi lần đổi bị coi là chuyển app: Smart Switch áp lại chế độ, đường đó xoá
+  /// bộ đệm từ, nên từ đang gõ bị cắt đôi. Đo được trong hộp thoại "Thư mục mới"
+  /// của Safari: "Haf Nooij" ra nguyên phím thô, và "Nooij" ra "Nôị" vì "nô" đã
+  /// commit còn "ij" thành từ mới.
+  ///
+  /// Quy về app cha khi bundle focus là hậu duệ của app đang ở trước, hoặc là
+  /// dịch vụ panel dùng chung của AppKit.
+  static func canonicalAppBundle(focused: String, frontmost: String?) -> String {
+    guard let frontmost, !frontmost.isEmpty else { return focused }
+    // Tiến trình phụ đặt tên theo app cha: "com.apple.Safari.SandboxBroker".
+    if focused.hasPrefix(frontmost + ".") { return frontmost }
+    // Hộp thoại Mở/Lưu ngoài tiến trình — dùng chung cho mọi app sandbox nên
+    // tên nó không dính gì tới app cha.
+    if focused == "com.apple.appkit.xpc.openAndSavePanelService" { return frontmost }
+    return focused
+  }
+
   public func changeActiveApp(_ app: String) {
     activeApp = app
     strategyTracker.resetForApp(app)
