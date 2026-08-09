@@ -20,20 +20,6 @@ private let kModifierMask: UInt64 =
   UInt64(NSEvent.ModifierFlags.control.rawValue) |
   UInt64(NSEvent.ModifierFlags.shift.rawValue)
 
-/// So khớp CGEvent với shortcut đã lưu (KeyboardShortcuts / FlexibleShortcutRecorder).
-func cgEventMatchesKeyboardShortcut(
-  _ event: CGEvent,
-  shortcut: KeyboardShortcuts.Shortcut
-) -> Bool {
-  let keyCode = Int(event.getIntegerValueField(.keyboardEventKeycode))
-  guard keyCode == shortcut.carbonKeyCode else { return false }
-  let eventMods = event.flags.rawValue & kModifierMask
-  let shortcutMods = UInt64(
-    shortcut.modifiers.intersection([.command, .option, .control, .shift]).rawValue
-  )
-  return eventMods == shortcutMods
-}
-
 // EventHook manages keyboard events and interacts with the Telex engine.
 class EventHook {
 
@@ -214,7 +200,7 @@ class EventHook {
         userInfo: UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
       )
     else {
-      print("Failed to create event tap")
+      os_log("Failed to create event tap", log: hookLog, type: .error)
       // v2.10: tap fail dù `isTrusted()` có thể vẫn true (TCC entry cũ sau khi
       // update đổi chữ ký). Retry vài lần (TCC có thể đang settle) rồi báo user
       // thay vì chết im lặng với toggle "bật".

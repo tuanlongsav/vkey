@@ -29,8 +29,10 @@ struct DonateView: View {
   }
 }
 
+#if DEBUG
 struct DonateView_Previews: PreviewProvider {
   static var previews: some View {
     DonateView()
   }
 }
+#endif

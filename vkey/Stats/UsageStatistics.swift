@@ -262,8 +262,6 @@ final class UsageStatistics {
   /// deleted automatically during flush.
   private let maxWeeksRetained = 4
 
-  /// Word-count cap per category to keep memory + disk bounded.
-  private let topNCap = 20
 
   /// Minimum repetitions before a word is eligible for personal-dictionary
   /// promotion. Conservative — 5 confirmed commits in a week is a strong
@@ -403,12 +401,6 @@ final class UsageStatistics {
     }
   }
 
-  /// Combined snapshot (current + historical) for export/backup.
-  /// 1.7.6+ deprecated — chỉ giữ cho backward-compat. Production export
-  /// dùng `allWeekBucketsForExport()` để lưu full data (vnWordCounts, ...).
-  func allSummariesForExport() -> [UsageSummary] {
-    [currentWeekSummary()] + historicalSummaries()
-  }
 
   /// 1.7.6: full-fidelity export. Trả về current week + historical weeks
   /// dưới dạng `WeekBucketExport` chứa toàn bộ raw frequency tables, streaks,
@@ -489,7 +481,7 @@ final class UsageStatistics {
 
   /// Aggregate `topVietnameseWords` qua tất cả tuần (current + historical),
   /// trả về list (word, totalCount) sắp xếp giảm dần, lọc count >= threshold.
-  /// Dùng cho "Gợi ý từ Thống kê" trong MacroView (1.5.5+).
+  /// Dùng cho "Gợi ý từ Thống kê" trong VKMacroTab (1.5.5+).
   func aggregatedTopVietnameseWords(threshold: Int = 10) -> [WordCount] {
     var totals: [String: Int] = [:]
     let allWeeks = [currentWeekSummary()] + historicalSummaries()
@@ -544,10 +536,6 @@ final class UsageStatistics {
     }
   }
 
-  /// Backward-compat: chỉ từ đơn tiếp theo.
-  func phraseCompletionHints(prev2: String, prev1: String) -> [String: Int] {
-    phraseSuffixHints(prev2: prev2, prev1: prev1, maxWords: 1)
-  }
 
   static func phraseContextKey(prev2: String?, prev1: String) -> String {
     PredictionEngine.phraseContextKey(prev2: prev2, prev1: prev1)
@@ -576,21 +564,6 @@ final class UsageStatistics {
     }
   }
 
-  /// Aggregate `topApps` (bundle ID) qua tất cả tuần, dùng cho "Gợi ý từ
-  /// Thống kê" trong SmartSwitchView (1.5.5+). `word` chứa bundle ID.
-  func aggregatedTopApps(threshold: Int = 10) -> [WordCount] {
-    var totals: [String: Int] = [:]
-    let allWeeks = [currentWeekSummary()] + historicalSummaries()
-    for week in allWeeks {
-      for wc in week.topApps {
-        totals[wc.word, default: 0] += wc.count
-      }
-    }
-    return totals
-      .filter { $0.value >= threshold }
-      .map { WordCount(word: $0.key, count: $0.value) }
-      .sorted { $0.count > $1.count }
-  }
 
   /// 1.7.0: Auto-learn Smart Switch state per-app từ stats current week.
   /// Threshold: ≥5 ngày dataset, ≥5 commit/ngày trung bình (~35/tuần),
@@ -1218,10 +1191,6 @@ final class UsageStatistics {
     return index
   }
 
-  /// Backward-compat alias cho test cũ.
-  static func buildPhraseCompletionIndex(from phrases: [String: Int]) -> [String: [String: Int]] {
-    buildPhraseSuffixIndex(phrases2: [:], phrases3: phrases, phrases4: [:])
-  }
 
   /// Cụm tiếng Việt có nghĩa: mọi token ≥2 ký tự và nằm trong từ điển VN
   /// (hoặc user keep/allow). Loại chuỗi ngẫu nhiên / xen tiếng Anh.

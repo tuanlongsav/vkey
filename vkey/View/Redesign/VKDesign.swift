@@ -290,24 +290,6 @@ enum VK {
     static let s8: CGFloat = 40
   }
 
-  // MARK: Tracking (letter-spacing, em) — v4.8. Dùng qua `.vkTracking(_:size:)`.
-  enum Tracking {
-    static let tight: CGFloat  = -0.02
-    static let snug: CGFloat   = -0.01
-    static let normal: CGFloat = 0
-    static let wide: CGFloat   = 0.06
-    static let wider: CGFloat  = 0.14
-  }
-
-  // MARK: Leading (line-height multiplier) — v4.8. Dùng qua `.vkLeading(_:size:)`.
-  enum Leading {
-    static let none: CGFloat    = 1.0
-    static let tight: CGFloat   = 1.2
-    static let snug: CGFloat    = 1.35
-    static let normal: CGFloat  = 1.5
-    static let relaxed: CGFloat = 1.6
-  }
-
   // MARK: Typography (SF system — bám size/weight design tokens)
   enum TypeStyle {
     case h1, h2, h3, h4, body, bodyLg, small, micro, eyebrow, monoSm, monoMd
@@ -363,18 +345,6 @@ extension SwiftUI.Font {
   static func vk(_ s: VK.TypeStyle) -> SwiftUI.Font { VK.Font.style(s) }
 }
 
-extension View {
-  /// v4.8: letter-spacing theo token em (`VK.Tracking`) tại cỡ chữ.
-  /// SwiftUI `.tracking` nhận points nên quy đổi `em * size`.
-  func vkTracking(_ em: CGFloat, size: CGFloat) -> some View { self.tracking(em * size) }
-
-  /// v4.8: line-height multiplier (`VK.Leading`) → `lineSpacing` xấp xỉ
-  /// (line-height mặc định ~1.2·size nên phần thêm = (mult − 1.2)·size).
-  func vkLeading(_ mult: CGFloat, size: CGFloat) -> some View {
-    self.lineSpacing(max(0, (mult - 1.2) * size))
-  }
-}
-
 // MARK: - Liquid Glass blur (behind-window VisualEffect)
 
 /// Nền kính mờ (NSVisualEffectView). Dùng làm nền cửa sổ Settings khi theme = glass.
@@ -394,36 +364,3 @@ struct VKVisualEffect: NSViewRepresentable {
   }
 }
 
-// MARK: - Card background (glass-aware)
-
-extension View {
-  /// Nền card/panel: theme Tonal → đặc (paper/ink); Liquid Glass → kính mờ
-  /// trong suốt + viền specular. `corner` mặc định = VK.Radius.lg.
-  @ViewBuilder
-  func vkCard(corner: CGFloat? = nil) -> some View {
-    modifier(VKCardModifier(corner: corner))
-  }
-}
-
-private struct VKCardModifier: ViewModifier {
-  let corner: CGFloat?
-  @Environment(\.colorScheme) private var scheme
-  func body(content: Content) -> some View {
-    let r = corner ?? VK.Radius.lg
-    let shape = RoundedRectangle(cornerRadius: r, style: .continuous)
-    if VK.Glass.isOn {
-      content.background(
-        shape.fill(VK.Glass.card(dark: scheme == .dark))
-          .background(.ultraThinMaterial, in: shape)
-          .overlay(shape.strokeBorder(VK.Glass.edgeLo, lineWidth: 1))
-          .overlay(shape.strokeBorder(VK.Glass.edge.opacity(0.5), lineWidth: 0.5)
-                    .blendMode(.screen))
-      )
-    } else {
-      content.background(
-        shape.fill(VK.Color.bgElevated)
-          .overlay(shape.strokeBorder(VK.Color.border1, lineWidth: 1))
-      )
-    }
-  }
-}

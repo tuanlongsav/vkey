@@ -388,7 +388,6 @@ extension Defaults.Keys {
   static let currentVersion = Key<String>("current-version", default: "0.1")
   static let typingMethod = Key<TypingMethods>("typing-method", default: .Telex)
   static let allowedZWJF = Key<Bool>("allowed-zwjf", default: true)
-  static let token = Key<String>("token", default: "")
   static let autoSwitchStrategy = Key<Bool>("auto-switch-strategy", default: true)
   /// Tự động chuyển sang tiếng Anh khi launcher app (Spotlight/Raycast/Alfred…) lên foreground.
   static let smartSwitchEnabled = Key<Bool>("smart-switch-enabled", default: true)
@@ -534,12 +533,6 @@ extension Defaults.Keys {
   /// throttle.
   static let lastUpdateCheckDate = Key<Date?>("last-update-check-date", default: nil)
 
-  /// Build version của bản update gần nhất đã hiện notification banner
-  /// cho user (1.6.0+). Tránh spam: nếu user đã thấy notification về
-  /// build N mà chưa update, không hiện lại banner mỗi ngày.
-  /// Reset = 0 sẽ enable notification lại.
-  static let lastNotifiedUpdateBuild = Key<Int>("last-notified-update-build", default: 0)
-
   /// Tự động tải và cài bản mới im lặng qua Sparkle (3.23+).
   /// Tắt → chỉ kiểm tra/cài thủ công từ menu bar.
   static let autoUpdateEnabled = Key<Bool>("auto-update-enabled", default: true)
@@ -603,10 +596,6 @@ extension Defaults.Keys {
     "app-smart-switch-configs",
     default: [:]
   )
-
-  /// Tuần ISO đã chạy auto-learn Smart Switch gần nhất (vd "2026-W21").
-  /// Throttle 1 lần/tuần để tránh churn.
-  static let lastSmartSwitchAutoLearnWeek = Key<String>("last-smart-switch-auto-learn-week", default: "")
 
   /// 1.7.2+: gate auto-learn theo NGÀY thay TUẦN. Format ISO date "YYYY-MM-DD".
   /// Threshold mới: ≥1 ngày dataset, ≥5 commit/ngày, ratio ≥75% → daily check.

@@ -19,10 +19,8 @@
 		3A1CEF871E6A885DD3916044 /* MacroSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */; };
 		3F2E85C92B9EDE7900A95282 /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2E85C82B9EDE7900A95282 /* Defaults */; };
 		3F2E85CC2B9EDF2600A95282 /* Setting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2E85CB2B9EDF2600A95282 /* Setting.swift */; };
-		3F2E85CF2BA0B0D400A95282 /* MacroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2E85CE2BA0B0D400A95282 /* MacroView.swift */; };
 		3F2E85D22BA0B53F00A95282 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2E85D12BA0B53F00A95282 /* KeyboardShortcuts */; };
 		3F2FE98B2F267B9700A4A07D /* TiengVietValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2FE98A2F267B9700A4A07D /* TiengVietValidator.swift */; };
-		3F4564E22BA5FFD800F087BA /* GuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4564E12BA5FFD800F087BA /* GuideView.swift */; };
 		3F4564E42BA5FFD800F087BB /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4564E32BA5FFD800F087BB /* OnboardingView.swift */; };
 		3F5B00032C12345600000003 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 3F5B00022C12345600000002 /* Sparkle */; };
 		3F8A64FF2B89A078009E2AF1 /* InputProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F8A64FE2B89A078009E2AF1 /* InputProcessor.swift */; };
@@ -46,7 +44,6 @@
 		3FAFBBBF2B84AB5E0032A55E /* KeyboardUS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAFBBBE2B84AB5E0032A55E /* KeyboardUS.swift */; };
 		3FAFBBC42B84E7890032A55E /* SettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAFBBC32B84E7890032A55E /* SettingView.swift */; };
 		3FAFBBC62B84E88C0032A55E /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAFBBC52B84E88C0032A55E /* AppState.swift */; };
-		3FAFBBC82B84E88C0032A55E /* SmartSwitchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAFBBC72B84E88C0032A55E /* SmartSwitchView.swift */; };
 		3FCA000012C000010000001 /* TiengVietState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FCA000012C000010000002 /* TiengVietState.swift */; };
 		3FCA000012C000010000003 /* TiengVietParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FCA000012C000010000004 /* TiengVietParser.swift */; };
 		3FCA000012C000010000005 /* TiengVietTransformer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FCA000012C000010000006 /* TiengVietTransformer.swift */; };
@@ -54,8 +51,6 @@
 		3FDB83CB2BB4682F00AD6322 /* Keys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDB83CA2BB4682F00AD6322 /* Keys.swift */; };
 		3FDB83CD2BB468BA00AD6322 /* EventSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */; };
 		4045075CC083173E587560A9 /* SpellDecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01E0C61F7740281BEB6DB9C7 /* SpellDecisionEngine.swift */; };
-		40D7FB871260EEC2B9077795 /* MenuBarFooterRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */; };
-		5432271BA4D56D630D3280A1 /* VKOtherTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FEDB2998DE63E88E890AE72 /* VKOtherTabs.swift */; };
 		5501620FAC63ADA15F6A37B4 /* SmartSwitchRunningAppsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88B0AD4B1E7237CEF175AEB8 /* SmartSwitchRunningAppsSheet.swift */; };
 		5A21D21AF4397FCB9C827912 /* DonateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */; };
 		5DF6BF0E4EBC27745F7CA7AA /* DefaultMacros.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E12D557ABDC3D7864363DE /* DefaultMacros.swift */; };
@@ -64,6 +59,7 @@
 		757DCAEB9D825EC7776C2BEE /* VKDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 252B2D3658BCA8B49784C82E /* VKDesign.swift */; };
 		7BEAE86A3D1B31E3C36D6645 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C15A8AB81A235FF54939DC /* Updater.swift */; };
 		7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */; };
+		87265526075A3173B7F27A01 /* WindowRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 510E09F49FE0897E64D40434 /* WindowRules.swift */; };
 		87E125B7BEC3E062DBEF8E63 /* VKStatsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12E48189AF4A1252777C0EE /* VKStatsTab.swift */; };
 		8DA66064BE4A249CD5C995DA /* Inter-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8DAE37A60471BD596352E583 /* Inter-Variable.ttf */; };
 		964199382501358B452A147B /* TextConversionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */; };
@@ -84,12 +80,12 @@
 		C2EC9B7D79B25412654504A0 /* VKBarControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D96418BD00F1CCCC026F67 /* VKBarControls.swift */; };
 		C9E0F1A2B3C4D5E6F708142 /* NoticeHUDWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8D9E0F1A2B3C4D5E6F7031 /* NoticeHUDWindow.swift */; };
 		CDD99ACF8126FA2BF147D861 /* SuggestionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FF73C92A71721E44ACDE39 /* SuggestionService.swift */; };
-		CE7ABBC5AC69A832A845CE31 /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92721E2546773FF5AAC7672C /* StatisticsView.swift */; };
 		CF29D6E8B08E5792A1B870F4 /* VKSmartTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A132B1E7CD9978F8BF13B21 /* VKSmartTab.swift */; };
 		D758117C8E78CEBBC2E36544 /* VKThemeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3416A437829EB9F2B9AB6BD4 /* VKThemeTab.swift */; };
 		D7BEBA3029B05306751A69B3 /* EmbeddedBigrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521F6BD0B4DB972BC0C580DE /* EmbeddedBigrams.swift */; };
 		E1F2A3B4C5D6E7F8091A2B3C /* EmbeddedPhraseCompletions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A69788796A5B4C /* EmbeddedPhraseCompletions.swift */; };
 		E678805A2EF92EAE65B2E3FF /* LexiconManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FF852BE303C340328CB8C0 /* LexiconManager.swift */; };
+		E7BABD9189FF85601AB2B0D7 /* TopWordsDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 469BB617734DD2389D962454 /* TopWordsDetail.swift */; };
 		EC46658134875A59BD2FCBC3 /* PredictionHUDWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */; };
 		EFFCE0E4013BAD0984BC07CC /* VKSpellTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E87049C6C5D5457BEEBEDD /* VKSpellTab.swift */; };
 		F348AD6A8752A1C54FA5C347 /* InputSourceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C5E95C08CD53A70A0C43DF /* InputSourceMonitor.swift */; };
@@ -124,9 +120,7 @@
 		372FB596601D5DAF3222D95E /* LexiconUpdatePackage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LexiconUpdatePackage.swift; sourceTree = "<group>"; };
 		3F2E2BDF2B87A85A00FE1C97 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		3F2E85CB2B9EDF2600A95282 /* Setting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Setting.swift; sourceTree = "<group>"; };
-		3F2E85CE2BA0B0D400A95282 /* MacroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroView.swift; sourceTree = "<group>"; };
 		3F2FE98A2F267B9700A4A07D /* TiengVietValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiengVietValidator.swift; sourceTree = "<group>"; };
-		3F4564E12BA5FFD800F087BA /* GuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuideView.swift; sourceTree = "<group>"; };
 		3F4564E32BA5FFD800F087BB /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		3F8A64FE2B89A078009E2AF1 /* InputProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputProcessor.swift; sourceTree = "<group>"; };
 		3F8A65002B89AAE0009E2AF1 /* vkey.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = vkey.xctestplan; sourceTree = "<group>"; };
@@ -153,7 +147,6 @@
 		3FAFBBBE2B84AB5E0032A55E /* KeyboardUS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardUS.swift; sourceTree = "<group>"; };
 		3FAFBBC32B84E7890032A55E /* SettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingView.swift; sourceTree = "<group>"; };
 		3FAFBBC52B84E88C0032A55E /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
-		3FAFBBC72B84E88C0032A55E /* SmartSwitchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSwitchView.swift; sourceTree = "<group>"; };
 		3FCA000012C000010000002 /* TiengVietState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiengVietState.swift; sourceTree = "<group>"; };
 		3FCA000012C000010000004 /* TiengVietParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiengVietParser.swift; sourceTree = "<group>"; };
 		3FCA000012C000010000006 /* TiengVietTransformer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiengVietTransformer.swift; sourceTree = "<group>"; };
@@ -163,7 +156,9 @@
 		3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSimulator.swift; sourceTree = "<group>"; };
 		3FDB83CE2BB468BA00AD6323 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		40EC0F9ED5D84E8E4A8ABA19 /* MarketingSnapshotExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MarketingSnapshotExporter.swift; sourceTree = "<group>"; };
+		469BB617734DD2389D962454 /* TopWordsDetail.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TopWordsDetail.swift; sourceTree = "<group>"; };
 		46CEC38FE55740D55866E6D3 /* VKMenuBar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKMenuBar.swift; path = ../View/Redesign/VKMenuBar.swift; sourceTree = "<group>"; };
+		510E09F49FE0897E64D40434 /* WindowRules.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowRules.swift; sourceTree = "<group>"; };
 		521F6BD0B4DB972BC0C580DE /* EmbeddedBigrams.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedBigrams.swift; sourceTree = "<group>"; };
 		558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PredictionHUDWindow.swift; sourceTree = "<group>"; };
 		5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TextConversionService.swift; sourceTree = "<group>"; };
@@ -172,20 +167,17 @@
 		6A132B1E7CD9978F8BF13B21 /* VKSmartTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKSmartTab.swift; path = ../View/Redesign/VKSmartTab.swift; sourceTree = "<group>"; };
 		716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UsageStatistics.swift; sourceTree = "<group>"; };
 		76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartSwitchSuggestionSheet.swift; sourceTree = "<group>"; };
-		7FEDB2998DE63E88E890AE72 /* VKOtherTabs.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKOtherTabs.swift; path = ../View/Redesign/VKOtherTabs.swift; sourceTree = "<group>"; };
 		82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacroSuggestionSheet.swift; sourceTree = "<group>"; };
 		88B0AD4B1E7237CEF175AEB8 /* SmartSwitchRunningAppsSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartSwitchRunningAppsSheet.swift; sourceTree = "<group>"; };
 		89AA7DE2ED2B09A420DFC488 /* BeVietnamPro-Regular.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "BeVietnamPro-Regular.ttf"; sourceTree = "<group>"; };
 		8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DonateView.swift; sourceTree = "<group>"; };
 		8BD228BBD86DB0D88EDA7EC1 /* Nunito-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Nunito-Variable.ttf"; sourceTree = "<group>"; };
 		8DAE37A60471BD596352E583 /* Inter-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Inter-Variable.ttf"; sourceTree = "<group>"; };
-		92721E2546773FF5AAC7672C /* StatisticsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
 		9983D8DCAE1ACF9310738F1F /* PredictionEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PredictionEngine.swift; sourceTree = "<group>"; };
 		99C5E95C08CD53A70A0C43DF /* InputSourceMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InputSourceMonitor.swift; sourceTree = "<group>"; };
 		9DE993E0CD7CE91EF6CAF208 /* WindowTitleRuleEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowTitleRuleEngine.swift; sourceTree = "<group>"; };
 		9FC77A77A3D020CFB5E91A14 /* VKGeneralTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKGeneralTab.swift; path = ../View/Redesign/VKGeneralTab.swift; sourceTree = "<group>"; };
 		A6C7D8E9F0A1B2C3D4E5F601 /* ClipboardHistoryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryService.swift; sourceTree = "<group>"; };
-		A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuBarFooterRow.swift; sourceTree = "<group>"; };
 		B0FF852BE303C340328CB8C0 /* LexiconManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LexiconManager.swift; sourceTree = "<group>"; };
 		B12E48189AF4A1252777C0EE /* VKStatsTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKStatsTab.swift; path = ../View/Redesign/VKStatsTab.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A2 /* NGramStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NGramStore.swift; sourceTree = "<group>"; };
@@ -382,23 +374,20 @@
 			isa = PBXGroup;
 			children = (
 				3FAFBBC32B84E7890032A55E /* SettingView.swift */,
-				3F2E85CE2BA0B0D400A95282 /* MacroView.swift */,
-				3FAFBBC72B84E88C0032A55E /* SmartSwitchView.swift */,
-				3F4564E12BA5FFD800F087BA /* GuideView.swift */,
 				3F4564E32BA5FFD800F087BB /* OnboardingView.swift */,
 				3F94E7AE2BA736E100360F8B /* UpgradeAppView.swift */,
 				8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */,
-				92721E2546773FF5AAC7672C /* StatisticsView.swift */,
 				69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */,
 				B1C2D3E4F5A6B7C8D9E0F1A3 /* VKeyDesign.swift */,
 				B1C2D3E4F5A6B7C8D9E0F1A4 /* AppIconSwitcher.swift */,
 				B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */,
 				B1C2D3E4F5A6B7C8D9E0F1B1 /* TonalRowIcon.swift */,
-				A9B1F951B7917FD907F42D10 /* MenuBarFooterRow.swift */,
 				82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */,
 				76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */,
 				D5A620251BD70C5F36817A13 /* PersonalDictSuggestionSheet.swift */,
 				88B0AD4B1E7237CEF175AEB8 /* SmartSwitchRunningAppsSheet.swift */,
+				469BB617734DD2389D962454 /* TopWordsDetail.swift */,
+				510E09F49FE0897E64D40434 /* WindowRules.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -433,7 +422,6 @@
 				678377A8AD0029F0A4116AD9 /* VKComponents.swift */,
 				037F2FB81C8513F799873AE1 /* VKSettingsView.swift */,
 				9FC77A77A3D020CFB5E91A14 /* VKGeneralTab.swift */,
-				7FEDB2998DE63E88E890AE72 /* VKOtherTabs.swift */,
 				C2D96418BD00F1CCCC026F67 /* VKBarControls.swift */,
 				6A132B1E7CD9978F8BF13B21 /* VKSmartTab.swift */,
 				B9E2D5DCF8930D0F2AE3BA30 /* VKMacroTab.swift */,
@@ -651,7 +639,6 @@
 				3FAFBBB22B84A98E0032A55E /* AppDelegate.swift in Sources */,
 				3FAFBBBC2B84AB390032A55E /* EventHook.swift in Sources */,
 				3F9FC6D52B9E14AF00659712 /* FileMonitor.swift in Sources */,
-				3F4564E22BA5FFD800F087BA /* GuideView.swift in Sources */,
 				3F4564E42BA5FFD800F087BB /* OnboardingView.swift in Sources */,
 				3F8A65042B89AD74009E2AF1 /* TiengViet.swift in Sources */,
 				3FCA000012C00001000000B /* Trie.swift in Sources */,
@@ -663,7 +650,6 @@
 				3F8A650A2B8E3BE8009E2AF1 /* TypingMethod.swift in Sources */,
 				3FDB83CB2BB4682F00AD6322 /* Keys.swift in Sources */,
 				3FAFBBC62B84E88C0032A55E /* AppState.swift in Sources */,
-				3F2E85CF2BA0B0D400A95282 /* MacroView.swift in Sources */,
 				3F8A65062B8C69C9009E2AF1 /* Telex.swift in Sources */,
 				3FDB83CD2BB468BA00AD6322 /* EventSimulator.swift in Sources */,
 				3FAFBBBF2B84AB5E0032A55E /* KeyboardUS.swift in Sources */,
@@ -674,7 +660,6 @@
 				3FAFBB852B84A86C0032A55E /* vkeyApp.swift in Sources */,
 				3F8A64FF2B89A078009E2AF1 /* InputProcessor.swift in Sources */,
 				7BEAE86A3D1B31E3C36D6645 /* Updater.swift in Sources */,
-				3FAFBBC82B84E88C0032A55E /* SmartSwitchView.swift in Sources */,
 				5A21D21AF4397FCB9C827912 /* DonateView.swift in Sources */,
 				0FC9E2EEDDE9786C60941BBF /* Lexicon.swift in Sources */,
 				A577F31CCB6071AB62F71BD8 /* EmbeddedLexiconData.swift in Sources */,
@@ -686,7 +671,6 @@
 				6222920C197312B2360B6B43 /* UsageStatistics.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* NGramStore.swift in Sources */,
 				F5E5BFC82700BF11BAF4FBAF /* UserDataMigration.swift in Sources */,
-				CE7ABBC5AC69A832A845CE31 /* StatisticsView.swift in Sources */,
 				5DF6BF0E4EBC27745F7CA7AA /* DefaultMacros.swift in Sources */,
 				7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F3 /* VKeyDesign.swift in Sources */,
@@ -694,7 +678,6 @@
 				A1B2C3D4E5F6A7B8C9D0E1F5 /* HUDComponents.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1FA /* TonalRowIcon.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F6 /* FontRegistration.swift in Sources */,
-				40D7FB871260EEC2B9077795 /* MenuBarFooterRow.swift in Sources */,
 				3A1CEF871E6A885DD3916044 /* MacroSuggestionSheet.swift in Sources */,
 				B5120602CCC5EAE262D73C62 /* SmartSwitchSuggestionSheet.swift in Sources */,
 				A085F9440573F6BC7380FAEE /* PersonalDictSuggestionSheet.swift in Sources */,
@@ -712,7 +695,6 @@
 				0757D78148617667C5D66327 /* VKComponents.swift in Sources */,
 				14863DB76A8C437B6D74D810 /* VKSettingsView.swift in Sources */,
 				2EC44B9C1573B3FD5ADBA5BB /* VKGeneralTab.swift in Sources */,
-				5432271BA4D56D630D3280A1 /* VKOtherTabs.swift in Sources */,
 				C2EC9B7D79B25412654504A0 /* VKBarControls.swift in Sources */,
 				CF29D6E8B08E5792A1B870F4 /* VKSmartTab.swift in Sources */,
 				1FD660B8C1175A0C4D3F8BE1 /* VKMacroTab.swift in Sources */,
@@ -721,6 +703,8 @@
 				6FC6686B428E0169C8D193F8 /* VKMenuBar.swift in Sources */,
 				D758117C8E78CEBBC2E36544 /* VKThemeTab.swift in Sources */,
 				1F691DC514BBA9BA3DC91F0B /* MarketingSnapshotExporter.swift in Sources */,
+				E7BABD9189FF85601AB2B0D7 /* TopWordsDetail.swift in Sources */,
+				87265526075A3173B7F27A01 /* WindowRules.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

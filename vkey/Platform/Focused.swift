@@ -33,62 +33,6 @@ public struct Focused {
     return systemWideElement.getAttribute(property: kAXFocusedUIElementAttribute)
   }
 
-  public static func elementText() -> String? {
-    guard let focusedElement = Focused.element() else { return nil }
-    guard let text: String = focusedElement.getAttribute(property: kAXValueAttribute)
-    else { return nil }
-    return text
-  }
-
-  public static func hasHighlightedText() -> Bool {
-    guard let focusedElement = Focused.element() else { return false }
-
-    // Method 1: Check selected text content directly
-    if let highlightedText: String = focusedElement.getAttribute(
-      property: kAXSelectedTextAttribute)
-    {
-      if !highlightedText.isEmpty {
-        return true
-      }
-    }
-
-    // Method 2: Check selected text range length (fallback)
-    // Some apps (e.g., Chrome's address bar) don't expose kAXSelectedTextAttribute
-    // but do expose kAXSelectedTextRangeAttribute with a valid CFRange.
-    if let rangeValue: AXValue = focusedElement.getAttribute(
-      property: kAXSelectedTextRangeAttribute)
-    {
-      var range = CFRange(location: 0, length: 0)
-      if AXValueGetValue(rangeValue, .cfRange, &range), range.length > 0 {
-        #if DEBUG
-          print(
-            "[vkey] hasHighlightedText: detected via selectedTextRange (location=\(range.location), length=\(range.length))"
-          )
-        #endif
-        return true
-      }
-    }
-
-    return false
-  }
-
-  public static func highlightedText() -> String? {
-    guard let focusedElement = Focused.element() else { return nil }
-    guard let highlightedText: String = focusedElement.getAttribute(
-      property: kAXSelectedTextAttribute)
-    else { return nil }
-    guard !highlightedText.isEmpty else { return nil }
-    return highlightedText
-  }
-
-  public static func isComboBoxOrSearchField() -> Bool {
-    guard let focusedElement = Focused.element() else { return false }
-    if let role: String = focusedElement.getAttribute(property: kAXRoleAttribute) {
-      return role == "AXComboBox" || role == "AXSearchField"
-    }
-    return false
-  }
-
   /// v3.9: phân loại ngữ cảnh của focused element (leo cây AX) để caller quyết
   /// định kiểu diff (NFC/NFD) và chiến lược gửi (synthetic vs axDirect).
   public enum FieldKind {

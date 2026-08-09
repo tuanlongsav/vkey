@@ -694,6 +694,7 @@ class OnboardingWindowController: NSWindowController {
 
 // MARK: - Preview
 
+#if DEBUG
 struct OnboardingView_Previews: PreviewProvider {
     static var previews: some View {
         OnboardingView()
@@ -701,3 +702,4 @@ struct OnboardingView_Previews: PreviewProvider {
             .previewDisplayName("Onboarding")
     }
 }
+#endif

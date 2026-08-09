@@ -6,6 +6,8 @@ import os.log
 import SwiftUI
 import UserNotifications
 
+private let delegateLog = OSLog(subsystem: "dev.longht.vkey", category: "AppDelegate")
+
 extension Notification.Name {
   static let vkeyOnboardingDidComplete = Notification.Name("vkeyOnboardingDidComplete")
 }
@@ -144,7 +146,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     } else if appState.isNewAppVersion() {
       openUpgradeNewVersion()
     } else {
-      openGuide()
+      openOnboarding()
     }
     
     // Periodically check trust status if not trusted. Capped at
@@ -276,8 +278,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
         // không chạy khi chưa có tap.
         CGEvent.tapEnable(tap: tap, enable: true)
         self.appState.eventHook.tapRecoveryCount += 1
-        print("[vkey] Event tap was silently disabled, watchdog re-enabled it "
-          + "(count: \(self.appState.eventHook.tapRecoveryCount))")
+        os_log(
+          "Event tap was silently disabled, watchdog re-enabled it (count: %{public}d)",
+          log: delegateLog, type: .error, self.appState.eventHook.tapRecoveryCount)
       }
     }
     timer.tolerance = 0.5
@@ -297,7 +300,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
   }
 
   // Opens onboarding guide
-  @objc func openGuide() {
+  @objc func openOnboarding() {
     NSApp.setActivationPolicy(.regular)
     let contentView = OnboardingView().environmentObject(appState)
     let windowController = OnboardingWindowController()
@@ -394,11 +397,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
         NSApp.setActivationPolicy(.accessory)
       }
     }
-  }
-
-  // Quits the application
-  @objc func quitApp() {
-    NSApp.terminate(self)
   }
 
   // Returns true to opt-in to secure coding for state restoration

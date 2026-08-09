@@ -16,17 +16,6 @@ private let appLog = OSLog(subsystem: "dev.longht.vkey", category: "AppState")
 
 class AppState: ObservableObject, FileMonitorDelegate {
 
-    /// Launcher / search apps that should default to English typing.
-    /// vkey auto-disables in these apps but does not persist that to `appModes`,
-    /// so the underlying app's mode is restored when the launcher closes.
-    static let SmartSwitchApps: Set<String> = [
-        "com.apple.Spotlight",
-        "com.raycast.macos",
-        "com.runningwithcrayons.Alfred",
-        "com.runningwithcrayons.Alfred-Preferences",
-        "com.obdev.LaunchBar",
-    ]
-
     /// When true, the next `enabled` mutation skips persistence into `appModes`.
     /// Used by Smart Switch so launcher apps don't pollute the per-app memory.
     private var skipPersistAppMode = false
@@ -507,26 +496,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
         }
         Defaults[.appSmartSwitchConfigs] = configs
         Defaults[.didMigrateLaunchersKeepMode] = true
-    }
-
-    /// 1.7.0: User manual override → ghi vào appSmartSwitchConfigs với source=.user.
-    /// Gọi từ UI khi user click chuyển state thủ công, hoặc từ menu bar toggle.
-    public func setAppSmartSwitchState(_ state: AppSmartSwitchState, bundleId: String) {
-        var configs = Defaults[.appSmartSwitchConfigs]
-        configs[bundleId] = AppSmartSwitchConfig(
-            state: state,
-            source: .user,
-            lastModified: Date()
-        )
-        Defaults[.appSmartSwitchConfigs] = configs
-    }
-
-    /// 1.7.0: Reset 1 app về auto-learn → xoá entry, lần check kế tiếp
-    /// auto-learn sẽ re-evaluate.
-    public func resetAppSmartSwitchToAutoLearn(bundleId: String) {
-        var configs = Defaults[.appSmartSwitchConfigs]
-        configs.removeValue(forKey: bundleId)
-        Defaults[.appSmartSwitchConfigs] = configs
     }
 
     /// 1.7.0: Apply auto-learn suggestions → ghi vào configs với source=.autoLearn.

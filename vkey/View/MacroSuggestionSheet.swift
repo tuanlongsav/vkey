@@ -2,7 +2,7 @@
 //  MacroSuggestionSheet.swift
 //  vkey
 //
-//  Sheet mở từ `MacroView` khi user bấm "Xem & thêm" ở dòng "Gợi ý từ
+//  Sheet mở từ `VKMacroTab` khi user bấm "Xem & thêm" ở dòng "Gợi ý từ
 //  Thống kê". Hiển thị các từ tiếng Việt user đã gõ ≥10 lần (cộng dồn
 //  qua tuần) mà chưa có macro `to` tương ứng. User chọn / sửa `from`
 //  (đã auto-suggest) rồi bấm "Thêm" → entry vào `Defaults[.macros]`.

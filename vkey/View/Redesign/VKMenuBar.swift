@@ -494,7 +494,7 @@ struct VKMenuPanel: View {
   private var guideBody: some View {
     VStack(alignment: .leading, spacing: 0) {
       VKMenuRow("questionmark.circle", "Hướng dẫn cấp quyền", action: {
-        appDelegate.openGuide(); vkCloseMenuBarPanel()
+        appDelegate.openOnboarding(); vkCloseMenuBarPanel()
       })
       VKMenuSep()
       VKMenuRow("power", "Thoát", action: { NSApp.terminate(nil) }) {

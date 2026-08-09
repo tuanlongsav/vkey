@@ -171,6 +171,7 @@ struct UpgradeInstructionStep: View {
   }
 }
 
+#if DEBUG
 struct UpgradeAppView_Previews: PreviewProvider {
   static var previews: some View {
     UpgradeAppView()
@@ -180,3 +181,4 @@ struct UpgradeAppView_Previews: PreviewProvider {
       .previewDisplayName("UpgradeAppView preview")
   }
 }
+#endif

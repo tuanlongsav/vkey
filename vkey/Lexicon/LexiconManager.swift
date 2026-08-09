@@ -171,8 +171,7 @@ final class LexiconManager {
     return validatedPackage(data)
   }
 
-  /// Endpoint shared by `downloadAndUpdateLexicon` and
-  /// `checkAndPromptForDictionaryUpdate`.
+  /// Endpoint used by `checkAndPromptForDictionaryUpdate`.
   ///
   /// 1.6.2+: chuyển từ GitHub Contents API (`api.github.com/repos/.../contents/...`)
   /// sang `raw.githubusercontent.com` để:
@@ -220,48 +219,6 @@ final class LexiconManager {
   func cancelInFlightDownloads() {
     inFlightDictionaryTask?.cancel()
     inFlightDictionaryTask = nil
-  }
-
-  func downloadAndUpdateLexicon(completion: ((Bool) -> Void)? = nil) {
-    guard let url = URL(string: Self.lexiconUpdateEndpoint) else {
-      completion?(false)
-      return
-    }
-    var request = URLRequest(url: url)
-    request.cachePolicy = .reloadIgnoringLocalCacheData
-    // 1.6.2+: raw.githubusercontent.com trả text/plain trực tiếp, không cần
-    // Accept header tùy chỉnh.
-
-    let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-      guard let self = self,
-            error == nil,
-            let httpResponse = response as? HTTPURLResponse,
-            httpResponse.statusCode == 200,
-            let data = data else {
-        completion?(false)
-        return
-      }
-
-      guard let package = self.validatedDownloadedPackage(
-              data, expectedContentLength: httpResponse.expectedContentLength)
-      else {
-        completion?(false)
-        return
-      }
-      let currentVersion = self.snapshotVersions().vn
-      if package.version > currentVersion {
-        do {
-          try self.setUpdatePackageData(data)
-          completion?(true)
-        } catch {
-          completion?(false)
-        }
-      } else {
-        completion?(false)
-      }
-    }
-    inFlightDictionaryTask = task
-    task.resume()
   }
 
   /// Auto-check & auto-apply dictionary update from GitHub.

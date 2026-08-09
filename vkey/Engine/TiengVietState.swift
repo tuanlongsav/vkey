@@ -229,20 +229,6 @@ extension TiengVietState {
     )
   }
 
-  /// Trả về state mới với danh sách phím được cập nhật
-  func withChuKhongDau(_ keys: [Character]) -> TiengVietState {
-    TiengVietState(
-      chuKhongDau: keys,
-      dauThanh: dauThanh,
-      dauMu: dauMu,
-      gachD: gachD,
-      cachedThanhPhan: TiengVietParser.parse(
-        keys,
-        autoTypoCorrection: Defaults[.autoTypoCorrection]
-      )
-    )
-  }
-
   /// Late D toggle: cho phép gõ phím gạch-d ("d" với Telex hoặc "9" với VNI)
   /// ở cuối từ để chuyển d → đ trên phụ âm đầu, ví dụ `dinjhd` → `định`.
   ///

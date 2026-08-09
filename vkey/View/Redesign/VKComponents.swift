@@ -285,66 +285,7 @@ struct VKSegmented<T: Hashable>: View {
 
 // MARK: - Keycap
 
-struct VKKeycap: View {
-  var text: String
-  var large: Bool = false
-  init(_ text: String, large: Bool = false) { self.text = text; self.large = large }
-
-  var body: some View {
-    Text(text)
-      .font(.system(size: large ? 14 : 12, weight: .semibold))
-      .foregroundStyle(VK.Color.fg1)
-      .frame(minWidth: large ? 36 : 24, minHeight: large ? 36 : 24)
-      .padding(.horizontal, large ? 10 : 6)
-      .background(
-        RoundedRectangle(cornerRadius: VK.Radius.scaled(large ? 8 : 6), style: .continuous)
-          .fill(VK.Color.bgElevated)
-          .overlay(
-            RoundedRectangle(cornerRadius: VK.Radius.scaled(large ? 8 : 6), style: .continuous)
-              .strokeBorder(VK.Color.border2, lineWidth: 1)
-          )
-      )
-  }
-}
-
 // MARK: - Badge
-
-struct VKBadge: View {
-  enum Variant { case neutral, success, warning, danger, info, gold }
-  var text: String
-  var variant: Variant = .neutral
-
-  private var fg: Color {
-    // v4.8 a11y: chữ badge dùng token `*Text` (đậm) để đạt AA trên soft-fill.
-    switch variant {
-    case .neutral: return VK.Color.fg2
-    case .success: return VK.Color.successText
-    case .warning: return VK.Color.warningText
-    case .danger:  return VK.Color.dangerText
-    case .info:    return VK.Color.infoText
-    case .gold:    return VK.Color.warningText
-    }
-  }
-  private var bg: Color {
-    switch variant {
-    case .neutral: return VK.Color.bgSunken
-    case .success: return VK.Color.successSoft
-    case .warning: return VK.Color.warningSoft
-    case .danger:  return VK.Color.dangerSoft
-    case .info:    return VK.Color.infoSoft
-    case .gold:    return VK.Color.warningSoft
-    }
-  }
-
-  var body: some View {
-    Text(text)
-      .font(VK.Font.sans(11, .semibold))
-      .foregroundStyle(fg)
-      .padding(.horizontal, 8)
-      .padding(.vertical, 3)
-      .background(Capsule().fill(bg))
-  }
-}
 
 // MARK: - Empty state (v4.8)
 
@@ -385,35 +326,6 @@ struct VKEmptyState: View {
 }
 
 // MARK: - Skeleton loader (v4.8)
-
-/// Placeholder khi đang tải — giữ chiều cao layout, shimmer nhẹ (tắt reduced-motion).
-struct VKSkeleton: View {
-  var width: CGFloat?
-  var height: CGFloat = 12
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var shimmer = false
-
-  init(width: CGFloat? = nil, height: CGFloat = 12) { self.width = width; self.height = height }
-
-  var body: some View {
-    let shape = RoundedRectangle(cornerRadius: VK.Radius.sm, style: .continuous)
-    shape.fill(VK.Color.bgSunken)
-      .frame(width: width, height: height)
-      .frame(maxWidth: width == nil ? .infinity : nil)
-      .overlay(
-        shape.fill(LinearGradient(
-          colors: [.clear, VK.Color.fgMuted.opacity(0.12), .clear],
-          startPoint: .leading, endPoint: .trailing))
-          .offset(x: shimmer ? 160 : -160)
-          .opacity(reduceMotion ? 0 : 1)
-      )
-      .clipShape(shape)
-      .onAppear {
-        guard !reduceMotion else { return }
-        withAnimation(.linear(duration: 1.15).repeatForever(autoreverses: false)) { shimmer = true }
-      }
-  }
-}
 
 // MARK: - Button
 

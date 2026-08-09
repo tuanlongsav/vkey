@@ -97,23 +97,6 @@ final class PredictionEngine {
     topPhrasePrediction(prev2: prev2, prev1: prev1, maxWords: 1)
   }
 
-  func topNPredictions(prev2: String?, prev1: String, n: Int) -> [String] {
-    let p1 = prev1.lowercased()
-    guard !p1.isEmpty, n > 0 else { return [] }
-    let allowSet = Set(Defaults[.userAllowWords].map { $0.lowercased() })
-    let keepSet = Set(Defaults[.userKeepWords].map { $0.lowercased() })
-    var scored: [(word: String, score: Int)] = []
-    for candidate in collectSingleWordCandidates(prev2: prev2, prev1: p1) {
-      if let score = scorePhrase(
-        candidate.word, freq: candidate.freq, wordCount: 1,
-        prev1: p1, allowSet: allowSet, keepSet: keepSet
-      ) {
-        scored.append((candidate.word, score))
-      }
-    }
-    scored.sort { $0.score > $1.score }
-    return Array(scored.prefix(n).map { $0.word })
-  }
 
   func collectCandidates(prev2: String?, prev1: String) -> [(word: String, freq: Int)] {
     collectSingleWordCandidates(prev2: prev2, prev1: prev1)

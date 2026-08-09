@@ -57,8 +57,6 @@ final class ClipboardHistoryService: NSObject {
   private var lastOversizedWarningAt: Date?
   private let oversizedWarningDebounce: TimeInterval = 8
 
-  var hasEntries: Bool { !entries.isEmpty }
-
   private override init() {
     super.init()
   }
@@ -307,14 +305,6 @@ final class ClipboardHistoryService: NSObject {
         .joined(separator: ",")
     }
     .joined(separator: "|")
-  }
-
-  static func totalDataSize(items: [NSPasteboardItem]) -> Int {
-    items.reduce(0) { total, item in
-      total + item.types.reduce(0) { sum, type in
-        sum + (item.data(forType: type)?.count ?? item.string(forType: type)?.utf8.count ?? 0)
-      }
-    }
   }
 
   /// Ước lượng byte trên pasteboard gốc — không tạo bản sao NSPasteboardItem.

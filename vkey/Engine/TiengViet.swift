@@ -148,10 +148,6 @@ struct ThanhPhanTieng {
     mangKyTu.contains { nguyenAm.contains($0) }
   }
 
-  /// Kiểm tra chuỗi không phải tiếng Việt hợp lệ (chỉ có phần conLai)
-  func notTiengViet() -> Bool {
-    phuAmDau.isEmpty && nguyenAm.isEmpty && phuAmCuoi.isEmpty && !conLai.isEmpty
-  }
 }
 
 // MARK: - TiengViet (Namespace cho hằng số)

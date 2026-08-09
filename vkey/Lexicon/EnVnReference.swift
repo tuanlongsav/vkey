@@ -32,7 +32,6 @@ final class EnVnReference {
   private struct ReferenceSnapshot {
     var enToVn: [String: [String]] = [:]
     var vnToEn: [String: [String]] = [:]
-    var enPrefixTrie = Trie(caseInsensitive: true)
   }
 
   private let queue = DispatchQueue(
@@ -70,18 +69,7 @@ final class EnVnReference {
       guard !key.isEmpty else { return }
       acc[key] = pair.value
     }
-    // 1.9.0: build fresh Trie và swap. Trước v1.9.0 enPrefixTrie là `let`
-    // và rebuildPrefixTrie() chỉ insert thêm → cumulative + stale results
-    // qua mỗi lexicon load. Giờ swap thật sự.
-    let fresh = Trie(caseInsensitive: true)
-    for english in enToVn.keys {
-      fresh.insert(english)
-    }
-    let nextSnapshot = ReferenceSnapshot(
-      enToVn: enToVn,
-      vnToEn: vnToEn,
-      enPrefixTrie: fresh
-    )
+    let nextSnapshot = ReferenceSnapshot(enToVn: enToVn, vnToEn: vnToEn)
     queue.sync(flags: .barrier) {
       snapshot = nextSnapshot
     }
@@ -98,18 +86,6 @@ final class EnVnReference {
   func lookupVietnamese(_ word: String) -> [String]? {
     let key = word.normalizedDictionaryToken
     return queue.sync { snapshot.vnToEn[key] }
-  }
-
-  /// True if `prefix` is the start of any English entry. Used by the input
-  /// pipeline to defer Vietnamese diacritic application while the user
-  /// types something that *might* turn out to be English.
-  func hasEnglishPrefix(_ prefix: String) -> Bool {
-    let normalized = prefix.normalizedDictionaryToken
-    guard !normalized.isEmpty else { return false }
-    return queue.sync {
-      snapshot.enPrefixTrie.findLongestPrefix(in: normalized) != nil
-        || snapshot.enToVn.keys.contains { $0.hasPrefix(normalized) }
-    }
   }
 
   /// Counts useful for the Diagnostics panel.
