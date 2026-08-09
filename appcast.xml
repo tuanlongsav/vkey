@@ -6,6 +6,30 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.23 — "Dọn nhà"</title>
+      <sparkle:version>42300</sparkle:version>
+      <sparkle:shortVersionString>4.23</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 09 Aug 2026 21:20:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.23/vkey-4.23.dmg"
+        sparkle:edSignature="aodE9u07vIhNOziTkHhs8j9DMhAzVxmEnzclwrehMCdq/P35yQOOj5GgHquSKOxPwnW7YkL5EDC/ZaF0uc/LBQ=="
+        length="6598491"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.23 — Dọn nhà</h2>
+        <p><b>Bản bảo trì. Cách gõ không đổi một chút nào.</b> Lý do phát hành: sau đợt dọn, mã nguồn đã khác với binary 4.22 đã ship — bản này kéo hai thứ về khớp nhau.</p>
+        <ul>
+          <li><b>Bỏ ~2.000 dòng mã chết</b> — bốn màn hình đời cũ (Macro, Thống kê, Smart Switch, màn xin quyền) đã bị các tab thiết kế mới thay thế từ lâu nhưng vẫn được biên dịch vào app.</li>
+          <li><b>Nhẹ đi 1,2 MB</b> — bộ icon iOS/watchOS bị xoá; vkey chỉ có bản macOS, chưa bao giờ dùng tới chúng.</li>
+          <li><b>Hai thông báo chẩn đoán</b> (event tap bị tắt ngầm, tạo event tap thất bại) trước đây mất hút ở bản phát hành, nay đọc được bằng Console.</li>
+        </ul>
+        <p><b>Từ điển v11 — 3.039 cặp Anh–Việt.</b> Công tắc "Dùng từ điển tham chiếu Anh – Việt" bật sẵn từ v1.5.0 nhưng chưa bao giờ làm gì: trường dữ liệu tương ứng rỗng ở mọi gói đã phát hành. Nay đã có dữ liệu thật. Gói từ điển đi độc lập với app nên máy bạn đã nhận nó rồi, không cần bản 4.23.</p>
+        <p>349 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.22 — "Hết gãy chữ trong hộp thoại Lưu"</title>
       <sparkle:version>42200</sparkle:version>
       <sparkle:shortVersionString>4.22</sparkle:shortVersionString>

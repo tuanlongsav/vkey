@@ -8,12 +8,15 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.22](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 349 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.23](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 349 test pass · [Tải bản mới nhất](../../releases/latest)
 
-## Mới ở v4.22
+## Mới ở v4.23
 
-- **Hết gãy chữ trong hộp thoại Lưu** — gõ tên thư mục trong hộp thoại Lưu của Safari (và các app sandbox khác), `Haf Nooij` giờ ra `Hà Nội` ngay từ chữ đầu, không phải bỏ ký tự nào.
-- **`Nội` không còn thành `Nôị`** — dấu nặng vốn không đặt sai, mà từ bị cắt đôi giữa chừng. Nguyên nhân: hộp thoại Lưu chạy ở tiến trình phụ, hệ thống trả về bundle đổi qua lại từng phím khiến vkey tưởng bạn liên tục chuyển app và xoá từ đang gõ.
+**Bản bảo trì — cách gõ không đổi.** Phát hành để mã nguồn và bản đã ship khớp nhau sau đợt dọn dẹp.
+
+- **Từ điển tham chiếu Anh–Việt giờ mới thật sự chạy** — công tắc này bật sẵn từ v1.5.0 nhưng dữ liệu đi kèm luôn rỗng, nên nó chưa từng làm gì. Đã có 3.039 cặp Anh–Việt. Gói từ điển đi độc lập với app nên bạn đã nhận rồi, không cần cài 4.23.
+- **App nhẹ đi** — bỏ ~2.000 dòng mã chết và bộ icon iOS/watchOS mà bản macOS không dùng tới.
+- **Hai thông báo chẩn đoán** (event tap bị tắt ngầm, tạo event tap thất bại) trước đây mất hút ở bản phát hành, nay đọc được bằng Console.
 
 Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md)
 

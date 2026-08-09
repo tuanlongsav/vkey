@@ -2,6 +2,57 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.23] - 2026-08-09 — "Dọn nhà"
+
+**Bản bảo trì. Cách gõ không đổi một chút nào.** Lý do phát hành: sau đợt dọn,
+mã nguồn trên `main` đã khác với binary 4.22 đã ship — build từ source sẽ ra
+một "4.22" không giống bản người dùng đang chạy. Bản này kéo hai thứ về khớp
+nhau.
+
+### 🧹 Dọn dẹp
+
+- **Bỏ ~2.000 dòng mã chết**: bốn màn hình đời cũ (Macro, Thống kê, Smart
+  Switch, màn xin quyền) đã bị các tab thiết kế mới thay thế từ lâu nhưng vẫn
+  được biên dịch vào app; cùng hàng chục hàm, thuộc tính và khoá thiết lập
+  không nơi nào gọi tới.
+- **Kho ảnh nhẹ đi 1,2 MB**: bộ icon dành cho iOS/watchOS bị xoá — vkey chỉ có
+  bản macOS, chưa bao giờ dùng tới chúng.
+- **Repo giảm gần một nửa**, 17,4 MB còn 9,0 MB.
+
+### 📖 Tài liệu
+
+Rà lại toàn bộ tài liệu theo mã nguồn thật. Đáng kể nhất: `app-arch.md` mô tả
+một cơ chế tối ưu hoá **không tồn tại trong code**, một bảng cấu hình bịa, và
+hai ví dụ gõ sai tự mâu thuẫn với chính trang đó. README ghi sai số lượng từ
+điển và nói app "tự hỏi" khi cập nhật — thực ra nó cập nhật im lặng.
+
+Thêm ghi chú về việc giữ bản làm việc trong thư mục đồng bộ iCloud: nó đã
+từng nhân bản chính file index của git.
+
+### 🐛 Sửa
+
+- Hai thông báo chẩn đoán (event tap bị tắt ngầm, tạo event tap thất bại)
+  trước đây in ra `print()` nên mất hút ở bản phát hành — nay đi qua `os_log`,
+  đọc được bằng Console.
+- `Tools/build_lexicon.py` ghi cứng `"version": 5`. Ai chạy nó lên gói từ điển
+  hiện tại sẽ **hạ version và cắt đứt cập nhật từ điển của toàn bộ người
+  dùng**. Đã sửa thành tăng dần.
+
+### 📚 Từ điển v11 — 3.039 cặp Anh–Việt
+
+Công tắc "Dùng từ điển tham chiếu Anh – Việt" trong tab Chính tả bật sẵn từ
+v1.5.0 nhưng **chưa bao giờ làm gì**: trường dữ liệu tương ứng rỗng ở mọi gói
+đã phát hành. Nay đã có dữ liệu thật, nên vkey nhận thêm 3.039 từ tiếng Anh
+khi quyết định có khôi phục phím thô hay không.
+
+Gói từ điển đi độc lập với app — máy bạn đã nhận nó rồi, không cần bản 4.23.
+
+Mọi từ trùng cách gõ tiếng Việt đều bị loại, cả dạng trần (`ban`, `cam`) lẫn
+dạng có phím dấu cuối (`cas` chính là cách gõ `cá`). Đã kiểm lại sau khi tạo:
+0 va chạm.
+
+349 test pass.
+
 ## [4.22] - 2026-08-07 — "Hết gãy chữ trong hộp thoại Lưu"
 
 **Sửa lỗi gõ trong hộp thoại Lưu / Thư mục mới của các app sandbox** (Safari,
