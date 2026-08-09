@@ -4,18 +4,18 @@
 //
 //  v2.3.0: register bundled custom fonts at process scope.
 //
-//  Two-tier defensive strategy:
+//  This is the ONLY thing registering the bundled fonts. It iterates over the
+//  bundled `.ttf` files and calls `CTFontManagerRegisterFontsForURL(_,
+//  .process)`. Idempotent — it swallows the "already registered" error code,
+//  so calling it more than once is safe.
 //
-//    Tier 1 (preferred): `ATSApplicationFontsPath = Resources` in Info.plist
-//                        — macOS auto-registers all `.ttf` / `.otf` in that
-//                        folder at launch. No code required.
-//
-//    Tier 2 (fallback): this file. Iterates over bundled `.ttf` files and
-//                       calls `CTFontManagerRegisterFontsForURL(_, .process)`.
-//                       Used in case the plist key fails (e.g. font path moves,
-//                       sandbox change). Idempotent — silently swallows the
-//                       "already registered" error code so calling from Tier 1
-//                       contexts is safe.
+//  Earlier comments here described it as a "Tier 2 fallback" behind an
+//  `ATSApplicationFontsPath = Resources` key in Info.plist that would let
+//  macOS auto-register the folder at launch. That key has never existed —
+//  not in vkey/Info.plist and not in the build settings — so there was no
+//  Tier 1 to fall back from. Adding it would give real defence in depth;
+//  until then, if this call fails the custom fonts are simply absent and
+//  `VKeyDesign.display` quietly falls back to the system rounded face.
 //
 
 import AppKit

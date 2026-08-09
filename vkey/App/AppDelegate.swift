@@ -39,9 +39,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     // v2.3.0: register bundled custom fonts before any view materialises.
-    // Tier 1 (Info.plist ATSApplicationFontsPath) đã handle phần lớn — đây
-    // là fallback idempotent đảm bảo Font.custom("NotoSansDisplay") work
-    // ngay launch đầu tiên dù plist key có vấn đề.
+    // Đây là đường DUY NHẤT đăng ký font — Info.plist không có
+    // ATSApplicationFontsPath (xem FontRegistration.swift).
     FontRegistration.register()
 
     if MarketingSnapshotExporter.isRequested {

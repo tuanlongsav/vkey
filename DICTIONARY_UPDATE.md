@@ -43,7 +43,22 @@ python3 Tools/build_lexicon.py \
   --kaikki-download
 ```
 
-Sau khi script chạy xong, **mở file output và bump `"version"` tay** (script không tự bump version).
+Script tự bump `version` = version cũ + 1 và mang `_meta.cleanup` sang. Trước v4.23 nó ghi cứng `"version": 5`, chạy lên file version 10 là **hạ version → mọi client ngừng nhận cập nhật**; nếu bạn có bản script cũ hơn thì đừng dùng.
+
+**Option C — Chỉ làm mới `en_vn_mapping`** (không đụng `vietnamese[]` / `english[]`):
+
+```bash
+python3 Tools/merge_en_vn_mapping.py \
+  --kaikki ~/.cache/vkey/raw-wiktextract-data.jsonl.gz \
+  --in lexicon-update.json --out lexicon-update.json
+
+python3 Tools/merge_en_vn_mapping.py --verify lexicon-update.json
+```
+
+Cần `pip install wordfreq` và dump Kaikki (~2,6 GB, tải một lần từ
+<https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz>).
+
+> ⚠️ `en_vn_mapping` không phải dữ liệu tra cứu thuần. `SpellDecisionEngine` coi **mọi key trong đó là từ tiếng Anh**, nên thêm entry là nới rộng phạm vi Space Restore. Script đã loại những key trùng cách gõ tiếng Việt (`cas` = `cá`) — đừng thêm entry bằng tay mà bỏ qua bộ lọc đó.
 
 > Lưu ý: chỉ có MỘT file từ điển trong repo — `lexicon-update.json` ở **root**. Bản `lexicon/lexicon-update.json` (staging/backup) đã bị xoá vì trôi khỏi bản chính (kẹt ở version 9, thừa 32 entry rác dạng `chưởì`, `ngườì`) và không đường code nào đọc nó.
 
@@ -99,6 +114,7 @@ Khi merge data từ nguồn ngoài (vd undertheseanlp/dictionary), DÙNG các sc
 
 | Script | Mục đích |
 |--------|---------|
+| [`Tools/merge_en_vn_mapping.py`](Tools/merge_en_vn_mapping.py) | Thêm `en_vn_mapping` (English → tiếng Việt) từ dump Kaikki. Chỉ ghi đúng một trường, giữ nguyên phần còn lại của gói |
 | [`Tools/build_underthesea_package.py`](Tools/build_underthesea_package.py) | Merge thô single-token từ undertheseanlp JSONL vào lexicon-update.json |
 | [`Tools/audit_lexicon.py`](Tools/audit_lexicon.py) | Loại noise — single-char + ASCII-only no-VN-marker entries (chống false-positive English) |
 | [`Tools/merge_underthesea_deep.py`](Tools/merge_underthesea_deep.py) | Deep merge từ multi-word phrases với 3-tier classification (A cross-validated, B single-phrase + phonotactic, C ASCII loanword whitelist) |
