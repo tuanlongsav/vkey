@@ -1,5 +1,9 @@
 # Research — undertheseanlp/dictionary integration (v1.6.1)
 
+> **Ảnh chụp tại thời điểm v1.6.1 — giữ nguyên làm hồ sơ, KHÔNG cập nhật.**
+> Mọi mô tả đường dẫn / endpoint bên dưới là trạng thái lúc đó và nay đã khác.
+> Trạng thái hiện hành: [DICTIONARY_UPDATE.md](../../DICTIONARY_UPDATE.md).
+
 **Date**: 2026-05-19
 **Source**: https://github.com/undertheseanlp/dictionary
 **License**: GPL-3.0 (compatible với vkey GPL-3.0)
@@ -57,8 +61,8 @@ Diff chủ yếu là syllables miền cụ thể (địa danh, tên thực vật
 ## Architecture
 
 - Build script: [Tools/build_underthesea_package.py](../build_underthesea_package.py) — chạy local trên máy maintainer.
-- Output: `vkey/lexicon-update.json` (commit vào repo).
-- vkey app fetch qua GitHub Contents API: `https://api.github.com/repos/tuanlongsav/vkey/contents/lexicon-update.json`
+- Output: `vkey/lexicon-update.json` (commit vào repo). — *nay là `lexicon-update.json` ở root.*
+- vkey app fetch qua GitHub Contents API: `https://api.github.com/repos/tuanlongsav/vkey/contents/lexicon-update.json` — *nay dùng `raw.githubusercontent.com` từ v1.6.2.*
 - `LexiconManager.checkAndPromptForDictionaryUpdate()` throttle 24h, auto-apply khi `package.version > currentVersion`.
 
 ## Open items (defer v1.7.0+)

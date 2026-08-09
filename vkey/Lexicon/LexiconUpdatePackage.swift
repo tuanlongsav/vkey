@@ -2,7 +2,7 @@
 //  LexiconUpdatePackage.swift
 //  vkey
 //
-//  Codable shape of `lexicon/lexicon-update.json`. Schema v5 (1.5.0) adds the
+//  Codable shape of `lexicon-update.json`. Schema v5 (1.5.0) adds the
 //  optional `en_vn_mapping`, `vn_en_mapping`, `macros_recommended` and
 //  `_meta` fields alongside the original word lists. Older builds simply
 //  ignore the extra keys — forward-compatible by design (JSONDecoder treats

@@ -1,7 +1,7 @@
 # Data License (vkey lexicon files)
 
 > **TL;DR**: vkey's *source code* is **GPL-3.0**; the *dictionary data* in
-> [`lexicon/`](lexicon/) is **CC BY-SA 4.0**. They're licensed separately
+> [`lexicon-update.json`](lexicon-update.json) is **CC BY-SA 4.0**. They're licensed separately
 > because the data is partly derived from Wiktionary (CC BY-SA 4.0), which
 > isn't redistributable under GPL alone. Both licences are share-alike —
 > downstream forks must keep the same terms and credit the upstream sources.
@@ -11,20 +11,24 @@
 ## Why dual licensing?
 
 Starting in **v1.5.0** vkey ships a bilingual reference dictionary
-(`lexicon/lexicon-update.json`, schema v5) that includes:
+(`lexicon-update.json`, schema v5) that includes:
 
-- **Vietnamese syllable list (~8,960 entries, v1.7.1 / lexicon v8)** — hợp nhất từ hai nguồn:
+- **Vietnamese syllable list (8,928 entries, lexicon v10)** — hợp nhất từ hai nguồn:
   - [@hieuthi / common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable) (~7,184 syllables phổ biến, baseline curated từ v1.5.0).
   - [@undertheseanlp / dictionary](https://github.com/undertheseanlp/dictionary) (+1,710 syllables bổ sung, tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN), tác giả Vũ Anh, license **GPL-3.0** — tương thích share-alike với CC BY-SA 4.0 aggregate của vkey lexicon.
   - **+66 single-char Vietnamese diacritics** (`à`, `á`, `ạ`, `ả`, `ã`, `ý`, `ô`, `ở`...) restored ở v1.7.1 sau khi bị drop nhầm v7. Critical cho bug fix gõ từ 1 ký tự.
   - Mỗi entry mới được rà soát qua **phonotactic filter** học từ baseline (initial/final consonant + length) để loại foreign words (`chlorhydric`, `kpăng`) và **3-tier classification** (cross-validated A / single-phrase B / ASCII loanword C). Audit scripts: [Tools/audit_lexicon.py](Tools/audit_lexicon.py), [Tools/merge_underthesea_deep.py](Tools/merge_underthesea_deep.py).
-- **English word list (~2000 entries)** — selected by frequency using
+- **English word list (9,826 entries)** — selected by frequency using
   [wordfreq](https://github.com/rspeer/wordfreq) (MIT for the code, CC BY-SA
   4.0 for the Wiktionary-derived portion of its data).
-- **English → Vietnamese mapping (1000+ entries)** — extracted from English
-  Wiktionary via [Wiktextract](https://github.com/tatuylonen/wiktextract) +
-  [Kaikki.org](https://kaikki.org/dictionary/rawdata.html), distributed
-  under **CC BY-SA 4.0** by the Wikimedia community.
+
+The schema also reserves an **English → Vietnamese mapping** (`en_vn_mapping`
+/ `vn_en_mapping`), sourced from English Wiktionary via
+[Wiktextract](https://github.com/tatuylonen/wiktextract) +
+[Kaikki.org](https://kaikki.org/dictionary/rawdata.html) under **CC BY-SA
+4.0**. No release has ever shipped that data — every published
+`lexicon-update.json` (v3 … v10) carries the fields empty. The attribution
+above applies if and when it does ship.
 
 GPL-3.0 cannot relicense CC BY-SA 4.0 data — the two licences are
 incompatible for joint redistribution **as a single artifact**. The
@@ -38,7 +42,7 @@ each kind of artifact separately. That's what we do here.
 | Path | License |
 |---|---|
 | All Swift / Objective-C / Python source code (`vkey/`, `Tools/`, `vkeyTests/`, `vkeyUITests/`) | **GNU General Public License v3.0** ([LICENSE](LICENSE)) |
-| Dictionary data (`lexicon/lexicon-update.json`, plus any future `lexicon/*.json` files) | **Creative Commons Attribution-ShareAlike 4.0 International** (CC BY-SA 4.0) — <https://creativecommons.org/licenses/by-sa/4.0/> |
+| Dictionary data (`lexicon-update.json`, plus any future lexicon `*.json` files) | **Creative Commons Attribution-ShareAlike 4.0 International** (CC BY-SA 4.0) — <https://creativecommons.org/licenses/by-sa/4.0/> |
 | App assets / icons / screenshots in `images/` | Same as source (GPL-3.0) unless noted otherwise inside the file |
 
 The build script that assembles the dictionary

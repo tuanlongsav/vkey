@@ -10,7 +10,7 @@ Tài liệu cho maintainer: cách publish bản từ điển mới mà KHÔNG c�
 - **Endpoint v1.5.x → v1.6.1 (legacy)**: `https://api.github.com/repos/tuanlongsav/vkey/contents/lexicon-update.json` với header `Accept: application/vnd.github.v3.raw`. Có giới hạn 1 MB raw + rate-limit 60 req/h.
 - Throttle 24h client-side qua `Defaults[.lastDictionaryCheckDate]` để tránh spam GitHub.
 - Nếu `package.version > currentVersion` (so sánh Int trực tiếp): tự download + ghi vào `~/Library/Application Support/vkey/lexicon/lexicon-update.json` + reload lexicon — KHÔNG hỏi user, KHÔNG hiển thị alert.
-- **Manual override (v1.6.2+)**: nút **"Cập nhật từ điển ngay"** trong Cài đặt → tab Chính tả → Section "Từ điển từ GitHub" → bypass throttle, force check.
+- `checkAndPromptForDictionaryUpdate(force:)` có tham số `force` để bỏ qua throttle, nhưng **không UI nào gọi nó** — hiện chỉ `AppDelegate` gọi lúc launch với `force: false`.
 
 ## Quy trình maintainer
 
@@ -24,17 +24,15 @@ pip3 install wordfreq requests
 
 **Option A — Chỉ thêm vài entry** (sửa JSON tay, nhanh nhất):
 
-1. Mở file `lexicon-update.json` ở **root repo** (không phải `lexicon/lexicon-update.json` — file đó là backup/staging, không được app fetch).
+1. Mở file `lexicon-update.json` ở **root repo** — đây là file duy nhất app fetch.
 2. Thêm/sửa entry vào section tương ứng:
    - `vietnamese[]` — danh sách âm tiết tiếng Việt hợp lệ.
    - `english[]` — top từ tiếng Anh được nhận diện cho Space Restore.
    - `keep[]` — từ tiếng Việt luôn giữ nguyên, không auto-restore.
-   - `en_vn_mapping` — dict English → [Vietnamese candidates].
-   - `vn_en_mapping` — dict Vietnamese → [English candidates].
-3. **Bump `"version"` lên +1** (ví dụ 5 → 6). Bắt buộc, nếu không user sẽ không nhận update.
+3. **Bump `"version"` lên +1** (hiện tại 10 → 11). Bắt buộc, nếu không user sẽ không nhận update.
 4. Verify JSON hợp lệ:
    ```bash
-   jq . vkey/lexicon/lexicon-update.json > /dev/null && echo OK
+   jq . lexicon-update.json > /dev/null && echo OK
    ```
 
 **Option B — Rebuild toàn bộ** (refresh wordfreq + Wiktionary):
@@ -47,7 +45,7 @@ python3 Tools/build_lexicon.py \
 
 Sau khi script chạy xong, **mở file output và bump `"version"` tay** (script không tự bump version).
 
-> Lưu ý: file `lexicon-update.json` ở **root** repo là cái app thực sự fetch. Repo có thêm `lexicon/lexicon-update.json` (path nested) dùng cho staging/backup — bạn có thể sync 2 file hoặc bỏ file nested khi cleanup.
+> Lưu ý: chỉ có MỘT file từ điển trong repo — `lexicon-update.json` ở **root**. Bản `lexicon/lexicon-update.json` (staging/backup) đã bị xoá vì trôi khỏi bản chính (kẹt ở version 9, thừa 32 entry rác dạng `chưởì`, `ngườì`) và không đường code nào đọc nó.
 
 ### 3. Commit + push
 
@@ -77,14 +75,15 @@ Output phải là số version mới bạn vừa bump.
 ### 5. Người dùng nhận update khi nào?
 
 - **Tự động**: lần launch tiếp theo của app sau >24h từ lần check trước (`Defaults[.lastDictionaryCheckDate]`).
-- **Force ngay**: user bấm nút **"Cập nhật từ điển ngay"** trong Cài đặt → tab Chính tả → mục "Từ điển GitHub".
+- **Không có nút force trong UI.** Muốn thử ngay trên máy mình thì xoá key throttle rồi mở lại app:
+  `defaults delete dev.longht.vkey last-dictionary-check-date`
 - Update apply im lặng — KHÔNG có alert. Lexicon mới có hiệu lực ngay sau khi `reload()` chạy xong (thường <500ms).
 
 ## Quy ước version
 
 - **Chỉ tăng**. Không reset, không downgrade.
 - **Bump kể cả khi chỉ sửa 1 từ** — app dùng comparison đơn giản `Int >` để biết cần download.
-- **Độc lập với version app** (`1.5.2`, `1.5.3`, …). Dictionary version chỉ là Int trong JSON.
+- **Độc lập với version app** (app đang ở `4.22`, từ điển ở `10`). Dictionary version chỉ là Int trong JSON.
 - Nếu bạn lỡ commit version cũ trùng/lùi, push commit khác bump version mới — không gãy gì.
 
 ## Rate limit & cache
@@ -116,33 +115,38 @@ python3 Tools/audit_lexicon.py
 
 ## Schema (tham khảo)
 
-Top-level JSON shape (schema v5):
+Nguồn chuẩn của schema là `vkey/Lexicon/LexiconUpdatePackage.swift` (Codable struct) — mục này chỉ tóm tắt.
+
+**Bắt buộc**: `version`, `vietnamese`, `english`, `keep`.
+**Tuỳ chọn** (thiếu vẫn decode được — `JSONDecoder` bỏ qua key lạ, nên schema forward/backward compatible): `en_vn_mapping`, `vn_en_mapping`, `macros_recommended`, `_meta`, `sig`.
+
+File hiện tại (version 10) CHỈ có 4 trường bắt buộc + `_meta`. Ba trường mapping/macro đang bỏ trống — vẫn giữ trong schema để bật lại mà không phải đổi code.
 
 ```json
 {
-  "version": 6,
-  "generated_at": "2026-05-19",
-  "vietnamese": ["a", "à", "á", "ả", ...],
-  "english": ["the", "of", "and", ...],
-  "keep": ["chì", "chỉ", ...],
-  "en_vn_mapping": {
-    "computer": ["máy tính"],
-    "developer": ["lập trình viên"]
-  },
-  "vn_en_mapping": {
-    "máy tính": ["computer"]
-  },
+  "version": 10,
+  "vietnamese": ["a", "à", "á", "ả", "..."],
+  "english": ["the", "of", "and", "..."],
+  "keep": ["lisa", "maria", "para", "sara"],
   "_meta": {
-    "attribution": "Wiktionary CC BY-SA 4.0, ...",
-    "license": "..."
+    "version": 1,
+    "generated_at": "2026-05-19T15:27:57.368371+00:00",
+    "license_of_aggregate": "GPL-3.0",
+    "sources": [{ "name": "...", "url": "...", "license": "...", "used_for": "..." }],
+    "cleanup": [{ "at": "...", "rule": "...", "before": 0, "after": 0, "baseline_ref": "..." }]
   }
 }
 ```
 
-Code load: `vkey/Lexicon/LexiconUpdatePackage.swift` (Codable struct).
+Hai điều dễ hiểu nhầm:
+
+- `_meta.version` (= 1) là version của **khối metadata**, KHÔNG phải version gói từ điển. Cái app so sánh để quyết định tải là `version` ở top-level.
+- `_meta.cleanup` do `Tools/audit_lexicon.py` ghi thêm; nó không nằm trong Codable struct nên app bỏ qua, chỉ dùng để truy vết đợt làm sạch.
+
+Trường `sig` (Ed25519, base64) dành cho ký gói server-side — xem `LexiconSignatureVerifier`. Hiện **chưa bật**: `LexiconManager.lexiconPublicKeyBase64` rỗng nên verify luôn trả true.
 
 ## Troubleshooting
 
-- **Push xong nhưng user không thấy update?** Check `Defaults[.lastDictionaryCheckDate]` — nếu vừa check trong 24h, user phải force qua nút "Cập nhật từ điển ngay" hoặc đợi 24h.
+- **Push xong nhưng user không thấy update?** Check `Defaults[.lastDictionaryCheckDate]` — nếu vừa check trong 24h thì phải đợi hết 24h; không có nút force trong UI.
 - **JSON parse fail trên app?** Verify lại bằng `jq`. Lỗi decode → app silent skip + giữ embedded data.
 - **Endpoint trả 404?** Verify file tồn tại đúng vị trí trên branch `main`: `lexicon-update.json` (root repo). Path trong code: `repos/tuanlongsav/vkey/contents/lexicon-update.json` — KHÔNG có prefix `vkey/lexicon/`.

@@ -275,17 +275,19 @@ git commit -m "vX.Y ... | README rà soát ✓"
 
 ### Checklist (tick từng dòng)
 
-- [ ] **Version banner** — line ~8: `**Phiên bản hiện tại: X.Y — "Title"**` ↔ MARKETING_VERSION trong pbxproj.
-- [ ] **Lexicon stats** — câu "Bộ từ điển hiện tại (vN — vX.Y+): ... syllables VN + ... từ EN" còn đúng?
-- [ ] **Features list** (section "Chức năng") — tính năng mới của release này đã thêm bullet? Bullet outdated đã sửa/xoá? Version annotation `(vX.Y+)` chính xác?
-- [ ] **Tab descriptions** — mỗi tab Settings (Chung / Smart Switch / Macro / Chính tả / Thống kê) có khớp UI thực tế? Section reorder/rename đã reflect?
+- [ ] **Version banner** — line ~11: `**Phiên bản hiện tại: [X.Y](CHANGELOG.md)** — ... · N test pass` ↔ MARKETING_VERSION trong pbxproj **và** số test thật (`grep -cE '^\s*(func test|@Test)' vkeyTests/vkeyTests.swift`).
+- [ ] **Mục "Mới ở vX.Y"** — đổi tiêu đề sang version mới, thay nội dung bằng 2–4 gạch đầu dòng của release này.
+- [ ] **Lexicon stats** — dòng bảng **Từ điển**: số âm tiết nhúng ↔ `wc -l vkey/Assets.xcassets/syllables.dataset/syllables.txt`; số sau cập nhật ↔ `jq '.vietnamese|length, (.english|length)' lexicon-update.json`.
+- [ ] **Features list** (section "Tính năng chính") — tính năng mới của release này đã thêm bullet? Bullet outdated đã sửa/xoá?
+- [ ] **Tab descriptions** — cả 6 tab Settings (Chung / Smart Switch / Macro / Chính tả / Thống kê & Sao lưu / Quản lý giao diện) có khớp UI thực tế? Section reorder/rename đã reflect? Cách đối chiếu nhanh: `grep -oE 'VKSection\("[^"]*"|label: "[^"]*"' vkey/View/Redesign/VK*Tab.swift`
 - [ ] **Button/label rename** — vd "Quản lý từ điển cá nhân" → "Sửa từ điển cá nhân" (v1.7.11), tab labels rút gọn/restore (v1.7.7/v1.7.8). Search README cho tên cũ.
 - [ ] **Menu bar table** — item menu mới? Description khớp wording trong app?
 - [ ] **Phím gõ đặc biệt** — phím tắt mới (vd Tab smart-detect cho prediction v1.7.7) đã add?
 - [ ] **Credits section** — nguồn data/lib mới đã credit đầy đủ với license?
 - [ ] **Tools list** — script mới (`audit_lexicon.py`, `merge_underthesea_deep.py`, `build_lexicon.py` ...) đã list?
 - [ ] **LICENSE-DATA.md** — dataset thay đổi (size, source) đã sync số liệu?
-- [ ] **Screenshots (`images/`)** — UI thay đổi nhiều → re-capture ảnh tab tương ứng (xem section [Hình ảnh minh hoạ](README.md#hình-ảnh-minh-hoạ)). Đảm bảo các tham chiếu `images/*.png` trong README vẫn tồn tại.
+- [ ] **Screenshots (`images/`)** — UI thay đổi nhiều → re-capture ảnh tab tương ứng (xem section [Hình ảnh](README.md#hình-ảnh)). Đảm bảo các tham chiếu `images/*.png` trong README vẫn tồn tại.
+  > ⚠️ **Nợ hiện tại**: bộ ảnh trong `images/` chụp từ **v3.20** (commit `b8f647c`, 2026-06-20) — trước bản đại tu giao diện v4.8. Cache-buster `?v=32000` trong README phản ánh đúng mốc đó. Chụp lại bằng `Tools/capture_marketing.sh` (chỉ PNG, không cần quyền Ghi màn hình), rồi bump cache-buster lên build number mới.
 - [ ] **Outdated wording sweep** — search README các cụm từ deprecated:
   - "auto-promote", "luôn dùng tiếng Anh", "5 lần tự động" (cũ trước v1.6.0).
   - "Quản lý từ điển cá nhân" (đổi thành "Sửa từ điển cá nhân" ở v1.7.11).

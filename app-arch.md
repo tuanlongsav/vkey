@@ -10,6 +10,9 @@ This document provides a comprehensive technical analysis of how vkey, the macOS
 4. [Data Flow](#data-flow)
 5. [Key Algorithms](#key-algorithms)
 6. [Performance Optimizations](#performance-optimizations)
+7. [Security Considerations](#security-considerations)
+8. [7-Stage Processing Pipeline (2.0)](#7-stage-processing-pipeline-20)
+9. [Summary](#summary)
 
 ---
 
@@ -139,11 +142,11 @@ This is a diff algorithm that determines:
 **Example**:
 ```
 prevStr:    "toi"
-currentStr: "tối"  (after pressing 's' for sắc tone)
+currentStr: "tói"  (after pressing 's' for sắc tone)
 
 Common prefix: "t" (length 1)
 Backspaces needed: 2 (delete "oi")
-Characters to type: ['ố', 'i']
+Characters to type: ['ó', 'i']
 ```
 
 **Backspace Delay Handling**:
@@ -169,8 +172,23 @@ static func sendBackspace(_ count: Int, delayMicroseconds: UInt32 = 0) {
 
 **Key Functions**:
 - `element()`: Returns the currently focused AXUIElement
-- `hasHighlightedText()`: Detects text selection (for autocomplete fix)
-- `highlightedText()`: Gets the selected text content
+- `snapshot()`: bundle id + role + `FieldKind` in **one** AX round-trip. This is the hot path — it replaced three separate lookups per keystroke
+- `fieldKind()`: walks the AX parent chain (capped at 25 levels) to classify the field
+- `isSecureField()`: password field detection, so system-wide secure input is attributed to the right app
+- `setupAXTimeout()`: caps AX messaging at 100 ms so an unresponsive target app can't stall the tap into being disabled by macOS
+
+**`FieldKind` — the NFC/NFD axis.** How a replacement must be spelled depends on
+where the caret is, not only on which app is frontmost:
+
+| Kind | Where | Consequence |
+|---|---|---|
+| `.webContent` | under an `AXWebArea` (Chromium/Electron page content) | delete/store by scalar → diff in **NFD** |
+| `.nativePanel` | inside an `AXSheet` or a dialog-subrole window (`NSSavePanel`) | real AppKit → diff in **NFC** |
+| `.windowField` | an ordinary field in the main window | native app: plain text field. Chromium: this is browser chrome, e.g. the omnibox → **NFC + `axDirect`** |
+| `.unknown` | AX timed out or the chain broke | keep the per-app default |
+
+The omnibox is the reason `axDirect` exists: its inline autocomplete keeps a
+live selection that synthetic backspaces would eat.
 
 **Autocomplete Fix**: Some apps (Safari, Chrome) auto-select suggested text. When replacing text, an extra backspace is needed to clear the selection first.
 
@@ -178,7 +196,26 @@ static func sendBackspace(_ count: Int, delayMicroseconds: UInt32 = 0) {
 
 **Purpose**: Watches files for changes using GCD dispatch sources.
 
-Uses `DispatchSource.makeFileSystemObjectSource` with `.extend` event mask to monitor file appends. Currently used for development/debugging purposes.
+Uses `DispatchSource.makeFileSystemObjectSource` with `.extend` event mask to
+monitor file appends. This is a **production** path, not a debug aid:
+`AppState.registerSwitchFileMonitor()` watches a file under `/tmp` so an
+external process can signal a Smart Switch change into the running app. If the
+monitor fails to initialise, that signalling channel is the only thing lost —
+`AppState` logs it and carries on.
+
+### The rest of Platform/
+
+Not on the keystroke hot path, but part of the same layer:
+
+| File | Role |
+|---|---|
+| `ToggleHUDWindow.swift` | the VI/EN capsule in the middle of the screen |
+| `PredictionHUDWindow.swift` | the `→ cụm · Tab` suggestion pill near the caret |
+| `NoticeHUDWindow.swift` | transient notices (e.g. the amber clipboard warning) |
+| `ClipboardHistoryService.swift` | clipboard history behind ⇧⌘V — **off by default** |
+| `TextConversionService.swift` | Text Tools (⌃⇧) case/diacritic conversions |
+| `InputSourceMonitor.swift` | auto-disable when the user switches to another IME |
+| `WindowTitleRuleEngine.swift` | per-window-title overrides; the app's only `NSRegularExpression` user |
 
 ---
 
@@ -352,20 +389,28 @@ Diacriticals:    6=mũ(^)  7=móc(horn)  8=trăng(breve)
 Special:         9=đ
 ```
 
-**Stop Processing Detection** (Double-press to cancel):
+**Stop Processing Detection** (Double-press to cancel) — `Telex.shouldStopProcessing(keyStr:)`.
+No regex anywhere: plain suffix tests on the raw key string, in this order.
+
 ```swift
-// Pre-compiled regex for performance
-private static let compiledStoppingRegex: [NSRegularExpression] = {
-    let patterns = [
-        "ss$", "ff$", "rr$", "xx$", "jj$", "ww$",  // Double tone keys
-        "[0-9]$",                                    // Number input
-        "a+[a-zA-Z]*aa$",                            // Triple 'a'
-        "o+[a-zA-Z]*oo$",                            // Triple 'o'
-        // ... more patterns
-    ]
-    return patterns.compactMap { try? NSRegularExpression(pattern: $0) }
-}()
+// 1. Doubled tone/modifier key — always cancels
+if lowerKeyStr.hasSuffix("ss") || ... || lowerKeyStr.hasSuffix("ww") { return true }
+
+// 2. Trailing digit
+if let lastChar = lowerKeyStr.last, lastChar.isNumber { return true }
+
+// 3. Doubled vowel / d — only cancels if that letter already appeared earlier,
+//    so "aa" in "bàn" vs "aa" in "aa" behave differently
+if lowerKeyStr.hasSuffix("aa") { return lowerKeyStr.dropLast(2).contains("a") }
+if lowerKeyStr.hasSuffix("oo") { return lowerKeyStr.dropLast(2).contains("o") }
+if lowerKeyStr.hasSuffix("ee") { return lowerKeyStr.dropLast(2).contains("e") }
+if lowerKeyStr.hasSuffix("dd") { return lowerKeyStr.dropLast(2).hasPrefix("d") }
 ```
+
+The conditional branch in step 3 is the whole point: `ss`/`ff`/`rr`/`xx`/`jj`
+are unconditional escapes (that is what lets you type `staff`, `off`), while
+`aa`/`oo`/`ee`/`dd` are the *normal* way to write â/ô/ê/đ and may only cancel
+when the base letter is already in the buffer.
 
 ---
 
@@ -418,17 +463,20 @@ Step 5: 's' pressed (Telex tone mark)
 ├── TiengVietTransformer.transform():
 │   ├── Parse: {nguyenAm:['i','e'], phuAmCuoi:['t']}
 │   ├── Tone placement: 2 vowels + final consonant → place on 2nd vowel
-│   └── 'e' + sac → 'ế'
-├── transformed = "việt"
-├── calcKeyStrokes("viet", "việt"):
+│   └── 'e' + sac → 'é'          (no circumflex: 'ee' was never typed)
+├── transformed = "viét"
+├── calcKeyStrokes("viet", "viét"):
 │   ├── Common prefix: "vi" (length 2)
 │   ├── Backspaces: 2 (delete "et")
-│   └── Type: ['ệ', 't']... wait, 'ế' not 'ệ'
-│       Actually: Backspaces: 2, Type: ['ế', 't']
+│   └── Type: ['é', 't']
 ├── EventSimulator.sendBackspace(2)
-├── EventSimulator.sendString("ệt")
+├── EventSimulator.sendString("ét")
 └── Return nil (consume original 's' event)
 ```
+
+> Getting `việt` needs the circumflex and the nặng tone spelled out —
+> `vieejt`. See the round-trip assertion in `vkeyTests.swift`:
+> `transform_text_telex(for: "toi yeeu vieejt nam") == "toi yêu việt nam"`.
 
 ---
 
@@ -441,10 +489,10 @@ Instead of replacing the entire word on each keystroke, vkey calculates the mini
 ```swift
 let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
     from: lastTransformed,  // "viet"
-    to: transformed         // "việt"
+    to: transformed         // "viét"
 )
-// Result: (2, ['ế', 't'])
-// Only delete "et" and type "ệt" - minimal disruption
+// Result: (2, ['é', 't'])
+// Only delete "et" and type "ét" - minimal disruption
 ```
 
 ### 2. Cached Parsing
@@ -495,16 +543,13 @@ public func pop() {
 
 ## Performance Optimizations
 
-### 1. Pre-compiled Regular Expressions
+### 1. No Regex on the Key Path
 
-Stop-processing patterns are compiled once at class initialization:
-
-```swift
-private static let compiledStoppingRegex: [NSRegularExpression] = {
-    let patterns = ["ss$", "ff$", "rr$", ...]
-    return patterns.compactMap { try? NSRegularExpression(pattern: $0) }
-}()
-```
+`shouldStopProcessing` runs on every keystroke, so it is deliberately built
+from `hasSuffix` / `contains` on a short string — no `NSRegularExpression`,
+not even a pre-compiled one. The only `NSRegularExpression` in the app is in
+`Platform/WindowTitleRuleEngine.swift`, which runs on window-title changes,
+not on keystrokes.
 
 ### 2. Longest-Match-First Ordering
 
@@ -519,17 +564,32 @@ static let PhuAmGhep: [String] = [
 ]
 ```
 
-### 3. App-Specific Delay Tables
+### 3. Per-App Sending Strategy
 
-Instead of a one-size-fits-all approach, backspace delays are tuned per-app:
+Apps do not differ by "how long to wait" but by *how the replacement is sent*.
+`EventSimulator.appStrategies` maps a bundle-id prefix to a strategy; first
+match wins, and anything unlisted uses the default batch strategy.
 
 ```swift
-static let SlowEventApps: [(prefix: String, delay: UInt32)] = [
-    ("com.microsoft.VSCode", 1500),  // Electron - needs most delay
-    ("com.google.Chrome", 800),       // Browser - moderate delay
-    // Native apps: 0 delay (fastest)
+static let appStrategies: [AppSendingConfig] = [
+    // Office: batch send, but space the backspaces out
+    AppSendingConfig(bundlePrefix: "com.microsoft.Word",
+                     strategy: .hybrid(backspaceDelayMicroseconds: 1000), name: "Word"),
+    // Terminals: one event at a time — batches get reordered or swallowed
+    AppSendingConfig(bundlePrefix: "com.apple.Terminal", strategy: .stepByStep, name: "Terminal"),
+    AppSendingConfig(bundlePrefix: "dev.warp.Warp",      strategy: .stepByStep, name: "Warp"),
+    // ...
 ]
 ```
+
+Two traps this table records:
+
+- Bundle-id prefixes must match the *shipping* id. Warp publishes as
+  `dev.warp.Warp-Stable` / `-Preview`; the original entry `com.warp.Warp`
+  matched nothing, so Warp silently ran the default path for several releases.
+- The Chromium omnibox is not handled here at all — it needs `axDirect`
+  (write the value through the Accessibility API) because inline autocomplete
+  keeps a selection alive that synthetic backspaces would destroy.
 
 ### 4. Minimal Event Generation
 
@@ -578,8 +638,8 @@ func isTrusted(prompt: Bool = true) -> Bool {
 ## 7-Stage Processing Pipeline (2.0)
 
 For every keystroke, vkey runs the input through a 7-stage pipeline. Each stage
-is a clear boundary in the code — useful as a mental model when debugging,
-extending the engine, or porting to Rust (see `C2` in the v2.0 plan).
+is a clear boundary in the code — useful as a mental model when debugging or
+extending the engine.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -597,7 +657,7 @@ extending the engine, or porting to Rust (see `C2` in the v2.0 plan).
 | 1 | **Capture**   | Intercept `CGEvent` via CGEventTap; map keycode→char        | `Platform/EventHook.swift`, `KeyLayout/Keys.swift` |
 | 2 | **Normalize** | Decode shift/option/cmd; classify as Text vs TaskKey; route Macro/Punctuation/Whitespace; 2.0 (A5) auto-capitalize entry, 2.0 (B2) input-source gate | `App/InputProcessor.swift` (`handleEvent`, `handleTextChar`, `handleTaskKey`) |
 | 3 | **Parse**     | Split keys into `phuAmDau` / `nguyenAm` / `phuAmCuoi`       | `Engine/TiengVietParser.swift` |
-| 4 | **Validate**  | Check Vowel Inclusion Pairs (8.960 âm tiết); accept/reject; 2.0 (A6) Free Mark bypasses this stage | `Engine/TiengVietValidator.swift` |
+| 4 | **Validate**  | Check Vowel Inclusion Pairs against the syllable set (7.184 nhúng, 8.928 sau khi nhận gói cập nhật); accept/reject; 2.0 (A6) Free Mark bypasses this stage | `Engine/TiengVietValidator.swift` |
 | 5 | **Transform** | Apply tone marks, diacriticals (kiểu cũ/mới in B3)          | `Engine/TiengVietTransformer.swift`, `Telex.swift`, `VNI.swift` |
 | 6 | **Commit / Learn** | Spell decision, English-restore, macro expand; stats tracking, n-gram learning; emit replacement events | `App/InputProcessor.swift` (`applySpellDecisionOnCommit`), `Input/SpellDecisionEngine.swift`, `Lexicon/`, `Stats/`, `Input/PredictionEngine.swift` |
 | 7 | **Recover**   | If validate fails or English word matched, fall back to raw input; manage snapshot stack for Esc rollback | `App/InputProcessor.swift` (`WordBuffer.pop`, snapshots) |
@@ -607,11 +667,20 @@ extending the engine, or porting to Rust (see `C2` in the v2.0 plan).
 - Stage 5 always produces a `TiengVietState` (never throws); invalid syllables set `needsRecovery=true` which routes the next push to stage 7.
 - `Defaults` reads happen only in stages 2 and 6 — pure stages don't touch UserDefaults so they remain side-effect free and testable in isolation.
 
-**Why this matters for v2.0:**
-- **C2 (Rust core)**: stages 3–5 are pure functions — first targets to port to Rust. Stages 1–2 + 6–7 stay in Swift (need AppKit / I/O).
-- **C4 (race hardening)**: bug class lives in stage 1 (CGEventTap re-entry) and stage 6 (event injection ordering). Re-entry guards added in `EventHook.swift`, ordering hardening in `EventSimulator.swift`.
-- **B1 (Window Title Rules)**: rule evaluator hooks between stages 2 and 3 — can short-circuit pipeline (skip stages 3–6, pass through raw).
-- **A1 (Floating Toolbar)** and **A2 (Prediction top-3)**: presentation only — read stage 6 outputs.
+**Where each concern lives** (all shipped unless noted):
+- **Race hardening**: the bug class sits in stage 1 (CGEventTap re-entry) and stage 6 (event injection ordering). Re-entry guards in `EventHook.swift`, ordering hardening in `EventSimulator.swift`.
+- **Window Title Rules**: the rule evaluator hooks between stages 2 and 3 — it can short-circuit the pipeline (skip stages 3–6, pass raw through).
+- **Prediction**: presentation only — reads stage 6 output. Top-1 candidate only; the multi-candidate `1/2/3` UI was removed because digits collide with typing numbers.
+- **Rust core**: never started. Stages 3–5 are pure functions of state, so they would be the natural first targets if it ever is; stages 1–2 and 6–7 need AppKit and I/O and would stay in Swift.
+
+**App-switch handling** (v4.22): stage 1 resolves the focused bundle id through
+`InputProcessor.canonicalAppBundle` before treating it as an app switch — an
+app's own helper process (`com.apple.appkit.xpc.openAndSavePanelService`, a
+`<bundle>.<suffix>` child) reports as a different app, and on a sandboxed Save
+dialog macOS alternates between the two *per keystroke*. `EventHook.setEnabled`
+additionally only resets the word buffer when the enabled state actually
+changes — Swift's `didSet` fires on re-assignment of an identical value, which
+silently wiped the buffer every other keystroke.
 
 ---
 

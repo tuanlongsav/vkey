@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Tools/build_lexicon.py — assemble lexicon/lexicon-update.json (schema v5).
+Tools/build_lexicon.py — assemble lexicon-update.json (schema v5).
 
 Combines three open-licensed sources into vkey's distribution lexicon:
 
@@ -23,7 +23,7 @@ Usage:
 
     pip install wordfreq requests
     python3 Tools/build_lexicon.py \\
-        --out vkey/lexicon/lexicon-update.json \\
+        --out lexicon-update.json \\
         --top-english 5000 \\
         --kaikki-download
 
@@ -347,7 +347,7 @@ def build(
 
 def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--out", type=Path, default=Path("vkey/lexicon/lexicon-update.json"))
+    p.add_argument("--out", type=Path, default=Path("lexicon-update.json"))
     p.add_argument("--top-english", type=int, default=10000,
                    help="How many wordfreq top English words to include in english[]")
     p.add_argument("--kaikki-download", action="store_true",

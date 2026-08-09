@@ -1,5 +1,5 @@
 <h1>
-  <img src="images/vkey-icon.png?v=41400" alt="vkey logo" width="56" style="vertical-align: middle;">
+  <img src="images/vkey-icon.png?v=32000" alt="vkey logo" width="56" style="vertical-align: middle;">
   &nbsp;vkey
 </h1>
 
@@ -20,29 +20,29 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 ## Hình ảnh
 
 <p align="center">
-  <img src="images/menubar-menu.png?v=32200" width="200" alt="Menu bar">
-  <img src="images/hud-toggle-vi.png?v=32200" width="300" alt="HUD VI/EN">
-  <img src="images/hud-prediction.png?v=32200" width="220" alt="HUD gợi ý cụm">
+  <img src="images/menubar-menu.png?v=32000" width="200" alt="Menu bar">
+  <img src="images/hud-toggle-vi.png?v=32000" width="300" alt="HUD VI/EN">
+  <img src="images/hud-prediction.png?v=32000" width="220" alt="HUD gợi ý cụm">
 </p>
 
 <p align="center">
-  <img src="images/general-settings.png?v=32200" width="200" alt="Tab Chung">
-  <img src="images/smart-switch-settings.png?v=32200" width="200" alt="Tab Smart Switch">
-  <img src="images/macro-settings.png?v=32200" width="200" alt="Tab Macro">
-  <img src="images/spellcheck-settings.png?v=32200" width="200" alt="Tab Chính tả">
-  <img src="images/statistics-settings.png?v=32200" width="200" alt="Tab Thống kê">
-  <img src="images/theme-settings.png?v=32200" width="200" alt="Tab Giao diện">
+  <img src="images/general-settings.png?v=32000" width="200" alt="Tab Chung">
+  <img src="images/smart-switch-settings.png?v=32000" width="200" alt="Tab Smart Switch">
+  <img src="images/macro-settings.png?v=32000" width="200" alt="Tab Macro">
+  <img src="images/spellcheck-settings.png?v=32000" width="200" alt="Tab Chính tả">
+  <img src="images/statistics-settings.png?v=32000" width="200" alt="Tab Thống kê">
+  <img src="images/theme-settings.png?v=32000" width="200" alt="Tab Giao diện">
 </p>
 
 ## Tính năng chính
 
 | Nhóm | Điểm nổi bật |
 |------|----------------|
-| **Gõ** | Telex & VNI · kiểu đặt dấu mới/cũ (`oà` ↔ `òa`) · tự động sửa lỗi gõ nhầm · viết hoa đầu câu · phụ âm vay mượn z/w/j/f · Unicode UTF-8 · keypad VNI & Caps Lock chuẩn macOS |
+| **Gõ** | Telex & VNI · kiểu đặt dấu mới/cũ (`oà` ↔ `òa`) · **Đặt dấu tự do** (bỏ kiểm tra âm tiết) · tự động sửa lỗi gõ nhầm · viết hoa đầu câu · phụ âm vay mượn z/w/j/f · Unicode UTF-8 · keypad VNI & Caps Lock chuẩn macOS |
 | **Song ngữ** | Space Restore · Esc hoàn tác về phím thô · gõ tiếng Anh ổn định trong mode VN · nhớ VI/EN theo từng app |
 | **Smart Switch** | 3 trạng thái mỗi app: 🇻🇳 Tiếng Việt · 🇺🇸 Tiếng Anh · ⛔ Không sử dụng vkey · tự học từ Thống kê · thêm nhanh từ danh sách app đang chạy |
-| **Chính tả** | Kiểm tra chính tả lúc kết từ, **chính sách khôi phục** chọn được (vd Cân bằng) · từ điển tham chiếu Anh–Việt · từ điển cá nhân (giữ tiếng Việt / khôi phục tiếng Anh) · cập nhật từ điển từ GitHub |
-| **Từ điển** | Nhúng sẵn **7 184 âm tiết tiếng Việt**; sau khi nhận gói cập nhật từ GitHub (app tự hỏi lúc khởi động): **8 960 âm tiết + 9 826 từ tiếng Anh** |
+| **Chính tả** | Kiểm tra chính tả lúc kết từ, **chính sách khôi phục** chọn được (vd Cân bằng) · tự động sửa khi tin cậy cao · từ điển cá nhân (giữ tiếng Việt / khôi phục tiếng Anh) · cập nhật từ điển từ GitHub |
+| **Từ điển** | Nhúng sẵn **7 184 âm tiết tiếng Việt**; sau khi nhận gói cập nhật từ GitHub (app tự tải im lặng lúc khởi động, tối đa 1 lần/24h): **8 928 âm tiết + 9 826 từ tiếng Anh** |
 | **Gợi ý & macro** | Đoán từ 6 tầng (trigram/bigram người dùng + corpus nhúng + cụm nhúng) · gợi ý **1–3 từ**, mặc định 2 · `Tab` để chèn · loại trừ app khỏi đoán từ · macro viết tắt → cụm dài, nhập/xuất JSON |
 | **Thống kê** | Top từ/cụm tuần · top cụm 2–3 từ tiếng Việt & ngoài tiếng Việt · top app dùng nhiều · các tuần đã đóng · sao lưu/khôi phục JSON · quản lý & xóa cụm |
 | **Giao diện** | Menu bar panel · Cài đặt sidebar 6 tab · 3 theme: **Mặc định** / **Liquid Glass** / **Neural AI** · màu nhấn · phông chữ · độ bo góc · mật độ dòng · Sáng / Tối / Hệ thống |
@@ -91,6 +91,7 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 | Bật/tắt nhanh | Smart Switch · Macro · Lịch sử Clipboard |
 | Cài đặt | **Cài đặt** (⌘,) |
 | Đổi theme | **Chuyển giao diện** → Mặc định / Liquid Glass / Neural AI |
+| Hàng cuối panel | ☕ Ủng hộ tác giả · ℹ️ Thông tin dự án · 🔄 **Kiểm tra cập nhật** (cập nhật thủ công) · số phiên bản |
 | Thoát | **Thoát** (⌘Q) |
 
 **Icon menu bar:** 🇻🇳 gõ VN · 🇺🇸 gõ EN · 🔒 ô password · ⚙️ chưa cấp quyền Trợ năng
@@ -99,11 +100,11 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 
 | Tab | Nội dung chính |
 |-----|----------------|
-| **Chung** | Cập nhật ứng dụng (tự động cập nhật phiên bản mới) · Bộ gõ (bật/tắt gõ tiếng Việt, Telex/VNI, kiểu đặt dấu mới/cũ, phụ âm z w j f) · Hỗ trợ thông minh (tự động sửa lỗi gõ nhầm, viết hoa đầu câu, thông báo khi chuyển VI/EN) · Cấu hình nâng cao (tự khởi động cùng hệ thống, tự tắt khi đổi sang bộ gõ khác) · Phím tắt chuyển chế độ (⇧⌥) và mở Text Tools (⌃⇧) · Clipboard tùy chỉnh (⇧⌘V, số mục, dung lượng, loại nội dung) |
+| **Chung** | Cập nhật ứng dụng (tự động cập nhật phiên bản mới) · Bộ gõ (bật/tắt gõ tiếng Việt, tự khởi động cùng hệ thống, Telex/VNI, phụ âm z w j f) · Hỗ trợ thông minh (tự động sửa lỗi gõ nhầm, viết hoa đầu câu, tự tắt khi đổi sang bộ gõ khác, thông báo khi chuyển VI/EN) · Cấu hình nâng cao (Đặt dấu tự do, kiểu đặt dấu cũ/mới) · Phím tắt chuyển chế độ (⇧⌥) và mở Text Tools (⌃⇧) · Clipboard tùy chỉnh (⇧⌘V, số mục, loại nội dung, dung lượng mỗi mục, xóa lịch sử) |
 | **Smart Switch** | Danh sách ứng dụng với 3 lựa chọn: 🇻🇳 Tiếng Việt · 🇺🇸 Tiếng Anh · Không sử dụng vkey · Tự học từ Thống kê · chọn nhanh từ ứng dụng đang chạy |
 | **Macro** | Bật/tắt Macro · viết tắt → cụm dài · danh sách macro · nhập/xuất `vkey-macros.json` · gợi ý từ thường gõ |
-| **Chính tả** | Kiểm tra chính tả · tự động khôi phục tiếng Anh (Space Restore) · chính sách khôi phục (vd Cân bằng) · gợi ý sửa lỗi chính tả · từ điển tham chiếu Anh–Việt · từ điển cá nhân · bật đoán từ + số từ gợi ý tối đa · loại trừ app khỏi đoán từ · cỡ chữ HUD + khoảng cách HUD đến con trỏ |
-| **Thống kê & Sao lưu** | Ghi nhận thống kê sử dụng · top từ / cụm 2–3 từ tiếng Việt & ngoài tiếng Việt · top app dùng nhiều · Smart Switch kích hoạt · các tuần đã đóng · sao lưu/khôi phục JSON · quyền riêng tư & chẩn đoán |
+| **Chính tả** | Kiểm tra chính tả · gợi ý sửa lỗi chính tả · tự động sửa khi tin cậy cao · từ điển cá nhân + tự động đề xuất hàng tuần · đoán từ tiếp theo (số từ gợi ý, cỡ chữ / độ đậm / khoảng cách HUD tới con trỏ) · loại trừ app khỏi đoán từ · Space Restore + chính sách khôi phục (vd Cân bằng) |
+| **Thống kê & Sao lưu** | Ghi nhận thống kê sử dụng · top từ / cụm 2–3 từ tiếng Việt & ngoài tiếng Việt · top app dùng nhiều · Smart Switch kích hoạt · các tuần đã đóng · sao lưu/khôi phục JSON (kèm tự động hỏi sao lưu khi cập nhật app) · đồng bộ hành vi vào từ điển cá nhân + đề xuất bổ sung từ điển · quyền riêng tư & chẩn đoán |
 | **Quản lý giao diện** | Theme (Mặc định / Liquid Glass / Neural AI) · màu nhấn · phông chữ · độ bo góc · mật độ dòng menu · cường độ phát sáng (Neural AI) |
 
 Nút **Sáng / Tối / Hệ thống** nằm trên thanh tiêu đề cửa sổ Cài đặt, không nằm trong tab.
@@ -114,7 +115,7 @@ Nút **Sáng / Tối / Hệ thống** nằm trên thanh tiêu đề cửa sổ C
 |------|----------|
 | **Space** | Khôi phục từ tiếng Anh bị gõ nhầm (Space Restore) |
 | **Esc** | Hoàn tác về phím thô, reset buffer |
-| **Tab** | Chấp nhận gợi ý HUD (1–3 từ, mặc định 2) — chỉ ngay sau khi kết từ bằng Space |
+| **Tab** | Chấp nhận gợi ý HUD (1–3 từ, mặc định 2). Gợi ý sinh ra sau mỗi lần kết từ bằng Space và còn hiệu lực cả khi bạn đã gõ dở từ kế — lúc đó Tab kết từ đang gõ rồi mới chèn gợi ý. Enter / click / dời con trỏ sẽ huỷ gợi ý, Tab trả về hành vi gốc |
 | **ss/ff/rr/xx/jj** | Giữ phím đúp cho từ tiếng Anh (`staff`, `off`…) |
 
 ## FAQ
