@@ -1,5 +1,5 @@
 {
-  "version": 10,
+  "version": 11,
   "vietnamese": [
     "acid",
     "ai",
@@ -18777,6 +18777,12 @@
         "url": "https://github.com/undertheseanlp/dictionary",
         "license": "GPL-3.0",
         "used_for": "vietnamese[] supplemental — phrase-token extraction with phonotactic filter"
+      },
+      {
+        "name": "English Wiktionary via Wiktextract / Kaikki.org",
+        "url": "https://kaikki.org/dictionary/rawdata.html",
+        "license": "CC BY-SA 4.0",
+        "used_for": "en_vn_mapping{}"
       }
     ],
     "generated_at": "2026-05-19T15:27:57.368371+00:00",
@@ -18848,7 +18854,10328 @@
           "thảẳm",
           "ỏc"
         ]
+      },
+      {
+        "at": "2026-08-09T13:39:34.331672+00:00",
+        "rule": "merge_en_vn_mapping.py — Kaikki EN→VI, bỏ key trùng âm tiết VN",
+        "before": 0,
+        "after": 3039,
+        "baseline_ref": "lexicon v10"
       }
+    ]
+  },
+  "en_vn_mapping": {
+    "aback": [
+      "đằng sau",
+      "lùi lại"
+    ],
+    "abbot": [
+      "trụ trì tự viện"
+    ],
+    "abbreviation": [
+      "viết tắt",
+      "bài tóm tắt"
+    ],
+    "abdomen": [
+      "bụng",
+      "bụng dạ"
+    ],
+    "abduction": [
+      "sự bắt cóc"
+    ],
+    "abdullah": [
+      "Abdullah"
+    ],
+    "abel": [
+      "A-bên"
+    ],
+    "aberration": [
+      "quang sai",
+      "tính sai"
+    ],
+    "abide": [
+      "chịu",
+      "chịu đựng"
+    ],
+    "abolition": [
+      "bãi nô"
+    ],
+    "abort": [
+      "sẩy thai",
+      "phá thai"
+    ],
+    "abuja": [
+      "A-bu-gia"
+    ],
+    "accelerate": [
+      "tăng tốc"
+    ],
+    "acceleration": [
+      "gia tốc"
+    ],
+    "accessibility": [
+      "tiếp cận",
+      "khả năng tiếp cận"
+    ],
+    "accessory": [
+      "phụ kiện đính kèm"
+    ],
+    "accomplice": [
+      "đồng lõa",
+      "đồng phạm"
+    ],
+    "accordion": [
+      "phong cầm",
+      "đàn xếp"
+    ],
+    "accountant": [
+      "kế toán"
+    ],
+    "accra": [
+      "A-cra"
+    ],
+    "accusation": [
+      "sự buộc tội"
+    ],
+    "ache": [
+      "nhức",
+      "đau"
+    ],
+    "achilles": [
+      "A-sin"
+    ],
+    "acorn": [
+      "hạt sồi"
+    ],
+    "acoustics": [
+      "âm học"
+    ],
+    "acquaintance": [
+      "người quen"
+    ],
+    "acupuncture": [
+      "châm cứu"
+    ],
+    "adamant": [
+      "kiên quyết"
+    ],
+    "addict": [
+      "người nghiện"
+    ],
+    "adjective": [
+      "tính từ",
+      "hình dung từ"
+    ],
+    "admiration": [
+      "sự khâm phục"
+    ],
+    "adobe": [
+      "gạch sống"
+    ],
+    "adolescence": [
+      "thanh thiếu niên",
+      "tuổi thần tiên"
+    ],
+    "adrenaline": [
+      "adrenalin"
+    ],
+    "adultery": [
+      "ngoại tình"
+    ],
+    "advent": [
+      "Mùa Vọng"
+    ],
+    "adversary": [
+      "đối thủ"
+    ],
+    "adversity": [
+      "nghịch cảnh"
+    ],
+    "aerosol": [
+      "sol khí"
+    ],
+    "aesthetics": [
+      "mỹ học"
+    ],
+    "afterlife": [
+      "kiếp sau",
+      "thế giới bên kia"
+    ],
+    "agar": [
+      "xu xoa",
+      "xu xa"
+    ],
+    "aggressor": [
+      "kẻ xâm lược"
+    ],
+    "agile": [
+      "nhanh nhẹn"
+    ],
+    "agility": [
+      "nhanh nhẹn"
+    ],
+    "agnes": [
+      "Anê"
+    ],
+    "ahem": [
+      "e hèm"
+    ],
+    "airfield": [
+      "sân bay",
+      "trường bay"
+    ],
+    "airliner": [
+      "máy bay dân dụng",
+      "máy bay chở khách"
+    ],
+    "airspace": [
+      "không phận",
+      "vùng trời"
+    ],
+    "albania": [
+      "An-ba-ni"
+    ],
+    "albanian": [
+      "An-ba-ni"
+    ],
+    "alchemist": [
+      "nhà giả kim"
+    ],
+    "alchemy": [
+      "thuật giả kim"
+    ],
+    "alcoholism": [
+      "chứng nghiện rượu"
+    ],
+    "alfonso": [
+      "Anphongsô",
+      "Anphonsô"
+    ],
+    "algeria": [
+      "An-giê-ri",
+      "Algérie"
+    ],
+    "algerian": [
+      "An-giê-ri"
+    ],
+    "algiers": [
+      "An-giê"
+    ],
+    "alienation": [
+      "tha hoá"
+    ],
+    "alight": [
+      "xuống xe"
+    ],
+    "allegation": [
+      "cáo buộc"
+    ],
+    "allege": [
+      "cáo buộc"
+    ],
+    "allergy": [
+      "dị ứng"
+    ],
+    "alligator": [
+      "cá sấu"
+    ],
+    "alloy": [
+      "hợp kim"
+    ],
+    "almanac": [
+      "lịch thư"
+    ],
+    "almighty": [
+      "toàn năng"
+    ],
+    "almond": [
+      "hạnh nhân",
+      "hạnh đào"
+    ],
+    "aloe": [
+      "nha đam",
+      "lô hội"
+    ],
+    "alphabet": [
+      "bảng chữ cái"
+    ],
+    "alphabetically": [
+      "theo thứ tự bảng chữ cái"
+    ],
+    "alto": [
+      "người hát giọng nữ trầm",
+      "đàn antô"
+    ],
+    "aluminium": [
+      "nhôm"
+    ],
+    "alvin": [
+      "Alvin"
+    ],
+    "amazingly": [
+      "đáng kinh ngạc"
+    ],
+    "ambiguity": [
+      "sự tối nghĩa",
+      "sự mơ hồ"
+    ],
+    "ambiguous": [
+      "tối nghĩa"
+    ],
+    "ambrose": [
+      "Ambrôsiô"
+    ],
+    "americas": [
+      "Châu Mỹ",
+      "Mỹ Lợi Gia"
+    ],
+    "amman": [
+      "Am-man"
+    ],
+    "ammonium": [
+      "amoni"
+    ],
+    "amnesty": [
+      "sự ân xá"
+    ],
+    "amplifier": [
+      "bộ khuếch đại",
+      "máy khuếch đại"
+    ],
+    "amplify": [
+      "khuếch đại",
+      "phóng đại"
+    ],
+    "amplitude": [
+      "biên độ"
+    ],
+    "amulet": [
+      "bùa",
+      "yếm thắng vật"
+    ],
+    "amusement": [
+      "sự hài hước"
+    ],
+    "anaerobic": [
+      "kị khí"
+    ],
+    "analog": [
+      "tương tự"
+    ],
+    "analogy": [
+      "loại suy"
+    ],
+    "anarchism": [
+      "chủ nghĩa vô chính phủ",
+      "chủ nghĩa vô trị"
+    ],
+    "anarchy": [
+      "vô chính phủ"
+    ],
+    "ancestor": [
+      "tổ tiên"
+    ],
+    "anecdote": [
+      "giai thoại"
+    ],
+    "anemia": [
+      "thiếu máu"
+    ],
+    "anesthesia": [
+      "sự gây tê"
+    ],
+    "angola": [
+      "Ăng-gô-la"
+    ],
+    "ankara": [
+      "Ăng-ca-ra"
+    ],
+    "annexation": [
+      "sự phụ vào"
+    ],
+    "announcer": [
+      "phát thanh viên"
+    ],
+    "annoy": [
+      "làm phiền",
+      "quấy rầy"
+    ],
+    "annuity": [
+      "niên kim",
+      "niên khoản"
+    ],
+    "anomaly": [
+      "sự bất thường"
+    ],
+    "antarctic": [
+      "châu Nam Cực",
+      "Nam Cực châu"
+    ],
+    "antarctica": [
+      "Châu Nam Cực"
+    ],
+    "antelope": [
+      "linh dương"
+    ],
+    "anthology": [
+      "văn tuyển"
+    ],
+    "anthrax": [
+      "bệnh than"
+    ],
+    "anthropology": [
+      "nhân loại học"
+    ],
+    "antibiotic": [
+      "kháng sinh",
+      "trụ sinh"
+    ],
+    "antibody": [
+      "kháng thể"
+    ],
+    "antichrist": [
+      "kẻ chống Giê-xu"
+    ],
+    "antidote": [
+      "chất giải độc"
+    ],
+    "antigen": [
+      "kháng nguyên"
+    ],
+    "antigua": [
+      "An-ti-goa"
+    ],
+    "antiquated": [
+      "cũ"
+    ],
+    "anus": [
+      "hậu môn",
+      "lỗ đít"
+    ],
+    "anvil": [
+      "đe",
+      "xương đe"
+    ],
+    "ape": [
+      "vượn",
+      "khỉ không đuôi"
+    ],
+    "apex": [
+      "dấu sóng",
+      "dấu lưỡi câu"
+    ],
+    "apostle": [
+      "sứ đồ",
+      "tông đồ"
+    ],
+    "appendix": [
+      "phụ lục"
+    ],
+    "applaud": [
+      "vỗ tay"
+    ],
+    "apprentice": [
+      "người học nghề"
+    ],
+    "approximate": [
+      "xấp xỉ",
+      "xêm xêm"
+    ],
+    "apricot": [
+      "mơ tây",
+      "quả mơ"
+    ],
+    "apron": [
+      "tạp dề"
+    ],
+    "aquarium": [
+      "bể cá",
+      "thủy cung"
+    ],
+    "aquarius": [
+      "Bảo Bình",
+      "Thủy Bình"
+    ],
+    "aquatic": [
+      "thuỷ sinh",
+      "thuỷ cư"
+    ],
+    "arabian": [
+      "Ngựa Ả rập"
+    ],
+    "arcade": [
+      "cửa tò vò"
+    ],
+    "archaeology": [
+      "khảo cổ học"
+    ],
+    "archaic": [
+      "cổ hủ"
+    ],
+    "archdiocese": [
+      "tổng giáo phận"
+    ],
+    "archery": [
+      "bắn cung"
+    ],
+    "archipelago": [
+      "quần đảo"
+    ],
+    "ariana": [
+      "A-ri-a-na"
+    ],
+    "aries": [
+      "Bạch Dương",
+      "Dương Cưu"
+    ],
+    "aristocracy": [
+      "chế độ quý tộc"
+    ],
+    "aristotle": [
+      "A-ri-xtốt"
+    ],
+    "arithmetic": [
+      "số học"
+    ],
+    "ark": [
+      "tàu"
+    ],
+    "armchair": [
+      "ghế bành"
+    ],
+    "armenia": [
+      "Ác-mê-ni-a"
+    ],
+    "armenian": [
+      "Ác-mê-ni-a",
+      "người Ác-mê-ni-a"
+    ],
+    "armistice": [
+      "đình chiến",
+      "hưu chiến"
+    ],
+    "armpit": [
+      "nách"
+    ],
+    "aromatic": [
+      "thơm"
+    ],
+    "arrogant": [
+      "kiêu",
+      "kiêu ngạo"
+    ],
+    "arsenic": [
+      "asen"
+    ],
+    "arson": [
+      "phóng hỏa",
+      "đốt phá"
+    ],
+    "artery": [
+      "động mạch"
+    ],
+    "arthritis": [
+      "viêm khớp"
+    ],
+    "artifact": [
+      "hiện vật"
+    ],
+    "artisan": [
+      "nghệ nhân"
+    ],
+    "asbestos": [
+      "miăng",
+      "amiăng"
+    ],
+    "ascend": [
+      "lên"
+    ],
+    "ascent": [
+      "lên"
+    ],
+    "asean": [
+      "ASEAN"
+    ],
+    "asparagus": [
+      "măng tây"
+    ],
+    "asphalt": [
+      "nhựa đường"
+    ],
+    "assad": [
+      "Át-xát"
+    ],
+    "assassin": [
+      "kẻ ám sát",
+      "sát thủ"
+    ],
+    "assassinate": [
+      "ám sát"
+    ],
+    "assemble": [
+      "tập hợp"
+    ],
+    "assimilate": [
+      "đồng hóa"
+    ],
+    "assimilation": [
+      "đồng hoá"
+    ],
+    "asterisk": [
+      "dấu sao",
+      "dấu hoa thị"
+    ],
+    "asteroid": [
+      "tiểu hành tinh"
+    ],
+    "asthma": [
+      "suyễn",
+      "hen"
+    ],
+    "astrology": [
+      "chiêm tinh học"
+    ],
+    "astronaut": [
+      "nhà du hành vũ trụ",
+      "phi hành gia"
+    ],
+    "astronomer": [
+      "nhà thiên văn học"
+    ],
+    "astronomical": [
+      "thiên văn"
+    ],
+    "astronomy": [
+      "thiên văn học"
+    ],
+    "astrophysics": [
+      "vật lý thiên văn"
+    ],
+    "atheism": [
+      "chủ nghĩa vô thần",
+      "thuyết vô thần"
+    ],
+    "atom": [
+      "nguyên tử"
+    ],
+    "atrocity": [
+      "sự tàn ác",
+      "sự tàn bạo"
+    ],
+    "attic": [
+      "gác",
+      "gác xép"
+    ],
+    "attribution": [
+      "lời ghi công",
+      "lời công nhận"
+    ],
+    "auckland": [
+      "Áo Khắc Lan"
+    ],
+    "audiobook": [
+      "sách nghe",
+      "sách nói"
+    ],
+    "auditorium": [
+      "giảng đường"
+    ],
+    "augustine": [
+      "Augustinô",
+      "Âu Tinh"
+    ],
+    "aurora": [
+      "cực quang"
+    ],
+    "authentication": [
+      "xác thực"
+    ],
+    "authoritarian": [
+      "chuyên chế",
+      "quyền uy"
+    ],
+    "authoritarianism": [
+      "chủ nghĩa chuyên chế"
+    ],
+    "autobiography": [
+      "tự truyện"
+    ],
+    "auxiliary": [
+      "phụ trợ"
+    ],
+    "avalanche": [
+      "tuyết lở",
+      "lở tuyết"
+    ],
+    "avatar": [
+      "avatar",
+      "skin"
+    ],
+    "avenge": [
+      "phục thù",
+      "trả thù"
+    ],
+    "avocado": [
+      "bơ"
+    ],
+    "await": [
+      "chờ đợi",
+      "chờ"
+    ],
+    "awaken": [
+      "tỉnh táo",
+      "tỉnh dậy"
+    ],
+    "axiom": [
+      "chân lý",
+      "sự thật"
+    ],
+    "azerbaijan": [
+      "Ai-déc-bai-gian",
+      "A-déc-bai-dan"
+    ],
+    "azure": [
+      "xanh da trời"
+    ],
+    "babysit": [
+      "trông trẻ",
+      "trông em"
+    ],
+    "babysitter": [
+      "người giữ trẻ"
+    ],
+    "backbone": [
+      "xương sống"
+    ],
+    "backdrop": [
+      "bối cảnh"
+    ],
+    "backlash": [
+      "chống đối"
+    ],
+    "backward": [
+      "ngược lại"
+    ],
+    "bacterium": [
+      "vi khuẩn",
+      "vi trùng"
+    ],
+    "badger": [
+      "lửng"
+    ],
+    "badminton": [
+      "cầu lông"
+    ],
+    "baffled": [
+      "bối rối"
+    ],
+    "bagel": [
+      "bánh mì vòng"
+    ],
+    "baghdad": [
+      "Bát-đa",
+      "Bác Đạt"
+    ],
+    "bahamas": [
+      "Ba-ha-mát"
+    ],
+    "bahrain": [
+      "Ba-ren"
+    ],
+    "bakery": [
+      "lò bánh mì",
+      "tiệm bánh"
+    ],
+    "baku": [
+      "Ba-cu"
+    ],
+    "balkans": [
+      "Balkan"
+    ],
+    "ballad": [
+      "dân ca"
+    ],
+    "bamboo": [
+      "tre"
+    ],
+    "bandage": [
+      "băng",
+      "băng giữ"
+    ],
+    "bandit": [
+      "kẻ cướp",
+      "cường đạo"
+    ],
+    "bangladeshi": [
+      "Băng-la-đét"
+    ],
+    "banjo": [
+      "đàn banjô"
+    ],
+    "bankrupt": [
+      "phá sản"
+    ],
+    "banquet": [
+      "đại tiệc",
+      "yến tiệc"
+    ],
+    "baptism": [
+      "lể rữa tội"
+    ],
+    "barb": [
+      "ngạnh",
+      "cá mè"
+    ],
+    "barbados": [
+      "Bác-ba-đốt"
+    ],
+    "barbarian": [
+      "dã man",
+      "mọi"
+    ],
+    "barbaric": [
+      "dã man"
+    ],
+    "barbecue": [
+      "thịt nướng hun khói"
+    ],
+    "barbershop": [
+      "hiệu cắt tóc"
+    ],
+    "barbie": [
+      "Barbie"
+    ],
+    "barefoot": [
+      "chân đất",
+      "chân không"
+    ],
+    "barge": [
+      "sà lan"
+    ],
+    "barley": [
+      "lúa mạch"
+    ],
+    "barometer": [
+      "áp kế",
+      "khí áp kế"
+    ],
+    "barre": [
+      "bấm ba-rê"
+    ],
+    "barter": [
+      "đổi"
+    ],
+    "bartholomew": [
+      "Batôlômêô"
+    ],
+    "basalt": [
+      "ba-zan",
+      "ba-dan"
+    ],
+    "basil": [
+      "húng tây"
+    ],
+    "bathe": [
+      "tắm",
+      "tắm rửa"
+    ],
+    "bathtub": [
+      "bể tắm",
+      "bồn tắm"
+    ],
+    "bavaria": [
+      "Bây-ơn"
+    ],
+    "bayonet": [
+      "lưỡi lê"
+    ],
+    "bazaar": [
+      "chợ"
+    ],
+    "bce": [
+      "TCN"
+    ],
+    "bead": [
+      "chuỗi hạt",
+      "tràng hạt"
+    ],
+    "beak": [
+      "mỏ"
+    ],
+    "beanie": [
+      "nón len",
+      "mũ len"
+    ],
+    "beaver": [
+      "hải ly"
+    ],
+    "bedtime": [
+      "giờ đi ngủ"
+    ],
+    "beech": [
+      "cây gie gai"
+    ],
+    "beep": [
+      "bíp"
+    ],
+    "beet": [
+      "củ cải ngọt"
+    ],
+    "beethoven": [
+      "Bét-thô-ven",
+      "Bối Đa Phần"
+    ],
+    "beetle": [
+      "bọ cánh cứng"
+    ],
+    "beggar": [
+      "ăn xin",
+      "ăn mày"
+    ],
+    "beginner": [
+      "người bắt đầu",
+      "người mới học"
+    ],
+    "beige": [
+      "be",
+      "màu be"
+    ],
+    "beirut": [
+      "Bây-rút"
+    ],
+    "belarus": [
+      "Bê-la-rút",
+      "Bạch Nga"
+    ],
+    "belated": [
+      "muộn màng"
+    ],
+    "belgrade": [
+      "Bê-ô-grát"
+    ],
+    "believer": [
+      "tín đồ",
+      "giáo đồ"
+    ],
+    "belize": [
+      "Bê-li-xê",
+      "Be-li-dơ"
+    ],
+    "bellows": [
+      "bễ"
+    ],
+    "benedict": [
+      "Biển Đức",
+      "Bênêđictô"
+    ],
+    "benefactor": [
+      "ân nhân"
+    ],
+    "bengali": [
+      "tiếng Bengali"
+    ],
+    "benghazi": [
+      "Benghazi"
+    ],
+    "benin": [
+      "Bê-nanh"
+    ],
+    "bermuda": [
+      "Béc-mu-đa"
+    ],
+    "bern": [
+      "Bơn",
+      "Béc-nơ"
+    ],
+    "bestseller": [
+      "hàng bán chạy nhất"
+    ],
+    "bethlehem": [
+      "Belem"
+    ],
+    "betray": [
+      "bội phản",
+      "phản bội"
+    ],
+    "beverage": [
+      "nước giải khát"
+    ],
+    "bharat": [
+      "Bà-lạt-đa",
+      "Ba Lạt"
+    ],
+    "bhutan": [
+      "Bu-tan"
+    ],
+    "biased": [
+      "thiên vị"
+    ],
+    "bib": [
+      "yếm dãi"
+    ],
+    "bikini": [
+      "bikini",
+      "áo tắm hai mảnh"
+    ],
+    "bile": [
+      "mật"
+    ],
+    "bilingual": [
+      "song ngữ"
+    ],
+    "billionaire": [
+      "tỉ phú"
+    ],
+    "bind": [
+      "buộc",
+      "cột"
+    ],
+    "binoculars": [
+      "ống nhòm",
+      "ống ngắm"
+    ],
+    "biochemistry": [
+      "hóa sinh",
+      "sinh hoá học"
+    ],
+    "biodiversity": [
+      "đa dạng sinh học"
+    ],
+    "biomass": [
+      "sinh khối",
+      "sinh khối loài"
+    ],
+    "biopsy": [
+      "sinh thiết"
+    ],
+    "biotechnology": [
+      "công nghệ sinh học"
+    ],
+    "bipartisan": [
+      "lưỡng đảng"
+    ],
+    "birch": [
+      "bạch dương class cây"
+    ],
+    "birdie": [
+      "chim non"
+    ],
+    "birthplace": [
+      "nơi sinh",
+      "sinh quán"
+    ],
+    "biscuit": [
+      "bánh quy"
+    ],
+    "bison": [
+      "bò rừng bizon",
+      "bò rừng bison"
+    ],
+    "bittersweet": [
+      "cay đắng ngọt ngào"
+    ],
+    "blackberry": [
+      "trái ngấy"
+    ],
+    "blackboard": [
+      "bảng đen"
+    ],
+    "blacklist": [
+      "danh sách đen",
+      "đưa vào danh sách đen"
+    ],
+    "blackmail": [
+      "tống tiền",
+      "doạ tố giác"
+    ],
+    "blackout": [
+      "cúp điện",
+      "mất điện"
+    ],
+    "blacksmith": [
+      "thợ rèn"
+    ],
+    "blackwater": [
+      "nước đen",
+      "nước bẩn"
+    ],
+    "bland": [
+      "lạt",
+      "nhạt"
+    ],
+    "blasphemy": [
+      "sự báng bổ tôn giáo"
+    ],
+    "bleed": [
+      "chảy máu",
+      "xuất huyết"
+    ],
+    "blender": [
+      "máy xay sinh tố",
+      "máy xay"
+    ],
+    "blindness": [
+      "chứng mù"
+    ],
+    "blink": [
+      "nhấp nháy"
+    ],
+    "blockade": [
+      "sự bao vây",
+      "sự phong tỏa"
+    ],
+    "blockbuster": [
+      "bom tấn"
+    ],
+    "blond": [
+      "tóc vàng hoe"
+    ],
+    "bloodbath": [
+      "tắm máu"
+    ],
+    "bloodshed": [
+      "sự đổ máu"
+    ],
+    "bloodstream": [
+      "dòng máu"
+    ],
+    "blossom": [
+      "bông",
+      "nở"
+    ],
+    "blowjob": [
+      "thổi kèn"
+    ],
+    "blueberry": [
+      "việt quất xanh"
+    ],
+    "bluetooth": [
+      "bluetooth"
+    ],
+    "blunder": [
+      "nước sai lầm ngớ ngẩn"
+    ],
+    "blurry": [
+      "mờ",
+      "nhoè"
+    ],
+    "blush": [
+      "đỏ mặt"
+    ],
+    "boast": [
+      "khoe",
+      "khoe khoang"
+    ],
+    "bodybuilding": [
+      "tập thể hình",
+      "tập tạ"
+    ],
+    "bodyguard": [
+      "vệ sĩ"
+    ],
+    "bohemia": [
+      "Bohemia",
+      "Bô-hêm"
+    ],
+    "boiling": [
+      "sôi"
+    ],
+    "bolivia": [
+      "Bô-li-vi-a"
+    ],
+    "bollywood": [
+      "Bollywood"
+    ],
+    "bolshevik": [
+      "Bôn-sê-vích",
+      "bôn-sê-vích"
+    ],
+    "booby": [
+      "chim điên"
+    ],
+    "bookmark": [
+      "thẻ đánh dấu",
+      "dấu trang"
+    ],
+    "bookshop": [
+      "hiệu sách",
+      "nhà sách"
+    ],
+    "boredom": [
+      "nỗi buồn tẻ",
+      "nỗi buồn chán"
+    ],
+    "borneo": [
+      "Borneo",
+      "Bà La Châu"
+    ],
+    "borrower": [
+      "người vay"
+    ],
+    "bosnia": [
+      "Bô-xni-a"
+    ],
+    "botany": [
+      "thực vật học"
+    ],
+    "botswana": [
+      "Bốt-xoa-na"
+    ],
+    "boulevard": [
+      "đại lộ",
+      "đường lớn"
+    ],
+    "bounty": [
+      "thưởng kim"
+    ],
+    "bouquet": [
+      "bó hoa"
+    ],
+    "bourgeoisie": [
+      "giai cấp tư sản"
+    ],
+    "boutique": [
+      "cửa hàng thời trang"
+    ],
+    "bowel": [
+      "ruột già",
+      "đại tràng"
+    ],
+    "bowels": [
+      "ruột",
+      "tràng"
+    ],
+    "boxer": [
+      "Nghĩa Hoà Đoàn"
+    ],
+    "bracelet": [
+      "vòng tay"
+    ],
+    "braces": [
+      "niềng"
+    ],
+    "braid": [
+      "bím tóc"
+    ],
+    "braille": [
+      "chữ nổi"
+    ],
+    "bran": [
+      "cám"
+    ],
+    "brandy": [
+      "rượu branđi",
+      "rượu nặng"
+    ],
+    "bravery": [
+      "sự dũng cảm"
+    ],
+    "bravo": [
+      "hoan hô"
+    ],
+    "bremen": [
+      "Brê-men"
+    ],
+    "brewery": [
+      "nhà máy bia"
+    ],
+    "bribe": [
+      "hối lộ",
+      "đút lót"
+    ],
+    "bribery": [
+      "sự đút lót",
+      "sự hối lộ"
+    ],
+    "bridesmaid": [
+      "phù dâu"
+    ],
+    "bridget": [
+      "Brigitta"
+    ],
+    "brine": [
+      "nước muối",
+      "nước dưa"
+    ],
+    "brittany": [
+      "Bretagne"
+    ],
+    "brittle": [
+      "giòn"
+    ],
+    "broadcaster": [
+      "phát thanh viên"
+    ],
+    "broccoli": [
+      "bông cải xanh"
+    ],
+    "brochure": [
+      "cuốn sách nhỏ"
+    ],
+    "brooch": [
+      "trâm",
+      "trâm gài đầu"
+    ],
+    "brood": [
+      "ấp"
+    ],
+    "brook": [
+      "lạch"
+    ],
+    "broom": [
+      "chổi"
+    ],
+    "broth": [
+      "canh",
+      "nước dùng"
+    ],
+    "brothel": [
+      "nhà thổ",
+      "nhà chứa"
+    ],
+    "brownie": [
+      "ma tốt"
+    ],
+    "browse": [
+      "đọc lướt qua"
+    ],
+    "brunei": [
+      "Bru-nây"
+    ],
+    "bucharest": [
+      "Bu-ca-rét"
+    ],
+    "buckle": [
+      "khóa"
+    ],
+    "budapest": [
+      "Bu-đa-pét"
+    ],
+    "buddhism": [
+      "Phật giáo",
+      "đạo Phật"
+    ],
+    "buffet": [
+      "búp phê",
+      "buffet"
+    ],
+    "bumble": [
+      "loạng quạng"
+    ],
+    "bumper": [
+      "hãm xung",
+      "đỡ va"
+    ],
+    "bumpy": [
+      "gồ ghề"
+    ],
+    "bungalow": [
+      "boong-ga-lô",
+      "bung-ga-lô"
+    ],
+    "bunker": [
+      "boongke",
+      "boong-ke"
+    ],
+    "buoy": [
+      "phao"
+    ],
+    "buoyant": [
+      "nổi"
+    ],
+    "bureaucracy": [
+      "bọn quan liêu",
+      "bộ máy quan liêu"
+    ],
+    "burma": [
+      "Myanma",
+      "Miến Điện"
+    ],
+    "burmese": [
+      "Miến Điện",
+      "tiếng Myanma"
+    ],
+    "burrow": [
+      "hang"
+    ],
+    "busan": [
+      "Busan",
+      "Phủ Sơn"
+    ],
+    "butcher": [
+      "người hàng thịt"
+    ],
+    "byte": [
+      "byte",
+      "bai"
+    ],
+    "cabbage": [
+      "cải bắp"
+    ],
+    "cache": [
+      "bộ nhớ đệm",
+      "vùng nhớ đệm"
+    ],
+    "cactus": [
+      "xương rồng"
+    ],
+    "cadre": [
+      "cán bộ"
+    ],
+    "cafeteria": [
+      "nhà ăn",
+      "căng tin"
+    ],
+    "caffeine": [
+      "cafêin",
+      "cà phê tinh"
+    ],
+    "cain": [
+      "Ca-in"
+    ],
+    "calamity": [
+      "tai hoạ"
+    ],
+    "calculation": [
+      "tính toán"
+    ],
+    "calculator": [
+      "máy tính cầm tay",
+      "máy tính cơ khí"
+    ],
+    "calf": [
+      "bê",
+      "bắp chân"
+    ],
+    "caliber": [
+      "ca líp",
+      "cỡ"
+    ],
+    "caliphate": [
+      "vương triều Hồi giáo"
+    ],
+    "calligraphy": [
+      "bút pháp",
+      "thư pháp"
+    ],
+    "calorie": [
+      "ca-lo",
+      "ca-lo-ri"
+    ],
+    "calvary": [
+      "Canvê"
+    ],
+    "camaraderie": [
+      "tình bạn"
+    ],
+    "cambodia": [
+      "Cam-pu-chia",
+      "Căm Bốt"
+    ],
+    "cambodian": [
+      "Căm Bốt",
+      "Cao Miên"
+    ],
+    "cambrian": [
+      "kỉ Cam-bri"
+    ],
+    "camel": [
+      "lạc đà"
+    ],
+    "cameraman": [
+      "chuyên viên quay phim",
+      "chuyên viên ghi hình"
+    ],
+    "cameroon": [
+      "Ca-mơ-run"
+    ],
+    "campfire": [
+      "lửa trại"
+    ],
+    "canaan": [
+      "Ca-na-an"
+    ],
+    "canary": [
+      "chim tước",
+      "chim bạch yến"
+    ],
+    "canberra": [
+      "Canberra"
+    ],
+    "canned": [
+      "đóng hộp",
+      "đóng lon"
+    ],
+    "cannibalism": [
+      "ăn thịt đồng loại"
+    ],
+    "canoe": [
+      "xuồng"
+    ],
+    "canteen": [
+      "căng tin",
+      "căn tin"
+    ],
+    "canton": [
+      "Quảng Châu",
+      "Quảng Đông"
+    ],
+    "cantonese": [
+      "tiếng Quảng Đông"
+    ],
+    "capacitor": [
+      "tụ điện"
+    ],
+    "capricorn": [
+      "Ma Kết",
+      "Nam Dương"
+    ],
+    "capsule": [
+      "viên thuốc con nhộng"
+    ],
+    "captive": [
+      "người tù binh"
+    ],
+    "captivity": [
+      "tù binh"
+    ],
+    "caracas": [
+      "Ca-ra-cát"
+    ],
+    "caramel": [
+      "kẹo caramen",
+      "kẹo"
+    ],
+    "carat": [
+      "ca ra",
+      "cà rá"
+    ],
+    "caravan": [
+      "thương đội"
+    ],
+    "carbohydrate": [
+      "hyđat-cacbon",
+      "hợp chất than giống nước"
+    ],
+    "carbonate": [
+      "cacbonat"
+    ],
+    "carcinoma": [
+      "ung thư biểu mô"
+    ],
+    "cardboard": [
+      "các tông",
+      "bìa cứng"
+    ],
+    "cardiology": [
+      "bệnh học tim",
+      "khoa tim"
+    ],
+    "careless": [
+      "bất cẩn"
+    ],
+    "caricature": [
+      "tranh biếm hoạ"
+    ],
+    "carmine": [
+      "đỏ yên chi"
+    ],
+    "carousel": [
+      "đu quay",
+      "trò kéo quân"
+    ],
+    "carp": [
+      "cá chép"
+    ],
+    "carrot": [
+      "cà rốt",
+      "ca rốt"
+    ],
+    "cartilage": [
+      "sụn"
+    ],
+    "carton": [
+      "hộp",
+      "hộp giấy"
+    ],
+    "cartridge": [
+      "mực"
+    ],
+    "casablanca": [
+      "Casablanca"
+    ],
+    "cascade": [
+      "thác nước"
+    ],
+    "cashier": [
+      "nhân viên tính tiền",
+      "thu ngân"
+    ],
+    "caste": [
+      "đẳng cấp"
+    ],
+    "catalyst": [
+      "chất xúc tác"
+    ],
+    "catapult": [
+      "máy bắn đá"
+    ],
+    "cataract": [
+      "cườm khô"
+    ],
+    "catastrophe": [
+      "tai ương",
+      "tai họa lớn"
+    ],
+    "caterpillar": [
+      "sâu",
+      "sâu róm"
+    ],
+    "catfish": [
+      "cá trê"
+    ],
+    "catheter": [
+      "ống thông",
+      "ống dẫn lưu"
+    ],
+    "cathode": [
+      "âm cực"
+    ],
+    "catholicism": [
+      "Công giáo"
+    ],
+    "caucasian": [
+      "người da trắng",
+      "người trắng"
+    ],
+    "caucasus": [
+      "Kavkaz"
+    ],
+    "cauldron": [
+      "nồi",
+      "vạc"
+    ],
+    "cauliflower": [
+      "bông cải trắng",
+      "cải bông trắng"
+    ],
+    "ceasefire": [
+      "lệnh ngừng bắn",
+      "đình chiến"
+    ],
+    "celery": [
+      "cần tây"
+    ],
+    "cellar": [
+      "hầm chứa",
+      "hầm rượu"
+    ],
+    "cello": [
+      "vi-ô-lông-xen",
+      "xe-lô"
+    ],
+    "censor": [
+      "kiểm duyệt"
+    ],
+    "ceramic": [
+      "gốm"
+    ],
+    "cereal": [
+      "ngũ cốc"
+    ],
+    "cervical": [
+      "cổ",
+      "cảnh"
+    ],
+    "ceylon": [
+      "Tích Lan"
+    ],
+    "chainsaw": [
+      "cưa máy",
+      "máy cưa xích"
+    ],
+    "chairperson": [
+      "chủ tịch"
+    ],
+    "chalk": [
+      "phấn",
+      "đá phấn"
+    ],
+    "challenger": [
+      "người thách"
+    ],
+    "chameleon": [
+      "tắc kè hoa",
+      "tắc kè bông"
+    ],
+    "chandelier": [
+      "đèn treo",
+      "đèn chùm"
+    ],
+    "chaotic": [
+      "hỗn loạn",
+      "hỗn độn"
+    ],
+    "chaplain": [
+      "tuyên úy"
+    ],
+    "charcoal": [
+      "than gỗ",
+      "than củi"
+    ],
+    "charger": [
+      "bộ nạp điện"
+    ],
+    "chariot": [
+      "chiếc xe",
+      "xe"
+    ],
+    "chassis": [
+      "sát-xi",
+      "khung gầm"
+    ],
+    "chastity": [
+      "bình dị",
+      "tính giản dị"
+    ],
+    "chauffeur": [
+      "tài xế"
+    ],
+    "checkmate": [
+      "chiếu tướng",
+      "chiếu hết"
+    ],
+    "checkout": [
+      "quầy tính tiền",
+      "quầy thu tiền"
+    ],
+    "checkpoint": [
+      "chốt kiểm soát",
+      "chốt"
+    ],
+    "cheerful": [
+      "vui vẻ"
+    ],
+    "cheerleader": [
+      "hoạt náo viên"
+    ],
+    "cheesecake": [
+      "bánh kem",
+      "bánh pho mát"
+    ],
+    "cheesy": [
+      "sến"
+    ],
+    "cheetah": [
+      "báo săn",
+      "báo bờm"
+    ],
+    "chemist": [
+      "nhà hoá học"
+    ],
+    "chemotherapy": [
+      "hoá trị"
+    ],
+    "cheque": [
+      "séc",
+      "chi phiếu"
+    ],
+    "chestnut": [
+      "hạt dẻ",
+      "gỗ dẻ"
+    ],
+    "chew": [
+      "nhai",
+      "nhằn"
+    ],
+    "chihuahua": [
+      "Chihuahua",
+      "chihuahua"
+    ],
+    "childbirth": [
+      "sinh con"
+    ],
+    "chili": [
+      "ớt"
+    ],
+    "chilly": [
+      "lạnh",
+      "lạnh lẽo"
+    ],
+    "chime": [
+      "rung",
+      "kêu"
+    ],
+    "chimney": [
+      "ống khói"
+    ],
+    "chinatown": [
+      "phố người Hoa",
+      "khu Hoa-kiều"
+    ],
+    "chipped": [
+      "mẻ",
+      "sứt mẻ"
+    ],
+    "chlorine": [
+      "clo"
+    ],
+    "choke": [
+      "nghẹn",
+      "hóc"
+    ],
+    "cholera": [
+      "tả"
+    ],
+    "chord": [
+      "hợp âm"
+    ],
+    "chow": [
+      "thức ăn"
+    ],
+    "chromium": [
+      "crôm"
+    ],
+    "chromosome": [
+      "chất sinh sắt",
+      "nhiểm sắc thể"
+    ],
+    "chronicles": [
+      "Sử ký",
+      "Sử Biên Niên"
+    ],
+    "chronology": [
+      "niên đại học"
+    ],
+    "chuckle": [
+      "cười khúc khích"
+    ],
+    "chunk": [
+      "mảnh",
+      "mẩu"
+    ],
+    "cigar": [
+      "xì-gà"
+    ],
+    "cinderella": [
+      "Cô bé Lọ Lem",
+      "Lọ Lem"
+    ],
+    "cinnamon": [
+      "cây quế",
+      "quế"
+    ],
+    "circa": [
+      "khoảng"
+    ],
+    "circumcision": [
+      "cắt bao quy đầu"
+    ],
+    "circumference": [
+      "chu vi",
+      "đường tròn"
+    ],
+    "circumstance": [
+      "hoàn cảnh"
+    ],
+    "citadel": [
+      "thành luỹ",
+      "thành trì"
+    ],
+    "clam": [
+      "nghêu",
+      "sò"
+    ],
+    "clandestine": [
+      "bí mật"
+    ],
+    "clarinet": [
+      "cla-ri-nét"
+    ],
+    "clasp": [
+      "siết chặt"
+    ],
+    "classify": [
+      "phân loại"
+    ],
+    "classmate": [
+      "bạn cùng lớp"
+    ],
+    "claw": [
+      "móng",
+      "vuốt"
+    ],
+    "cleaver": [
+      "dao phay"
+    ],
+    "clement": [
+      "Clêmêntê",
+      "Lê Minh"
+    ],
+    "clergy": [
+      "tư tế",
+      "hàng giáo sĩ"
+    ],
+    "clergyman": [
+      "mục sư"
+    ],
+    "cleric": [
+      "mục sư"
+    ],
+    "cling": [
+      "bám"
+    ],
+    "clique": [
+      "bọn",
+      "bè lũ"
+    ],
+    "clockwise": [
+      "theo chiều kim đồng hồ"
+    ],
+    "clone": [
+      "bản sao"
+    ],
+    "cloning": [
+      "dòng hoá"
+    ],
+    "cloudy": [
+      "có mây"
+    ],
+    "clover": [
+      "cỏ ba lá"
+    ],
+    "clueless": [
+      "không đầu mối",
+      "không hiểu đời"
+    ],
+    "clumsy": [
+      "vụng về"
+    ],
+    "coaster": [
+      "giấy lót li",
+      "lót cốc"
+    ],
+    "cobalt": [
+      "coban"
+    ],
+    "cobra": [
+      "rắn hổ mang",
+      "hổ mang"
+    ],
+    "cockpit": [
+      "buồng lái"
+    ],
+    "cockroach": [
+      "gián"
+    ],
+    "cocky": [
+      "kiêu ngạo",
+      "ngạo mạn"
+    ],
+    "cocoa": [
+      "cacao",
+      "ca-cao"
+    ],
+    "cocoon": [
+      "kén"
+    ],
+    "coefficient": [
+      "hệ số"
+    ],
+    "coercion": [
+      "sự ép buộc"
+    ],
+    "cognition": [
+      "nhận thức"
+    ],
+    "coil": [
+      "cuộn cảm"
+    ],
+    "collaborator": [
+      "cộng tác viên"
+    ],
+    "collide": [
+      "đụng nhau"
+    ],
+    "cologne": [
+      "Cô-lô-nhơ",
+      "nước hoa Cô-lô-nhơ"
+    ],
+    "colombo": [
+      "Cô-lôm-bô"
+    ],
+    "colon": [
+      "dấu hai chấm",
+      "kết tràng"
+    ],
+    "colonialism": [
+      "chủ nghĩa thực dân"
+    ],
+    "colonization": [
+      "sự chiếm làm thuộc địa",
+      "sự di dân"
+    ],
+    "colossal": [
+      "đồ sộ"
+    ],
+    "columnist": [
+      "người viết chuyên mục"
+    ],
+    "coma": [
+      "hôn mê"
+    ],
+    "comb": [
+      "lược",
+      "mào"
+    ],
+    "comet": [
+      "sao chổi"
+    ],
+    "comma": [
+      "phẩy"
+    ],
+    "commandment": [
+      "điều răn",
+      "giới luật"
+    ],
+    "commemorate": [
+      "kỷ niệm",
+      "tưởng nhớ"
+    ],
+    "commencement": [
+      "bắt đầu",
+      "lễ tốt nghiệp"
+    ],
+    "commentator": [
+      "bình luận viên"
+    ],
+    "commonplace": [
+      "đời thường"
+    ],
+    "commune": [
+      "xã"
+    ],
+    "comparative": [
+      "cấp so sánh"
+    ],
+    "compass": [
+      "la bàn"
+    ],
+    "compendium": [
+      "sơ lược",
+      "tóm lược"
+    ],
+    "compiler": [
+      "trình biên dịch",
+      "biên dịch viên"
+    ],
+    "complement": [
+      "phần bù tương đối",
+      "phần bù tuyệt đối"
+    ],
+    "complexion": [
+      "nước da"
+    ],
+    "complicate": [
+      "làm phức tạp"
+    ],
+    "complication": [
+      "biến chứng"
+    ],
+    "compose": [
+      "phổ",
+      "sáng tác"
+    ],
+    "compost": [
+      "phân trộn"
+    ],
+    "comprehend": [
+      "thấu hiểu"
+    ],
+    "comprehension": [
+      "sự hiểu"
+    ],
+    "compulsory": [
+      "bắt buộc"
+    ],
+    "comrade": [
+      "đồng chí",
+      "bằng hữu"
+    ],
+    "concave": [
+      "lõm"
+    ],
+    "conceal": [
+      "giấu",
+      "che giấu"
+    ],
+    "concede": [
+      "thừa nhận"
+    ],
+    "conception": [
+      "quan niệm"
+    ],
+    "concerto": [
+      "công xéc tô",
+      "công-xéc-tô"
+    ],
+    "condensation": [
+      "sự ngưng tụ"
+    ],
+    "condescending": [
+      "trịch thượng"
+    ],
+    "conditional": [
+      "thức điều kiện"
+    ],
+    "condolences": [
+      "lời chia buồn"
+    ],
+    "condom": [
+      "bao cao su",
+      "bao dương vật"
+    ],
+    "confederation": [
+      "bang liên"
+    ],
+    "confetti": [
+      "công-phét-ti",
+      "hoa giấy"
+    ],
+    "configure": [
+      "cài đặt"
+    ],
+    "conform": [
+      "tuân theo"
+    ],
+    "confucius": [
+      "Khổng Tử",
+      "Khổng Phu Tử"
+    ],
+    "conglomerate": [
+      "cuội kết"
+    ],
+    "congo": [
+      "Công-gô",
+      "sông Công-gô"
+    ],
+    "congratulate": [
+      "chúc mừng"
+    ],
+    "conquer": [
+      "chinh phục"
+    ],
+    "conquest": [
+      "sự chinh phục"
+    ],
+    "conservatism": [
+      "chủ nghĩa bảo thủ"
+    ],
+    "consolidate": [
+      "củng cố"
+    ],
+    "consonant": [
+      "phụ âm"
+    ],
+    "consortium": [
+      "côngxoocxiom",
+      "công-xoóc-xi-om"
+    ],
+    "constantine": [
+      "Constantinô",
+      "Công Tăng"
+    ],
+    "constantinople": [
+      "Kiên Định Thành"
+    ],
+    "constellation": [
+      "chòm sao"
+    ],
+    "constipation": [
+      "táo bón"
+    ],
+    "constituency": [
+      "khu vực bầu cử"
+    ],
+    "consul": [
+      "lãnh sự",
+      "quan chấp chính"
+    ],
+    "consulate": [
+      "tòa lãnh sự"
+    ],
+    "consummate": [
+      "viên mãn"
+    ],
+    "containment": [
+      "sự chứa đựng",
+      "sự bao hàm"
+    ],
+    "contemplate": [
+      "nghĩ"
+    ],
+    "contemplation": [
+      "thiền định",
+      "chiêm niệm"
+    ],
+    "contour": [
+      "đường viền",
+      "đường nét"
+    ],
+    "contradict": [
+      "phủ nhận"
+    ],
+    "conundrum": [
+      "nan đề"
+    ],
+    "converse": [
+      "đối thoại"
+    ],
+    "conversely": [
+      "ngược lại"
+    ],
+    "convict": [
+      "kết án",
+      "bị cáo"
+    ],
+    "coo": [
+      "gù"
+    ],
+    "cooker": [
+      "đồ dùng làm bếp"
+    ],
+    "copenhagen": [
+      "Cô-pen-ha-ghen",
+      "Cô-pen-ha-gen"
+    ],
+    "cork": [
+      "nút"
+    ],
+    "cornelius": [
+      "Côrnêliô"
+    ],
+    "cornerstone": [
+      "viên đá đầu tiên"
+    ],
+    "cornish": [
+      "tiếng Cornwall"
+    ],
+    "corona": [
+      "nhật hoa"
+    ],
+    "coronavirus": [
+      "virus corona",
+      "coronavirus"
+    ],
+    "corpse": [
+      "xác",
+      "thi thể"
+    ],
+    "corpus": [
+      "ngữ liệu"
+    ],
+    "corrosive": [
+      "ăn mòn"
+    ],
+    "corset": [
+      "coóc-xê"
+    ],
+    "cosmetic": [
+      "mỹ phẩm"
+    ],
+    "cosmetics": [
+      "mĩ phẩm",
+      "mỹ phẩm"
+    ],
+    "cosmos": [
+      "vũ trụ"
+    ],
+    "cosplay": [
+      "cos"
+    ],
+    "cosy": [
+      "ấm cúng"
+    ],
+    "cougar": [
+      "máy bay",
+      "máy bay bà già"
+    ],
+    "counterfeit": [
+      "giả",
+      "giả mạo"
+    ],
+    "countess": [
+      "bá tước phu nhân"
+    ],
+    "courthouse": [
+      "toà án"
+    ],
+    "courtship": [
+      "sự tán tỉnh",
+      "sự ve vãn"
+    ],
+    "courtyard": [
+      "sân"
+    ],
+    "coward": [
+      "người nhát gan",
+      "người nhút nhát"
+    ],
+    "cowardice": [
+      "tính nhút nhát"
+    ],
+    "coworker": [
+      "đồng nghiệp"
+    ],
+    "coyote": [
+      "sói đồng cỏ"
+    ],
+    "cpu": [
+      "CPU"
+    ],
+    "crab": [
+      "cua"
+    ],
+    "cradle": [
+      "nôi"
+    ],
+    "craftsman": [
+      "nghệ nhân"
+    ],
+    "cram": [
+      "nhồi",
+      "nhét"
+    ],
+    "cramp": [
+      "chuột rút",
+      "vọp bẻ"
+    ],
+    "cramped": [
+      "chật chội"
+    ],
+    "crank": [
+      "giò đĩa"
+    ],
+    "crate": [
+      "két",
+      "thùng"
+    ],
+    "crater": [
+      "hố va chạm",
+      "miệng núi lửa"
+    ],
+    "crawl": [
+      "bò",
+      "trườn"
+    ],
+    "crayon": [
+      "viết chì màu",
+      "bút sáp"
+    ],
+    "craze": [
+      "mốt"
+    ],
+    "crease": [
+      "nếp gấp"
+    ],
+    "creditor": [
+      "chủ nợ"
+    ],
+    "creed": [
+      "tín điều"
+    ],
+    "crescent": [
+      "trăng lưỡi liềm",
+      "lưỡi liềm"
+    ],
+    "crest": [
+      "mào",
+      "đỉnh sóng"
+    ],
+    "cretaceous": [
+      "kỉ Crê-ta",
+      "kỉ Phấn Trắng"
+    ],
+    "crib": [
+      "nôi"
+    ],
+    "crimea": [
+      "Crưm"
+    ],
+    "criminology": [
+      "tội phạm học"
+    ],
+    "crimson": [
+      "đỏ thắm"
+    ],
+    "criterion": [
+      "tiêu chuẩn"
+    ],
+    "criticize": [
+      "chỉ trích"
+    ],
+    "croatia": [
+      "Crô-a-ti-a"
+    ],
+    "croatian": [
+      "Crô-a-ti-a",
+      "người Crô-a-ti-a"
+    ],
+    "crocodile": [
+      "sấu",
+      "cá sấu"
+    ],
+    "crossbow": [
+      "ná",
+      "nỏ"
+    ],
+    "crossroads": [
+      "ngã tư",
+      "ngã ba"
+    ],
+    "crossword": [
+      "trò chơi ô chữ"
+    ],
+    "crouch": [
+      "né",
+      "núp"
+    ],
+    "crowdfunding": [
+      "gây quỹ quần chúng"
+    ],
+    "cruiser": [
+      "tàu tuần dương",
+      "tuần dương hạm"
+    ],
+    "crumb": [
+      "miếng",
+      "mẫu"
+    ],
+    "crusade": [
+      "Thập tự chinh"
+    ],
+    "crusader": [
+      "quân thập tự"
+    ],
+    "crust": [
+      "lớp vỏ"
+    ],
+    "cryptocurrency": [
+      "tiền mã hóa",
+      "tiền điện tử"
+    ],
+    "cubic": [
+      "khối"
+    ],
+    "cuckoo": [
+      "chim cu",
+      "cu cu"
+    ],
+    "cucumber": [
+      "dưa chuột",
+      "dưa leo"
+    ],
+    "cuddle": [
+      "ôm ấp"
+    ],
+    "cue": [
+      "cu",
+      "quy"
+    ],
+    "culprit": [
+      "thủ phạm"
+    ],
+    "cultivate": [
+      "cày cấy",
+      "canh tác"
+    ],
+    "cumin": [
+      "thì là Ai Cập",
+      "cây thì là"
+    ],
+    "cunning": [
+      "xảo quyệt",
+      "xảo trá"
+    ],
+    "cupboard": [
+      "tủ",
+      "tủ đựng chén"
+    ],
+    "curfew": [
+      "lệnh giới nghiêm",
+      "lúc giới nghiêm"
+    ],
+    "curly": [
+      "xoăn",
+      "quăn"
+    ],
+    "cushion": [
+      "đệm",
+      "gối dựa"
+    ],
+    "custard": [
+      "sữa trứng",
+      "kem sữa trứng"
+    ],
+    "cybersecurity": [
+      "an ninh mạng"
+    ],
+    "cyborg": [
+      "người máy"
+    ],
+    "cyclone": [
+      "khi xoáy thuận",
+      "khi xoáy tụ"
+    ],
+    "cyprus": [
+      "Síp"
+    ],
+    "cyst": [
+      "túi bao",
+      "nang"
+    ],
+    "czechoslovakia": [
+      "Tiệp Khắc",
+      "Séc-Xlô-va-ki-a"
+    ],
+    "dagger": [
+      "dao găm"
+    ],
+    "dakar": [
+      "Đa-ca"
+    ],
+    "damascus": [
+      "Đa-mát"
+    ],
+    "damian": [
+      "Đamien"
+    ],
+    "damp": [
+      "ẩm"
+    ],
+    "danube": [
+      "sông Đa Nuýp",
+      "sông Danube"
+    ],
+    "daphne": [
+      "thụy hương"
+    ],
+    "darn": [
+      "mạng"
+    ],
+    "dashboard": [
+      "bảng đồng hồ",
+      "bảng điều khiển"
+    ],
+    "daydream": [
+      "sự mơ màng",
+      "mơ mộng"
+    ],
+    "daytime": [
+      "ban ngày"
+    ],
+    "dazzling": [
+      "sáng chói"
+    ],
+    "deacon": [
+      "phó tế",
+      "chấp sự"
+    ],
+    "debit": [
+      "ghi nợ"
+    ],
+    "debtor": [
+      "con nợ"
+    ],
+    "deceive": [
+      "lừa",
+      "lừa bịp"
+    ],
+    "deception": [
+      "sự lừa dối"
+    ],
+    "decorate": [
+      "trang trí"
+    ],
+    "deduce": [
+      "suy đoán",
+      "suy lý"
+    ],
+    "defect": [
+      "tật",
+      "lỗi"
+    ],
+    "defenseless": [
+      "không được bảo vệ",
+      "không được phòng thủ"
+    ],
+    "deforestation": [
+      "phá rừng"
+    ],
+    "deformed": [
+      "méo mó"
+    ],
+    "deity": [
+      "thần",
+      "thần linh"
+    ],
+    "delegate": [
+      "đại biểu",
+      "uỷ thác"
+    ],
+    "deliberation": [
+      "sự cân nhắc"
+    ],
+    "delicacy": [
+      "mỹ vị"
+    ],
+    "delusion": [
+      "hoang tưởng"
+    ],
+    "demented": [
+      "loạn trí"
+    ],
+    "dementia": [
+      "suy giảm trí nhớ",
+      "chứng mất trí"
+    ],
+    "demolish": [
+      "phá hủy"
+    ],
+    "denominator": [
+      "mẫu số",
+      "mẫu"
+    ],
+    "dent": [
+      "vết lõm"
+    ],
+    "dentistry": [
+      "nha khoa"
+    ],
+    "deodorant": [
+      "bay mùi",
+      "chất khử mùi"
+    ],
+    "depart": [
+      "ra đi",
+      "đi"
+    ],
+    "deport": [
+      "trục xuất"
+    ],
+    "deportation": [
+      "sự trục xuất"
+    ],
+    "depraved": [
+      "đồi trụy"
+    ],
+    "derail": [
+      "trật bánh"
+    ],
+    "derelict": [
+      "bỏ hoang"
+    ],
+    "derivative": [
+      "đạo hàm"
+    ],
+    "descend": [
+      "xuống"
+    ],
+    "descendant": [
+      "hậu bối"
+    ],
+    "deserted": [
+      "vắng",
+      "vắng vẻ"
+    ],
+    "desist": [
+      "ngừng",
+      "thôi"
+    ],
+    "desperation": [
+      "sự tuyệt vọng"
+    ],
+    "despicable": [
+      "đáng khinh"
+    ],
+    "destroyer": [
+      "tàu khu trục",
+      "khu trục hạm"
+    ],
+    "detain": [
+      "cầm giữ",
+      "giam"
+    ],
+    "devise": [
+      "đề ra",
+      "vạch ra"
+    ],
+    "devotion": [
+      "hiến dâng",
+      "mộ đạo"
+    ],
+    "dew": [
+      "sương"
+    ],
+    "dhaka": [
+      "Đắc-ca"
+    ],
+    "dharma": [
+      "pháp",
+      "Phật pháp"
+    ],
+    "diagnose": [
+      "chẩn đoán"
+    ],
+    "dialect": [
+      "thổ ngữ",
+      "phương ngữ"
+    ],
+    "diaper": [
+      "tã lót",
+      "tã"
+    ],
+    "diaphragm": [
+      "cơ hoành"
+    ],
+    "diarrhea": [
+      "tiêu chảy",
+      "ỉa chảy"
+    ],
+    "diaspora": [
+      "cộng đồng hải ngoại"
+    ],
+    "dice": [
+      "cắt hạt lựu",
+      "cắt hột lựu"
+    ],
+    "dictator": [
+      "kẻ độc tài",
+      "nhà độc tài"
+    ],
+    "dictatorship": [
+      "chế độ độc tài",
+      "nền chuyên chính"
+    ],
+    "dielectric": [
+      "điện môi"
+    ],
+    "dietary": [
+      "chế độ ăn uống"
+    ],
+    "diffraction": [
+      "nhiễu xạ"
+    ],
+    "diffuse": [
+      "khuếch tán",
+      "lan toả"
+    ],
+    "digestion": [
+      "hệ tiêu hóa",
+      "sự tiêu hóa"
+    ],
+    "digit": [
+      "chữ số",
+      "ngón"
+    ],
+    "digits": [
+      "số"
+    ],
+    "diligence": [
+      "sự siêng năng"
+    ],
+    "diligent": [
+      "siêng năng",
+      "chăm chỉ"
+    ],
+    "dill": [
+      "thìa là",
+      "thì là"
+    ],
+    "dilute": [
+      "pha loãng"
+    ],
+    "diminutive": [
+      "nhỏ xíu",
+      "giảm kích"
+    ],
+    "dine": [
+      "hàng"
+    ],
+    "ding": [
+      "Đinh"
+    ],
+    "dinosaur": [
+      "khủng long"
+    ],
+    "diocese": [
+      "giáo phận",
+      "giáo khu"
+    ],
+    "diode": [
+      "ống hai cực",
+      "bóng lưỡng cực"
+    ],
+    "diploma": [
+      "bằng cấp"
+    ],
+    "diplomacy": [
+      "ngoại giao"
+    ],
+    "diplomat": [
+      "nhà ngoại giao"
+    ],
+    "disadvantage": [
+      "sự bất lợi",
+      "thế bất lợi"
+    ],
+    "disappoint": [
+      "làm thất vọng"
+    ],
+    "disarm": [
+      "tài binh"
+    ],
+    "discard": [
+      "vứt",
+      "loại bỏ"
+    ],
+    "disconnect": [
+      "ngắt điện"
+    ],
+    "discontinue": [
+      "khai tử"
+    ],
+    "discrete": [
+      "rời rạc"
+    ],
+    "discriminate": [
+      "kỳ thị"
+    ],
+    "disgrace": [
+      "thất sủng"
+    ],
+    "disgraceful": [
+      "ô nhục",
+      "nhục nhã"
+    ],
+    "dishwasher": [
+      "máy rửa chén",
+      "máy rửa bát"
+    ],
+    "dismissal": [
+      "sự giải tán"
+    ],
+    "disperse": [
+      "rải rác"
+    ],
+    "displacement": [
+      "li độ",
+      "độ dời"
+    ],
+    "disrespect": [
+      "sự thiếu tôn trọng",
+      "sự vô lễ"
+    ],
+    "disrespectful": [
+      "thất lễ",
+      "vô lễ"
+    ],
+    "disrupt": [
+      "làm phiền",
+      "ngán đường"
+    ],
+    "dissertation": [
+      "luận văn"
+    ],
+    "dissolve": [
+      "hòa tan",
+      "hoà tan"
+    ],
+    "dissuade": [
+      "ngăn cản"
+    ],
+    "distillery": [
+      "nhà máy chưng cất",
+      "tháp chưng cất"
+    ],
+    "distributor": [
+      "bộ phân phối"
+    ],
+    "disturb": [
+      "làm phiền",
+      "quấy rầy"
+    ],
+    "ditto": [
+      "như trên",
+      "nt"
+    ],
+    "diver": [
+      "thợ lặn"
+    ],
+    "dizziness": [
+      "chóng mặt"
+    ],
+    "doctorate": [
+      "tiến sĩ"
+    ],
+    "dogma": [
+      "giáo điều"
+    ],
+    "doha": [
+      "Đô-ha"
+    ],
+    "dojo": [
+      "võ đường",
+      "đạo trường"
+    ],
+    "dolphin": [
+      "cá heo"
+    ],
+    "dominic": [
+      "Đa Minh",
+      "Đaminh"
+    ],
+    "donkey": [
+      "lừa"
+    ],
+    "doomsday": [
+      "ngày tận thế"
+    ],
+    "doorbell": [
+      "chuông cửa"
+    ],
+    "doping": [
+      "dùng thuốc kích thích"
+    ],
+    "dorm": [
+      "kí túc xá"
+    ],
+    "dormitory": [
+      "phòng ngủ",
+      "kí túc xá"
+    ],
+    "dortmund": [
+      "Đoóc-mun"
+    ],
+    "doughnut": [
+      "bánh rán"
+    ],
+    "dove": [
+      "bồ câu"
+    ],
+    "dowry": [
+      "của hồi môn"
+    ],
+    "draco": [
+      "Thiên Long"
+    ],
+    "dragonfly": [
+      "chuồn chuồn"
+    ],
+    "drainage": [
+      "hệ thống thoát nước"
+    ],
+    "dredge": [
+      "nạo vét"
+    ],
+    "dresden": [
+      "Đrét-xđen"
+    ],
+    "drip": [
+      "nhỏ",
+      "rỉ"
+    ],
+    "dripping": [
+      "ròng ròng"
+    ],
+    "drizzle": [
+      "phùn"
+    ],
+    "drown": [
+      "dìm",
+      "chết đuối"
+    ],
+    "dub": [
+      "lồng tiếng"
+    ],
+    "duchy": [
+      "công quốc"
+    ],
+    "duel": [
+      "quyết đấu",
+      "đấu tay đôi"
+    ],
+    "dugout": [
+      "thuyền độc mộc"
+    ],
+    "dune": [
+      "đụn cát",
+      "cồn cát"
+    ],
+    "dungeon": [
+      "tầng hâm"
+    ],
+    "duplex": [
+      "song công"
+    ],
+    "duplicate": [
+      "nhân bản",
+      "sao chép"
+    ],
+    "dusk": [
+      "chạng vạng"
+    ],
+    "dusty": [
+      "bụi bặm"
+    ],
+    "dwarf": [
+      "chú lùn",
+      "người lùn"
+    ],
+    "dwell": [
+      "ở"
+    ],
+    "dwelling": [
+      "chổ ở"
+    ],
+    "dyed": [
+      "nhuộm"
+    ],
+    "dyke": [
+      "đê"
+    ],
+    "dynamite": [
+      "mìn",
+      "đinamit"
+    ],
+    "dynamo": [
+      "máy phát điện"
+    ],
+    "dyslexia": [
+      "chứng khó đọc"
+    ],
+    "dystopian": [
+      "phản địa đàng"
+    ],
+    "earphones": [
+      "tai nghe",
+      "ê-cút-tơ"
+    ],
+    "earring": [
+      "khuyên tai",
+      "khuyên"
+    ],
+    "ebony": [
+      "gỗ mun"
+    ],
+    "ecclesiastical": [
+      "giáo hội"
+    ],
+    "ecology": [
+      "sinh thái học"
+    ],
+    "ecuador": [
+      "Ê-cu-a-đo"
+    ],
+    "edible": [
+      "ăn được"
+    ],
+    "edmonton": [
+      "Edmonton"
+    ],
+    "eel": [
+      "cá chình"
+    ],
+    "eggplant": [
+      "cà",
+      "cà tím"
+    ],
+    "eighty": [
+      "tám mươi"
+    ],
+    "eject": [
+      "phun"
+    ],
+    "electorate": [
+      "cử tri"
+    ],
+    "electrician": [
+      "thợ điện",
+      "thợ sửa điện"
+    ],
+    "electrification": [
+      "điện khí hóa"
+    ],
+    "electrode": [
+      "điện cực"
+    ],
+    "electrolyte": [
+      "chất điện li",
+      "chất điện giải"
+    ],
+    "electromagnetic": [
+      "điện từ"
+    ],
+    "elusive": [
+      "khó tả"
+    ],
+    "embargo": [
+      "cấm vận"
+    ],
+    "embark": [
+      "lên tàu"
+    ],
+    "embarrass": [
+      "làm xấu hổ"
+    ],
+    "emblem": [
+      "biểu tượng"
+    ],
+    "embodiment": [
+      "hiện thân"
+    ],
+    "embroidery": [
+      "đồ thêu"
+    ],
+    "embryo": [
+      "phôi",
+      "phôi thai"
+    ],
+    "emerald": [
+      "ngọc lục bảo",
+      "bích ngọc"
+    ],
+    "emery": [
+      "đá nhám"
+    ],
+    "emigration": [
+      "di dân"
+    ],
+    "emir": [
+      "êmia",
+      "hoàng thân"
+    ],
+    "emit": [
+      "phát ra"
+    ],
+    "empathy": [
+      "thấu cảm",
+      "cộng cảm"
+    ],
+    "emphasize": [
+      "nhấn mạnh"
+    ],
+    "empirical": [
+      "kinh nghiệm",
+      "thực chứng"
+    ],
+    "empress": [
+      "hoàng hậu",
+      "nữ hoàng"
+    ],
+    "encoding": [
+      "biên mã"
+    ],
+    "encore": [
+      "bài hát lại",
+      "điệu múa lại"
+    ],
+    "encyclopedia": [
+      "bách khoa toàn thư"
+    ],
+    "endeavor": [
+      "cố gắng"
+    ],
+    "endgame": [
+      "cuối ván",
+      "tàn cuộc"
+    ],
+    "endocrine": [
+      "nội tiết"
+    ],
+    "englishman": [
+      "người Anh"
+    ],
+    "enigma": [
+      "điều bí ẩn"
+    ],
+    "enlighten": [
+      "làm sáng tỏ"
+    ],
+    "enlightenment": [
+      "sự giác ngộ",
+      "sự khai ngộ"
+    ],
+    "enlist": [
+      "đăng ký",
+      "đăng lính"
+    ],
+    "enoch": [
+      "Hê-nốc",
+      "Ế-nóc"
+    ],
+    "enrich": [
+      "làm giàu"
+    ],
+    "entice": [
+      "lôi cuốn",
+      "lôi kéo"
+    ],
+    "entourage": [
+      "tùy tùng"
+    ],
+    "envoy": [
+      "phái viên",
+      "công sứ"
+    ],
+    "epidemiology": [
+      "dịch tễ học"
+    ],
+    "epilepsy": [
+      "bệnh động kinh",
+      "hội chứng động kinh"
+    ],
+    "epilogue": [
+      "phần kết",
+      "lời bạt"
+    ],
+    "epiphany": [
+      "Lễ Hiển Linh"
+    ],
+    "epoch": [
+      "thời đại"
+    ],
+    "equator": [
+      "xích đạo"
+    ],
+    "equilibrium": [
+      "cân bằng"
+    ],
+    "equinox": [
+      "điểm phân"
+    ],
+    "eradicate": [
+      "nhổ",
+      "triệt hạ"
+    ],
+    "erase": [
+      "xóa"
+    ],
+    "erection": [
+      "cương cứng"
+    ],
+    "eritrea": [
+      "Ê-ri-tơ-rê-a"
+    ],
+    "erode": [
+      "xói mòn",
+      "xâm thực"
+    ],
+    "erosion": [
+      "xói mòn"
+    ],
+    "erotic": [
+      "tình ái",
+      "tình dục"
+    ],
+    "err": [
+      "phạm lỗi"
+    ],
+    "escalator": [
+      "thang cuốn"
+    ],
+    "espionage": [
+      "hoạt động tình báo"
+    ],
+    "esports": [
+      "thể thao điện tử"
+    ],
+    "espresso": [
+      "espresso"
+    ],
+    "estonia": [
+      "E-xtô-ni-a"
+    ],
+    "estonian": [
+      "E-xtô-ni-a"
+    ],
+    "estuary": [
+      "cửa sông"
+    ],
+    "ethanol": [
+      "cồn",
+      "rượu ethylic"
+    ],
+    "ether": [
+      "ê-te"
+    ],
+    "ethiopia": [
+      "Ê-ti-ô-pi-a"
+    ],
+    "ethnicity": [
+      "sắc tộc",
+      "sắc dân"
+    ],
+    "etiquette": [
+      "lễ nghi",
+      "nghi lễ"
+    ],
+    "eucalyptus": [
+      "bạch đàn"
+    ],
+    "eucharist": [
+      "Thánh Thể",
+      "Cực Thánh"
+    ],
+    "eulogy": [
+      "điếu văn"
+    ],
+    "eurasia": [
+      "lục địa Á-Âu",
+      "lục địa Âu-Á"
+    ],
+    "eurasian": [
+      "Á-Âu",
+      "người Á-Âu"
+    ],
+    "eureka": [
+      "ơ-rê-ca"
+    ],
+    "euthanasia": [
+      "an tử"
+    ],
+    "evacuate": [
+      "di tản"
+    ],
+    "evacuation": [
+      "sự sơ tán",
+      "sự tản cư"
+    ],
+    "evade": [
+      "tránh",
+      "trốn"
+    ],
+    "evaporate": [
+      "bốc hơi",
+      "bay hơi"
+    ],
+    "evasion": [
+      "sự lảng tránh"
+    ],
+    "evergreen": [
+      "thường xanh"
+    ],
+    "everlasting": [
+      "vĩnh viễn",
+      "vĩnh cửu"
+    ],
+    "excessively": [
+      "quá chừng",
+      "quá đáng"
+    ],
+    "executioner": [
+      "người hành hình",
+      "đao phủ"
+    ],
+    "exemption": [
+      "sự miễn trừ"
+    ],
+    "exodus": [
+      "Sách Xuất Hành"
+    ],
+    "expire": [
+      "hết hạn"
+    ],
+    "exporter": [
+      "người xuất khẩu",
+      "cơ quan xuất khẩu"
+    ],
+    "exposition": [
+      "sự phơi",
+      "sự phơi bày"
+    ],
+    "expressway": [
+      "đường cao tốc"
+    ],
+    "extinguish": [
+      "dập tắt"
+    ],
+    "extracellular": [
+      "ngoại bào"
+    ],
+    "extradition": [
+      "dẫn độ"
+    ],
+    "extraterrestrial": [
+      "ngoài trái đất",
+      "ngoài Trái Đất"
+    ],
+    "extremism": [
+      "chủ nghĩa cực đoan"
+    ],
+    "eyeball": [
+      "cầu mắt",
+      "nhãn cầu"
+    ],
+    "eyebrow": [
+      "lông mày"
+    ],
+    "eyelid": [
+      "mí mắt",
+      "mí"
+    ],
+    "eyeliner": [
+      "bút kẻ mắt"
+    ],
+    "eyesight": [
+      "thị lực",
+      "sức nhìn"
+    ],
+    "ezekiel": [
+      "Ê-dê-ki-en",
+      "Ê-xê-chi-ên"
+    ],
+    "fable": [
+      "ngụ ngôn"
+    ],
+    "fag": [
+      "pê đê",
+      "bóng"
+    ],
+    "falcon": [
+      "cắt"
+    ],
+    "fallacy": [
+      "ngụy biện",
+      "ngộ biện"
+    ],
+    "famine": [
+      "nạn đói"
+    ],
+    "fandom": [
+      "cộng đồng người hâm mộ",
+      "văn hóa người hâm mộ"
+    ],
+    "fang": [
+      "răng nanh",
+      "nanh"
+    ],
+    "fantastically": [
+      "tuyệt vời"
+    ],
+    "fart": [
+      "địt",
+      "chùi gháu"
+    ],
+    "fascism": [
+      "chủ nghĩa phát xít"
+    ],
+    "fasting": [
+      "nhịn ăn",
+      "kiêng ăn"
+    ],
+    "faucet": [
+      "vòi",
+      "rô-bi-nê"
+    ],
+    "fawn": [
+      "nai con"
+    ],
+    "fax": [
+      "fax",
+      "điện thư"
+    ],
+    "fearful": [
+      "đáng sợ",
+      "sợ hãi"
+    ],
+    "feather": [
+      "lông vũ",
+      "lông"
+    ],
+    "feces": [
+      "cứt",
+      "phân"
+    ],
+    "feisty": [
+      "đanh đá"
+    ],
+    "felony": [
+      "trọng tội"
+    ],
+    "fender": [
+      "cái chắn bùn"
+    ],
+    "feng": [
+      "Phùng",
+      "馮"
+    ],
+    "fermentation": [
+      "lên men"
+    ],
+    "fern": [
+      "dương xỉ"
+    ],
+    "fertile": [
+      "màu mỡ"
+    ],
+    "fertilizer": [
+      "phân bón",
+      "phân"
+    ],
+    "fetch": [
+      "tìm"
+    ],
+    "fetish": [
+      "ái vật"
+    ],
+    "fetus": [
+      "thai",
+      "bào thai"
+    ],
+    "fibre": [
+      "sợi"
+    ],
+    "fifteenth": [
+      "thứ mười lăm"
+    ],
+    "figurative": [
+      "nghĩa bóng"
+    ],
+    "fiji": [
+      "Phi-gi",
+      "Phi-di"
+    ],
+    "filipino": [
+      "Phi",
+      "tiếng Tagalog"
+    ],
+    "filth": [
+      "rác rưởi",
+      "rác bẩn"
+    ],
+    "fin": [
+      "vây",
+      "vi"
+    ],
+    "fingerprint": [
+      "vân tay",
+      "dấu vân tay"
+    ],
+    "finnish": [
+      "Phần Lan",
+      "tiếng Phần Lan"
+    ],
+    "fir": [
+      "linh sam"
+    ],
+    "firearm": [
+      "hoả khí",
+      "vũ khí nóng"
+    ],
+    "firefighter": [
+      "lính cứu hỏa"
+    ],
+    "firefly": [
+      "đom đóm",
+      "huỳnh"
+    ],
+    "fireplace": [
+      "lò sưởi"
+    ],
+    "firewall": [
+      "tường lửa"
+    ],
+    "firewood": [
+      "củi"
+    ],
+    "firmware": [
+      "phần lõi"
+    ],
+    "firstly": [
+      "trước hết",
+      "trước nhất"
+    ],
+    "fisherman": [
+      "ngư dân",
+      "dân chài"
+    ],
+    "fishery": [
+      "công nghiệp cá",
+      "nghề cá"
+    ],
+    "fizz": [
+      "xèo xèo",
+      "xì xì"
+    ],
+    "flagship": [
+      "soái hạm"
+    ],
+    "flake": [
+      "vảy",
+      "mảnh tước"
+    ],
+    "flamboyant": [
+      "phượng",
+      "phượng vĩ"
+    ],
+    "flamingo": [
+      "hồng hạc"
+    ],
+    "flap": [
+      "vạt",
+      "vạt áo"
+    ],
+    "flashlight": [
+      "đèn pin"
+    ],
+    "flattened": [
+      "bẹp"
+    ],
+    "flatter": [
+      "nịnh nọt"
+    ],
+    "flax": [
+      "lanh"
+    ],
+    "flea": [
+      "bọ chét"
+    ],
+    "flint": [
+      "đá lửa"
+    ],
+    "flock": [
+      "đàn",
+      "bầy"
+    ],
+    "florist": [
+      "người bán hoa"
+    ],
+    "fluency": [
+      "sự thành thạo"
+    ],
+    "fluent": [
+      "lưu loát",
+      "trôi chảy"
+    ],
+    "fluorescence": [
+      "huỳnh quang"
+    ],
+    "flute": [
+      "sáo"
+    ],
+    "flux": [
+      "thông lượng"
+    ],
+    "flyer": [
+      "tờ quảng cáo",
+      "tờ rơi"
+    ],
+    "foggy": [
+      "có sương mù"
+    ],
+    "folder": [
+      "bìa hồ sơ",
+      "thư mục"
+    ],
+    "folklore": [
+      "văn học dân gian"
+    ],
+    "footpath": [
+      "đường mòn"
+    ],
+    "footwear": [
+      "giày dép"
+    ],
+    "forbid": [
+      "cấm",
+      "cấm chỉ"
+    ],
+    "foreigner": [
+      "người nước ngoài",
+      "người ngoại quốc"
+    ],
+    "forensic": [
+      "pháp y",
+      "biện luận"
+    ],
+    "forestry": [
+      "lâm nghiệp"
+    ],
+    "foreword": [
+      "lời tựa",
+      "lời nói đầu"
+    ],
+    "forthcoming": [
+      "sắp tới"
+    ],
+    "fortress": [
+      "pháo đài"
+    ],
+    "fracture": [
+      "gãy xương"
+    ],
+    "fragrance": [
+      "mùi thơm",
+      "hương thơm"
+    ],
+    "fragrant": [
+      "thơm"
+    ],
+    "franc": [
+      "phật lăng",
+      "phrăng"
+    ],
+    "frankfurt": [
+      "Frankfurt",
+      "Phrăng-phuốc"
+    ],
+    "freezer": [
+      "máy đông lạnh",
+      "máy ướp lạnh"
+    ],
+    "frenchman": [
+      "đàn ông Pháp",
+      "người Pháp"
+    ],
+    "fret": [
+      "phím"
+    ],
+    "friction": [
+      "ma sát"
+    ],
+    "frighten": [
+      "làm hoảng sợ"
+    ],
+    "frontline": [
+      "tiền tuyến"
+    ],
+    "frown": [
+      "cau mày",
+      "chau mày"
+    ],
+    "frugal": [
+      "tằn tiện"
+    ],
+    "fugitive": [
+      "người lánh nạn"
+    ],
+    "fundraiser": [
+      "vận động gây quỹ",
+      "chiến dịch gây quỹ"
+    ],
+    "fungus": [
+      "nấm"
+    ],
+    "funnel": [
+      "phễu",
+      "quặn"
+    ],
+    "furnace": [
+      "lò",
+      "lò sưởi"
+    ],
+    "furnish": [
+      "cung cấp"
+    ],
+    "fuselage": [
+      "thân"
+    ],
+    "futile": [
+      "vô dụng",
+      "vô ích"
+    ],
+    "gable": [
+      "đầu hồi"
+    ],
+    "gag": [
+      "ọe"
+    ],
+    "gale": [
+      "bão tố"
+    ],
+    "galileo": [
+      "Galileo"
+    ],
+    "gallant": [
+      "ga-lăng",
+      "hào hiệp"
+    ],
+    "gallipoli": [
+      "Gallipoli"
+    ],
+    "gallon": [
+      "galông",
+      "ga-lông"
+    ],
+    "gallop": [
+      "phi"
+    ],
+    "gallows": [
+      "giá treo cổ",
+      "giá xử giảo"
+    ],
+    "gambia": [
+      "Găm-bi-a"
+    ],
+    "gambler": [
+      "con bạc"
+    ],
+    "gardener": [
+      "người làm vườn"
+    ],
+    "garrison": [
+      "quân đồn trú"
+    ],
+    "gearbox": [
+      "hộp số"
+    ],
+    "gee": [
+      "trời",
+      "giê"
+    ],
+    "gelatin": [
+      "gelatin"
+    ],
+    "gemini": [
+      "Song Tử",
+      "Song Nam"
+    ],
+    "gemstone": [
+      "đá quý"
+    ],
+    "genealogy": [
+      "gia phả học"
+    ],
+    "generalization": [
+      "khái quát hoá"
+    ],
+    "genome": [
+      "bộ gen"
+    ],
+    "genus": [
+      "chi"
+    ],
+    "geologist": [
+      "nhà địa chất"
+    ],
+    "geology": [
+      "địa chất học"
+    ],
+    "georgian": [
+      "tiếng Gru-di-a",
+      "người Gru-di-a"
+    ],
+    "geothermal": [
+      "địa nhiệt"
+    ],
+    "germ": [
+      "mộng",
+      "mầm"
+    ],
+    "gestapo": [
+      "sở Ghextapô"
+    ],
+    "gestation": [
+      "thai kì"
+    ],
+    "gigantic": [
+      "khổng lồ"
+    ],
+    "gill": [
+      "mang"
+    ],
+    "gingerbread": [
+      "bánh gừng",
+      "bánh mì gừng"
+    ],
+    "giraffe": [
+      "hươu cao cổ"
+    ],
+    "giro": [
+      "chuyển khoản"
+    ],
+    "gist": [
+      "mấu chốt"
+    ],
+    "glacier": [
+      "sông băng"
+    ],
+    "gland": [
+      "tuyến"
+    ],
+    "glaucoma": [
+      "cườm nước"
+    ],
+    "glide": [
+      "lướt",
+      "lượn"
+    ],
+    "glider": [
+      "tàu lượn"
+    ],
+    "glitter": [
+      "kim tuyến"
+    ],
+    "glossary": [
+      "bảng chú giải"
+    ],
+    "glove": [
+      "găng tay",
+      "bao tay"
+    ],
+    "glucose": [
+      "glucozơ",
+      "glu-cô"
+    ],
+    "gnu": [
+      "linh dương đầu bò"
+    ],
+    "godfather": [
+      "cha đỡ đầu"
+    ],
+    "godzilla": [
+      "Godzilla"
+    ],
+    "goldfish": [
+      "cá vàng",
+      "cá ba đuôi"
+    ],
+    "goldsmith": [
+      "thợ bạc",
+      "thợ vàng"
+    ],
+    "gore": [
+      "húc"
+    ],
+    "gorge": [
+      "hẻm núi"
+    ],
+    "gorilla": [
+      "khỉ đột",
+      "đại tinh tinh"
+    ],
+    "gory": [
+      "máu me"
+    ],
+    "gothic": [
+      "ngôn ngữ Gothic"
+    ],
+    "gout": [
+      "thống phong"
+    ],
+    "govern": [
+      "cai trị",
+      "quản trị"
+    ],
+    "gram": [
+      "gam"
+    ],
+    "grandchild": [
+      "cháu"
+    ],
+    "granddaughter": [
+      "cháu gái"
+    ],
+    "grape": [
+      "nho",
+      "màu nho"
+    ],
+    "grapefruit": [
+      "bưởi chùm",
+      "bưởi đắng"
+    ],
+    "graphite": [
+      "than chì"
+    ],
+    "grasshopper": [
+      "châu chấu"
+    ],
+    "grassland": [
+      "đồng cỏ",
+      "thảo nguyên"
+    ],
+    "gravel": [
+      "sỏi"
+    ],
+    "graveyard": [
+      "nghĩa trang",
+      "nghĩa địa"
+    ],
+    "gravy": [
+      "nước chấm"
+    ],
+    "graze": [
+      "chăn"
+    ],
+    "grease": [
+      "mỡ"
+    ],
+    "greatness": [
+      "sự to lớn"
+    ],
+    "greed": [
+      "sự tham lam"
+    ],
+    "greedy": [
+      "tham",
+      "tham lam"
+    ],
+    "greenish": [
+      "hơi lục"
+    ],
+    "greenland": [
+      "Grơn-len"
+    ],
+    "greet": [
+      "chào",
+      "chào mừng"
+    ],
+    "greeting": [
+      "lời chào"
+    ],
+    "grenada": [
+      "Grê-na-đa"
+    ],
+    "grenade": [
+      "lựu đạn"
+    ],
+    "grieve": [
+      "đau lòng"
+    ],
+    "grinder": [
+      "máy mài"
+    ],
+    "groan": [
+      "rên"
+    ],
+    "groin": [
+      "háng",
+      "vùng bẹn"
+    ],
+    "groundwater": [
+      "nước ngầm"
+    ],
+    "grub": [
+      "ấu trùng"
+    ],
+    "grunt": [
+      "sạo",
+      "ủn ỉn"
+    ],
+    "guam": [
+      "Guam",
+      "đảo Guam"
+    ],
+    "guangdong": [
+      "Quảng Đông"
+    ],
+    "guangzhou": [
+      "Quảng Châu"
+    ],
+    "guatemala": [
+      "Goa-tê-ma-la"
+    ],
+    "guerrilla": [
+      "du kích"
+    ],
+    "guideline": [
+      "hướng dẫn",
+      "khuyến cáo"
+    ],
+    "guillotine": [
+      "máy chém"
+    ],
+    "guitarist": [
+      "người chơi ghi-ta",
+      "người đánh ghi-ta"
+    ],
+    "gujarat": [
+      "Gujarat"
+    ],
+    "gull": [
+      "hải âu",
+      "mòng biển"
+    ],
+    "gullible": [
+      "cả tin"
+    ],
+    "gunpowder": [
+      "thuốc súng"
+    ],
+    "gutter": [
+      "rãnh",
+      "máng xối"
+    ],
+    "guyana": [
+      "Guy-a-na"
+    ],
+    "gymnasium": [
+      "thể dục",
+      "gym"
+    ],
+    "gymnastics": [
+      "thể dục",
+      "sự rèn luyện"
+    ],
+    "gypsy": [
+      "digan",
+      "dân gipsi"
+    ],
+    "hacker": [
+      "hacker",
+      "tin tặc"
+    ],
+    "haircut": [
+      "cắt tóc",
+      "hớt tóc"
+    ],
+    "hairdresser": [
+      "thợ cắt tóc"
+    ],
+    "hairstyle": [
+      "kiểu tóc",
+      "kiểu đầu"
+    ],
+    "haiti": [
+      "Ha-i-ti"
+    ],
+    "hallelujah": [
+      "hallelujah"
+    ],
+    "hallmark": [
+      "dấu ấn"
+    ],
+    "hallowed": [
+      "linh thiêng",
+      "thiêng liêng"
+    ],
+    "halo": [
+      "hào quang"
+    ],
+    "hamburg": [
+      "Hăm-buốc"
+    ],
+    "hamburger": [
+      "hăm-bơ-gơ",
+      "hem-bơ-gơ"
+    ],
+    "hamlet": [
+      "xóm"
+    ],
+    "hammock": [
+      "võng"
+    ],
+    "hamster": [
+      "chuột ham-tơ",
+      "ham-tơ"
+    ],
+    "handbag": [
+      "túi xách tay",
+      "bị cầm tay"
+    ],
+    "handball": [
+      "banh để liệng",
+      "bóng ném"
+    ],
+    "handcuffs": [
+      "còng",
+      "còng tay"
+    ],
+    "handkerchief": [
+      "khăn tay",
+      "mùi soa"
+    ],
+    "handmade": [
+      "làm bằng tay",
+      "thủ công"
+    ],
+    "handshake": [
+      "cái bắt tay",
+      "sự bắt tay"
+    ],
+    "handwriting": [
+      "chữ viết tay"
+    ],
+    "hangar": [
+      "hăng ga",
+      "nhà chứa máy bay"
+    ],
+    "hangover": [
+      "nôn nao sau khi uống rượu"
+    ],
+    "hanoi": [
+      "Hà Nội"
+    ],
+    "hardworking": [
+      "chăm chỉ"
+    ],
+    "hare": [
+      "thỏ rừng"
+    ],
+    "harem": [
+      "hậu cung"
+    ],
+    "harness": [
+      "yên cương"
+    ],
+    "harp": [
+      "thụ cầm",
+      "hạc cầm"
+    ],
+    "harrow": [
+      "bừa"
+    ],
+    "haryana": [
+      "Haryana"
+    ],
+    "hash": [
+      "thịt băm",
+      "thịt bằm"
+    ],
+    "havana": [
+      "La Ha-ba-na",
+      "Ha-va-na"
+    ],
+    "hawaiian": [
+      "tiếng Hawaii"
+    ],
+    "hawthorn": [
+      "sơn tra"
+    ],
+    "headmaster": [
+      "hiệu trưởng"
+    ],
+    "headphone": [
+      "ống nghe",
+      "tai nghe"
+    ],
+    "headset": [
+      "tai nghe"
+    ],
+    "heap": [
+      "đống",
+      "gò"
+    ],
+    "heartbreaking": [
+      "đau lòng"
+    ],
+    "hearth": [
+      "nền lò"
+    ],
+    "heater": [
+      "bếp lò",
+      "lò"
+    ],
+    "heathen": [
+      "ngoại đạo"
+    ],
+    "heavenly": [
+      "thiên đường",
+      "tuyệt trần"
+    ],
+    "hectare": [
+      "héc-ta"
+    ],
+    "hedgehog": [
+      "nhím"
+    ],
+    "hegemony": [
+      "bá quyền"
+    ],
+    "helium": [
+      "heli",
+      "hêli"
+    ],
+    "helper": [
+      "phó thủ"
+    ],
+    "helsinki": [
+      "Hiệu Sinh Kỳ",
+      "Hiệu Sinh Kì"
+    ],
+    "hemisphere": [
+      "bán cầu"
+    ],
+    "hemp": [
+      "cây gai dầu",
+      "gai dầu"
+    ],
+    "hentai": [
+      "hentai"
+    ],
+    "hepatitis": [
+      "viêm gan"
+    ],
+    "hepburn": [
+      "hệ phiên âm La-tinh Hepburn"
+    ],
+    "herb": [
+      "cỏ",
+      "cây thảo"
+    ],
+    "herd": [
+      "đàn",
+      "bầy"
+    ],
+    "heresy": [
+      "dị giáo",
+      "tà giáo"
+    ],
+    "heretic": [
+      "dị giáo"
+    ],
+    "hermit": [
+      "nhà ẩn dật",
+      "ẩn sĩ"
+    ],
+    "hernia": [
+      "thoát vị"
+    ],
+    "heroine": [
+      "anh thư"
+    ],
+    "heroism": [
+      "chủ nghĩa anh hùng",
+      "tinh thần anh hùng"
+    ],
+    "heron": [
+      "diệc"
+    ],
+    "herring": [
+      "cá trích"
+    ],
+    "hertz": [
+      "hertz",
+      "héc"
+    ],
+    "herzegovina": [
+      "Héc-xê-gô-vi-na"
+    ],
+    "heterosexual": [
+      "dị tính luyến ái"
+    ],
+    "hezbollah": [
+      "Hezbollah"
+    ],
+    "highland": [
+      "sơn nguyên"
+    ],
+    "hijack": [
+      "cướp máy bay",
+      "không tặc"
+    ],
+    "hilary": [
+      "Hilariô"
+    ],
+    "himalayas": [
+      "Himalaya",
+      "Hy Mã Lạp Sơn"
+    ],
+    "hinder": [
+      "cả trở",
+      "cản trở"
+    ],
+    "hindrance": [
+      "vật cản",
+      "cản trở"
+    ],
+    "hinduism": [
+      "Ấn-độ giáo"
+    ],
+    "hinge": [
+      "bản lề"
+    ],
+    "hippocampus": [
+      "hồi hải mã"
+    ],
+    "hitman": [
+      "kẻ ám sát"
+    ],
+    "hoard": [
+      "tích trữ",
+      "trữ"
+    ],
+    "hog": [
+      "lợn",
+      "heo"
+    ],
+    "hologram": [
+      "ảnh nổi ba chiều"
+    ],
+    "homophobia": [
+      "ghê sợ đồng tính luyến ái"
+    ],
+    "homosexual": [
+      "đồng tính",
+      "đồng tính luyến ái"
+    ],
+    "homosexuality": [
+      "tính tình dục đồng giới",
+      "đồng tính luyến ái"
+    ],
+    "honduras": [
+      "Hôn-đu-rát"
+    ],
+    "hone": [
+      "mài",
+      "dũa"
+    ],
+    "honeymoon": [
+      "tuần trăng mật"
+    ],
+    "hoof": [
+      "guốc",
+      "móng"
+    ],
+    "hooray": [
+      "hoan hô",
+      "vạn tuế"
+    ],
+    "horseman": [
+      "người cưỡi ngựa",
+      "kị sĩ"
+    ],
+    "horsepower": [
+      "mã lực"
+    ],
+    "horseshoe": [
+      "móng ngựa"
+    ],
+    "horticulture": [
+      "nghề làm vườn"
+    ],
+    "hose": [
+      "ống vòi"
+    ],
+    "hospitalized": [
+      "nằm bệnh viện",
+      "nằm nhà thương"
+    ],
+    "hostel": [
+      "nhà nghỉ"
+    ],
+    "hotline": [
+      "đường dây nóng",
+      "đường dây khẩn cấp"
+    ],
+    "hound": [
+      "chó săn"
+    ],
+    "housekeeper": [
+      "bà quản gia"
+    ],
+    "housewife": [
+      "bà nội trợ"
+    ],
+    "housework": [
+      "việc nhà"
+    ],
+    "hover": [
+      "lượn",
+      "luẩn quẩn"
+    ],
+    "howl": [
+      "hú",
+      "tru"
+    ],
+    "hubby": [
+      "ông xã"
+    ],
+    "humanism": [
+      "chủ nghĩa nhân văn",
+      "chủ nghĩa nhân bản"
+    ],
+    "humanities": [
+      "khoa học nhân văn"
+    ],
+    "humanoid": [
+      "hình nhân"
+    ],
+    "humid": [
+      "ẩm"
+    ],
+    "humiliate": [
+      "làm nhục",
+      "sỉ nhục"
+    ],
+    "humiliation": [
+      "sự hạ thấp",
+      "sự làm nhục"
+    ],
+    "hump": [
+      "bướu"
+    ],
+    "huntsman": [
+      "thợ săn"
+    ],
+    "hurdle": [
+      "cừu"
+    ],
+    "hydra": [
+      "thuỷ tức",
+      "Hydra"
+    ],
+    "hydrate": [
+      "hydrat"
+    ],
+    "hydraulic": [
+      "thuỷ lực"
+    ],
+    "hydrocarbon": [
+      "hiđrocacbon",
+      "hợp chất than nhẹ"
+    ],
+    "hydroelectric": [
+      "thuỷ điện"
+    ],
+    "hymn": [
+      "thánh ca"
+    ],
+    "hypocrisy": [
+      "đạo đức giả",
+      "giả hình"
+    ],
+    "hypocrite": [
+      "kẻ đạo đức giả",
+      "kẻ giả nhân giả nghĩa"
+    ],
+    "hypothermia": [
+      "hạ thân nhiệt"
+    ],
+    "hysteria": [
+      "ittêri",
+      "ictêri"
+    ],
+    "iceberg": [
+      "núi băng trôi",
+      "băng sơn"
+    ],
+    "icelandic": [
+      "Ai-xơ-len",
+      "Băng Đảo"
+    ],
+    "icu": [
+      "HSTC"
+    ],
+    "identifier": [
+      "định danh",
+      "mã nhận dạng"
+    ],
+    "idf": [
+      "Lực lượng Phòng vệ I-xra-en"
+    ],
+    "idle": [
+      "không hoạt động",
+      "ngồi không"
+    ],
+    "ignite": [
+      "đốt"
+    ],
+    "illegitimate": [
+      "đẻ hoang"
+    ],
+    "illiterate": [
+      "dốt nát",
+      "mù chữ"
+    ],
+    "illogical": [
+      "phi lôgic"
+    ],
+    "illumination": [
+      "bôi lên"
+    ],
+    "illustrious": [
+      "có tiếng",
+      "nổi tiếng"
+    ],
+    "imbalance": [
+      "mất cân bằng"
+    ],
+    "imitate": [
+      "nhái",
+      "bắt chước"
+    ],
+    "immaculate": [
+      "phau",
+      "trong trắng"
+    ],
+    "immoral": [
+      "vô đạo đức"
+    ],
+    "immortal": [
+      "bất tử",
+      "bất diệt"
+    ],
+    "immunology": [
+      "miễn dịch học"
+    ],
+    "impala": [
+      "linh dương sừng cao"
+    ],
+    "impeach": [
+      "luận tội",
+      "đàn hặc"
+    ],
+    "impeachment": [
+      "việc luận tội",
+      "cuộc luận tội"
+    ],
+    "impede": [
+      "cản trở",
+      "ngăn cản"
+    ],
+    "imperialism": [
+      "chủ nghĩa đế quốc"
+    ],
+    "importer": [
+      "người nhập khẩu",
+      "cơ quan nhập khẩu"
+    ],
+    "improvise": [
+      "ứng biến",
+      "ứng tác"
+    ],
+    "inauguration": [
+      "nhậm chức"
+    ],
+    "inbox": [
+      "hộp thư đến",
+      "hòm thư đến"
+    ],
+    "incense": [
+      "hương",
+      "nhang"
+    ],
+    "incest": [
+      "loạn luân"
+    ],
+    "incidentally": [
+      "à này"
+    ],
+    "incite": [
+      "kích động"
+    ],
+    "inconvenient": [
+      "bất tiện",
+      "mất công"
+    ],
+    "incumbent": [
+      "đương nhiệm"
+    ],
+    "indigo": [
+      "chàm",
+      "bột chàm"
+    ],
+    "individualism": [
+      "chủ nghĩa cá nhân",
+      "cá nhân chủ nghĩa"
+    ],
+    "indulgence": [
+      "ơn xá",
+      "ân xá"
+    ],
+    "indus": [
+      "Sông Ấn"
+    ],
+    "industrialization": [
+      "sự công nghiệp hoá"
+    ],
+    "inert": [
+      "trơ"
+    ],
+    "inertia": [
+      "quán tính"
+    ],
+    "inexpensive": [
+      "rẻ"
+    ],
+    "infamous": [
+      "khét tiếng"
+    ],
+    "infect": [
+      "nhiễm",
+      "lây"
+    ],
+    "inferno": [
+      "địa ngục"
+    ],
+    "infertility": [
+      "vô sinh"
+    ],
+    "inflammation": [
+      "viêm"
+    ],
+    "influenza": [
+      "cúm"
+    ],
+    "informatics": [
+      "tin học"
+    ],
+    "infrared": [
+      "hồng ngoại"
+    ],
+    "ingredient": [
+      "thành phần"
+    ],
+    "inhale": [
+      "hít"
+    ],
+    "inherit": [
+      "thừa kế"
+    ],
+    "innate": [
+      "bẩm sinh"
+    ],
+    "inquisitive": [
+      "tò mò",
+      "dòm ngó"
+    ],
+    "insanity": [
+      "tính trạng điên",
+      "sự điên rồ"
+    ],
+    "inscription": [
+      "chữ khắc"
+    ],
+    "insect": [
+      "sâu bọ",
+      "côn trùng"
+    ],
+    "insomnia": [
+      "mất ngủ"
+    ],
+    "inspect": [
+      "kiểm tra"
+    ],
+    "insular": [
+      "đảo",
+      "hòn đảo"
+    ],
+    "insurgency": [
+      "cuộc nổi dậy"
+    ],
+    "insurgent": [
+      "người khởi nghĩa"
+    ],
+    "insurrection": [
+      "khởi nghĩa"
+    ],
+    "integer": [
+      "số nguyên"
+    ],
+    "intellect": [
+      "trí tuệ",
+      "trí năng"
+    ],
+    "interchange": [
+      "nút giao"
+    ],
+    "intercourse": [
+      "sự giao cấu"
+    ],
+    "internship": [
+      "thực tập"
+    ],
+    "interpreter": [
+      "thông dịch viên",
+      "người thông dịch"
+    ],
+    "interrogation": [
+      "thẩm vấn"
+    ],
+    "interval": [
+      "khoảng thời gian"
+    ],
+    "intestine": [
+      "ruột"
+    ],
+    "intimidate": [
+      "dọa nạt",
+      "hăm dọa"
+    ],
+    "intracellular": [
+      "nội bào"
+    ],
+    "intricate": [
+      "phức tạp"
+    ],
+    "intuition": [
+      "trực giác"
+    ],
+    "invade": [
+      "xâm lược",
+      "xâm chiếm"
+    ],
+    "invader": [
+      "kẻ xâm lược"
+    ],
+    "invent": [
+      "phát minh"
+    ],
+    "invoice": [
+      "hóa đơn"
+    ],
+    "iodine": [
+      "iot",
+      "iốt"
+    ],
+    "iris": [
+      "diên vĩ",
+      "mống mắt"
+    ],
+    "irrational": [
+      "bất hợp lý",
+      "số vô tỉ"
+    ],
+    "irresistible": [
+      "không thể cưỡng lại"
+    ],
+    "irresponsible": [
+      "vô trách nhiệm"
+    ],
+    "irrigation": [
+      "thủy lợi",
+      "thuỷ lợi"
+    ],
+    "irritating": [
+      "ngứa"
+    ],
+    "isabel": [
+      "Isave"
+    ],
+    "isaiah": [
+      "I-sai-a",
+      "Ê-sai"
+    ],
+    "islamabad": [
+      "I-xla-ma-bát"
+    ],
+    "ism": [
+      "chủ nghĩa",
+      "học thuyết"
+    ],
+    "isotope": [
+      "đồng vị"
+    ],
+    "istanbul": [
+      "Tân La Mã"
+    ],
+    "itch": [
+      "ngứa"
+    ],
+    "iteration": [
+      "phép lặp"
+    ],
+    "itinerary": [
+      "hành trình"
+    ],
+    "jaguar": [
+      "báo đốm",
+      "báo đốm châu Mỹ"
+    ],
+    "jakarta": [
+      "Gia-các-ta",
+      "Giang Lưu Ba"
+    ],
+    "jargon": [
+      "biệt ngữ"
+    ],
+    "jasmine": [
+      "lài",
+      "nhài"
+    ],
+    "jealousy": [
+      "ghen",
+      "lòng ghen tị"
+    ],
+    "jehovah": [
+      "Giê-hô-va",
+      "Jehovah"
+    ],
+    "jelly": [
+      "thạch",
+      "rau câu"
+    ],
+    "jellyfish": [
+      "sứa"
+    ],
+    "jericho": [
+      "Jericho"
+    ],
+    "jerome": [
+      "Giêrônimô"
+    ],
+    "jesuit": [
+      "thầy tu dòng Tên"
+    ],
+    "jewel": [
+      "đá quý"
+    ],
+    "jewellery": [
+      "đồ châu báu",
+      "đồ nữ trang"
+    ],
+    "jingle": [
+      "leng keng",
+      "xủng xoảng"
+    ],
+    "joachim": [
+      "Gioakim",
+      "Gioankim"
+    ],
+    "jogging": [
+      "chạy bộ"
+    ],
+    "johannesburg": [
+      "Giô-ha-ne-xbớc"
+    ],
+    "joyful": [
+      "vui",
+      "vui vẻ"
+    ],
+    "judaism": [
+      "Do thái giáo",
+      "đạo Do thái"
+    ],
+    "judas": [
+      "Giuđa"
+    ],
+    "judo": [
+      "nhu đạo"
+    ],
+    "jug": [
+      "bình"
+    ],
+    "juggling": [
+      "tung hứng"
+    ],
+    "julius": [
+      "Giuliô"
+    ],
+    "juno": [
+      "Juno",
+      "sao Hôn thần"
+    ],
+    "jupiter": [
+      "sao Mộc",
+      "Sao Mộc"
+    ],
+    "jurassic": [
+      "kỉ Giu-ra"
+    ],
+    "jurisprudence": [
+      "pháp luật học",
+      "triết luật học"
+    ],
+    "juror": [
+      "bồi thẩm",
+      "thẩm phán"
+    ],
+    "kabul": [
+      "Ka-bun"
+    ],
+    "kale": [
+      "cải xoăn"
+    ],
+    "kamala": [
+      "Ca-ma-la"
+    ],
+    "kangaroo": [
+      "căng-gu-ru",
+      "kangaroo"
+    ],
+    "kanji": [
+      "chữ kanji",
+      "chữ Nhật"
+    ],
+    "karaoke": [
+      "caraôkê",
+      "ca-rô-kê"
+    ],
+    "karate": [
+      "không thủ đạo",
+      "karate"
+    ],
+    "karnataka": [
+      "Karnataka"
+    ],
+    "kathmandu": [
+      "Cát-man-đu"
+    ],
+    "kazakhstan": [
+      "Ka-dắc-xtan",
+      "Ca-dắc-xtăng"
+    ],
+    "kelvin": [
+      "kenvin"
+    ],
+    "kernel": [
+      "nhân"
+    ],
+    "kerosene": [
+      "dầu hỏa",
+      "dầu lửa"
+    ],
+    "ketchup": [
+      "nước xốt cà chua",
+      "tương cà"
+    ],
+    "kettle": [
+      "ấm",
+      "bình đun siêu tốc"
+    ],
+    "keystone": [
+      "rường cột"
+    ],
+    "kfc": [
+      "Gà Rán Kentucky"
+    ],
+    "khaki": [
+      "màu kaki",
+      "vải kaki"
+    ],
+    "khartoum": [
+      "Khắc-tum"
+    ],
+    "khmer": [
+      "tiếng Khơ-me",
+      "tiếng Khmer"
+    ],
+    "khrushchev": [
+      "Khờ-rút-sốp"
+    ],
+    "kidnap": [
+      "bắt cóc",
+      "sự bắt cóc"
+    ],
+    "kidnapping": [
+      "sự bắt cóc"
+    ],
+    "kiln": [
+      "lò"
+    ],
+    "kilogram": [
+      "kilôgam",
+      "ki-lô-gam"
+    ],
+    "kilometre": [
+      "cây số",
+      "kilômet"
+    ],
+    "kinase": [
+      "kinaza"
+    ],
+    "kiosk": [
+      "gian hàng",
+      "quán"
+    ],
+    "kissinger": [
+      "Kissinger"
+    ],
+    "kite": [
+      "diều"
+    ],
+    "kitten": [
+      "mèo con",
+      "miu"
+    ],
+    "kneel": [
+      "quỳ"
+    ],
+    "knit": [
+      "đan"
+    ],
+    "knockout": [
+      "nốc ao",
+      "đo ván"
+    ],
+    "knot": [
+      "nút",
+      "nơ"
+    ],
+    "knuckle": [
+      "khớp"
+    ],
+    "koala": [
+      "koala",
+      "gấu túi"
+    ],
+    "kobe": [
+      "Thần Hộ"
+    ],
+    "kosovo": [
+      "Cô-xô-vô"
+    ],
+    "kremlin": [
+      "điện Kremli",
+      "điện Cẩm Linh"
+    ],
+    "kurdish": [
+      "tiếng Kurd"
+    ],
+    "kuwait": [
+      "Cô-oét"
+    ],
+    "kyiv": [
+      "Ki-ép",
+      "Cơ Phụ"
+    ],
+    "kyoto": [
+      "Kyoto",
+      "Kyōto"
+    ],
+    "kyrgyzstan": [
+      "Cư-rơ-gư-xtan",
+      "Cư-rơ-gư-dơ-xtan"
+    ],
+    "labyrinth": [
+      "mê cung",
+      "mê hồn trận"
+    ],
+    "lacrosse": [
+      "bóng vợt"
+    ],
+    "lactose": [
+      "đường sữa",
+      "lactoza"
+    ],
+    "lagoon": [
+      "phá"
+    ],
+    "lama": [
+      "lạt-ma"
+    ],
+    "landslide": [
+      "lở đất",
+      "sạt lở đất"
+    ],
+    "lantern": [
+      "đèn lồng",
+      "lồng đèn"
+    ],
+    "lard": [
+      "mỡ lợn",
+      "mỡ heo"
+    ],
+    "lark": [
+      "chim chiền chiện"
+    ],
+    "larva": [
+      "ấu trùng"
+    ],
+    "latch": [
+      "chốt cửa",
+      "then cửa"
+    ],
+    "latent": [
+      "ngầm",
+      "ngấm ngần"
+    ],
+    "latitude": [
+      "vĩ độ",
+      "vĩ tuyến"
+    ],
+    "latte": [
+      "cà phê latte"
+    ],
+    "latvia": [
+      "Lát-vi-a"
+    ],
+    "latvian": [
+      "Lát-vi-a"
+    ],
+    "laurence": [
+      "Lôrensô"
+    ],
+    "lava": [
+      "dung nham"
+    ],
+    "lavender": [
+      "oải hương"
+    ],
+    "layering": [
+      "chiết cành"
+    ],
+    "lazarus": [
+      "La-xa-rơ",
+      "La-da-rô"
+    ],
+    "laziness": [
+      "sự lười biếng"
+    ],
+    "lcd": [
+      "màn hình tinh thể lỏng"
+    ],
+    "leaflet": [
+      "tờ quảng cáo",
+      "tờ rơi"
+    ],
+    "leaky": [
+      "rò rỉ",
+      "rò"
+    ],
+    "lecturer": [
+      "giảng viên"
+    ],
+    "ledger": [
+      "sổ cái"
+    ],
+    "leech": [
+      "đỉa"
+    ],
+    "leftovers": [
+      "đồ thừa",
+      "đồ ăn thừa"
+    ],
+    "legalize": [
+      "hợp pháp hoá",
+      "luật hoá"
+    ],
+    "legislate": [
+      "lập pháp"
+    ],
+    "legislator": [
+      "người làm luật",
+      "người lập pháp"
+    ],
+    "leipzig": [
+      "Lai-xích"
+    ],
+    "lemonade": [
+      "nước chanh",
+      "đá chanh"
+    ],
+    "lenin": [
+      "Lê nin",
+      "Lenin"
+    ],
+    "leningrad": [
+      "Leningrad"
+    ],
+    "lent": [
+      "Mùa Chay"
+    ],
+    "leopard": [
+      "báo",
+      "beo"
+    ],
+    "leprosy": [
+      "phong",
+      "cùi"
+    ],
+    "lettuce": [
+      "rau diếp"
+    ],
+    "leukemia": [
+      "lơ xê mi",
+      "bệnh bạch cầu"
+    ],
+    "lever": [
+      "đòn bẩy"
+    ],
+    "lexicon": [
+      "từ điển"
+    ],
+    "liberalism": [
+      "chủ nghĩa tự do"
+    ],
+    "liberate": [
+      "giải phóng"
+    ],
+    "liberia": [
+      "Li-bê-ri-a"
+    ],
+    "libertarian": [
+      "Tự Do"
+    ],
+    "librarian": [
+      "thủ thư"
+    ],
+    "lick": [
+      "liếm"
+    ],
+    "lifeboat": [
+      "xuồng cứu sinh"
+    ],
+    "ligament": [
+      "dây chằng"
+    ],
+    "ligand": [
+      "phối tử"
+    ],
+    "lighthouse": [
+      "hải đăng"
+    ],
+    "limb": [
+      "chi",
+      "but see chân tay"
+    ],
+    "limestone": [
+      "đá vôi"
+    ],
+    "limitless": [
+      "vô bờ"
+    ],
+    "limousine": [
+      "li-mô-xin",
+      "li-mô-din"
+    ],
+    "linden": [
+      "đoạn"
+    ],
+    "lingerie": [
+      "đồ lót"
+    ],
+    "linguistic": [
+      "ngôn ngữ"
+    ],
+    "linguistics": [
+      "ngôn ngữ học"
+    ],
+    "linus": [
+      "Linô"
+    ],
+    "lipstick": [
+      "cây son",
+      "son môi"
+    ],
+    "liquidation": [
+      "thanh lí"
+    ],
+    "lisbon": [
+      "Li-xboa"
+    ],
+    "lisp": [
+      "sự nói ngọng",
+      "nói ngọng"
+    ],
+    "listener": [
+      "thính giả",
+      "người nghe"
+    ],
+    "literal": [
+      "nghĩa đen"
+    ],
+    "lithium": [
+      "lithi",
+      "liti"
+    ],
+    "lithuania": [
+      "Lít-va"
+    ],
+    "lithuanian": [
+      "Lít-va",
+      "tiếng Lít-va"
+    ],
+    "litre": [
+      "lít"
+    ],
+    "liturgy": [
+      "thánh lễ",
+      "lễ trọng"
+    ],
+    "livelihood": [
+      "sinh kế"
+    ],
+    "lizard": [
+      "thằn lằn"
+    ],
+    "loader": [
+      "máy xúc lật"
+    ],
+    "lobster": [
+      "tôm hùm",
+      "tôm rồng"
+    ],
+    "loch": [
+      "vũng"
+    ],
+    "locomotive": [
+      "đầu máy"
+    ],
+    "locust": [
+      "châu chấu"
+    ],
+    "lodging": [
+      "chỗ ở"
+    ],
+    "logos": [
+      "Thiên Ngôn"
+    ],
+    "lollipop": [
+      "kẹo que",
+      "kẹo mút"
+    ],
+    "loneliness": [
+      "sự cô đơn"
+    ],
+    "longevity": [
+      "sự sống lâu",
+      "tuổi thọ cao"
+    ],
+    "longitude": [
+      "kinh độ"
+    ],
+    "loom": [
+      "khung cửi"
+    ],
+    "lorraine": [
+      "Lorraine"
+    ],
+    "lotus": [
+      "sen"
+    ],
+    "lousy": [
+      "ẩu",
+      "tệ"
+    ],
+    "louvre": [
+      "Bảo tàng Louvre"
+    ],
+    "lovable": [
+      "đáng yêu",
+      "dễ thương"
+    ],
+    "lubricant": [
+      "dầu nhờn"
+    ],
+    "lucius": [
+      "Luciô"
+    ],
+    "lukewarm": [
+      "ấm",
+      "âm ấm"
+    ],
+    "lull": [
+      "ru"
+    ],
+    "lullaby": [
+      "bài hát ru"
+    ],
+    "lump": [
+      "đống"
+    ],
+    "lust": [
+      "ham muốn",
+      "tham muốn"
+    ],
+    "luxembourg": [
+      "Lục Xâm Bảo",
+      "Lúc-xăm-bua"
+    ],
+    "luxurious": [
+      "sang trọng"
+    ],
+    "lymph": [
+      "bạch huyết"
+    ],
+    "lynx": [
+      "linh miêu"
+    ],
+    "macaroni": [
+      "macarôni",
+      "mì ống"
+    ],
+    "macau": [
+      "Ma Cao",
+      "Áo Môn"
+    ],
+    "macedonia": [
+      "Ma-xê-đô-ni-a",
+      "cộng hòa Ma-xê-đô-ni-a"
+    ],
+    "macedonian": [
+      "Ma-xê-đô-ni-a"
+    ],
+    "machete": [
+      "rựa"
+    ],
+    "mackerel": [
+      "cá thu"
+    ],
+    "madagascar": [
+      "Ma-đa-gát-xca"
+    ],
+    "madam": [
+      "bà",
+      "chị"
+    ],
+    "madeleine": [
+      "bánh mađơlen",
+      "mađơlen"
+    ],
+    "magenta": [
+      "màu đỏ sậm"
+    ],
+    "magician": [
+      "phù thủy"
+    ],
+    "magma": [
+      "mắc ma"
+    ],
+    "magnesium": [
+      "magiê"
+    ],
+    "magnet": [
+      "nam châm"
+    ],
+    "magnetism": [
+      "từ tính",
+      "tính từ"
+    ],
+    "magnolia": [
+      "ngọc lan",
+      "chi mộc lan"
+    ],
+    "mahogany": [
+      "dái ngựa"
+    ],
+    "mainframe": [
+      "máy tính lớn"
+    ],
+    "maize": [
+      "bắp",
+      "ngô"
+    ],
+    "malaria": [
+      "bệnh sốt rét"
+    ],
+    "malawi": [
+      "Ma-la-uy"
+    ],
+    "malay": [
+      "tiếng Mã-lai",
+      "tiếng Mã lai"
+    ],
+    "maldives": [
+      "Man-đi-vơ"
+    ],
+    "malfunction": [
+      "trục trặc"
+    ],
+    "mali": [
+      "Ma-li"
+    ],
+    "malt": [
+      "mạch nha"
+    ],
+    "malta": [
+      "Man-ta"
+    ],
+    "maltese": [
+      "maltese",
+      "chó Malta"
+    ],
+    "malware": [
+      "mã độc",
+      "phần mềm độc hại"
+    ],
+    "mammal": [
+      "động vật có vú",
+      "thú"
+    ],
+    "mammoth": [
+      "voi ma mút",
+      "ma mút"
+    ],
+    "mandarin": [
+      "quan",
+      "tiếng phổ thông Trung Quốc"
+    ],
+    "mane": [
+      "bờm"
+    ],
+    "manganese": [
+      "mangan"
+    ],
+    "mango": [
+      "xoài",
+      "quả xoài"
+    ],
+    "manicure": [
+      "sửa móng tay"
+    ],
+    "manifest": [
+      "tuyên ngôn",
+      "biểu hiện"
+    ],
+    "manifesto": [
+      "tuyên ngôn"
+    ],
+    "manifold": [
+      "đa tạp"
+    ],
+    "manipulate": [
+      "điều khiển",
+      "thao túng"
+    ],
+    "manitoba": [
+      "Manitoba"
+    ],
+    "mannequin": [
+      "manocanh",
+      "ma-nơ-canh"
+    ],
+    "manslaughter": [
+      "ngộ sát"
+    ],
+    "mantis": [
+      "bọ ngựa",
+      "ngựa trời"
+    ],
+    "mantra": [
+      "mạn-đát-la",
+      "man-tra"
+    ],
+    "manure": [
+      "phân",
+      "phân bón"
+    ],
+    "mara": [
+      "Thiên Ma"
+    ],
+    "mare": [
+      "ngựa cái",
+      "biển Mặt Trăng"
+    ],
+    "margarita": [
+      "margarita"
+    ],
+    "marlin": [
+      "cá buồm"
+    ],
+    "maroon": [
+      "nâu hạt dẻ",
+      "nâu sẫm"
+    ],
+    "marrow": [
+      "tủy xương"
+    ],
+    "marseille": [
+      "Mạc-xây",
+      "Mác-xây"
+    ],
+    "marx": [
+      "Marx",
+      "Mác"
+    ],
+    "marxism": [
+      "chủ nghĩa Mác"
+    ],
+    "marxist": [
+      "Mác-xít"
+    ],
+    "mascara": [
+      "thuốc bôi mi mắt"
+    ],
+    "mascot": [
+      "linh vật"
+    ],
+    "masculine": [
+      "giống đực"
+    ],
+    "mast": [
+      "cột buồm",
+      "cột"
+    ],
+    "masturbate": [
+      "thủ dâm",
+      "tự sướng"
+    ],
+    "masturbation": [
+      "sự thủ dâm"
+    ],
+    "matchmaking": [
+      "làm mối"
+    ],
+    "mathematician": [
+      "nhà toán học"
+    ],
+    "maths": [
+      "toán học"
+    ],
+    "matthias": [
+      "Mátthia"
+    ],
+    "mattress": [
+      "nệm"
+    ],
+    "mauritius": [
+      "Mô-ri-xơ"
+    ],
+    "maximize": [
+      "tối đa hóa"
+    ],
+    "mayonnaise": [
+      "may-on-ne",
+      "mai-o-ne"
+    ],
+    "maze": [
+      "mê cung"
+    ],
+    "meadow": [
+      "đồng cỏ"
+    ],
+    "meaningless": [
+      "vô nghĩa"
+    ],
+    "measles": [
+      "sởi"
+    ],
+    "medley": [
+      "liên khúc"
+    ],
+    "melancholy": [
+      "trầm cảm"
+    ],
+    "melon": [
+      "dưa"
+    ],
+    "meltdown": [
+      "nóng chảy hạt nhân"
+    ],
+    "memoir": [
+      "hồi ký",
+      "luận văn"
+    ],
+    "memorize": [
+      "ghi nhớ",
+      "ghi chép"
+    ],
+    "mend": [
+      "sửa chữa",
+      "khâu"
+    ],
+    "meningitis": [
+      "viêm màng não"
+    ],
+    "menopause": [
+      "sự mãn kinh"
+    ],
+    "mentality": [
+      "tư duy",
+      "tư tưởng"
+    ],
+    "meow": [
+      "ngoao",
+      "ngao"
+    ],
+    "mercenary": [
+      "lính đánh thuê",
+      "tay sai"
+    ],
+    "merciful": [
+      "khoan hồng",
+      "khoan dung"
+    ],
+    "merge": [
+      "kết hợp",
+      "hợp nhất"
+    ],
+    "meridian": [
+      "kinh tuyến",
+      "kinh lạc"
+    ],
+    "merkel": [
+      "Merkel",
+      "Méc-ken"
+    ],
+    "merlin": [
+      "Merlin"
+    ],
+    "mermaid": [
+      "nhân ngư",
+      "người cá"
+    ],
+    "mesa": [
+      "núi mặt bàn"
+    ],
+    "messiah": [
+      "mê-si-a",
+      "Đấng Mê-si"
+    ],
+    "metadata": [
+      "siêu dữ liệu"
+    ],
+    "metamorphosis": [
+      "sự biến thái",
+      "sự biến hình"
+    ],
+    "metaphor": [
+      "ẩn dụ",
+      "phép ẩn dụ"
+    ],
+    "metaphysics": [
+      "siêu hình học"
+    ],
+    "meteor": [
+      "sao băng"
+    ],
+    "meteorite": [
+      "thiên thạch",
+      "vẫn thạch"
+    ],
+    "meteorology": [
+      "khí tượng học"
+    ],
+    "methane": [
+      "metan"
+    ],
+    "methanol": [
+      "rượu mạnh gỗ",
+      "cồn gỗ"
+    ],
+    "meticulous": [
+      "tỉ mỉ"
+    ],
+    "metre": [
+      "mét",
+      "thước"
+    ],
+    "metropolis": [
+      "siêu đô thị"
+    ],
+    "micah": [
+      "Micae",
+      "Mi-chê"
+    ],
+    "microbiology": [
+      "vi sinh vật học"
+    ],
+    "microphone": [
+      "máy vi âm",
+      "micrô"
+    ],
+    "microscope": [
+      "kính hiển vi"
+    ],
+    "midget": [
+      "rất nhỏ",
+      "chú lùn"
+    ],
+    "midwife": [
+      "bà đỡ",
+      "bà mụ"
+    ],
+    "milestone": [
+      "cột mốc",
+      "cây số"
+    ],
+    "milkshake": [
+      "loại kem sưa",
+      "trộn"
+    ],
+    "millennium": [
+      "thiên niên kỷ"
+    ],
+    "millet": [
+      "kê"
+    ],
+    "millionaire": [
+      "triệu phú"
+    ],
+    "mimic": [
+      "bắt chước",
+      "nhại"
+    ],
+    "mince": [
+      "thịt băm",
+      "thịt vằm"
+    ],
+    "mindless": [
+      "vô tri"
+    ],
+    "minecraft": [
+      "Minecraft"
+    ],
+    "miner": [
+      "thợ mỏ"
+    ],
+    "ming": [
+      "Nhà Minh"
+    ],
+    "minion": [
+      "kẻ nô lệ"
+    ],
+    "minivan": [
+      "minivan"
+    ],
+    "mink": [
+      "chồn nâu"
+    ],
+    "minnie": [
+      "Minnie",
+      "Min-ni"
+    ],
+    "minsk": [
+      "Min-xcơ",
+      "Minh Tư Khắc"
+    ],
+    "minuscule": [
+      "chữ nhỏ",
+      "chữ thường"
+    ],
+    "mirage": [
+      "ảo ảnh"
+    ],
+    "miscarriage": [
+      "sự sẩy thai"
+    ],
+    "mischief": [
+      "trò tinh nghịch",
+      "trò tinh quái"
+    ],
+    "misdemeanor": [
+      "tiểu hình",
+      "khinh tội"
+    ],
+    "misfortune": [
+      "nạn"
+    ],
+    "mishap": [
+      "nạn",
+      "xui"
+    ],
+    "mite": [
+      "bét",
+      "ve"
+    ],
+    "mitigate": [
+      "giảm nhẹ",
+      "giảm thiểu"
+    ],
+    "mitigation": [
+      "sự làm nhẹ",
+      "sự làm dịu"
+    ],
+    "moat": [
+      "hào",
+      "hố"
+    ],
+    "mobilization": [
+      "sự động viên"
+    ],
+    "mockingbird": [
+      "chim nhại"
+    ],
+    "modem": [
+      "modem",
+      "bộ điều giải"
+    ],
+    "modernization": [
+      "sự hiện đại hoá"
+    ],
+    "modification": [
+      "sửa đổi",
+      "sự sửa đổi"
+    ],
+    "modulation": [
+      "điều chế tín hiệu"
+    ],
+    "moist": [
+      "ẩm"
+    ],
+    "molar": [
+      "răng hàm"
+    ],
+    "molasses": [
+      "rỉ mật",
+      "rỉ đường"
+    ],
+    "mold": [
+      "mốc"
+    ],
+    "moldova": [
+      "Môn-đô-va"
+    ],
+    "mole": [
+      "nốt ruồi",
+      "mụt ruồi"
+    ],
+    "molecule": [
+      "phân tử"
+    ],
+    "momentous": [
+      "quan trọng",
+      "trọng yếu"
+    ],
+    "monaco": [
+      "Mô-na-cô",
+      "Hoành Quốc"
+    ],
+    "monarch": [
+      "vua",
+      "quân chủ"
+    ],
+    "monarchy": [
+      "quân chủ",
+      "chế độ quân chủ"
+    ],
+    "monastery": [
+      "tu viện",
+      "tự viện"
+    ],
+    "mongolia": [
+      "Mông Cổ"
+    ],
+    "mongolian": [
+      "Mông Cổ",
+      "người Mông Cổ"
+    ],
+    "monograph": [
+      "chuyên khảo"
+    ],
+    "monologue": [
+      "độc ngữ"
+    ],
+    "monsoon": [
+      "gió mùa",
+      "mùa mưa"
+    ],
+    "montenegro": [
+      "Môn-tê-nê-grô",
+      "Hắc Sơn"
+    ],
+    "moonlight": [
+      "ánh trăng",
+      "ăn mảnh"
+    ],
+    "moose": [
+      "nai anxet",
+      "nai sừng tấm"
+    ],
+    "morale": [
+      "tinh thần"
+    ],
+    "morgue": [
+      "nhà xác"
+    ],
+    "mormon": [
+      "Mormon",
+      "Mặc Môn"
+    ],
+    "moroccan": [
+      "Ma-rốc"
+    ],
+    "morphine": [
+      "mocfin"
+    ],
+    "morphology": [
+      "hình thái học"
+    ],
+    "mortar": [
+      "vữa",
+      "cối"
+    ],
+    "mosaic": [
+      "mosaic",
+      "thể khảm"
+    ],
+    "mosquito": [
+      "muỗi"
+    ],
+    "motel": [
+      "mô-ten",
+      "mô ten"
+    ],
+    "moth": [
+      "ngài",
+      "bướm đêm"
+    ],
+    "motherboard": [
+      "bo mạch chủ"
+    ],
+    "motherfucker": [
+      "địt con mẹ mày",
+      "đụ má mày"
+    ],
+    "motherland": [
+      "quê hương",
+      "tổ quốc"
+    ],
+    "motivate": [
+      "khích lệ",
+      "động viên"
+    ],
+    "motorway": [
+      "đường cao tốc",
+      "đường ô tô chính"
+    ],
+    "motto": [
+      "tiêu ngữ"
+    ],
+    "mound": [
+      "gò",
+      "ụ"
+    ],
+    "mourn": [
+      "thương tiếc",
+      "xót xa"
+    ],
+    "moustache": [
+      "râu mép",
+      "ria mép"
+    ],
+    "mouthpiece": [
+      "phát ngôn viên"
+    ],
+    "mow": [
+      "cắt",
+      "cắt cỏ"
+    ],
+    "mozambique": [
+      "Mô-dăm-bích"
+    ],
+    "mucus": [
+      "nước nhầy",
+      "niêm dịch"
+    ],
+    "muddy": [
+      "bùn lầy",
+      "lầy lội"
+    ],
+    "mug": [
+      "ca"
+    ],
+    "mulberry": [
+      "dâu",
+      "dâu tằm"
+    ],
+    "mule": [
+      "la"
+    ],
+    "multicultural": [
+      "đa văn hóa"
+    ],
+    "multiculturalism": [
+      "chủ nghĩa đa văn hóa"
+    ],
+    "multilingual": [
+      "đa ngôn ngữ"
+    ],
+    "multimedia": [
+      "đa phương tiện"
+    ],
+    "multiplication": [
+      "phép nhân"
+    ],
+    "multiply": [
+      "nhân"
+    ],
+    "mummy": [
+      "xác ướp",
+      "uây khyếm mẹ"
+    ],
+    "mundane": [
+      "bình thường"
+    ],
+    "municipality": [
+      "khu tự quản"
+    ],
+    "murky": [
+      "đục"
+    ],
+    "mushroom": [
+      "nấm"
+    ],
+    "musk": [
+      "xạ hương"
+    ],
+    "mustard": [
+      "mù tạc"
+    ],
+    "mutation": [
+      "đột biến"
+    ],
+    "mutiny": [
+      "nổi loạn",
+      "phiến loạn"
+    ],
+    "muzzle": [
+      "mõm",
+      "rọ mõm"
+    ],
+    "myra": [
+      "Myra",
+      "Mai-ra"
+    ],
+    "myriad": [
+      "vạn",
+      "muôn"
+    ],
+    "mythology": [
+      "thần thoại"
+    ],
+    "nag": [
+      "cằn nhằn",
+      "càu nhàu"
+    ],
+    "nagasaki": [
+      "Nagasaki"
+    ],
+    "nairobi": [
+      "Nai-rô-bi"
+    ],
+    "naive": [
+      "ngờ nghệch",
+      "ngây thơ"
+    ],
+    "namesake": [
+      "người trùng tên"
+    ],
+    "namibia": [
+      "Nam-mi-bi-a",
+      "Na-mi-bi-a"
+    ],
+    "nanjing": [
+      "Nam Kinh"
+    ],
+    "nanny": [
+      "nhũ mẫu",
+      "nhũ nương"
+    ],
+    "nanotechnology": [
+      "công nghệ nano"
+    ],
+    "napkin": [
+      "khăn ăn"
+    ],
+    "naples": [
+      "Na-pô-li"
+    ],
+    "napoleon": [
+      "Nã Phá Luân",
+      "Napôlêông"
+    ],
+    "narcotic": [
+      "ma túy"
+    ],
+    "nassau": [
+      "Na-xao"
+    ],
+    "nationality": [
+      "quốc tịch"
+    ],
+    "nausea": [
+      "buồn nôn"
+    ],
+    "nautical": [
+      "hàng hải"
+    ],
+    "nazism": [
+      "chủ nghĩa Quốc xã",
+      "chủ nghĩa xã hội quốc gia"
+    ],
+    "nebula": [
+      "tinh vân"
+    ],
+    "nectar": [
+      "mật hoa",
+      "mật"
+    ],
+    "negligence": [
+      "tính cẩu thả",
+      "sự bất cẩn"
+    ],
+    "negro": [
+      "người da đen"
+    ],
+    "neighbour": [
+      "láng giềng",
+      "hàng xóm"
+    ],
+    "neolithic": [
+      "thời đại đồ đá mới"
+    ],
+    "neon": [
+      "neon",
+      "nê-ông"
+    ],
+    "neptune": [
+      "sao Hải Vương",
+      "Sao Hải Vương"
+    ],
+    "netball": [
+      "bóng lưới"
+    ],
+    "neurology": [
+      "thần kinh học"
+    ],
+    "neuron": [
+      "tế bào thần kinh",
+      "nơ-ron"
+    ],
+    "neuroscience": [
+      "khoa học thần kinh"
+    ],
+    "neutrality": [
+      "trung lập"
+    ],
+    "neutralize": [
+      "trung lập hóa",
+      "trung hòa"
+    ],
+    "neutron": [
+      "nơtron"
+    ],
+    "newsletter": [
+      "bản tin"
+    ],
+    "newsroom": [
+      "toà soạn báo"
+    ],
+    "newt": [
+      "sa giông"
+    ],
+    "nexus": [
+      "kết nối"
+    ],
+    "nicaragua": [
+      "Ni-ca-ra-goa"
+    ],
+    "nicotine": [
+      "nicotin",
+      "nhựa thuốc"
+    ],
+    "nietzsche": [
+      "Nietzsche",
+      "Nít-sơ"
+    ],
+    "niger": [
+      "Ni-giê"
+    ],
+    "nigger": [
+      "mọi đen"
+    ],
+    "nightclub": [
+      "câu lạc bộ giải trí",
+      "câu lạc bộ đêm"
+    ],
+    "nightfall": [
+      "chạng vạng"
+    ],
+    "nightingale": [
+      "dạ oanh"
+    ],
+    "nile": [
+      "Nin",
+      "Nhĩ Lô"
+    ],
+    "nineteen": [
+      "mười chín"
+    ],
+    "ninety": [
+      "chín mươi"
+    ],
+    "nipple": [
+      "núm vú"
+    ],
+    "nirvana": [
+      "niết bàn",
+      "vô vi"
+    ],
+    "nitrogen": [
+      "nitơ",
+      "đạm khí"
+    ],
+    "nobility": [
+      "quí tộc"
+    ],
+    "nod": [
+      "gật đầu",
+      "gật"
+    ],
+    "noisy": [
+      "ồn",
+      "ầm"
+    ],
+    "nomad": [
+      "người dân du mục"
+    ],
+    "nomenclature": [
+      "danh pháp"
+    ],
+    "nominate": [
+      "đề cử",
+      "xướng danh"
+    ],
+    "nonfiction": [
+      "phi hư cấu",
+      "không hư cấu"
+    ],
+    "nonstop": [
+      "thẳng"
+    ],
+    "noodle": [
+      "bánh",
+      "bún"
+    ],
+    "nook": [
+      "xó"
+    ],
+    "noose": [
+      "thòng lọng"
+    ],
+    "normalization": [
+      "sự thông thường hoá"
+    ],
+    "normandy": [
+      "Normandie"
+    ],
+    "nostalgia": [
+      "hoài niệm",
+      "nuối tiếc"
+    ],
+    "notary": [
+      "công chứng viên"
+    ],
+    "notebook": [
+      "tập",
+      "vở"
+    ],
+    "noun": [
+      "danh từ"
+    ],
+    "nourishment": [
+      "sự nuôi dưỡng",
+      "dinh dưỡng"
+    ],
+    "novelist": [
+      "tiểu thuyết gia"
+    ],
+    "novella": [
+      "tiểu thuyết ngắn",
+      "truyện vừa"
+    ],
+    "nozzle": [
+      "vòi phun"
+    ],
+    "nuance": [
+      "sắc thái"
+    ],
+    "nucleus": [
+      "hạt nhân",
+      "nhân tế bào"
+    ],
+    "null": [
+      "rỗng"
+    ],
+    "numb": [
+      "tê",
+      "tê cóng"
+    ],
+    "nuremberg": [
+      "Nürnberg",
+      "Nuyn-béc"
+    ],
+    "nurture": [
+      "nuôi dưỡng"
+    ],
+    "nutmeg": [
+      "hạt nhục đậu khấu"
+    ],
+    "nutrient": [
+      "chất dinh dưỡng",
+      "dưỡng chất"
+    ],
+    "nylon": [
+      "ni lông",
+      "ni-lông"
+    ],
+    "oasis": [
+      "ốc đảo"
+    ],
+    "oatmeal": [
+      "cháo bột yến mạch"
+    ],
+    "obedience": [
+      "sự nghe lời"
+    ],
+    "obedient": [
+      "vâng lời",
+      "tuân lời"
+    ],
+    "obese": [
+      "béo phì"
+    ],
+    "obi": [
+      "dải lưng thêu"
+    ],
+    "obituary": [
+      "cáo phó"
+    ],
+    "oblivious": [
+      "tỉnh bơ",
+      "hay quên"
+    ],
+    "obnoxious": [
+      "câng"
+    ],
+    "observatory": [
+      "đài thiên văn"
+    ],
+    "obsolete": [
+      "lỗi thời",
+      "mai một"
+    ],
+    "obstacle": [
+      "bước cản",
+      "chướng ngại"
+    ],
+    "obstetrics": [
+      "sản khoa học"
+    ],
+    "obstruct": [
+      "chắn"
+    ],
+    "oceania": [
+      "Châu Đại Dương",
+      "Châu Úc"
+    ],
+    "octane": [
+      "octan"
+    ],
+    "octopus": [
+      "bạch tuộc"
+    ],
+    "odor": [
+      "mùi",
+      "hơi"
+    ],
+    "offend": [
+      "xúc phạm"
+    ],
+    "offline": [
+      "ngoại tuyến",
+      "gián tuyến"
+    ],
+    "ointment": [
+      "pom-mát",
+      "thuốc mỡ"
+    ],
+    "okinawa": [
+      "Okinawa",
+      "Tỉnh Okinawa"
+    ],
+    "olaf": [
+      "Ô-láp"
+    ],
+    "olympus": [
+      "núi Olympus"
+    ],
+    "oman": [
+      "Ô-man"
+    ],
+    "omen": [
+      "điềm"
+    ],
+    "omit": [
+      "lược",
+      "lược bỏ"
+    ],
+    "oncology": [
+      "ung thư học"
+    ],
+    "oneself": [
+      "mình"
+    ],
+    "opal": [
+      "opan",
+      "ngọc mắt mèo"
+    ],
+    "opium": [
+      "thuốc phiện",
+      "á phiện"
+    ],
+    "oppressive": [
+      "áp chế"
+    ],
+    "optics": [
+      "quang học"
+    ],
+    "optimism": [
+      "sự lạc quan"
+    ],
+    "optimist": [
+      "người lạc quan"
+    ],
+    "orbital": [
+      "obitan",
+      "đám mây"
+    ],
+    "orchard": [
+      "vườn cây ăn trái",
+      "vườn cây ăn quả"
+    ],
+    "orchid": [
+      "phong lan",
+      "lan"
+    ],
+    "ordinance": [
+      "điều lệ"
+    ],
+    "organism": [
+      "sinh vật"
+    ],
+    "orgasm": [
+      "cực khoái"
+    ],
+    "originate": [
+      "sáng tạo",
+      "phát minh"
+    ],
+    "orion": [
+      "Lạp Hộ"
+    ],
+    "orphan": [
+      "trẻ mồ côi",
+      "cô nhi"
+    ],
+    "orphanage": [
+      "trại trẻ mồ côi",
+      "cô nhi viện"
+    ],
+    "orthodoxy": [
+      "Chính Thống giáo Đông phương"
+    ],
+    "orwell": [
+      "Ô-oen"
+    ],
+    "osaka": [
+      "Ōsaka",
+      "Osaka"
+    ],
+    "oslo": [
+      "Ốt-xlô"
+    ],
+    "osteoporosis": [
+      "chứng loãng xương"
+    ],
+    "ostrich": [
+      "đà điểu"
+    ],
+    "otter": [
+      "rái cá",
+      "rái"
+    ],
+    "ottoman": [
+      "Ô-xman",
+      "Ôt-tôman"
+    ],
+    "ouch": [
+      "úi da",
+      "ai da"
+    ],
+    "outage": [
+      "mất điện",
+      "cúp điện"
+    ],
+    "outpost": [
+      "tiền đồn"
+    ],
+    "outreach": [
+      "tiếp cận"
+    ],
+    "outsider": [
+      "người ngoài"
+    ],
+    "outsourcing": [
+      "thuê ngoài"
+    ],
+    "ovation": [
+      "pháo tay"
+    ],
+    "overcast": [
+      "âm u",
+      "u ám"
+    ],
+    "overflow": [
+      "tràn",
+      "tràn ngập"
+    ],
+    "overlap": [
+      "chồng chéo"
+    ],
+    "overload": [
+      "quá tải",
+      "tải bội"
+    ],
+    "overlook": [
+      "bỏ qua"
+    ],
+    "override": [
+      "ghi đè"
+    ],
+    "overtake": [
+      "vượt"
+    ],
+    "overthrow": [
+      "lật đổ"
+    ],
+    "oxide": [
+      "oxyt",
+      "oxit"
+    ],
+    "oyster": [
+      "hàu",
+      "sò"
+    ],
+    "ozone": [
+      "ozon"
+    ],
+    "packet": [
+      "gói"
+    ],
+    "pact": [
+      "điều ước",
+      "hiệp ước"
+    ],
+    "paddle": [
+      "chèo"
+    ],
+    "paddy": [
+      "ruộng lúa"
+    ],
+    "pagan": [
+      "ngoại đạo"
+    ],
+    "pajamas": [
+      "đồ ngủ",
+      "pijama"
+    ],
+    "palate": [
+      "vòm miệng"
+    ],
+    "palladium": [
+      "palađi"
+    ],
+    "pancake": [
+      "bánh nướng chảo",
+      "bánh kếp"
+    ],
+    "pancreas": [
+      "tụy",
+      "lá mía"
+    ],
+    "panda": [
+      "gấu trúc"
+    ],
+    "pandemic": [
+      "đại dịch"
+    ],
+    "panorama": [
+      "toàn cảnh"
+    ],
+    "panther": [
+      "báo đen"
+    ],
+    "panties": [
+      "quần trẻ con",
+      "xi-líp"
+    ],
+    "parachute": [
+      "dù",
+      "dù hàng không"
+    ],
+    "paradox": [
+      "nghịch lý"
+    ],
+    "paraguay": [
+      "Pa-ra-goay"
+    ],
+    "paralysis": [
+      "liệt"
+    ],
+    "parameter": [
+      "tham số",
+      "thông số"
+    ],
+    "paranoia": [
+      "hoang tưởng ảo giác"
+    ],
+    "paranormal": [
+      "siêu tâm linh",
+      "huyền bí"
+    ],
+    "parasite": [
+      "kí sinh trùng",
+      "vật ký sinh"
+    ],
+    "parcel": [
+      "gói",
+      "bưu kiện"
+    ],
+    "parchment": [
+      "giấy da"
+    ],
+    "parrot": [
+      "vẹt",
+      "két"
+    ],
+    "parsley": [
+      "mùi tây"
+    ],
+    "passover": [
+      "lễ Quá Hải",
+      "lễ Vượt Qua"
+    ],
+    "pastel": [
+      "phấn tiên"
+    ],
+    "pasture": [
+      "bãi chăn",
+      "đồng cỏ"
+    ],
+    "pathogen": [
+      "mầm bệnh"
+    ],
+    "pathology": [
+      "bịnh lý học",
+      "bệnh học"
+    ],
+    "patriarch": [
+      "thượng phụ",
+      "mục thủ"
+    ],
+    "patriot": [
+      "người yêu nước",
+      "nhà ái quốc"
+    ],
+    "patriotism": [
+      "lòng ái quốc",
+      "chủ nghĩa yêu nước"
+    ],
+    "pavement": [
+      "vỉa hè"
+    ],
+    "pavilion": [
+      "lều",
+      "bạt"
+    ],
+    "paw": [
+      "chân",
+      "cẳng"
+    ],
+    "pawn": [
+      "cầm đồ",
+      "tốt"
+    ],
+    "payer": [
+      "người trả tiền"
+    ],
+    "pea": [
+      "đậu",
+      "cây đậu"
+    ],
+    "peacekeeping": [
+      "gìn giữ hòa bình"
+    ],
+    "peacetime": [
+      "thời bình"
+    ],
+    "peach": [
+      "đào"
+    ],
+    "peacock": [
+      "công"
+    ],
+    "pear": [
+      "lê",
+      "quả lê"
+    ],
+    "peasant": [
+      "nông dân"
+    ],
+    "peck": [
+      "mổ"
+    ],
+    "pedagogy": [
+      "phương pháp giáo dục"
+    ],
+    "pedal": [
+      "bàn đạp",
+      "đạp"
+    ],
+    "pedestal": [
+      "bệ"
+    ],
+    "pedestrian": [
+      "bằng chân",
+      "người đi bộ"
+    ],
+    "pediatrician": [
+      "bác sĩ khoa nhi",
+      "bác sĩ nhi"
+    ],
+    "pedophile": [
+      "người ái nhi"
+    ],
+    "pedophilia": [
+      "ái nhi"
+    ],
+    "pegasus": [
+      "Phi Mã",
+      "Thiên Mã"
+    ],
+    "pelican": [
+      "bồ nông"
+    ],
+    "pelvis": [
+      "khung chậu",
+      "xương chậu"
+    ],
+    "pendulum": [
+      "quả lắc",
+      "con lắc"
+    ],
+    "penicillin": [
+      "penicillin"
+    ],
+    "pentagon": [
+      "ngũ giác",
+      "hình năm cạnh"
+    ],
+    "perfume": [
+      "mùi thơm",
+      "hương thơm"
+    ],
+    "perimeter": [
+      "chu vi"
+    ],
+    "periodically": [
+      "tuần hoàn",
+      "định kỳ"
+    ],
+    "perm": [
+      "Pecmi"
+    ],
+    "permian": [
+      "kỉ Péc-mi"
+    ],
+    "perpetuate": [
+      "nối"
+    ],
+    "persecution": [
+      "sự khủng bố"
+    ],
+    "persia": [
+      "Ba Tư"
+    ],
+    "persist": [
+      "kiên trì"
+    ],
+    "pervasive": [
+      "lan toả",
+      "rộng khắp"
+    ],
+    "petal": [
+      "cánh hoa",
+      "cánh"
+    ],
+    "pharaoh": [
+      "pha-ra-ông"
+    ],
+    "pharmacist": [
+      "dược sĩ",
+      "dược sư"
+    ],
+    "pharmacology": [
+      "dược lý học",
+      "dược học"
+    ],
+    "pheasant": [
+      "gà lôi",
+      "trĩ"
+    ],
+    "phenotype": [
+      "kiểu hình"
+    ],
+    "phew": [
+      "phù"
+    ],
+    "philosopher": [
+      "nhà triết học",
+      "triết gia"
+    ],
+    "phobia": [
+      "ám ảnh sợ",
+      "hội chứng sợ"
+    ],
+    "phosphorus": [
+      "photpho",
+      "phốtpho"
+    ],
+    "phosphorylation": [
+      "photphat hoá"
+    ],
+    "photosynthesis": [
+      "quang hợp"
+    ],
+    "physicist": [
+      "nhà vật lí"
+    ],
+    "physiology": [
+      "sinh lý học"
+    ],
+    "physique": [
+      "thể chất"
+    ],
+    "picasso": [
+      "Pi-ca-sô",
+      "Phi Cát"
+    ],
+    "pickle": [
+      "dưa chua",
+      "dưa muối"
+    ],
+    "pictorial": [
+      "họa báo"
+    ],
+    "picturesque": [
+      "đẹp như tranh"
+    ],
+    "pigeon": [
+      "bồ câu"
+    ],
+    "pigment": [
+      "sắc tố",
+      "chất màu"
+    ],
+    "pikachu": [
+      "Pikachu"
+    ],
+    "pilgrim": [
+      "người hành hương"
+    ],
+    "pilgrimage": [
+      "cuộc hành hương"
+    ],
+    "pillar": [
+      "cột"
+    ],
+    "pimp": [
+      "kẻ mối lái",
+      "ma cô"
+    ],
+    "pinch": [
+      "véo",
+      "béo"
+    ],
+    "pineapple": [
+      "dứa",
+      "cây dứa"
+    ],
+    "pious": [
+      "sùng đạo"
+    ],
+    "piston": [
+      "pít tông"
+    ],
+    "pitchfork": [
+      "chĩa"
+    ],
+    "pixel": [
+      "điểm ảnh"
+    ],
+    "placenta": [
+      "nhau",
+      "thực giá noãn"
+    ],
+    "plagiarism": [
+      "đạo văn"
+    ],
+    "plaintiff": [
+      "nguyên cáo",
+      "nguyên đơn"
+    ],
+    "plankton": [
+      "sinh vật phù du"
+    ],
+    "plantation": [
+      "đồn điền"
+    ],
+    "plateau": [
+      "cao nguyên"
+    ],
+    "platoon": [
+      "trung đội",
+      "tiểu đội"
+    ],
+    "playwright": [
+      "nhà soạn kịch"
+    ],
+    "plead": [
+      "bào chữa",
+      "biện hộ"
+    ],
+    "plenary": [
+      "toàn thể"
+    ],
+    "plough": [
+      "cày"
+    ],
+    "pluck": [
+      "nhổ"
+    ],
+    "plum": [
+      "mận",
+      "quả mận"
+    ],
+    "plumber": [
+      "thợ sửa ống nước"
+    ],
+    "plural": [
+      "số nhiều"
+    ],
+    "pluto": [
+      "sao Diêm Vương",
+      "Diêm Vương Tinh"
+    ],
+    "plutonium": [
+      "plutoni"
+    ],
+    "plywood": [
+      "ván ép"
+    ],
+    "pneumonia": [
+      "viêm phổi",
+      "sưng phổi"
+    ],
+    "pointer": [
+      "que chỉ"
+    ],
+    "poke": [
+      "chọc"
+    ],
+    "polaris": [
+      "Polaris"
+    ],
+    "pollen": [
+      "phấn",
+      "phấn hoa"
+    ],
+    "polo": [
+      "mã cầu",
+      "pô-lô"
+    ],
+    "polygon": [
+      "đa giác"
+    ],
+    "polymer": [
+      "hợp chất cao phân tử"
+    ],
+    "polynomial": [
+      "đa thức"
+    ],
+    "poodle": [
+      "chó săn vịt"
+    ],
+    "poop": [
+      "ỉa",
+      "phân"
+    ],
+    "popcorn": [
+      "bắp rang",
+      "bỏng ngô"
+    ],
+    "poplar": [
+      "dương"
+    ],
+    "populism": [
+      "chủ nghĩa dân tuý"
+    ],
+    "populous": [
+      "đông",
+      "đông đảo"
+    ],
+    "porcelain": [
+      "sứ",
+      "đồ sứ"
+    ],
+    "pore": [
+      "lỗ chân lông"
+    ],
+    "pornographic": [
+      "khiêu dâm"
+    ],
+    "pornography": [
+      "khiêu dâm"
+    ],
+    "porridge": [
+      "cháo"
+    ],
+    "postcard": [
+      "bưu thiếp"
+    ],
+    "postcode": [
+      "mã bưu chính",
+      "mã thư tín"
+    ],
+    "postgraduate": [
+      "cao học"
+    ],
+    "postpone": [
+      "hoãn"
+    ],
+    "potassium": [
+      "kali"
+    ],
+    "potion": [
+      "nước bùa",
+      "thần dược"
+    ],
+    "pottery": [
+      "gốm",
+      "đồ gốm"
+    ],
+    "practise": [
+      "luyện tập"
+    ],
+    "prague": [
+      "Pra-ha",
+      "Thiệp Khẩu"
+    ],
+    "prairie": [
+      "thảo nguyên"
+    ],
+    "prank": [
+      "trò chơi khăm",
+      "chơi khăm"
+    ],
+    "preacher": [
+      "người thuyết giáo"
+    ],
+    "preceding": [
+      "vừa rồi",
+      "vừa nãy"
+    ],
+    "precipitation": [
+      "giáng thủy",
+      "sự kết tủa"
+    ],
+    "predator": [
+      "động vật ăn thịt"
+    ],
+    "preface": [
+      "lời tựa"
+    ],
+    "prefecture": [
+      "tỉnh"
+    ],
+    "prefix": [
+      "tiền tố"
+    ],
+    "prehistoric": [
+      "tiền sử"
+    ],
+    "prejudiced": [
+      "có thành kiến"
+    ],
+    "prelude": [
+      "khúc dạo dầu",
+      "dạo đầu"
+    ],
+    "premature": [
+      "yểu",
+      "non"
+    ],
+    "preposterous": [
+      "vô lý"
+    ],
+    "prestige": [
+      "uy tín",
+      "thanh thế"
+    ],
+    "pretense": [
+      "giả tạo"
+    ],
+    "pretentious": [
+      "tự phụ"
+    ],
+    "pretext": [
+      "cớ",
+      "mượn cớ"
+    ],
+    "pretoria": [
+      "Prê-tô-ri-a",
+      "Pri-tơ-ri-a"
+    ],
+    "primate": [
+      "động vật có tay",
+      "động vật linh trưởng"
+    ],
+    "primer": [
+      "sách vỡ lòng",
+      "sách học vấn"
+    ],
+    "prism": [
+      "hình lăng trụ",
+      "lăng kính"
+    ],
+    "privatization": [
+      "tư nhân hóa"
+    ],
+    "procedural": [
+      "theo thủ tục"
+    ],
+    "prognosis": [
+      "chẩn đoán",
+      "dự đoán"
+    ],
+    "programmer": [
+      "lập trình viên"
+    ],
+    "prohibition": [
+      "sự cấm",
+      "cấm chỉ"
+    ],
+    "projector": [
+      "máy chiếu"
+    ],
+    "proletariat": [
+      "giai cấp vô sản"
+    ],
+    "prometheus": [
+      "Prometheus"
+    ],
+    "pronoun": [
+      "đại từ"
+    ],
+    "pronounce": [
+      "phát âm"
+    ],
+    "pronunciation": [
+      "cách phát âm",
+      "cách đọc"
+    ],
+    "propeller": [
+      "cánh quạt",
+      "chân vịt"
+    ],
+    "prophecy": [
+      "tiên tri"
+    ],
+    "prose": [
+      "văn xuôi"
+    ],
+    "prosperous": [
+      "phồn vinh"
+    ],
+    "prostate": [
+      "tuyến tiền liệt",
+      "nhiếp hộ tuyến"
+    ],
+    "prostitute": [
+      "đĩ",
+      "điếm"
+    ],
+    "prostitution": [
+      "sự mại dâm"
+    ],
+    "protagonist": [
+      "nam chính",
+      "nữ chính"
+    ],
+    "protester": [
+      "người biểu tình"
+    ],
+    "provence": [
+      "Provence"
+    ],
+    "proverb": [
+      "tục ngữ"
+    ],
+    "prussia": [
+      "Phổ",
+      "Phổ Lỗ Sĩ"
+    ],
+    "psalm": [
+      "thánh ca",
+      "thánh thi"
+    ],
+    "psalms": [
+      "Thánh Vịnh",
+      "Thi Thiên"
+    ],
+    "pseudonym": [
+      "biệt hiệu",
+      "bút danh"
+    ],
+    "psyche": [
+      "tâm",
+      "tinh thần"
+    ],
+    "psychiatrist": [
+      "nhà tâm thần học"
+    ],
+    "psychiatry": [
+      "tâm thần học",
+      "khoa tâm thần"
+    ],
+    "psychoanalysis": [
+      "phân tâm học"
+    ],
+    "psychotherapy": [
+      "tâm lý trị liệu"
+    ],
+    "puberty": [
+      "dậy thì"
+    ],
+    "puddle": [
+      "vũng",
+      "hũm"
+    ],
+    "puffy": [
+      "sưng vù"
+    ],
+    "pug": [
+      "pug",
+      "chó mặt xệ"
+    ],
+    "pulpit": [
+      "tòa giảng",
+      "toà giảng"
+    ],
+    "punctuation": [
+      "chấm câu"
+    ],
+    "purgatory": [
+      "luyện ngục"
+    ],
+    "purge": [
+      "thanh trừng"
+    ],
+    "purity": [
+      "sự thuần khiết"
+    ],
+    "pyongyang": [
+      "Bình Nhưỡng"
+    ],
+    "pyramid": [
+      "kim tự tháp"
+    ],
+    "quack": [
+      "cạc cạc",
+      "cạp cạp"
+    ],
+    "quail": [
+      "cút",
+      "cun cút"
+    ],
+    "qualifier": [
+      "vòng loại",
+      "từ định tính"
+    ],
+    "qualitative": [
+      "tính chất",
+      "chất"
+    ],
+    "quantitative": [
+      "lượng",
+      "số lượng"
+    ],
+    "quarantine": [
+      "phong tỏa kiểm dịch",
+      "phong tỏa dịch bệnh"
+    ],
+    "quarrel": [
+      "cãi cọ",
+      "cãi vã"
+    ],
+    "quarry": [
+      "mỏ đá"
+    ],
+    "quartz": [
+      "thạch anh"
+    ],
+    "questionnaire": [
+      "bản câu hỏi",
+      "bảng câu hỏi"
+    ],
+    "quilt": [
+      "duvet"
+    ],
+    "rabid": [
+      "dại"
+    ],
+    "rabies": [
+      "dại",
+      "bệnh dại"
+    ],
+    "raccoon": [
+      "gấu mèo",
+      "gấu trúc Mỹ"
+    ],
+    "racetrack": [
+      "đường đua"
+    ],
+    "racket": [
+      "vợt"
+    ],
+    "radiator": [
+      "ra-đi-a-tơ",
+      "cái lò sưởi"
+    ],
+    "radiotherapy": [
+      "xạ trị"
+    ],
+    "raffle": [
+      "xổ số"
+    ],
+    "raft": [
+      "bè"
+    ],
+    "rag": [
+      "giẻ"
+    ],
+    "rainforest": [
+      "rừng mưa"
+    ],
+    "rainwater": [
+      "nước mưa"
+    ],
+    "rainy": [
+      "trời mưa",
+      "có mưa"
+    ],
+    "raisin": [
+      "nho khô"
+    ],
+    "rake": [
+      "bồ cào",
+      "bừa cỏ"
+    ],
+    "ramadan": [
+      "ra-ma-đan"
+    ],
+    "rampage": [
+      "bạo lực",
+      "cuồng nộ"
+    ],
+    "rash": [
+      "mụn",
+      "mẩn"
+    ],
+    "raspberry": [
+      "mâm xôi"
+    ],
+    "ration": [
+      "khẩu phần"
+    ],
+    "rattle": [
+      "rung lách cách",
+      "rung lạch cạch"
+    ],
+    "razor": [
+      "dao cạo",
+      "dao cạo điện"
+    ],
+    "reactionary": [
+      "phản động",
+      "người phản động"
+    ],
+    "realtor": [
+      "địa ốc viên",
+      "chuyên viên địa ốc"
+    ],
+    "reap": [
+      "gặt"
+    ],
+    "reassure": [
+      "trấn an"
+    ],
+    "reboot": [
+      "khởi động lại"
+    ],
+    "receptionist": [
+      "tiếp tân"
+    ],
+    "reciprocal": [
+      "đối ứng"
+    ],
+    "reckon": [
+      "tính toán"
+    ],
+    "reconciliation": [
+      "hoà giải"
+    ],
+    "reconstruct": [
+      "phục dựng"
+    ],
+    "recorder": [
+      "máy ghi âm",
+      "máy ghi hình"
+    ],
+    "rectangle": [
+      "hình chữ nhật"
+    ],
+    "recycle": [
+      "tái chế"
+    ],
+    "redeem": [
+      "cứu chuộc",
+      "chuộc"
+    ],
+    "redhead": [
+      "người tóc đỏ"
+    ],
+    "redundant": [
+      "rườm rà",
+      "dư thừa"
+    ],
+    "reflex": [
+      "phản xạ"
+    ],
+    "reformation": [
+      "Cải cách Kháng nghị",
+      "Cải cách Tin Lành"
+    ],
+    "refrain": [
+      "điệp khúc"
+    ],
+    "refresh": [
+      "làm mới",
+      "làm tươi"
+    ],
+    "refrigerator": [
+      "tủ lạnh"
+    ],
+    "refute": [
+      "bác bỏ"
+    ],
+    "reich": [
+      "đế chế"
+    ],
+    "rein": [
+      "dây cương"
+    ],
+    "reindeer": [
+      "tuần lộc"
+    ],
+    "relentlessly": [
+      "rầm rầm"
+    ],
+    "relic": [
+      "di tích"
+    ],
+    "remnant": [
+      "tàn dư"
+    ],
+    "remorse": [
+      "hối hận"
+    ],
+    "renounce": [
+      "từ bỏ"
+    ],
+    "renovate": [
+      "tu sửa"
+    ],
+    "repentance": [
+      "ăn năn"
+    ],
+    "replenish": [
+      "bổ sung"
+    ],
+    "repression": [
+      "đàn áp"
+    ],
+    "reptile": [
+      "động vật bò sát",
+      "loài bò sát"
+    ],
+    "resentment": [
+      "giận"
+    ],
+    "reside": [
+      "cư trú",
+      "định cư"
+    ],
+    "residue": [
+      "bã"
+    ],
+    "resilience": [
+      "tính chống chịu"
+    ],
+    "resilient": [
+      "đàn hồi"
+    ],
+    "resin": [
+      "nhựa",
+      "mủ"
+    ],
+    "resistor": [
+      "điện trở"
+    ],
+    "resonate": [
+      "cộng hưởng"
+    ],
+    "respectful": [
+      "lễ phép",
+      "kính cẩn"
+    ],
+    "restriction": [
+      "hạn chế"
+    ],
+    "restrictive": [
+      "hạn chế"
+    ],
+    "resurrect": [
+      "hồi sinh"
+    ],
+    "rethink": [
+      "nghĩ lại"
+    ],
+    "retina": [
+      "võng mạc",
+      "màng lưới"
+    ],
+    "retrieve": [
+      "thu thập"
+    ],
+    "reunification": [
+      "thống nhất"
+    ],
+    "reuse": [
+      "tái sử dụng",
+      "sử dụng lại"
+    ],
+    "revere": [
+      "tôn kính",
+      "cung kính"
+    ],
+    "reviewer": [
+      "nhà phê bình"
+    ],
+    "revise": [
+      "ôn",
+      "ôn tập"
+    ],
+    "revive": [
+      "hồi sinh"
+    ],
+    "revoke": [
+      "thu hồi"
+    ],
+    "revolt": [
+      "cuộc nổi dậy",
+      "cuộc khởi nghĩa"
+    ],
+    "rewind": [
+      "quấn lại"
+    ],
+    "rhodes": [
+      "Rhodes"
+    ],
+    "rhyme": [
+      "vần"
+    ],
+    "rib": [
+      "xương sườn",
+      "sườn"
+    ],
+    "riddle": [
+      "câu đố"
+    ],
+    "ridicule": [
+      "nhạo báng",
+      "giễu cợt"
+    ],
+    "riga": [
+      "Ri-ga"
+    ],
+    "rigged": [
+      "bị dàn xếp"
+    ],
+    "rigid": [
+      "cứng ngắc",
+      "cứng nhắc"
+    ],
+    "ringtone": [
+      "nhạc chờ",
+      "nhạc chuông"
+    ],
+    "rinse": [
+      "tráng"
+    ],
+    "ripe": [
+      "chín"
+    ],
+    "ripple": [
+      "gợn",
+      "gợn sóng"
+    ],
+    "rite": [
+      "lễ nghi",
+      "nghi lễ"
+    ],
+    "riyadh": [
+      "E-ri-át",
+      "Ri-i-át"
+    ],
+    "roadblock": [
+      "rào chắn"
+    ],
+    "roadshow": [
+      "trình diễn sản phẩm"
+    ],
+    "roadside": [
+      "rệ đường"
+    ],
+    "robber": [
+      "kẻ cướp",
+      "kẻ ăn cướp"
+    ],
+    "rodent": [
+      "gặm nhấm"
+    ],
+    "rollercoaster": [
+      "tàu lượn siêu tốc"
+    ],
+    "romanian": [
+      "Ru-ma-ni",
+      "tiếng Romania"
+    ],
+    "rooftop": [
+      "nóc"
+    ],
+    "rook": [
+      "xe"
+    ],
+    "rooster": [
+      "gà trống",
+      "con gà trống"
+    ],
+    "rosary": [
+      "mân côi",
+      "kinh mân côi"
+    ],
+    "rosemary": [
+      "hương thảo"
+    ],
+    "roulette": [
+      "cò quay"
+    ],
+    "roundabout": [
+      "vòng xuyến",
+      "bùng binh"
+    ],
+    "router": [
+      "router",
+      "cầu dẫn"
+    ],
+    "routing": [
+      "định tuyến"
+    ],
+    "rowan": [
+      "thanh hương trà"
+    ],
+    "rsvp": [
+      "hồi báo",
+      "phúc đáp"
+    ],
+    "rudder": [
+      "bánh lái"
+    ],
+    "rudimentary": [
+      "cơ bản"
+    ],
+    "rugged": [
+      "lực lưỡng",
+      "vạm vỡ"
+    ],
+    "rumor": [
+      "tin đồn",
+      "lời đồn"
+    ],
+    "ruse": [
+      "mẹo"
+    ],
+    "rust": [
+      "rỉ sét",
+      "rỉ"
+    ],
+    "rusty": [
+      "rỉ"
+    ],
+    "ruthless": [
+      "tàn nhẫn"
+    ],
+    "rwanda": [
+      "Ru-an-đa"
+    ],
+    "rye": [
+      "lúa mạch đen"
+    ],
+    "sabotage": [
+      "sự phá hoại",
+      "phá hoại"
+    ],
+    "sacrament": [
+      "bí tích"
+    ],
+    "saddle": [
+      "yên",
+      "yên xe"
+    ],
+    "saffron": [
+      "nghệ tây"
+    ],
+    "sahara": [
+      "Xa-ha-ra"
+    ],
+    "saigon": [
+      "Sài Gòn"
+    ],
+    "sakura": [
+      "anh đào Nhật Bản",
+      "anh đào"
+    ],
+    "salaam": [
+      "xa-lam"
+    ],
+    "salesman": [
+      "người bán hàng"
+    ],
+    "saliva": [
+      "nước bọt",
+      "nước miếng"
+    ],
+    "salty": [
+      "mặn"
+    ],
+    "salvage": [
+      "cứu hộ"
+    ],
+    "samoa": [
+      "Xa-moa"
+    ],
+    "samson": [
+      "Sam-sôn"
+    ],
+    "samurai": [
+      "xamurai",
+      "samurai"
+    ],
+    "sanction": [
+      "sự phê chuẩn",
+      "sự chấp nhận"
+    ],
+    "sandbox": [
+      "hộp cát"
+    ],
+    "sandstone": [
+      "sa thạch"
+    ],
+    "sanitary": [
+      "vệ sinh",
+      "sạch"
+    ],
+    "sanitation": [
+      "vệ sinh"
+    ],
+    "sanskrit": [
+      "tiếng Phạn",
+      "Phạn ngữ"
+    ],
+    "santiago": [
+      "Xan-ti-a-gô"
+    ],
+    "sapphire": [
+      "xa-phia"
+    ],
+    "sarajevo": [
+      "Xa-rai-ê-vô"
+    ],
+    "sarcasm": [
+      "sự nói mỉa",
+      "sự mỉa mai"
+    ],
+    "satin": [
+      "xa-tanh"
+    ],
+    "satire": [
+      "châm biếm"
+    ],
+    "satisfactory": [
+      "đạt yêu cầu",
+      "tốt đẹp"
+    ],
+    "saturn": [
+      "sao Thổ"
+    ],
+    "saucepan": [
+      "cái soong",
+      "cái nồi"
+    ],
+    "sauna": [
+      "phòng tắm hơi"
+    ],
+    "savior": [
+      "cứu tinh"
+    ],
+    "savory": [
+      "ngọt thịt"
+    ],
+    "saxon": [
+      "Sắc"
+    ],
+    "saxophone": [
+      "xacxô",
+      "xắc xô"
+    ],
+    "scaffolding": [
+      "giàn",
+      "giàn giáo"
+    ],
+    "scalp": [
+      "da đầu"
+    ],
+    "scandinavia": [
+      "Xcan-đi-na-vi"
+    ],
+    "scapegoat": [
+      "con dê gánh tội",
+      "bia đỡ đạn"
+    ],
+    "scar": [
+      "sẹo",
+      "thẹo"
+    ],
+    "scarecrow": [
+      "bẹo chim",
+      "bồ nhìn"
+    ],
+    "scarf": [
+      "khăn choàng cổ",
+      "khăn quàng cổ"
+    ],
+    "scarlet": [
+      "đỏ"
+    ],
+    "scattering": [
+      "tán xạ"
+    ],
+    "scenery": [
+      "phong cảnh"
+    ],
+    "schism": [
+      "xích mích",
+      "mâu thuẫn"
+    ],
+    "schizophrenia": [
+      "tâm thần phân liệt"
+    ],
+    "schoolgirl": [
+      "nữ sinh"
+    ],
+    "scientifically": [
+      "khoa học",
+      "bằng phương pháp khoa học"
+    ],
+    "scissors": [
+      "kéo"
+    ],
+    "scooter": [
+      "xe xcutơ",
+      "xe tay ga"
+    ],
+    "scorn": [
+      "khinh bỉ",
+      "khinh miệt"
+    ],
+    "scorpio": [
+      "Thiên Yết",
+      "Thiên Hạt"
+    ],
+    "scorpion": [
+      "bò cạp",
+      "bọ cạp"
+    ],
+    "scourge": [
+      "tai ương"
+    ],
+    "scramble": [
+      "bon chen"
+    ],
+    "scrape": [
+      "nạo",
+      "cạo"
+    ],
+    "scraps": [
+      "thực phẩm thừa"
+    ],
+    "screenplay": [
+      "kịch bản"
+    ],
+    "screenshot": [
+      "ảnh chụp màn hình",
+      "hình chụp màn hình"
+    ],
+    "screenwriter": [
+      "nhà biên kịch",
+      "biên kịch viên"
+    ],
+    "screwdriver": [
+      "chìa vít",
+      "tuộc vít"
+    ],
+    "scribe": [
+      "thư lại"
+    ],
+    "scripture": [
+      "thánh thư"
+    ],
+    "sculptor": [
+      "nhà điêu khắc"
+    ],
+    "seafood": [
+      "hải sản",
+      "đồ biển"
+    ],
+    "seaside": [
+      "bờ biển"
+    ],
+    "seasoning": [
+      "gia vị"
+    ],
+    "seawater": [
+      "nước biển"
+    ],
+    "seaweed": [
+      "tảo biển",
+      "rong biển"
+    ],
+    "secession": [
+      "sự ra khỏi",
+      "sự ly khai"
+    ],
+    "secretariat": [
+      "văn phòng tổng thư ký",
+      "phòng bí thư"
+    ],
+    "sect": [
+      "giáo phái"
+    ],
+    "secularism": [
+      "chủ nghĩa thế tục",
+      "thế tục chủ nghĩa"
+    ],
+    "sedan": [
+      "kiệu"
+    ],
+    "sedative": [
+      "làm dịu"
+    ],
+    "sediment": [
+      "trầm tích"
+    ],
+    "sedition": [
+      "sự xúi giục nổi loạn",
+      "cuộc nổi loạn"
+    ],
+    "seduction": [
+      "sự quyến rũ",
+      "sự dụ dỗ"
+    ],
+    "seismic": [
+      "địa chấn"
+    ],
+    "seizure": [
+      "cơn động kinh",
+      "giật kinh phong"
+    ],
+    "seldom": [
+      "ít khi"
+    ],
+    "selfie": [
+      "tự sướng",
+      "ảnh tự sướng"
+    ],
+    "semantics": [
+      "ngữ nghĩa học",
+      "ngữ nghĩa"
+    ],
+    "semen": [
+      "tinh dịch"
+    ],
+    "semiconductor": [
+      "chất bán dẫn"
+    ],
+    "semifinal": [
+      "bán kết"
+    ],
+    "seminar": [
+      "xêmina"
+    ],
+    "seminary": [
+      "chủng viện"
+    ],
+    "semitic": [
+      "Xê-mít"
+    ],
+    "sender": [
+      "người gửi"
+    ],
+    "senegal": [
+      "Xê-nê-gan"
+    ],
+    "seniority": [
+      "thâm niên"
+    ],
+    "sensual": [
+      "xác thịt",
+      "nhục dục"
+    ],
+    "sentimental": [
+      "đa cảm"
+    ],
+    "serb": [
+      "người Xéc-bi"
+    ],
+    "serbia": [
+      "Xéc-bi"
+    ],
+    "serbian": [
+      "người Xéc-bi",
+      "tiếng Xéc-bi"
+    ],
+    "sermon": [
+      "thuyết giáo"
+    ],
+    "serum": [
+      "huyết thanh"
+    ],
+    "sesame": [
+      "mè",
+      "vừng"
+    ],
+    "sew": [
+      "khâu",
+      "may"
+    ],
+    "sewer": [
+      "cống"
+    ],
+    "sewing": [
+      "sự khâu"
+    ],
+    "sexism": [
+      "phân biệt giới tính"
+    ],
+    "sexting": [
+      "chat sex"
+    ],
+    "shack": [
+      "chòi",
+      "lán"
+    ],
+    "shady": [
+      "râm"
+    ],
+    "shag": [
+      "quan hệ tình dục"
+    ],
+    "shaman": [
+      "thầy đồng",
+      "thầy pháp"
+    ],
+    "shameful": [
+      "hổ thẹn"
+    ],
+    "shameless": [
+      "trơ trẽn"
+    ],
+    "shampoo": [
+      "dầu gội đầu",
+      "xà bông"
+    ],
+    "shareholder": [
+      "cổ đông",
+      "người có cổ phần"
+    ],
+    "sharpen": [
+      "mài",
+      "vót"
+    ],
+    "sharpness": [
+      "độ nét"
+    ],
+    "shear": [
+      "cắt"
+    ],
+    "sheath": [
+      "vỏ"
+    ],
+    "shellfish": [
+      "ốc"
+    ],
+    "shenzhen": [
+      "Thâm Quyến"
+    ],
+    "shh": [
+      "suỵt"
+    ],
+    "shimmer": [
+      "lung linh"
+    ],
+    "shin": [
+      "ống quyển",
+      "ống khuyển"
+    ],
+    "shingles": [
+      "bệnh zona",
+      "giời leo"
+    ],
+    "shipbuilding": [
+      "nghề đóng tàu"
+    ],
+    "shipyard": [
+      "xưởng đóng tàu"
+    ],
+    "shiver": [
+      "run"
+    ],
+    "shoemaker": [
+      "thợ đóng giày"
+    ],
+    "shortcut": [
+      "lối tắt",
+      "đường tắt"
+    ],
+    "shorthand": [
+      "tốc kí"
+    ],
+    "shortstop": [
+      "chặn ngắn"
+    ],
+    "shovel": [
+      "mai",
+      "xẻng"
+    ],
+    "shrapnel": [
+      "trái phá",
+      "đạn trái phá"
+    ],
+    "shrine": [
+      "lăng",
+      "mộ"
+    ],
+    "shroud": [
+      "vải liệm",
+      "liệm"
+    ],
+    "shrub": [
+      "cây nhỏ",
+      "cây bụi"
+    ],
+    "shuffle": [
+      "trộn",
+      "xáo"
+    ],
+    "shutter": [
+      "tấm chắn",
+      "cửa chắn"
+    ],
+    "siam": [
+      "Xiêm La"
+    ],
+    "siberia": [
+      "Xi-be-ri-a",
+      "Tây Bá Lợi Á"
+    ],
+    "sibling": [
+      "anh chị em"
+    ],
+    "sichuan": [
+      "Tứ Xuyên"
+    ],
+    "sickle": [
+      "liềm"
+    ],
+    "sickly": [
+      "èo uột"
+    ],
+    "sidewalk": [
+      "vỉa hè"
+    ],
+    "sieve": [
+      "rây",
+      "rây bột"
+    ],
+    "silhouette": [
+      "bóng",
+      "hình bóng"
+    ],
+    "simeon": [
+      "Simêon"
+    ],
+    "similarity": [
+      "sự giống nhau",
+      "sự tương tự"
+    ],
+    "simplicity": [
+      "tính đơn giản"
+    ],
+    "simplification": [
+      "sự đơn giản hóa"
+    ],
+    "simplify": [
+      "đơn giản hóa"
+    ],
+    "sincerity": [
+      "sự chân thành"
+    ],
+    "sine": [
+      "sin"
+    ],
+    "singular": [
+      "số ít"
+    ],
+    "singularity": [
+      "điểm kì dị"
+    ],
+    "sinner": [
+      "tội nhân",
+      "người có tội"
+    ],
+    "siren": [
+      "tiên chim",
+      "còi máy"
+    ],
+    "sirius": [
+      "Thiên Lang",
+      "Sirius"
+    ],
+    "skate": [
+      "giày trượt băng",
+      "giày trượt có bánh"
+    ],
+    "skateboard": [
+      "ván trượt"
+    ],
+    "skateboarding": [
+      "trượt ván"
+    ],
+    "skater": [
+      "người trượt băng"
+    ],
+    "skepticism": [
+      "chủ nghĩa hoài nghi"
+    ],
+    "skier": [
+      "người trượt tuyết"
+    ],
+    "skillful": [
+      "giỏi",
+      "khéo léo"
+    ],
+    "skunk": [
+      "chồn hôi"
+    ],
+    "skyscraper": [
+      "nhà chọc trời"
+    ],
+    "slag": [
+      "xỉ"
+    ],
+    "slang": [
+      "tiếng lóng",
+      "biệt ngữ"
+    ],
+    "slash": [
+      "dấu gạch chéo",
+      "dấu xuyệt chéo"
+    ],
+    "slavic": [
+      "Xla-vơ"
+    ],
+    "slender": [
+      "mảnh khảnh"
+    ],
+    "slew": [
+      "đống"
+    ],
+    "slider": [
+      "con trượt",
+      "thanh trượt"
+    ],
+    "slime": [
+      "nhớt"
+    ],
+    "slipper": [
+      "dép lê",
+      "giày hạ"
+    ],
+    "slippery": [
+      "trơn"
+    ],
+    "slogan": [
+      "khẩu hiệu"
+    ],
+    "sloth": [
+      "lười"
+    ],
+    "slovak": [
+      "Xlô-va-ki-a"
+    ],
+    "slovakia": [
+      "Xlô-va-ki-a"
+    ],
+    "slovenia": [
+      "Xlô-ven-ni-a"
+    ],
+    "slug": [
+      "sên"
+    ],
+    "slum": [
+      "khu ổ chuột",
+      "ổ chuột"
+    ],
+    "slut": [
+      "đĩ",
+      "điếm"
+    ],
+    "smallpox": [
+      "đậu mùa"
+    ],
+    "smartwatch": [
+      "đồng hồ thông minh"
+    ],
+    "smelly": [
+      "thối",
+      "thúi"
+    ],
+    "smoker": [
+      "người nghiện hút"
+    ],
+    "smoothie": [
+      "sinh tố"
+    ],
+    "smuggle": [
+      "buôn lậu"
+    ],
+    "smuggling": [
+      "buôn lậu"
+    ],
+    "smurf": [
+      "xì trum"
+    ],
+    "snail": [
+      "ốc"
+    ],
+    "sneaker": [
+      "giày điền kinh",
+      "giày ten-nít"
+    ],
+    "sneeze": [
+      "hắt hơi",
+      "hắt xì"
+    ],
+    "sniff": [
+      "ngửi"
+    ],
+    "snipe": [
+      "dẽ giun"
+    ],
+    "sniper": [
+      "xạ thủ bắn tỉa"
+    ],
+    "snooker": [
+      "bi da"
+    ],
+    "snort": [
+      "khịt"
+    ],
+    "snout": [
+      "mõm"
+    ],
+    "snowball": [
+      "hòn tuyết"
+    ],
+    "snowboarding": [
+      "trượt ván trên tuyết"
+    ],
+    "snowflake": [
+      "bông tuyết",
+      "hoa tuyết"
+    ],
+    "snowman": [
+      "người tuyết"
+    ],
+    "snuggle": [
+      "ôm ấp"
+    ],
+    "soak": [
+      "ngâm"
+    ],
+    "sob": [
+      "khóc thổn thức",
+      "thổn thức"
+    ],
+    "sochi": [
+      "Sochi"
+    ],
+    "sociological": [
+      "xã hội học"
+    ],
+    "sock": [
+      "vớ",
+      "tất"
+    ],
+    "socket": [
+      "ổ cắm điện",
+      "ổ điện"
+    ],
+    "socrates": [
+      "Xô-crát"
+    ],
+    "sofia": [
+      "Sách Phi Á",
+      "Xô-phi-a"
+    ],
+    "softball": [
+      "bóng mềm"
+    ],
+    "sol": [
+      "son"
+    ],
+    "solder": [
+      "chất hàn",
+      "hàn"
+    ],
+    "solitary": [
+      "đơn độc"
+    ],
+    "solitude": [
+      "sự cô độc"
+    ],
+    "solstice": [
+      "điểm chí"
+    ],
+    "solvent": [
+      "dung môi"
+    ],
+    "somalia": [
+      "Xô-ma-li"
+    ],
+    "soot": [
+      "lọ",
+      "nghẹ"
+    ],
+    "sorcerer": [
+      "phù thuỷ",
+      "thầy phù thủy"
+    ],
+    "sorcery": [
+      "yêu thuật",
+      "ma thuật"
+    ],
+    "sorrow": [
+      "nỗi buồn",
+      "sự buồn"
+    ],
+    "southeastern": [
+      "đông nam"
+    ],
+    "souvenir": [
+      "đồ lưu niệm"
+    ],
+    "sow": [
+      "gieo"
+    ],
+    "soy": [
+      "đậu nành"
+    ],
+    "soybean": [
+      "đậu nành"
+    ],
+    "spaceship": [
+      "phi thuyền",
+      "tàu vũ trụ"
+    ],
+    "spacious": [
+      "rộng"
+    ],
+    "spade": [
+      "xẻng",
+      "xuồng"
+    ],
+    "spades": [
+      "pích",
+      "bích"
+    ],
+    "spaghetti": [
+      "spaghetti"
+    ],
+    "spaniard": [
+      "người Tây Ban Nha"
+    ],
+    "sparrow": [
+      "sẻ"
+    ],
+    "sparse": [
+      "thưa",
+      "thưa thớt"
+    ],
+    "spatial": [
+      "không gian"
+    ],
+    "spear": [
+      "thương",
+      "giáo"
+    ],
+    "specification": [
+      "quy cách",
+      "quy phạm"
+    ],
+    "specimen": [
+      "mẫu vật"
+    ],
+    "spectacles": [
+      "kính",
+      "mắt kính"
+    ],
+    "spectator": [
+      "người xem",
+      "khán giả"
+    ],
+    "specter": [
+      "bóng ma",
+      "ma"
+    ],
+    "spectroscopy": [
+      "quang phổ học",
+      "phân quang học"
+    ],
+    "speechless": [
+      "không biết nói gì"
+    ],
+    "speedy": [
+      "sẵn sàng"
+    ],
+    "sphinx": [
+      "nhân sư",
+      "Nhân sư"
+    ],
+    "spiced": [
+      "có gia vị"
+    ],
+    "spinach": [
+      "rau bina",
+      "rau chân vịt"
+    ],
+    "spindle": [
+      "cọc",
+      "sợi"
+    ],
+    "spleen": [
+      "lách",
+      "lá lách"
+    ],
+    "spokesperson": [
+      "người phát ngôn",
+      "phát ngôn viên"
+    ],
+    "sponge": [
+      "bọt biển"
+    ],
+    "spore": [
+      "bào tử"
+    ],
+    "sportsman": [
+      "vận động viên",
+      "nhà thể thao"
+    ],
+    "spruce": [
+      "vân sam"
+    ],
+    "spur": [
+      "đinh thúc ngựa",
+      "cựa"
+    ],
+    "squash": [
+      "bóng quần",
+      "nén"
+    ],
+    "squat": [
+      "ngồi xổm",
+      "ngồi chồm hỗm"
+    ],
+    "squid": [
+      "mực ống"
+    ],
+    "squirrel": [
+      "sóc"
+    ],
+    "squirt": [
+      "tuôn",
+      "phọt"
+    ],
+    "stagnation": [
+      "đình đốn",
+      "đình trệ"
+    ],
+    "stain": [
+      "tật",
+      "vết"
+    ],
+    "stair": [
+      "cầu thang"
+    ],
+    "staircase": [
+      "cầu thang"
+    ],
+    "stairway": [
+      "lan can"
+    ],
+    "stale": [
+      "thiu",
+      "ôi"
+    ],
+    "stalemate": [
+      "hết nước đi"
+    ],
+    "stalin": [
+      "Stalin",
+      "Xít Ta Lin"
+    ],
+    "stalk": [
+      "thân",
+      "bám đuôi"
+    ],
+    "standardization": [
+      "tiêu chuẩn hoá",
+      "sự tiêu chuẩn hoá"
+    ],
+    "standstill": [
+      "bế tắc",
+      "dừng"
+    ],
+    "staple": [
+      "ghim"
+    ],
+    "starch": [
+      "tinh bột"
+    ],
+    "stardom": [
+      "địa vị ngôi sao"
+    ],
+    "starfish": [
+      "sao biển"
+    ],
+    "starlight": [
+      "ánh sao"
+    ],
+    "starve": [
+      "chết đói",
+      "đói ngấu"
+    ],
+    "statewide": [
+      "toàn bang",
+      "toàn tiểu bang"
+    ],
+    "stationery": [
+      "văn phòng phẩm"
+    ],
+    "statues": [
+      "em bé tập đi",
+      "ngựa gỗ"
+    ],
+    "steamboat": [
+      "thuyền hơi nước"
+    ],
+    "stepfather": [
+      "bố dượng",
+      "cha kế"
+    ],
+    "stepmother": [
+      "mẹ ghẻ",
+      "mẹ kế"
+    ],
+    "sterile": [
+      "vô sinh",
+      "vô trùng"
+    ],
+    "steroid": [
+      "xteoit"
+    ],
+    "stew": [
+      "hầm",
+      "ninh"
+    ],
+    "sticker": [
+      "nhãn"
+    ],
+    "stingy": [
+      "bủn xỉn",
+      "keo"
+    ],
+    "stink": [
+      "bốc mùi thối",
+      "bay mùi thối"
+    ],
+    "stinky": [
+      "hôi",
+      "thối"
+    ],
+    "stitch": [
+      "mũi khâu"
+    ],
+    "stockholm": [
+      "Tốc Hàm",
+      "Xtốc-khôm"
+    ],
+    "stocking": [
+      "vớ"
+    ],
+    "stockpile": [
+      "kho dự trữ",
+      "dự trữ"
+    ],
+    "stoic": [
+      "khắc kỉ"
+    ],
+    "stoned": [
+      "phê"
+    ],
+    "stool": [
+      "ghế đẩu"
+    ],
+    "storey": [
+      "tầng"
+    ],
+    "stormy": [
+      "nổi sóng"
+    ],
+    "storyline": [
+      "cốt truyện"
+    ],
+    "stove": [
+      "lò",
+      "bếp lò"
+    ],
+    "strait": [
+      "eo biển"
+    ],
+    "strangle": [
+      "bóp nghẹt"
+    ],
+    "strategist": [
+      "nhà chiến lược"
+    ],
+    "strawberry": [
+      "dâu tây"
+    ],
+    "streamline": [
+      "đường dòng",
+      "tinh giản"
+    ],
+    "stretcher": [
+      "cáng",
+      "băng ca"
+    ],
+    "strive": [
+      "cố gắng"
+    ],
+    "stroll": [
+      "sự đi dạo",
+      "đi dạo"
+    ],
+    "stroller": [
+      "xe đẩy trẻ em"
+    ],
+    "stronghold": [
+      "thành trì"
+    ],
+    "stubborn": [
+      "bướng bỉnh",
+      "ngoan cố"
+    ],
+    "sturdy": [
+      "kết thật"
+    ],
+    "sturgeon": [
+      "cá tầm"
+    ],
+    "stuttgart": [
+      "Xtút-gát"
+    ],
+    "subcommittee": [
+      "tiểu ban",
+      "phân ban"
+    ],
+    "subculture": [
+      "tiểu văn hóa",
+      "nhóm văn hóa"
+    ],
+    "subdue": [
+      "kềm nén"
+    ],
+    "subordinate": [
+      "thuộc cấp"
+    ],
+    "subpoena": [
+      "trát tòa"
+    ],
+    "subset": [
+      "tập hợp con",
+      "tập con"
+    ],
+    "subsidy": [
+      "trợ cấp"
+    ],
+    "substrate": [
+      "chất nền"
+    ],
+    "subtitle": [
+      "phụ đề",
+      "sub"
+    ],
+    "subtract": [
+      "trừ"
+    ],
+    "succulent": [
+      "cây mọng nước"
+    ],
+    "suffice": [
+      "đủ",
+      "là đủ"
+    ],
+    "suffix": [
+      "hậu tố",
+      "đuôi"
+    ],
+    "suitcase": [
+      "va li",
+      "rương hành lý"
+    ],
+    "sulfur": [
+      "lưu huỳnh"
+    ],
+    "sultan": [
+      "vua",
+      "xun-tan"
+    ],
+    "summarize": [
+      "tóm lược",
+      "tóm tắt"
+    ],
+    "sunflower": [
+      "hướng dương",
+      "hướng dương quỳ tử"
+    ],
+    "sunglasses": [
+      "kính râm",
+      "kiếng mát"
+    ],
+    "sunken": [
+      "bị chìm"
+    ],
+    "sunscreen": [
+      "kem chống nắng"
+    ],
+    "supercar": [
+      "siêu xe"
+    ],
+    "superfluous": [
+      "dư thừa"
+    ],
+    "supermodel": [
+      "siêu mẫu"
+    ],
+    "supernova": [
+      "siêu tân tinh"
+    ],
+    "superpower": [
+      "siêu cường",
+      "siêu cường quốc"
+    ],
+    "superstition": [
+      "mê tín",
+      "sự mê tín"
+    ],
+    "superstitious": [
+      "mê tín"
+    ],
+    "supervise": [
+      "cai quản"
+    ],
+    "supper": [
+      "ăn tối",
+      "bữa chiều"
+    ],
+    "supposing": [
+      "giả sử",
+      "giá sử"
+    ],
+    "supremacy": [
+      "bá quyền"
+    ],
+    "supremely": [
+      "cực kì"
+    ],
+    "surfing": [
+      "lướt sóng"
+    ],
+    "surname": [
+      "họ",
+      "tên họ"
+    ],
+    "sushi": [
+      "sushi"
+    ],
+    "suspiciously": [
+      "đầy nghi ngờ",
+      "đa nghi"
+    ],
+    "swagger": [
+      "sự tự tin",
+      "sự tự hào"
+    ],
+    "sway": [
+      "đu",
+      "đung đưa"
+    ],
+    "sweaty": [
+      "đầy mồ hôi"
+    ],
+    "sweetheart": [
+      "người yêu"
+    ],
+    "swell": [
+      "sưng"
+    ],
+    "swimmer": [
+      "tuyển thủ bơi lội"
+    ],
+    "swimsuit": [
+      "đồ bơi",
+      "trang phục bơi"
+    ],
+    "swipe": [
+      "quẹt"
+    ],
+    "syllable": [
+      "âm tiết"
+    ],
+    "symbolism": [
+      "thơ tượng trưng"
+    ],
+    "symmetry": [
+      "sự đối xứng"
+    ],
+    "symphony": [
+      "giao hưởng"
+    ],
+    "symposium": [
+      "hội nghị chuyên đề"
+    ],
+    "symptom": [
+      "triệu chứng",
+      "chứng trạng"
+    ],
+    "synagogue": [
+      "giáo đường Do thái"
+    ],
+    "synod": [
+      "công nghị"
+    ],
+    "synonym": [
+      "từ đồng nghĩa"
+    ],
+    "synopsis": [
+      "tóm tắt"
+    ],
+    "syntax": [
+      "cú pháp",
+      "cú pháp học"
+    ],
+    "syphilis": [
+      "giang mai"
+    ],
+    "syringe": [
+      "xi-lanh",
+      "xi lanh"
+    ],
+    "syrup": [
+      "xi-rô"
+    ],
+    "tablespoon": [
+      "muỗng canh"
+    ],
+    "tabloid": [
+      "báo khổ nhỏ"
+    ],
+    "tactic": [
+      "chiến thuật",
+      "thuật"
+    ],
+    "tailgate": [
+      "bám sát đuôi",
+      "dí đít"
+    ],
+    "tailor": [
+      "thợ may"
+    ],
+    "tails": [
+      "mặt sấp"
+    ],
+    "taipei": [
+      "Đài Bắc"
+    ],
+    "taiwanese": [
+      "người Đài Loan",
+      "tiếng Đài Loan"
+    ],
+    "tajikistan": [
+      "Tát-gi-ki-xtan"
+    ],
+    "talisman": [
+      "bùa hộ mệnh"
+    ],
+    "tame": [
+      "đã thuần hoá",
+      "đã dạy thuần"
+    ],
+    "tamil": [
+      "tiếng Tamil",
+      "người Tamil"
+    ],
+    "tangent": [
+      "tiếp tuyến",
+      "tang"
+    ],
+    "tanned": [
+      "rám nắng"
+    ],
+    "tanzania": [
+      "Tan-da-ni-a"
+    ],
+    "tariff": [
+      "giá",
+      "thuế quan"
+    ],
+    "taser": [
+      "súng kích điện",
+      "súng điện"
+    ],
+    "tasteless": [
+      "lạt",
+      "nhạt"
+    ],
+    "tasting": [
+      "việc nếm thử"
+    ],
+    "taurus": [
+      "Kim Ngưu"
+    ],
+    "tavern": [
+      "tửu quán"
+    ],
+    "taxonomy": [
+      "phân loại học"
+    ],
+    "teal": [
+      "mòng két",
+      "xanh"
+    ],
+    "tease": [
+      "chọc",
+      "chọc ghẹo"
+    ],
+    "technician": [
+      "nhà kỹ thuật",
+      "kĩ thuật viên"
+    ],
+    "techno": [
+      "techno"
+    ],
+    "tehran": [
+      "Tê-hê-răng",
+      "Têhêran"
+    ],
+    "telecommunication": [
+      "viễn thông"
+    ],
+    "telegram": [
+      "điện báo",
+      "điện tín"
+    ],
+    "telemetry": [
+      "viễn trắc"
+    ],
+    "telescope": [
+      "kính thiên văn",
+      "kính viễn vọng"
+    ],
+    "template": [
+      "bản mẫu",
+      "khuôn mẫu"
+    ],
+    "tempo": [
+      "nhịp độ"
+    ],
+    "tempt": [
+      "xui",
+      "xúi"
+    ],
+    "tendon": [
+      "gân"
+    ],
+    "tenet": [
+      "nguyên lý",
+      "nguyên lí"
+    ],
+    "tenor": [
+      "nam cao"
+    ],
+    "teresa": [
+      "Têrêsa"
+    ],
+    "terrier": [
+      "chó sục",
+      "chó đào đất"
+    ],
+    "tertiary": [
+      "kỉ Đệ Tam"
+    ],
+    "textbook": [
+      "sách giáo khoa"
+    ],
+    "thames": [
+      "Thames",
+      "Tamise"
+    ],
+    "theodore": [
+      "Thêôđorô"
+    ],
+    "theorem": [
+      "định lí"
+    ],
+    "theoretically": [
+      "về lý thuyết"
+    ],
+    "thermodynamics": [
+      "nhiệt động học",
+      "nhiệt động lực học"
+    ],
+    "thermometer": [
+      "nhiệt kế"
+    ],
+    "thermostat": [
+      "máy điều nhiệt"
+    ],
+    "thickness": [
+      "dày"
+    ],
+    "thigh": [
+      "đùi"
+    ],
+    "thingy": [
+      "gì đó"
+    ],
+    "thinker": [
+      "nhà tư tưởng"
+    ],
+    "thirst": [
+      "khát"
+    ],
+    "thirsty": [
+      "khát"
+    ],
+    "thoracic": [
+      "ngực"
+    ],
+    "thorn": [
+      "gai"
+    ],
+    "thug": [
+      "du côn"
+    ],
+    "thumbnail": [
+      "móng ngón tay cái",
+      "hình nhỏ"
+    ],
+    "thunderstorm": [
+      "dông",
+      "giông"
+    ],
+    "thyme": [
+      "húng tây"
+    ],
+    "tibet": [
+      "Tây Tạng"
+    ],
+    "tickle": [
+      "cù",
+      "cù lét"
+    ],
+    "tile": [
+      "ngói",
+      "đá lát"
+    ],
+    "timetable": [
+      "thời khắc biểu",
+      "thời gian biểu"
+    ],
+    "timid": [
+      "rụt rè"
+    ],
+    "tinder": [
+      "bùi nhùi"
+    ],
+    "tinker": [
+      "táy máy"
+    ],
+    "titanium": [
+      "titan"
+    ],
+    "toad": [
+      "cóc"
+    ],
+    "toaster": [
+      "máy nướng bánh mì"
+    ],
+    "tofu": [
+      "đậu phụ",
+      "tàu hủ"
+    ],
+    "togo": [
+      "Tô-gô"
+    ],
+    "tombstone": [
+      "bia mộ",
+      "mộ chí"
+    ],
+    "toner": [
+      "nước hoà hồng"
+    ],
+    "tonga": [
+      "Tôn-ga"
+    ],
+    "toolbox": [
+      "hộp dụng cụ"
+    ],
+    "toot": [
+      "tiếng còi",
+      "huýt"
+    ],
+    "toothbrush": [
+      "bàn chải đánh răng",
+      "bàn chải"
+    ],
+    "toothpaste": [
+      "kem đánh răng",
+      "thuốc đánh răng"
+    ],
+    "topless": [
+      "trần"
+    ],
+    "topology": [
+      "tô pô học"
+    ],
+    "torch": [
+      "đuốc",
+      "ngọn đuốc"
+    ],
+    "torpedo": [
+      "ngư lôi"
+    ],
+    "torso": [
+      "thân",
+      "thân mình"
+    ],
+    "tortoise": [
+      "rùa"
+    ],
+    "tout": [
+      "công bố"
+    ],
+    "toxicity": [
+      "độc tính",
+      "tính độc"
+    ],
+    "toxicology": [
+      "độc chất học"
+    ],
+    "toxin": [
+      "toxin",
+      "độc tố"
+    ],
+    "trader": [
+      "thương thuyền",
+      "thương gia"
+    ],
+    "trait": [
+      "đặc điểm",
+      "đặc tính"
+    ],
+    "traitor": [
+      "kẻ phản bội"
+    ],
+    "trajectory": [
+      "quỹ đạo"
+    ],
+    "tramp": [
+      "đi dạo",
+      "lang thang"
+    ],
+    "trampoline": [
+      "giàn nhún",
+      "nghệ thuật nhún giàn"
+    ],
+    "trance": [
+      "trance"
+    ],
+    "transcendental": [
+      "siêu việt"
+    ],
+    "transcription": [
+      "bản sao",
+      "sự phiên âm"
+    ],
+    "transformer": [
+      "máy biến thế",
+      "máy biến áp"
+    ],
+    "translator": [
+      "thông dịch viên",
+      "dịch gỉa"
+    ],
+    "transplant": [
+      "cấy"
+    ],
+    "transponder": [
+      "bộ phát đáp"
+    ],
+    "trashy": [
+      "cà khổ",
+      "cà gỉ"
+    ],
+    "traveller": [
+      "người đi du lịch"
+    ],
+    "tread": [
+      "giẫm"
+    ],
+    "treadmill": [
+      "máy chạy bộ"
+    ],
+    "tremble": [
+      "run",
+      "rung"
+    ],
+    "tremor": [
+      "sự run rẩy"
+    ],
+    "trench": [
+      "hào",
+      "chiến hào"
+    ],
+    "trespass": [
+      "vi phạm",
+      "xâm phạm"
+    ],
+    "triad": [
+      "liên ba",
+      "Hội Tam Hoàng"
+    ],
+    "triathlon": [
+      "ba môn phối hợp"
+    ],
+    "tributary": [
+      "phụ lưu"
+    ],
+    "trickle": [
+      "chảy nhỏ giọt"
+    ],
+    "trident": [
+      "đinh ba",
+      "ba chĩa"
+    ],
+    "tripoli": [
+      "Tơ-ri-pô-li"
+    ],
+    "trivia": [
+      "thông tin bên lề"
+    ],
+    "troll": [
+      "quỷ khổng lồ"
+    ],
+    "tropics": [
+      "nhiệt đới"
+    ],
+    "trough": [
+      "máng",
+      "máng ăn"
+    ],
+    "truce": [
+      "đình chiến",
+      "hưu chiến"
+    ],
+    "trustworthy": [
+      "đáng tin"
+    ],
+    "tsar": [
+      "sa hoàng",
+      "Nga hoàng"
+    ],
+    "tsunami": [
+      "sóng thần"
+    ],
+    "tuberculosis": [
+      "bệnh lao"
+    ],
+    "tuff": [
+      "đá túp"
+    ],
+    "tulip": [
+      "uất kim hương",
+      "uất kim cương"
+    ],
+    "tuna": [
+      "cá ngừ đại dương"
+    ],
+    "tundra": [
+      "đài nguyên",
+      "đồng rêu"
+    ],
+    "tungsten": [
+      "vonfam"
+    ],
+    "tunis": [
+      "Tuy-nít",
+      "Tuy-ni"
+    ],
+    "tunisia": [
+      "Tuy-ni-di"
+    ],
+    "turbine": [
+      "tua-bin"
+    ],
+    "turbulence": [
+      "dòng chảy rối"
+    ],
+    "turf": [
+      "địa bàn"
+    ],
+    "turin": [
+      "Torino"
+    ],
+    "turk": [
+      "người Thổ Nhĩ Kỳ"
+    ],
+    "turmoil": [
+      "sự náo động"
+    ],
+    "turquoise": [
+      "ngọc lam",
+      "xanh thổ"
+    ],
+    "tutor": [
+      "gia sư"
+    ],
+    "tutu": [
+      "váy xoè"
+    ],
+    "tuxedo": [
+      "ximôckinh",
+      "ximôkinh"
+    ],
+    "twat": [
+      "lồn"
+    ],
+    "twelfth": [
+      "một phần mười hai"
+    ],
+    "twig": [
+      "cành",
+      "nhánh"
+    ],
+    "tycoon": [
+      "trùm tư bản",
+      "vua tư bản"
+    ],
+    "typewriter": [
+      "máy chữ",
+      "máy đánh chữ"
+    ],
+    "typhoon": [
+      "bão"
+    ],
+    "typo": [
+      "của thợ in",
+      "lỗi in ấn"
+    ],
+    "typography": [
+      "thuật in máy"
+    ],
+    "tyranny": [
+      "sự bạo ngược",
+      "sự chuyên chế"
+    ],
+    "tyrant": [
+      "bạo chúa"
+    ],
+    "tyre": [
+      "vỏ",
+      "lốp"
+    ],
+    "ufo": [
+      "UFO",
+      "vật thể bay không xác định"
+    ],
+    "ulcer": [
+      "loét"
+    ],
+    "ultimatum": [
+      "tối hậu thư"
+    ],
+    "ultrasound": [
+      "siêu âm"
+    ],
+    "ultraviolet": [
+      "cực tím",
+      "tử ngoại"
+    ],
+    "unanimous": [
+      "nhất trí"
+    ],
+    "unconditional": [
+      "không điều kiện"
+    ],
+    "unconstitutional": [
+      "vi hiến"
+    ],
+    "undefined": [
+      "không xác định"
+    ],
+    "undercover": [
+      "bí mật",
+      "nằm vùng"
+    ],
+    "underline": [
+      "gạch chân",
+      "gạch dưới"
+    ],
+    "undo": [
+      "hoàn tác"
+    ],
+    "uneasy": [
+      "nao nao"
+    ],
+    "unforgettable": [
+      "không thể quên"
+    ],
+    "unfounded": [
+      "vô căn cứ"
+    ],
+    "unicorn": [
+      "kì lân"
+    ],
+    "unification": [
+      "thống nhất"
+    ],
+    "unintentionally": [
+      "vô ý"
+    ],
+    "unload": [
+      "dỡ"
+    ],
+    "unlucky": [
+      "xui xẻo",
+      "xui"
+    ],
+    "unmarried": [
+      "độc thân"
+    ],
+    "unsubscribe": [
+      "huỷ đăng kí"
+    ],
+    "unsuccessful": [
+      "bất thành",
+      "không thành công"
+    ],
+    "upland": [
+      "vùng cao"
+    ],
+    "uprising": [
+      "nổi dậy",
+      "khởi nghĩa"
+    ],
+    "uranus": [
+      "sao Thiên Vương",
+      "Thiên Vương Tinh"
+    ],
+    "urbanization": [
+      "sự thành thị hoá",
+      "đô thị hóa"
+    ],
+    "urdu": [
+      "tiếng Urdu"
+    ],
+    "ursula": [
+      "U-xu-la"
+    ],
+    "uruguay": [
+      "U-ru-goay",
+      "Điểu Hà"
+    ],
+    "usable": [
+      "dùng được",
+      "khả dụng"
+    ],
+    "utopia": [
+      "địa đàng"
+    ],
+    "uzbekistan": [
+      "U-dơ-bê-ki-xtan"
+    ],
+    "vaccination": [
+      "sự tiêm chủng"
+    ],
+    "valentine": [
+      "Valentinô"
+    ],
+    "vandalism": [
+      "phá hoại"
+    ],
+    "vanguard": [
+      "tiền phong",
+      "tiên phong"
+    ],
+    "vanity": [
+      "tính hư ảo",
+      "cái hư ảo"
+    ],
+    "vapor": [
+      "hơi"
+    ],
+    "varnish": [
+      "sơn",
+      "véc ni"
+    ],
+    "vase": [
+      "lọ hoa",
+      "bình"
+    ],
+    "vee": [
+      "vê",
+      "vờ"
+    ],
+    "vegetation": [
+      "cây cối",
+      "cây cỏ"
+    ],
+    "vein": [
+      "tĩnh mạch",
+      "ven"
+    ],
+    "velvet": [
+      "nhung"
+    ],
+    "vendetta": [
+      "thù máu"
+    ],
+    "vengeance": [
+      "sự trả thù"
+    ],
+    "venom": [
+      "nọc độc",
+      "nọc"
+    ],
+    "verb": [
+      "động từ"
+    ],
+    "verbatim": [
+      "đúng nguyên văn"
+    ],
+    "verge": [
+      "ven"
+    ],
+    "versailles": [
+      "Véc-xai",
+      "Véc-xay"
+    ],
+    "vertigo": [
+      "chóng mặt"
+    ],
+    "vest": [
+      "áo gi lê",
+      "gi-lê"
+    ],
+    "veterinarian": [
+      "thầy thuốc thú y",
+      "bác sĩ thú y"
+    ],
+    "vial": [
+      "lọ",
+      "lọ nhỏ"
+    ],
+    "vibrate": [
+      "rung",
+      "rung động"
+    ],
+    "vibration": [
+      "rung động"
+    ],
+    "vibrator": [
+      "máy rung"
+    ],
+    "videotape": [
+      "băng hình",
+      "băng vi-đê-ô"
+    ],
+    "viewer": [
+      "khán giả",
+      "người xem"
+    ],
+    "viking": [
+      "người Viking"
+    ],
+    "vine": [
+      "dây leo"
+    ],
+    "vinegar": [
+      "giấm"
+    ],
+    "viola": [
+      "viola"
+    ],
+    "violate": [
+      "xâm phạm"
+    ],
+    "violin": [
+      "vĩ cầm"
+    ],
+    "violinist": [
+      "tay chơi vi-ô-lông"
+    ],
+    "virginity": [
+      "trinh tiết"
+    ],
+    "virgo": [
+      "Xử Nữ",
+      "Thất Nữ"
+    ],
+    "virtuous": [
+      "có đạo đức",
+      "có đức hạnh"
+    ],
+    "viscosity": [
+      "nhớt",
+      "sền sệt"
+    ],
+    "viscount": [
+      "tử tước"
+    ],
+    "visor": [
+      "lưỡi trai"
+    ],
+    "vivid": [
+      "sống động"
+    ],
+    "voiced": [
+      "hữu thanh"
+    ],
+    "volatile": [
+      "dễ bay hơi"
+    ],
+    "volcano": [
+      "núi lửa",
+      "hoả diệm sơn"
+    ],
+    "volt": [
+      "vôn"
+    ],
+    "vomit": [
+      "nôn",
+      "mửa"
+    ],
+    "voodoo": [
+      "voodoo"
+    ],
+    "vow": [
+      "lời thề",
+      "lời nguyền"
+    ],
+    "vowel": [
+      "nguyên âm",
+      "mẫu âm"
+    ],
+    "vulcan": [
+      "Vulcan"
+    ],
+    "vulture": [
+      "kền kền"
+    ],
+    "wafer": [
+      "đĩa bán dẫn"
+    ],
+    "wah": [
+      "oe oe",
+      "oa oa"
+    ],
+    "wai": [
+      "vái"
+    ],
+    "waiter": [
+      "người hầu bàn",
+      "chị hầu bàn"
+    ],
+    "waitress": [
+      "chị hầu bàn"
+    ],
+    "wallpaper": [
+      "giấy dán tường",
+      "hình nền"
+    ],
+    "walnut": [
+      "óc chó"
+    ],
+    "walrus": [
+      "moóc",
+      "voi biển"
+    ],
+    "waltz": [
+      "van",
+      "van-xơ"
+    ],
+    "wander": [
+      "lang thang"
+    ],
+    "warhead": [
+      "đầu đạn"
+    ],
+    "warranty": [
+      "sự bảo lãnh"
+    ],
+    "warsaw": [
+      "Vác-sa-va"
+    ],
+    "warship": [
+      "tàu chiến"
+    ],
+    "wartime": [
+      "thời chiến"
+    ],
+    "wasp": [
+      "ong bắp cày"
+    ],
+    "watchman": [
+      "người gác",
+      "người canh"
+    ],
+    "waterfall": [
+      "thác nước",
+      "thác"
+    ],
+    "watermelon": [
+      "dưa hấu"
+    ],
+    "waterproof": [
+      "chống thấm nước",
+      "chống nước"
+    ],
+    "waterway": [
+      "đường thủy",
+      "đường sông"
+    ],
+    "watt": [
+      "watt",
+      "oát"
+    ],
+    "wavelength": [
+      "bước sóng"
+    ],
+    "weaponry": [
+      "vũ khí",
+      "binh khí"
+    ],
+    "weave": [
+      "dệt",
+      "đan"
+    ],
+    "weaver": [
+      "thợ dệt"
+    ],
+    "webcam": [
+      "webcam"
+    ],
+    "wed": [
+      "cưới"
+    ],
+    "wedge": [
+      "nêm",
+      "chêm"
+    ],
+    "weekday": [
+      "ngày thường"
+    ],
+    "weep": [
+      "khóc"
+    ],
+    "weir": [
+      "đăng"
+    ],
+    "weld": [
+      "hàn"
+    ],
+    "wen": [
+      "Ôn"
+    ],
+    "werewolf": [
+      "người sói",
+      "ma sói"
+    ],
+    "whaling": [
+      "săn bắt cá voi",
+      "sự đánh cá voi"
+    ],
+    "wharf": [
+      "bến tàu"
+    ],
+    "whence": [
+      "từ đâu đến"
+    ],
+    "whew": [
+      "phù"
+    ],
+    "whey": [
+      "váng sữa",
+      "nước sữa"
+    ],
+    "whine": [
+      "thở dài",
+      "rên rỉ"
+    ],
+    "whirlpool": [
+      "xoáy nước"
+    ],
+    "whirlwind": [
+      "gió lốc",
+      "lốc"
+    ],
+    "whisk": [
+      "cái đánh trứng"
+    ],
+    "whisper": [
+      "rì rầm",
+      "thì thầm"
+    ],
+    "whitish": [
+      "hơi trắng"
+    ],
+    "wholeheartedly": [
+      "hết lòng",
+      "nhất tâm"
+    ],
+    "wick": [
+      "bấc",
+      "bấc đèn"
+    ],
+    "widower": [
+      "người góa vợ"
+    ],
+    "wig": [
+      "tóc giả"
+    ],
+    "wiki": [
+      "wiki"
+    ],
+    "wildfire": [
+      "chất cháy"
+    ],
+    "willingly": [
+      "sẵn lòng"
+    ],
+    "willow": [
+      "liễu"
+    ],
+    "windmill": [
+      "cối xay gió"
+    ],
+    "windshield": [
+      "kính chắn gió"
+    ],
+    "windy": [
+      "có gió"
+    ],
+    "wink": [
+      "đá lông nheo",
+      "nháy mắt"
+    ],
+    "witchcraft": [
+      "thuật phù thủy"
+    ],
+    "wither": [
+      "héo",
+      "úa"
+    ],
+    "withstand": [
+      "chống chọi"
+    ],
+    "woe": [
+      "khốn"
+    ],
+    "wolverine": [
+      "chồn Gulo"
+    ],
+    "womb": [
+      "tử cung",
+      "dạ con"
+    ],
+    "wonderfully": [
+      "đáng ngạc nhiên"
+    ],
+    "wonderland": [
+      "xứ sở thần tiên",
+      "tiên cảnh"
+    ],
+    "woof": [
+      "gâu gâu"
+    ],
+    "workstation": [
+      "trạm làm việc"
+    ],
+    "worldview": [
+      "thế giới quan"
+    ],
+    "worm": [
+      "giun",
+      "trùn"
+    ],
+    "wrath": [
+      "cơn tức giận",
+      "thịnh nộ"
+    ],
+    "wreath": [
+      "vòng hoa"
+    ],
+    "wrestle": [
+      "vật"
+    ],
+    "wrestler": [
+      "đô vật"
+    ],
+    "wrinkle": [
+      "nếp nhăn"
+    ],
+    "wrinkled": [
+      "nhăn",
+      "nhàu"
+    ],
+    "xavier": [
+      "Xaviê"
+    ],
+    "xenophobia": [
+      "tinh bài ngoại"
+    ],
+    "xiao": [
+      "tiêu"
+    ],
+    "xinjiang": [
+      "Tân Cương"
+    ],
+    "yak": [
+      "bò tây tạng"
+    ],
+    "yam": [
+      "khoai",
+      "sắn dây"
+    ],
+    "yangon": [
+      "Răng Gun",
+      "I-an-gun"
+    ],
+    "yao": [
+      "người Dao"
+    ],
+    "yarn": [
+      "sợi"
+    ],
+    "yawn": [
+      "ngáp"
+    ],
+    "yearbook": [
+      "niên giám"
+    ],
+    "yeast": [
+      "men"
+    ],
+    "yeti": [
+      "người tuyết"
+    ],
+    "yiddish": [
+      "tiếng Yiddish"
+    ],
+    "yin": [
+      "âm"
+    ],
+    "yogurt": [
+      "sữa chua",
+      "da ua"
+    ],
+    "yoke": [
+      "ách"
+    ],
+    "yokohama": [
+      "Yokohama",
+      "I-ô-cô-ha-ma"
+    ],
+    "yolk": [
+      "lòng đỏ"
+    ],
+    "yuan": [
+      "nguyên"
+    ],
+    "yuck": [
+      "kinh",
+      "khiếp"
+    ],
+    "yugoslavia": [
+      "Nam Tư"
+    ],
+    "yummy": [
+      "ngon",
+      "thơm ngon"
+    ],
+    "zambia": [
+      "Dăm-bi-a"
+    ],
+    "zebra": [
+      "ngựa vằn"
+    ],
+    "zen": [
+      "thiền",
+      "Thiền Tông"
+    ],
+    "zenith": [
+      "thiên đỉnh",
+      "cực điểm"
+    ],
+    "zeus": [
+      "Dớt"
+    ],
+    "zhang": [
+      "Trương"
+    ],
+    "zimbabwe": [
+      "Dim-ba-bu-ê"
+    ],
+    "zinc": [
+      "kẽm"
+    ],
+    "zionism": [
+      "chủ nghĩa Xi-ôn",
+      "chủ nghĩa Xi-ôn-nít"
+    ],
+    "zoology": [
+      "động vật học"
+    ],
+    "zurich": [
+      "Xuy-rích"
     ]
   }
 }

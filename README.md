@@ -41,8 +41,8 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 | **Gõ** | Telex & VNI · kiểu đặt dấu mới/cũ (`oà` ↔ `òa`) · **Đặt dấu tự do** (bỏ kiểm tra âm tiết) · tự động sửa lỗi gõ nhầm · viết hoa đầu câu · phụ âm vay mượn z/w/j/f · Unicode UTF-8 · keypad VNI & Caps Lock chuẩn macOS |
 | **Song ngữ** | Space Restore · Esc hoàn tác về phím thô · gõ tiếng Anh ổn định trong mode VN · nhớ VI/EN theo từng app |
 | **Smart Switch** | 3 trạng thái mỗi app: 🇻🇳 Tiếng Việt · 🇺🇸 Tiếng Anh · ⛔ Không sử dụng vkey · tự học từ Thống kê · thêm nhanh từ danh sách app đang chạy |
-| **Chính tả** | Kiểm tra chính tả lúc kết từ, **chính sách khôi phục** chọn được (vd Cân bằng) · tự động sửa khi tin cậy cao · từ điển cá nhân (giữ tiếng Việt / khôi phục tiếng Anh) · cập nhật từ điển từ GitHub |
-| **Từ điển** | Nhúng sẵn **7 184 âm tiết tiếng Việt**; sau khi nhận gói cập nhật từ GitHub (app tự tải im lặng lúc khởi động, tối đa 1 lần/24h): **8 928 âm tiết + 9 826 từ tiếng Anh** |
+| **Chính tả** | Kiểm tra chính tả lúc kết từ, **chính sách khôi phục** chọn được (vd Cân bằng) · tự động sửa khi tin cậy cao · từ điển tham chiếu Anh–Việt · từ điển cá nhân (giữ tiếng Việt / khôi phục tiếng Anh) · cập nhật từ điển từ GitHub |
+| **Từ điển** | Nhúng sẵn **7 184 âm tiết tiếng Việt**; sau khi nhận gói cập nhật từ GitHub (app tự tải im lặng lúc khởi động, tối đa 1 lần/24h): **8 928 âm tiết + 9 826 từ tiếng Anh + 3 039 cặp Anh–Việt** |
 | **Gợi ý & macro** | Đoán từ 6 tầng (trigram/bigram người dùng + corpus nhúng + cụm nhúng) · gợi ý **1–3 từ**, mặc định 2 · `Tab` để chèn · loại trừ app khỏi đoán từ · macro viết tắt → cụm dài, nhập/xuất JSON |
 | **Thống kê** | Top từ/cụm tuần · top cụm 2–3 từ tiếng Việt & ngoài tiếng Việt · top app dùng nhiều · các tuần đã đóng · sao lưu/khôi phục JSON · quản lý & xóa cụm |
 | **Giao diện** | Menu bar panel · Cài đặt sidebar 6 tab · 3 theme: **Mặc định** / **Liquid Glass** / **Neural AI** · màu nhấn · phông chữ · độ bo góc · mật độ dòng · Sáng / Tối / Hệ thống |
@@ -103,7 +103,7 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 | **Chung** | Cập nhật ứng dụng (tự động cập nhật phiên bản mới) · Bộ gõ (bật/tắt gõ tiếng Việt, tự khởi động cùng hệ thống, Telex/VNI, phụ âm z w j f) · Hỗ trợ thông minh (tự động sửa lỗi gõ nhầm, viết hoa đầu câu, tự tắt khi đổi sang bộ gõ khác, thông báo khi chuyển VI/EN) · Cấu hình nâng cao (Đặt dấu tự do, kiểu đặt dấu cũ/mới) · Phím tắt chuyển chế độ (⇧⌥) và mở Text Tools (⌃⇧) · Clipboard tùy chỉnh (⇧⌘V, số mục, loại nội dung, dung lượng mỗi mục, xóa lịch sử) |
 | **Smart Switch** | Danh sách ứng dụng với 3 lựa chọn: 🇻🇳 Tiếng Việt · 🇺🇸 Tiếng Anh · Không sử dụng vkey · Tự học từ Thống kê · chọn nhanh từ ứng dụng đang chạy |
 | **Macro** | Bật/tắt Macro · viết tắt → cụm dài · danh sách macro · nhập/xuất `vkey-macros.json` · gợi ý từ thường gõ |
-| **Chính tả** | Kiểm tra chính tả · gợi ý sửa lỗi chính tả · tự động sửa khi tin cậy cao · từ điển cá nhân + tự động đề xuất hàng tuần · đoán từ tiếp theo (số từ gợi ý, cỡ chữ / độ đậm / khoảng cách HUD tới con trỏ) · loại trừ app khỏi đoán từ · Space Restore + chính sách khôi phục (vd Cân bằng) |
+| **Chính tả** | Kiểm tra chính tả · gợi ý sửa lỗi chính tả · tự động sửa khi tin cậy cao · từ điển cá nhân + tự động đề xuất hàng tuần · đoán từ tiếp theo (số từ gợi ý, cỡ chữ / độ đậm / khoảng cách HUD tới con trỏ) · loại trừ app khỏi đoán từ · Space Restore + chính sách khôi phục (vd Cân bằng) · dùng từ điển tham chiếu Anh–Việt |
 | **Thống kê & Sao lưu** | Ghi nhận thống kê sử dụng · top từ / cụm 2–3 từ tiếng Việt & ngoài tiếng Việt · top app dùng nhiều · Smart Switch kích hoạt · các tuần đã đóng · sao lưu/khôi phục JSON (kèm tự động hỏi sao lưu khi cập nhật app) · đồng bộ hành vi vào từ điển cá nhân + đề xuất bổ sung từ điển · quyền riêng tư & chẩn đoán |
 | **Quản lý giao diện** | Theme (Mặc định / Liquid Glass / Neural AI) · màu nhấn · phông chữ · độ bo góc · mật độ dòng menu · cường độ phát sáng (Neural AI) |
 

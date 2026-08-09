@@ -22,13 +22,15 @@ Starting in **v1.5.0** vkey ships a bilingual reference dictionary
   [wordfreq](https://github.com/rspeer/wordfreq) (MIT for the code, CC BY-SA
   4.0 for the Wiktionary-derived portion of its data).
 
-The schema also reserves an **English → Vietnamese mapping** (`en_vn_mapping`
-/ `vn_en_mapping`), sourced from English Wiktionary via
-[Wiktextract](https://github.com/tatuylonen/wiktextract) +
-[Kaikki.org](https://kaikki.org/dictionary/rawdata.html) under **CC BY-SA
-4.0**. No release has ever shipped that data — every published
-`lexicon-update.json` (v3 … v10) carries the fields empty. The attribution
-above applies if and when it does ship.
+- **English → Vietnamese mapping (3,039 entries, `en_vn_mapping`)** —
+  extracted from English Wiktionary via
+  [Wiktextract](https://github.com/tatuylonen/wiktextract) +
+  [Kaikki.org](https://kaikki.org/dictionary/rawdata.html), distributed
+  under **CC BY-SA 4.0** by the Wikimedia community. First shipped in
+  lexicon v11; every earlier package (v3 … v10) carried the field empty.
+  Build script: [Tools/merge_en_vn_mapping.py](Tools/merge_en_vn_mapping.py).
+
+The reverse map `vn_en_mapping` is reserved in the schema but not shipped.
 
 GPL-3.0 cannot relicense CC BY-SA 4.0 data — the two licences are
 incompatible for joint redistribution **as a single artifact**. The

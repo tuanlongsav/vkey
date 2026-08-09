@@ -29,7 +29,7 @@ pip3 install wordfreq requests
    - `vietnamese[]` — danh sách âm tiết tiếng Việt hợp lệ.
    - `english[]` — top từ tiếng Anh được nhận diện cho Space Restore.
    - `keep[]` — từ tiếng Việt luôn giữ nguyên, không auto-restore.
-3. **Bump `"version"` lên +1** (hiện tại 10 → 11). Bắt buộc, nếu không user sẽ không nhận update.
+3. **Bump `"version"` lên +1** (hiện tại 11 → 12). Bắt buộc, nếu không user sẽ không nhận update.
 4. Verify JSON hợp lệ:
    ```bash
    jq . lexicon-update.json > /dev/null && echo OK
@@ -43,7 +43,7 @@ python3 Tools/build_lexicon.py \
   --kaikki-download
 ```
 
-Script tự bump `version` = version cũ + 1 và mang `_meta.cleanup` sang. Trước v4.23 nó ghi cứng `"version": 5`, chạy lên file version 10 là **hạ version → mọi client ngừng nhận cập nhật**; nếu bạn có bản script cũ hơn thì đừng dùng.
+Script tự bump `version` = version cũ + 1 và mang `_meta.cleanup` sang. Trước đây nó ghi cứng `"version": 5`, chạy lên file version cao hơn là **hạ version → mọi client ngừng nhận cập nhật**; nếu bạn có bản script cũ hơn thì đừng dùng.
 
 **Option C — Chỉ làm mới `en_vn_mapping`** (không đụng `vietnamese[]` / `english[]`):
 
@@ -98,7 +98,7 @@ Output phải là số version mới bạn vừa bump.
 
 - **Chỉ tăng**. Không reset, không downgrade.
 - **Bump kể cả khi chỉ sửa 1 từ** — app dùng comparison đơn giản `Int >` để biết cần download.
-- **Độc lập với version app** (app đang ở `4.22`, từ điển ở `10`). Dictionary version chỉ là Int trong JSON.
+- **Độc lập với version app** (app đang ở `4.22`, từ điển ở `11`). Dictionary version chỉ là Int trong JSON.
 - Nếu bạn lỡ commit version cũ trùng/lùi, push commit khác bump version mới — không gãy gì.
 
 ## Rate limit & cache
@@ -136,11 +136,12 @@ Nguồn chuẩn của schema là `vkey/Lexicon/LexiconUpdatePackage.swift` (Coda
 **Bắt buộc**: `version`, `vietnamese`, `english`, `keep`.
 **Tuỳ chọn** (thiếu vẫn decode được — `JSONDecoder` bỏ qua key lạ, nên schema forward/backward compatible): `en_vn_mapping`, `vn_en_mapping`, `macros_recommended`, `_meta`, `sig`.
 
-File hiện tại (version 10) CHỈ có 4 trường bắt buộc + `_meta`. Ba trường mapping/macro đang bỏ trống — vẫn giữ trong schema để bật lại mà không phải đổi code.
+File hiện tại (version 11) có 4 trường bắt buộc + `en_vn_mapping` + `_meta`. `vn_en_mapping` và `macros_recommended` vẫn bỏ trống — giữ trong schema để bật lại mà không phải đổi code.
 
 ```json
 {
-  "version": 10,
+  "version": 11,
+  "en_vn_mapping": { "abbreviation": ["viết tắt", "bài tóm tắt"] },
   "vietnamese": ["a", "à", "á", "ả", "..."],
   "english": ["the", "of", "and", "..."],
   "keep": ["lisa", "maria", "para", "sara"],
