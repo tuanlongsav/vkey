@@ -304,6 +304,11 @@ def build(
               f"(total en_vn_mapping = {len(en_vn)})",
               file=sys.stderr)
 
+    # Version PHẢI chỉ tăng: app so sánh `package.version > currentVersion` để
+    # quyết định tải. Trước đây chỗ này ghi cứng 5, nên chạy script lên một file
+    # đã ở version 10 sẽ hạ version → không client nào nhận cập nhật nữa.
+    next_version = int(previous.get("version") or 0) + 1
+
     package = {
         "_meta": {
             "version": 5,
@@ -329,8 +334,11 @@ def build(
                 },
             ],
             "license_of_aggregate": "CC BY-SA 4.0 (data) + GPL-3.0 (code)",
+            # Nhật ký các đợt audit (Tools/audit_lexicon.py ghi vào đây). Phải
+            # mang sang, nếu không mỗi lần rebuild là mất dấu vết đã lọc những gì.
+            "cleanup": (previous.get("_meta") or {}).get("cleanup") or [],
         },
-        "version": 5,
+        "version": next_version,
         "vietnamese": vietnamese,
         "english": english,
         "keep": keep,
@@ -341,7 +349,8 @@ def build(
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(package, f, ensure_ascii=False, indent=2, sort_keys=False)
     print(f"[build_lexicon] wrote {output_path} — "
-          f"english={len(english)}, en_vn_mapping={len(en_vn)}",
+          f"english={len(english)}, en_vn_mapping={len(en_vn)}, "
+          f"version {previous.get('version')} → {next_version}",
           file=sys.stderr)
 
 
