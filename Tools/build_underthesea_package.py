@@ -35,6 +35,8 @@ import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
+from lexicon_common import SCHEMA_VERSION, add_source, atomic_write_json
+
 
 def extract_syllables(jsonl_path: Path) -> set[str]:
     """Extract unique single-token Vietnamese syllables from undertheseanlp JSONL.
@@ -77,18 +79,18 @@ def load_existing(in_path: Path) -> dict:
 def merge_meta(pkg: dict) -> dict:
     """Add undertheseanlp source entry to _meta.sources, dedup by name."""
     meta = pkg.get("_meta") or {}
-    sources = list(meta.get("sources") or [])
-    existing_names = {s.get("name") for s in sources}
-    if "undertheseanlp/dictionary" not in existing_names:
-        sources.append({
-            "name": "undertheseanlp/dictionary",
-            "url": "https://github.com/undertheseanlp/dictionary",
-            "license": "GPL-3.0",
-            "used_for": "vietnamese[] syllable union (Hồ Ngọc Đức + tudientv + Wiktionary VN)",
-        })
-    meta["sources"] = sources
+    add_source(meta, {
+        "name": "undertheseanlp/dictionary",
+        "url": "https://github.com/undertheseanlp/dictionary",
+        "license": "GPL-3.0",
+        "used_for": "vietnamese[] syllable union (Hồ Ngọc Đức + tudientv + Wiktionary VN)",
+    })
     meta["generated_at"] = datetime.now(timezone.utc).isoformat()
-    meta["version"] = (meta.get("version") or 0) + 1
+    # `_meta.version` là SCHEMA của gói, không phải counter. Chỗ này từng ghi
+    # `(meta.get("version") or 0) + 1`, tăng nó mỗi lần merge dữ liệu — nên nó
+    # trôi khỏi số schema thật (file đang ship ghi 1, trong khi schema là 5).
+    # Counter mà client dùng để quyết định tải là `version` ở top level.
+    meta["version"] = SCHEMA_VERSION
     if "license_of_aggregate" not in meta:
         meta["license_of_aggregate"] = "GPL-3.0"
     pkg["_meta"] = meta
@@ -103,8 +105,12 @@ def main(argv: list[str]) -> int:
                    help="Existing lexicon-update.json to merge into.")
     p.add_argument("--out", dest="out_path", required=True, type=Path,
                    help="Output path (can equal --in for in-place update).")
-    p.add_argument("--bump-version", action="store_true", default=True,
-                   help="Bump top-level `version` by 1 so apps re-download.")
+    # `action="store_true", default=True` khiến cờ này không bao giờ tắt được —
+    # truyền hay không truyền đều ra True. Đảo thành cờ phủ định để nó thật sự
+    # dùng được; mặc định vẫn là có bump.
+    p.add_argument("--no-bump-version", dest="bump_version", action="store_false",
+                   help="Đừng tăng `version` ở top level (mặc định là có tăng, "
+                        "để client tải lại).")
     args = p.parse_args(argv)
 
     if not args.underthesea.exists():
@@ -120,6 +126,15 @@ def main(argv: list[str]) -> int:
     before = set(pkg.get("vietnamese") or [])
     new_syllables = extract_syllables(args.underthesea)
 
+    # `extract_syllables` bỏ qua mọi dòng không parse được, nên file sai định
+    # dạng cho ra tập rỗng mà không báo lỗi. Ghi tiếp thì `version` vẫn +1 và
+    # mọi client tải về một bản y hệt bản cũ.
+    if not new_syllables:
+        print(f"error: 0 âm tiết trích được từ {args.underthesea} — "
+              f"sai định dạng? (mong đợi JSON Lines, mỗi dòng có trường 'text'). "
+              f"Dừng, không ghi.", file=sys.stderr)
+        return 1
+
     merged = before | new_syllables
     added = len(merged) - len(before)
     pkg["vietnamese"] = sorted(merged)
@@ -129,10 +144,7 @@ def main(argv: list[str]) -> int:
 
     pkg = merge_meta(pkg)
 
-    args.out_path.write_text(
-        json.dumps(pkg, ensure_ascii=False, indent=2, sort_keys=False) + "\n",
-        encoding="utf-8",
-    )
+    atomic_write_json(args.out_path, pkg)
 
     print(f"existing vietnamese: {len(before)}")
     print(f"underthesea syllables: {len(new_syllables)}")

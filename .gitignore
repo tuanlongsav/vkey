@@ -116,3 +116,8 @@ vkey-*.zip
 # Marketing capture output. `Tools/capture_marketing.sh --video` writes a
 # ~6.5 MB .mov here; nothing in the repo or README consumes it.
 marketing/videos/
+
+# Bytecode from the Tools/ scripts. They import each other (lexicon_common),
+# so running any of them leaves a __pycache__ next to the sources.
+__pycache__/
+*.py[cod]

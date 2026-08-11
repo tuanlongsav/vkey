@@ -19,6 +19,10 @@ Rules (giữ conservative):
   3. Baseline curated 7184 (snapshot từ commit 1.6.0): giữ NGUYÊN — đã
      được audit thủ công + maintainer trusted.
 
+     (Whitelist Tier C, tập ký tự diacritic và cluster phụ âm đầu nằm ở
+     Tools/lexicon_common.py — dùng chung với merge_underthesea_deep.py.
+     Trước đây mỗi file giữ một bản sao, đồng bộ bằng comment nhờ người.)
+
   4. (v4.20) Loại entry BẤT KHẢ VỀ NGỮ ÂM, kể cả khi nằm trong baseline —
      đây là quy luật tuyệt đối nên không có ngoại lệ nào để miễn trừ:
      - Nhiều hơn 1 dấu thanh trong một âm tiết (lỗi encode/OCR: "gĩữ",
@@ -57,21 +61,12 @@ import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
-
-# Tập ký tự VN có diacritic (NFC). Bao gồm dấu thanh + chữ riêng VN.
-VN_DIACRITIC_CHARS = set(
-    "àáảãạăắằẳẵặâấầẩẫậ"
-    "èéẻẽẹêếềểễệ"
-    "ìíỉĩị"
-    "òóỏõọôốồổỗộơớờởỡợ"
-    "ùúủũụưứừửữự"
-    "ỳýỷỹỵ"
-    "đ"
+from lexicon_common import (
+    TIER_C_ASCII_LOANWORDS,
+    VN_DIACRITIC_CHARS,
+    VN_INITIAL_CLUSTERS,
+    atomic_write_json,
 )
-
-# Cluster phụ âm đầu rõ rệt VN (không có trong English) — dùng làm dấu
-# hiệu phụ trợ khi entry không có diacritic nhưng vẫn là VN syllable.
-VN_INITIAL_CLUSTERS = {"ng", "ngh", "nh", "kh", "ph", "th", "tr", "ch", "gh", "gi", "qu"}
 
 # 1.7.1 fix: single-char VN syllables hợp lệ. Trước đây bị drop hết bởi
 # rule `len(word) == 1` → user gõ `ý` (Telex `ys`) + Space hiện `ys` vì
@@ -92,19 +87,6 @@ VIETNAMESE_SINGLE_CHAR_SYLLABLES: set[str] = {
     "ư", "ứ", "ừ", "ử", "ữ", "ự",
     "ỳ", "ý", "ỷ", "ỹ", "ỵ",
 }
-
-# 1.7.1: Tier C loanwords whitelist — đồng bộ với
-# Tools/merge_underthesea_deep.py để các từ vay phổ biến không bị
-# audit_lexicon.py drop (vì ASCII không có dấu nhưng vẫn là VN loanword).
-TIER_C_ASCII_LOANWORDS: set[str] = {
-    # Chemistry / units
-    "acid", "axit", "kali", "oxy", "ion", "clo", "nitrat", "kalium",
-    "celsius", "fahrenheit",
-    # Science / tech
-    "alpha", "beta", "logic", "euclid", "radio", "video", "internet",
-    "diesel", "cassette", "apacthai",
-}
-
 
 # --- Rule 4: ngữ âm bất khả (phản chiếu TiengVietValidator.swift) ---
 
@@ -335,10 +317,7 @@ def main(argv: list[str]) -> int:
     meta["cleanup"] = cleanup_log
     pkg["_meta"] = meta
 
-    args.out_path.write_text(
-        json.dumps(pkg, ensure_ascii=False, indent=2, sort_keys=False) + "\n",
-        encoding="utf-8",
-    )
+    atomic_write_json(args.out_path, pkg)
     print()
     print(f"new package version: {pkg['version']}")
     print(f"wrote: {args.out_path}")

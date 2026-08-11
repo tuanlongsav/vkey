@@ -23,7 +23,12 @@ for arg in "$@"; do
   esac
 done
 
-mkdir -p "$IMG" "$VID"
+# Chỉ tạo thư mục video khi thật sự quay — trước đây chạy không --video vẫn để
+# lại một `marketing/videos` rỗng trong repo.
+mkdir -p "$IMG"
+if $WANT_VIDEO; then
+  mkdir -p "$VID"
+fi
 
 log() { printf '▸ %s\n' "$*"; }
 
@@ -52,7 +57,14 @@ if $WANT_VIDEO; then
   fi
 fi
 
-wait "$VPID" 2>/dev/null || true
+# Trạng thái của bước export phải nổi lên. `wait ... || true` nuốt nó, nên một
+# lần xuất ảnh hỏng vẫn kết thúc bằng "Hoàn tất." và một thư mục images/ cũ.
+EXPORT_STATUS=0
+wait "$VPID" || EXPORT_STATUS=$?
+if [[ "$EXPORT_STATUS" -ne 0 ]]; then
+  log "LỖI: bước xuất ảnh thoát với mã $EXPORT_STATUS — ảnh trong $IMG có thể là của lần chạy trước."
+  exit "$EXPORT_STATUS"
+fi
 
 log "Hoàn tất."
 log "Ảnh: $IMG"
