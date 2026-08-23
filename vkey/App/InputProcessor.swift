@@ -27,6 +27,83 @@ import Foundation
 // `String.normalizedDictionaryToken`, `.vietnameseFolded`, `.isASCIIAlphabeticWord`
 // moved to `Lexicon/Lexicon.swift` in 1.5.0.
 
+// MARK: - EmitPlan
+
+/// TRỌN kế hoạch phát của MỘT lần thay thế: trục chuẩn hoá + đường gửi, dựng từ
+/// MỘT phép đo field.
+///
+/// ⚠️ ĐÂY LÀ REFACTOR THUẦN KIỂU. `EmitPlan` KHÔNG nhớ gì và KHÔNG đổi giá trị
+/// nào: `InputProcessor.emitPlan()` đo lại ở mỗi lần gọi, nên với cùng một chuỗi
+/// phím và cùng một nguồn phân loại, chuỗi `(backspaceCount, diffChars)` phát ra
+/// giống hệt bản trước refactor. (Một chốt-theo-TỪ đã được thử ở đây và đã lùi —
+/// xem `InputProcessor.emitPlan()`.)
+///
+/// VÌ SAO LÀ MỘT KIỂU CHỨ KHÔNG PHẢI MỘT `Bool` RỜI. Bất biến v4.15 — "dạng dùng
+/// để ĐẾM backspace phải đúng bằng dạng PHÁT ra" — trước đây chỉ là QUY ƯỚC:
+/// mỗi call site tự gọi `usesNFCForFocusedField()`, tự nhớ truyền đúng giá trị
+/// đó xuống `sendTypedReplacement`, và người review phải tự kiểm. Đếm một đằng
+/// phát một nẻo = số backspace lệch = ăn ngược vào chữ đã gõ; đó chính là v4.14
+/// ("gửi" → "ửi"), hồi quy nặng nhất lịch sử repo.
+///
+/// Giờ bất biến do KIỂU giữ: chỉ `EmitPlan` mới dựng được `EmitPlan.Replacement`,
+/// mọi đường dựng đều đếm bằng CHÍNH trục của plan đó, và transport nhận
+/// `normalizeToNFC` từ `replacement.plan` chứ không phải một tham số rời. Không
+/// còn cách nào truyền nhầm một trục khác xuống transport mà không phải cố ý.
+struct EmitPlan {
+  /// Trục chuẩn hoá: `true` = đếm & phát theo NFC (grapheme), `false` = NFD
+  /// (scalar).
+  let usesNFC: Bool
+
+  /// Ô đang focus là browser-chrome (omnibox Chromium) ⇒ phải gửi bằng
+  /// `.axDirect`.
+  ///
+  /// Nằm CÙNG `usesNFC` trong một giá trị vì hai vế bắt buộc phải nhất quán:
+  /// `.windowField` của app nhóm NFD chọn trục NFC ĐÚNG VÌ `axDeleteStart` xoá
+  /// theo grapheme. Tách chúng thành hai lần đo riêng cho phép một
+  /// hiccup AX giữa từ làm TRỤC và ĐƯỜNG GỬI lệch nhau: đếm NFC rồi gửi bằng
+  /// synthetic backspace vào ô có inline autocomplete ("trường" → "truường").
+  let fieldIsBrowserChrome: Bool
+
+  /// Một lần thay thế ĐÃ ĐẾM XONG, mang theo chính kế hoạch đã đếm ra nó.
+  struct Replacement {
+    let plan: EmitPlan
+    let backspaceCount: Int
+    let diffChars: [Character]
+
+    /// `fileprivate`: chỉ các factory của `EmitPlan` mới dựng được — đó là thứ
+    /// biến bất biến v4.15 thành ràng buộc kiểu.
+    fileprivate init(plan: EmitPlan, backspaceCount: Int, diffChars: [Character]) {
+      self.plan = plan
+      self.backspaceCount = backspaceCount
+      self.diffChars = diffChars
+    }
+
+    /// Không có gì để gửi (transport cũng sẽ no-op).
+    var isEmpty: Bool { backspaceCount == 0 && diffChars.isEmpty }
+  }
+
+  /// Đếm bằng ĐÚNG trục sẽ dùng để phát. Đây là đường dựng chính.
+  func replacement(from: String, to: String) -> Replacement {
+    let (backspaceCount, diffChars) = EventSimulator.calcKeyStrokes(
+      from: from, to: to, usesNFC: usesNFC)
+    return Replacement(plan: self, backspaceCount: backspaceCount, diffChars: diffChars)
+  }
+
+  /// Chèn thuần, không xoá gì (dự đoán từ; lưới an toàn của auto-capitalize).
+  /// Không có backspace nào để lệch, nên không cần đếm.
+  func insertion(of chars: [Character]) -> Replacement {
+    Replacement(plan: self, backspaceCount: 0, diffChars: chars)
+  }
+
+  /// Cầu nối DUY NHẤT cho số đếm được tính ở nơi khác — chỉ `WordBuffer.pop`,
+  /// vốn phải replay state TRƯỚC khi đếm nên không đếm hộ được từ đây.
+  /// `fileprivate` để cây gọi còn đúng một chỗ: `InputProcessor.pop(plan:)`,
+  /// nơi truyền `plan.usesNFC` vào chính lần đếm đó.
+  fileprivate func replacement(counted: (Int, [Character])) -> Replacement {
+    Replacement(plan: self, backspaceCount: counted.0, diffChars: counted.1)
+  }
+}
+
 // MARK: - WordBuffer
 
 /// WordBuffer manages the Vietnamese word state during typing.
@@ -70,6 +147,11 @@ struct WordBuffer {
   /// - 2 = toggle OFF ('dd' raw): subsequent 'd' đều no-op (frozen).
   /// Reset về 0 trên non-'d' char hoặc newWord.
   var ddToggleStage: Int = 0
+
+  // ĐÃ GỠ (cùng vòng lùi chốt trục theo từ): `isAtWordBoundary`,
+  // `lockedEmitPlan`/`storedEmitPlan` và `dropEmitLockAtWordBoundary()`.
+  // `WordBuffer` không còn nhớ gì về trục chuẩn hoá — `InputProcessor.emitPlan()`
+  // ĐO lại mỗi lần gọi, như HEAD. Lý do lùi ở `InputProcessor.emitPlan()`.
 
   private static let impossible2LetterPrefixes: Set<String> = [
     "bl", "cl", "fl", "gl", "pl", "sl", "vl",
@@ -793,26 +875,33 @@ class InputProcessor {
   public var keyLayout = KeyboardUS()
   public var activeApp = ""
 
-  /// Ô đang focus có AX role là `AXSearchField` / `AXComboBox` không (AppState
-  /// đẩy vào). Đây là tín hiệu duy nhất phân biệt ô tìm kiếm có inline
-  /// autocomplete với web text area.
-  ///
-  /// v2.3.10: trước đó vkey nhận diện "app cần Shift+Left" theo bundle ID
-  /// (`FixAutocompleteApps`), nên cả text area của Google Docs/Sheets cũng bị
-  /// tính vào → Shift+Left bị JS handler của contenteditable bỏ qua, selection
-  /// không đổi mà vkey vẫn `sendString` → mọi âm tiết bị nhân đôi ("trình" →
-  /// "trinình", "các" → "cacác"). Chuyển sang AX role thì Docs/Sheets rơi về
-  /// `AXTextArea` và đi đường backspace bình thường.
-  ///
-  /// v4.23: hàm bọc `isFixAutocompleteApp()` đã gỡ cùng `TransformationTracker`
-  /// — nó chỉ còn phục vụ tham số `appLikelySensitive` của cơ chế chết đó.
-  /// Giữ lại chính cờ này vì nó là dữ liệu AX thật, không phải suy đoán.
-  public var isSearchOrComboFocused = false
+  // `isSearchOrComboFocused` đã gỡ (cùng `AppState`
+  // .currentFocusedElementIsSearchOrCombo và `FocusSnapshot.isComboOrSearch`).
+  // Người đọc duy nhất là `isFixAutocompleteApp()`, đã gỡ ở v4.23 cùng
+  // `TransformationTracker`; từ đó cờ này chỉ còn được GHI, không ai ĐỌC.
+  // Cái giá của việc giữ: `Focused.snapshot()` phải đọc thêm `kAXRole` trên
+  // focused element — một round-trip AX MỖI PHÍM (snapshot chạy trên tap
+  // thread qua `syncFocusedContextForKeystroke`) cho một giá trị bị vứt đi.
+  // Vì timeout AX điều khiển thẳng xác suất đọc hụt role → xác suất lật trục
+  // NFC/NFD giữa từ, một round-trip thừa mỗi phím không phải chi phí trung tính.
+  // Muốn dựng lại nhận diện ô search/combo thì đọc role TỪ `fieldKind`
+  // (nó đã đọc role node trong cùng rồi), đừng thêm lần đọc thứ hai.
 
   /// v3.9: phân loại field đang focus (push-based từ AppState) — quyết định
   /// diff NFC/NFD (`usesNFCForFocusedField`) và chiến lược gửi
   /// (`effectiveTypingStrategy` → axDirect cho omnibox Chrome).
   public var focusedFieldKind: Focused.FieldKind = .unknown
+
+  // ĐÃ GỠ: `focusMovedSinceFieldKindMeasured` — phạm vi của quy tắc
+  // sticky-on-miss ở `AppState`. Lùi cùng cả cụm sticky, vì cụm đó chỉ tồn tại
+  // để đỡ cho chốt trục theo từ; xem `emitPlan()`.
+  //
+  // ĐÃ GỠ: `fieldKindProbe` — điểm bơm nguồn phân loại giả cho test. Nó phục vụ
+  // đúng hai assert của chốt ("chốt chỉ ĐO một lần mỗi từ" / "nguồn nhiễu không
+  // lật được trục giữa từ"), và cả hai đi cùng chốt. Không giữ lại: một điểm bơm
+  // chỉ-cho-test biên dịch thẳng vào bản phát hành là một đường ghi đè nguồn
+  // phân loại field mà production không bao giờ được có.
+
   public private(set) var lastSuggestions: [SuggestionCandidate] = []
 
   /// 2.0 (B1): cached Window Title Rule overrides cho activeApp.
@@ -1039,8 +1128,57 @@ class InputProcessor {
     }
   }
 
-  /// Nhận `usesNFC` từ caller để dạng ĐẾM backspace và dạng EMIT cùng dựa
-  /// trên MỘT quyết định (xem `sendTypedReplacement`) — không đọc field hai lần.
+  /// Kế hoạch phát cho MỘT lần gửi. ĐO MỖI LẦN GỌI — hàm này KHÔNG nhớ gì.
+  ///
+  /// Việc nó gom được cả hai vế (trục chuẩn hoá + browser-chrome) từ MỘT phép
+  /// đo `currentFieldKind()` là toàn bộ giá trị còn lại của nó: đọc hai lần
+  /// (`usesNFCForFocusedField()` rồi `focusedFieldIsBrowserChrome()`) mở đường
+  /// cho trục và chiến lược gửi lệch nhau khi AX hiccup đúng giữa hai lời gọi.
+  /// Cả hai lời gọi cũ vẫn nằm trong cùng một lần xử lý phím trên tap thread nên
+  /// giá trị GIỐNG HỆT HEAD; gộp chỉ đóng cửa cho một lớp lỗi tương lai.
+  ///
+  /// ⚠️ ĐÃ THỬ CHỐT THEO TỪ (đo một lần rồi giữ tới hết từ, chốt cất trong
+  /// `WordBuffer` và mở ở `newWord()`) — ĐÃ LÙI. Lý do KHÔNG phải lỗi cài đặt mà
+  /// là tiền đề sai:
+  ///   • Phép đo ở PHÍM 1 là phép đo TỆ NHẤT (ngay sau click/⌘S, AX còn thấy
+  ///     focus CŨ) nhưng ở HEAD nó KHÔNG CÓ HẬU QUẢ: phím 1 luôn cho
+  ///     `lastTransformed == ""` ⇒ `bs == 0`, chỉ chèn một ký tự ASCII, trục
+  ///     không quan sát được. Phép đo thật sự có hậu quả là phím đầu tiên SINH
+  ///     DẤU (thường phím 3–5, tức 200–500ms sau khi focus đổi) — lúc AX đã
+  ///     lắng. Chốt theo từ lấy đúng phép đo tệ nhất rồi dán nó lên cả từ.
+  ///   • Trục sai KHÔNG đối xứng: chốt nhầm NFC trong ô Blink là vô hại (NFC thì
+  ///     1 grapheme đúng bằng 1 scalar — đã đo, xem `Tools/probe/README.md`),
+  ///     còn chốt nhầm NFD trong ô AppKit thì hỏng CÂM (gõ `Nooij` ra `Ṇ̂i`).
+  ///   • Trong ca ⌘S mở hộp thoại Lưu của app Electron, đo-mỗi-phím TỰ HỘI TỤ VỀ
+  ///     ĐÚNG (chiều lật NFD→NFC là chiều lành); chốt thì đóng băng cái sai cho
+  ///     trọn từ.
+  /// ⇒ Đổi một lỗi ngẫu nhiên hiếm lấy một lỗi hệ thống trong thao tác hằng
+  /// ngày. Không đáng.
+  ///
+  /// ĐIỀU KIỆN TIÊN QUYẾT NẾU MUỐN THỬ LẠI: phải ĐO TRƯỚC bằng `Tools/probe` —
+  /// (i) trục có THẬT SỰ lật giữa một từ không, tần suất bao nhiêu; (ii) sau
+  /// click/⌘S thì bao lâu AX mới báo đúng ô. Không có hai con số đó thì mọi hàng
+  /// rào quanh chốt chỉ là phỏng đoán. Xem thêm `Focused.fieldKind(from:)`
+  /// mục (e)/(f).
+  func emitPlan() -> EmitPlan {
+    let kind = currentFieldKind()
+    return EmitPlan(
+      usesNFC: usesNFC(forFieldKind: kind),
+      fieldIsBrowserChrome: isBrowserChrome(forFieldKind: kind)
+    )
+  }
+
+  /// Pop THEO KẾ HOẠCH — trục dùng để replay/đếm bên trong `WordBuffer.pop`
+  /// là chính trục sẽ phát ra. Đây là cầu nối duy nhất giữa `WordBuffer` (đếm
+  /// sau khi replay state) và `EmitPlan`.
+  func pop(plan: EmitPlan) -> EmitPlan.Replacement {
+    plan.replacement(counted: wordBuffer.pop(engine: engine, usesNFC: plan.usesNFC))
+  }
+
+  /// Dạng THÔ của `pop`, nhận trục rời. GIỮ cho test (chúng gọi thẳng để đối
+  /// chiếu hai trục cạnh nhau) — đường gõ thật phải dùng `pop(plan:)`, nếu
+  /// không thì `usesNFC` lại tách khỏi dạng phát, tức hở lại đúng bất biến v4.15
+  /// mà `EmitPlan` sinh ra để ép.
   public func pop(usesNFC: Bool) -> (Int, [Character]) {
     return wordBuffer.pop(engine: engine, usesNFC: usesNFC)
   }
@@ -1143,28 +1281,21 @@ class InputProcessor {
       let orig = String(wordBuffer.keys)
       let currentTransformed = wordBuffer.transformed
       if !wordBuffer.wordState.isBlank && currentTransformed != orig {
-        let usesNFC = usesNFCForFocusedField()
-        let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-          from: currentTransformed, to: orig, usesNFC: usesNFC)
-        sendTypedReplacement(
-          backspaceCount: numBackspaces,
-          diffChars: diffChars,
-          usesNFC: usesNFC
-        )
+        // Một kế hoạch cho cả trục đếm lẫn dạng phát của lần gửi này.
+        sendTypedReplacement(emitPlan().replacement(from: currentTransformed, to: orig))
         newWord()
         return nil // swallow ESC event
       }
       newWord()
     } else if taskKey == .Delete {
-      // Một lần đọc field, dùng chung cho cả trục diff (trong pop) lẫn emit.
-      let usesNFC = usesNFCForFocusedField()
-      let (numBackspaces, diffChars) = pop(usesNFC: usesNFC)
-      if numBackspaces > 0 || !diffChars.isEmpty {
-        sendTypedReplacement(
-          backspaceCount: numBackspaces,
-          diffChars: diffChars,
-          usesNFC: usesNFC
-        )
+      // Một kế hoạch, dùng chung cho cả trục đếm (trong `pop`) lẫn dạng phát —
+      // đúng một lần đọc field như trước refactor. `emitPlan()` ở vị trí tham số
+      // nên nó đo vô điều kiện, kể cả khi bộ đệm rỗng và `pop` sắp trả `(0, [])`;
+      // vô hại vì `currentFieldKind()` chỉ đọc giá trị `AppState` đã đẩy sang,
+      // không phải một round-trip AX, và không có gì được ghi nhớ.
+      let replacement = pop(plan: emitPlan())
+      if !replacement.isEmpty {
+        sendTypedReplacement(replacement)
         return nil
       }
     } else if InputProcessor.JumpTaskKeys.contains(taskKey) {
@@ -1226,19 +1357,15 @@ class InputProcessor {
       // gốc thì bị nuốt (`return nil`) → mọi phím sau diff trên nền sai và cả từ
       // hỏng. Diff từ `lastTransformed` (giá trị TRƯỚC push) sang `transformed`
       // luôn đúng, kể cả khi engine không đụng gì (khi đó vẫn ra đúng 1 ký tự).
-      let usesNFC = usesNFCForFocusedField()
-      var (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-        from: lastTransformed, to: transformed, usesNFC: usesNFC)
-      if numBackspaces == 0 && diffChars.isEmpty {
+      // Một kế hoạch cho cả nhánh diff lẫn nhánh lưới an toàn — dạng emit vẫn
+      // bám field để ô tìm kiếm NFC nhận text precomposed.
+      let plan = emitPlan()
+      var replacement = plan.replacement(from: lastTransformed, to: transformed)
+      if replacement.isEmpty {
         // Lưới an toàn: đã nuốt event gốc rồi thì không được phát ra rỗng.
-        diffChars = [newChar]
+        replacement = plan.insertion(of: [newChar])
       }
-      sendTypedReplacement(
-        backspaceCount: numBackspaces,
-        diffChars: diffChars,
-        // Dạng emit bám field để ô tìm kiếm NFC nhận text precomposed.
-        usesNFC: usesNFC
-      )
+      sendTypedReplacement(replacement)
       return nil
     }
     // v2.3.14: revert v2.3.13 NFD diff. User confirmed still bug
@@ -1252,13 +1379,12 @@ class InputProcessor {
     // diff như v2.3.11 — stable cho NFC apps, accept bug trong Chromium
     // apps cho đến khi có giải pháp đúng.
     //
-    let usesNFC = usesNFCForFocusedField()
-    let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-      from: lastTransformed, to: transformed, usesNFC: usesNFC)
+    let replacement = emitPlan().replacement(from: lastTransformed, to: transformed)
 
     // If the only change is the new character itself, let it pass through
-    if let firstDiffChar = diffChars.first,
-      diffChars.count == 1 && firstDiffChar == newChar && numBackspaces == 0
+    if let firstDiffChar = replacement.diffChars.first,
+      replacement.diffChars.count == 1 && firstDiffChar == newChar
+        && replacement.backspaceCount == 0
     {
       // Thả thẳng phím thật về app. ĐÂY là chỗ hai đường (event tap đồng bộ vs
       // `simulationQueue` async) tách nhau — nguồn của race "push" → "pussh".
@@ -1267,11 +1393,7 @@ class InputProcessor {
       return Unmanaged.passUnretained(event)
     }
 
-    sendTypedReplacement(
-      backspaceCount: numBackspaces,
-      diffChars: diffChars,
-      usesNFC: usesNFC
-    )
+    sendTypedReplacement(replacement)
     return nil
   }
 
@@ -1306,11 +1428,8 @@ class InputProcessor {
       .map(String.init)
     if wordBuffer.wordState.isBlank {
       newWord(storePrevious: false)
-      sendTypedReplacement(
-        backspaceCount: 0,
-        diffChars: Array(prediction),
-        usesNFC: usesNFCForFocusedField()
-      )
+      // Chèn thuần vào một từ MỚI: không backspace nào để lệch với dạng phát.
+      sendTypedReplacement(emitPlan().insertion(of: Array(prediction)))
       PredictionEngine.shared.learnAcceptedPhrase(
         prediction,
         prev2: prev2Committed,
@@ -1329,11 +1448,9 @@ class InputProcessor {
         prev2: prev2Committed,
         prev1: prev1Committed ?? ""
       ) ?? prediction
-      sendTypedReplacement(
-        backspaceCount: 0,
-        diffChars: Array(recomputed),
-        usesNFC: usesNFCForFocusedField()
-      )
+      // `applySpellDecisionAndAdvance` phía trên đã commit từ cũ và gọi
+      // `newWord()` — chèn thuần vào từ MỚI.
+      sendTypedReplacement(emitPlan().insertion(of: Array(recomputed)))
       PredictionEngine.shared.learnAcceptedPhrase(
         recomputed,
         prev2: prev2Committed,
@@ -1408,20 +1525,20 @@ class InputProcessor {
 
   /// Gửi replacement với chiến lược đúng ngữ cảnh (axDirect cho omnibox Chrome…).
   ///
-  /// - Parameter usesNFC: quyết định chuẩn hoá của caller — PHẢI là chính giá
-  ///   trị đã dùng để chọn `calcKeyStrokes` (NFC) vs `calcKeyStrokesNFD` (NFD)
-  ///   khi tính `backspaceCount`/`diffChars`. Tham số này KHÔNG có giá trị mặc
-  ///   định: bất biến "dạng EMIT == dạng ĐẾM backspace" (v4.15) là thứ giữ cho
-  ///   bộ gõ không rụng chữ, nên nó phải do compiler ép ở từng call site chứ
-  ///   không phải nhờ hai lần đọc `usesNFCForFocusedField()` tình cờ trùng nhau
-  ///   — đọc hai lần chính là lớp lỗi đã gây regression v4.14 ("gửi"→"ửi").
+  /// - Parameter replacement: kế hoạch phát ĐÃ ĐẾM XONG. Thay cho tham số
+  ///   `usesNFC: Bool` rời thành giá trị này: trước đây bất biến v4.15 ("dạng
+  ///   EMIT == dạng ĐẾM backspace") chỉ được giữ bằng việc caller nhớ truyền
+  ///   đúng cái `Bool` mà nó vừa đếm; giờ số đếm và trục đi CHUNG một giá trị
+  ///   bất biến, dựng ra bởi chính `EmitPlan` đã đếm — compiler ép, không cần
+  ///   người review nhớ. Xem docstring `EmitPlan`.
   @discardableResult
   private func sendTypedReplacement(
-    backspaceCount: Int,
-    diffChars: [Character],
-    usesNFC: Bool
+    _ replacement: EmitPlan.Replacement
   ) -> EventSendTelemetry {
+    let backspaceCount = replacement.backspaceCount
+    let diffChars = replacement.diffChars
     let strategy = effectiveTypingStrategy(
+      plan: replacement.plan,
       backspaceCount: backspaceCount,
       diffCharCount: diffChars.count
     )
@@ -1434,7 +1551,9 @@ class InputProcessor {
       strategy: strategy,
       // v4.15: dạng gửi bám theo field — cùng MỘT quyết định `usesNFC` mà
       // caller đã dùng để chọn trục diff. NFC precompose, NFD giữ nguyên.
-      normalizeToNFC: usesNFC
+      // "Cùng một quyết định" giờ là sự thật theo CẤU TRÚC, không phải theo quy
+      // ước — trục lấy từ chính plan đã đếm ra `backspaceCount`.
+      normalizeToNFC: replacement.plan.usesNFC
     )
     return telemetry
   }
@@ -1475,7 +1594,19 @@ class InputProcessor {
   ///     đổi ĐƯỜNG gửi (giữ nguyên axDirect, giữ nguyên event thật cho
   ///     Enter/Tab), và phải kiểm được trên máy thật — không unit test nào ở
   ///     đây chạm tới timing này.
-  private func effectiveTypingStrategy(backspaceCount: Int, diffCharCount: Int) -> SendingStrategy {
+  ///
+  /// Vế "ô này có phải browser-chrome không" nay đến từ `plan` — cùng phép đo
+  /// field đã sinh ra trục chuẩn hoá, thay vì một lời gọi
+  /// `focusedFieldIsBrowserChrome()` riêng ở đây. Giá trị KHÔNG đổi: cả hai lời
+  /// gọi cũ nằm trong cùng một lần xử lý phím trên tap thread, mà
+  /// `focusedFieldKind` chỉ được ghi từ main thread nên không thể xen vào giữa.
+  /// Chúng phải đi cùng nhau — xem `EmitPlan.fieldIsBrowserChrome`. Vế còn lại
+  /// (`getStrategy(for: activeApp)`) vẫn tra sống theo app, không đổi.
+  private func effectiveTypingStrategy(
+    plan: EmitPlan,
+    backspaceCount: Int,
+    diffCharCount: Int
+  ) -> SendingStrategy {
     // v4.23: tra thẳng bảng per-app. Trước đây giá trị này nằm trong
     // `strategyTracker.currentStrategy`, vốn cũng chỉ được gán bằng đúng lời gọi
     // này ở `resetForApp` và không bao giờ đổi nữa (auto-switch là cơ chế chết,
@@ -1491,7 +1622,7 @@ class InputProcessor {
     // v3.9: browser-chrome field (thanh địa chỉ Chrome…) có inline autocomplete
     // bôi đen → synthetic backspace lệch. Dùng axDirect (đọc value thật, xử lý
     // suffix-selection như Spotlight). axDirect fail → tự fallback synthetic.
-    if focusedFieldIsBrowserChrome() {
+    if plan.fieldIsBrowserChrome {
       return .axDirect
     }
     // `.stepByStep` KHÔNG được miễn trừ ở đây — xem mục (c)/(d) trong docstring.
@@ -1672,7 +1803,11 @@ class InputProcessor {
       let source = CGEventSource(stateID: .privateState)
       // v4.15: cùng nguyên tắc — dạng gửi bám theo field. Path này chủ yếu cho
       // app NFD (Chromium/Claude/Notes) nên gửi nguyên; field NFC precompose.
-      let typed = usesNFCForFocusedField()
+      // Đây là đường phát DUY NHẤT không đi qua `EmitPlan.Replacement`, vì nó
+      // xoá bằng Option+Backspace (xoá cả TỪ) chứ không đếm backspace — không có
+      // số đếm nào để lệch với dạng phát. Vẫn lấy trục qua `emitPlan()` để chỉ
+      // có MỘT chỗ đọc field trong cả file.
+      let typed = emitPlan().usesNFC
         ? target.precomposedStringWithCanonicalMapping
         : target
       EventSimulator.simulationQueueAsync {
@@ -1708,14 +1843,8 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
-      let usesNFC = usesNFCForFocusedField()
-      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
-        from: current, to: target, usesNFC: usesNFC)
-      sendTypedReplacement(
-        backspaceCount: numBackspaces,
-        diffChars: diffChars,
-        usesNFC: usesNFC
-      )
+      // Một kế hoạch cho cả trục đếm lẫn dạng phát.
+      sendTypedReplacement(emitPlan().replacement(from: current, to: target))
       return true
     }
   }
@@ -1794,9 +1923,29 @@ class InputProcessor {
   ///    - windowField → NFC (browser-chrome/omnibox; dùng KÈM axDirect — xem
   ///                    effectiveTypingStrategy — vì axDeleteStart đếm grapheme)
   ///    - unknown     → giữ default NFD của app
+  ///
+  /// Hàm này ĐO ngay bây giờ. Đường gõ vào nó qua `emitPlan()` (để một phép đo
+  /// nuôi cả trục lẫn đường gửi) chứ không gọi thẳng, nhưng giá trị trả về là
+  /// CÙNG MỘT BIỂU THỨC — `usesNFC(forFieldKind: focusedFieldKind)`. Giữ hàm này
+  /// vì nó là thứ test dùng để khoá BẢNG ÁNH XẠ app × field → trục (bảng đó
+  /// KHÔNG bị đụng tới ở bất kỳ vòng nào).
   func usesNFCForFocusedField() -> Bool {
+    usesNFC(forFieldKind: currentFieldKind())
+  }
+
+  /// Một chỗ đọc phân loại field DUY NHẤT, để `emitPlan()` dựng trọn bộ quyết
+  /// định (trục + browser-chrome) từ MỘT phép đo. Không có điểm bơm nào ở đây —
+  /// `fieldKindProbe` đã gỡ cùng chốt trục theo từ (xem chỗ khai báo cũ).
+  private func currentFieldKind() -> Focused.FieldKind {
+    focusedFieldKind
+  }
+
+  /// Lõi thuần của `usesNFCForFocusedField` — KHÔNG tự đọc field, nhận phân loại
+  /// từ caller. Tách ra CHỈ để cùng một phép đo nuôi được cả trục lẫn chiến lược
+  /// gửi; thân hàm giữ nguyên từng dòng, không đổi trục của bất kỳ app nào.
+  private func usesNFC(forFieldKind kind: Focused.FieldKind) -> Bool {
     if InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp) { return true }
-    switch focusedFieldKind {
+    switch kind {
     case .webContent, .unknown:
       // 4.21: web content của TRÌNH DUYỆT dùng NFC. Thay cho công tắc thủ công
       // "NFC cho ô tìm kiếm web" của 4.16, vốn dựa trên hai tiền đề đều SAI:
@@ -1849,8 +1998,17 @@ class InputProcessor {
   /// nhóm NFD — tức `windowField` trong app KHÔNG thuộc whitelist NFC. Các field
   /// này (Chromium Views) có inline autocomplete bôi đen nên backspace synthetic
   /// lệch số ký tự ("trường" → "truường"/"truờng"); phải dùng axDirect.
+  ///
+  /// Cũng đo tức thời, cùng lý do và cùng cách dùng như
+  /// `usesNFCForFocusedField()` — đường gõ lấy vế này từ
+  /// `EmitPlan.fieldIsBrowserChrome`, cùng một biểu thức.
   func focusedFieldIsBrowserChrome() -> Bool {
-    return focusedFieldKind == .windowField
+    isBrowserChrome(forFieldKind: currentFieldKind())
+  }
+
+  /// Lõi thuần của `focusedFieldIsBrowserChrome` — xem `usesNFC(forFieldKind:)`.
+  private func isBrowserChrome(forFieldKind kind: Focused.FieldKind) -> Bool {
+    return kind == .windowField
       && !InputProcessor.usesNFCGraphemeStorage(bundleId: activeApp)
   }
 
@@ -1994,15 +2152,8 @@ class InputProcessor {
 
     // Chỉ đọc trạng thái field khi CHẮC CHẮN có macro khớp: path này chạy trên
     // mọi phím kết từ (space + dấu câu) mà không-khớp là trường hợp áp đảo.
-    // Một lần đọc, dùng chung cho cả trục diff lẫn dạng emit.
-    let usesNFC = usesNFCForFocusedField()
-    let (backspaceCount, diffChars) = EventSimulator.calcKeyStrokes(
-      from: current, to: target, usesNFC: usesNFC)
-    sendTypedReplacement(
-      backspaceCount: backspaceCount,
-      diffChars: diffChars,
-      usesNFC: usesNFC
-    )
+    // Một lần đọc, dùng chung cho cả trục đếm lẫn dạng phát.
+    sendTypedReplacement(emitPlan().replacement(from: current, to: target))
     return true
   }
 }

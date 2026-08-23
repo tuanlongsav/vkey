@@ -561,6 +561,21 @@ func eventTapCallback(
     == Bundle.main.bundleIdentifier
 
   if type == .keyDown && eventHook.processing && !skipVietnameseIME {
+    // ĐÃ LÙI — chụp AX chạy MỖI keyDown như HEAD.
+    //
+    // Đã thử cổng `if input.isAtWordBoundary` (chỉ chụp ở ranh giới từ), đi kèm
+    // chốt trục theo TỪ ở `InputProcessor.emitPlan()`. Lùi cả cụm vì tiền đề của
+    // chốt sai: phép đo ở phím ĐẦU của từ là phép đo TỆ NHẤT (ngay sau click/⌘S,
+    // AX còn thấy focus CŨ) mà cổng này lại làm nó thành phép đo DUY NHẤT cho cả
+    // từ; trục sai không đối xứng (chốt nhầm NFD trong ô AppKit hỏng câm); và
+    // trong ca ⌘S mở hộp thoại Lưu, HEAD tự hội tụ về đúng còn chốt thì đóng
+    // băng cái sai. Lý do đầy đủ ở `Focused.fieldKind(from:)` mục (e).
+    //
+    // Muốn thử lại: ĐO TRƯỚC bằng `Tools/probe` — trục có thật sự lật giữa từ
+    // không, và bao lâu sau click/⌘S thì AX mới báo đúng ô (mục (f) ở đó).
+    //
+    // Chi phí của việc chụp mỗi phím là có thật; nó được ghìm bằng ngân sách
+    // `Focused.hotPathAXTimeout` (0,05) chứ không bằng cách chụp thưa đi.
     eventHook.appState?.syncFocusedContextForKeystroke()
     return input.handleEvent(event: event)
   } else if type == .leftMouseDown || type == .rightMouseDown {

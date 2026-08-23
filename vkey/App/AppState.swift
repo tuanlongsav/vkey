@@ -86,27 +86,32 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// (v4.23 đã gỡ `Focused.focusedAppBundleId()`; chỗ trước đây dùng nó nay
     /// đọc bundle id từ `Focused.snapshot()`.)
     /// ⚠️ Property này có NĂM người ghi, không phải một — `frontmostApplication`
-    /// lúc seed (:163) và lúc `didActivateApplication` (:283),
-    /// `eventTargetUnixProcessID` qua `noteFocusedBundleId` (:340),
-    /// và `Focused.snapshot()` ở
-    /// :366 + :444. Ba trong năm KHÔNG phải snapshot, và trên macOS 26 chúng
-    /// bất đồng với nhau khi có overlay (xem `EventHook.eventTapCallback`).
+    /// lúc seed và lúc `didActivateApplication`, `eventTargetUnixProcessID` qua
+    /// `noteFocusedBundleId`, và `Focused.snapshot()` ở CẢ HAI đường
+    /// (`syncFocusedContextForKeystroke` đồng bộ + `performFocusedElementRefresh`
+    /// async). Ba trong năm KHÔNG phải snapshot, và trên macOS 26 chúng bất đồng
+    /// với nhau khi có overlay (xem `EventHook.eventTapCallback`).
     /// Đừng "dọn" khối v2.11 hay `noteFocusedBundleId` vì tưởng đã có nguồn duy
     /// nhất — làm thế là dựng lại đúng lỗi Spotlight của v2.11/v4.11.
     public private(set) var currentFocusedBundleId: String?
-    public private(set) var currentFocusedElementIsSearchOrCombo = false {
-        didSet {
-            inputProcessor.isSearchOrComboFocused = currentFocusedElementIsSearchOrCombo
-        }
-    }
+    // `currentFocusedElementIsSearchOrCombo` đã gỡ: nó chỉ đẩy sang
+    // `inputProcessor.isSearchOrComboFocused`, mà cờ đó không còn ai ĐỌC kể từ
+    // khi v4.23 gỡ `isFixAutocompleteApp()`. Lý do đầy đủ ghi ở chỗ khai báo
+    // cũ trong `InputProcessor`.
     /// v3.9: phân loại field đang focus (web content / hộp thoại native /
     /// field cửa sổ chính). InputProcessor dùng để chọn diff NFC/NFD và chiến
     /// lược gửi (omnibox Chrome = windowField của app NFD → axDirect).
     ///
-    /// ⚠️ CỐ Ý GÁN THẲNG từ mỗi ảnh chụp AX, KHÔNG qua cổng lọc nào. Đã thử thêm
-    /// một cổng `adoptFieldKind` (đóng băng phân loại suốt một từ + không cho
-    /// phỏng đoán kém tin cậy ghi đè) — đã lùi; lý do đầy đủ ghi ở
-    /// `Focused.fieldKind(from:)`.
+    /// ⚠️ CỐ Ý GÁN THẲNG từ mỗi ảnh chụp AX, KHÔNG qua cổng lọc nào. Đã thử HAI
+    /// lần và đã lùi cả hai:
+    ///   • `adoptFieldKind` — đóng băng phân loại suốt một từ + không cho phỏng
+    ///     đoán kém tin cậy ghi đè;
+    ///   • `adoptFocusSnapshot` + `FieldKind?` — sticky-on-miss có phạm vi, tức
+    ///     một phép đo AX HỤT thì giữ phân loại cũ thay vì hạ về `.unknown`.
+    /// Cái sau lùi cùng chốt trục theo từ ở `InputProcessor.emitPlan()`: nó tồn
+    /// tại CHỈ để đỡ cho chốt, và không còn chốt thì HEAD tự hội tụ về đúng
+    /// (`.unknown` ⇒ NFD ⇒ synthetic) trong đúng những ca sticky định cứu. Lý do
+    /// đầy đủ ghi ở `Focused.fieldKind(from:)` mục (e)/(f).
     public private(set) var currentFocusedFieldKind: Focused.FieldKind = .unknown {
         didSet {
             inputProcessor.focusedFieldKind = currentFocusedFieldKind
@@ -366,16 +371,26 @@ class AppState: ObservableObject, FileMonitorDelegate {
     ///
     /// ⚠️ Hàm này chạy MỖI keyDown (EventHook), nên một hiccup AX GIỮA từ vẫn có
     /// thể lật trục NFC/NFD (lỗi F1 — xem `Focused.fieldKind(from:)`). Đã thử
-    /// chặn tại đây bằng một cổng đóng băng phân loại theo từ — đã lùi, lý do
-    /// ghi ở chính `Focused.fieldKind(from:)`. Đừng thêm lại cổng ở tầng này.
+    /// chặn tại đây HAI lần — bằng cổng đóng băng phân loại theo từ
+    /// (`adoptFieldKind`), rồi bằng sticky-on-miss có phạm vi
+    /// (`adoptFocusSnapshot` + `FieldKind?` + cờ
+    /// `focusMovedSinceFieldKindMeasured`) — đã lùi cả hai. Đừng thêm lại cổng ở
+    /// tầng này; muốn thử lại thì ĐO TRƯỚC bằng `Tools/probe`, xem
+    /// `Focused.fieldKind(from:)` mục (e)/(f).
     public func syncFocusedContextForKeystroke() {
         let snap = Focused.snapshot()
         if let bid = snap.bundleId {
             currentFocusedBundleId = bid
         }
-        currentFocusedElementIsSearchOrCombo = snap.isComboOrSearch
         currentFocusedFieldKind = snap.fieldKind
     }
+
+    // ĐÃ GỠ: `adoptFocusSnapshot(_:)` — luật sticky-on-miss có phạm vi, gộp hai
+    // đường snapshot (đồng bộ + async) lại làm một. Nó lùi cùng chốt trục theo
+    // từ vì nó chỉ tồn tại để đỡ cho chốt; xem `Focused.fieldKind(from:)` mục
+    // (e). Hệ quả CỐ Ý: hai đường lại có hai luật khác nhau đúng như HEAD —
+    // đường đồng bộ sticky `bundleId` (`if let`), đường async gán thẳng kể cả
+    // nil. Đó là hành vi HEAD, đừng "dọn" cho đồng nhất nếu chưa đo lại.
 
     private func refreshRuleOverrides(for appName: String, invalidate: Bool = true) {
         if invalidate {
@@ -447,7 +462,11 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// v3.7: gộp 3 round-trip AX (bundleId + combo/search + web-area) thành
     /// MỘT lần fetch focused element qua `Focused.snapshot()`.
     private func performFocusedElementRefresh() {
-        let snap = Focused.snapshot()
+        // F4: chạy trên `focusRefreshQueue`, KHÔNG trên tap thread → dùng ngân
+        // sách nền (0,1), không phải ngân sách đường nóng. Nhịp trễ 0,5s tồn tại
+        // để bắt hộp thoại native xuất hiện muộn, nên đây là chỗ cần kiên nhẫn
+        // nhất trong cả tiến trình.
+        let snap = Focused.snapshot(timeout: Focused.defaultAXTimeout)
         DispatchQueue.main.async {
             self.currentFocusedBundleId = snap.bundleId
             if let focusedBundleId = snap.bundleId,
@@ -455,7 +474,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
                 self.refreshRuleOverrides(for: focusedBundleId, invalidate: false)
                 _ = self.applyActiveRuleOverrideState()
             }
-            self.currentFocusedElementIsSearchOrCombo = snap.isComboOrSearch
             self.currentFocusedFieldKind = snap.fieldKind
         }
     }

@@ -476,6 +476,17 @@ class EventSimulator {
   /// focused element qua `AXUIElementCreateSystemWide()` (trả nil) — phải đọc
   /// trực tiếp qua `AXUIElementCreateApplication(pid)`. Verified bằng probe:
   /// systemwide=nil nhưng app-element cho role=AXTextField, AXValue settable.
+  ///
+  /// ⚠️ ĐÂY LÀ HỘP THƯ MỘT CHIỀU TỪ TAP THREAD, KHÔNG PHẢI BIẾN ĐỌC ĐƯỢC MỌI
+  /// LÚC. Chỉ `EventHook.eventTapCallback` GHI (trên tap thread, ngay đầu mỗi
+  /// keyDown/mouseDown), và chỉ `sendReplacement` ĐỌC — đọc ĐỒNG BỘ ngay lúc
+  /// vào hàm, tức vẫn trong đúng lần gọi tap callback đã ghi giá trị đó, rồi
+  /// mang theo PID như tham số suốt phần còn lại của lần gửi.
+  ///
+  /// Trước đây `axFocusedElement()` đọc thẳng biến này lúc FLUSH, mà flush chạy
+  /// sau trên `simulationQueue`: đổi app đúng giữa hai thời điểm thì thao tác
+  /// gửi của app A được ghi AX vào ô đang focus của app B. Vì thế đừng đọc lại
+  /// biến này ở tầng dưới — nhận PID qua tham số.
   nonisolated(unsafe) static var axTargetPID: pid_t = 0
 
   /// v2.15: bundle id các overlay luôn-chạy mà `eventTargetUnixProcessID`
@@ -499,25 +510,39 @@ class EventSimulator {
   /// Spotlight trên macOS 26 (sai), còn hàm này đọc đúng Spotlight. Nhẹ —
   /// KHÔNG walk field-kind, timeout ngắn để không treo callback.
   static func focusedOverlayBundle() -> String? {
-    let sw = AXUIElementCreateSystemWide()
-    AXUIElementSetMessagingTimeout(sw, 0.05)
-    var ref: CFTypeRef?
-    guard
-      AXUIElementCopyAttributeValue(sw, kAXFocusedUIElementAttribute as CFString, &ref) == .success,
-      let r = ref, CFGetTypeID(r) == AXUIElementGetTypeID()
-    else { return nil }
-    let el = r as! AXUIElement
-    var pid: pid_t = 0
-    guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return nil }
-    let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
-    return isOverlayBundle(bundle) ? bundle : nil
+    // Chạy trên TAP THREAD (EventHook), MỖI keyDown khi Smart Switch bật →
+    // ngân sách đường nóng, mượn có thời hạn rồi trả lại mặc định. Trước đây
+    // chỗ này đặt 0,05 thẳng lên system-wide và không khôi phục, tức lặng lẽ hạ
+    // timeout của MỌI truy vấn AX trong tiến trình. Xem `Focused.withAXTimeout`.
+    return Focused.withAXTimeout(Focused.hotPathAXTimeout) {
+      let sw = AXUIElementCreateSystemWide()
+      var ref: CFTypeRef?
+      guard
+        AXUIElementCopyAttributeValue(sw, kAXFocusedUIElementAttribute as CFString, &ref)
+          == .success,
+        let r = ref, CFGetTypeID(r) == AXUIElementGetTypeID()
+      else { return nil }
+      let el = r as! AXUIElement
+      var pid: pid_t = 0
+      guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return nil }
+      let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
+      return isOverlayBundle(bundle) ? bundle : nil
+    }
   }
 
   /// Element focus đọc qua app-element của 1 pid (timeout ngắn, không treo).
+  ///
+  /// Timeout ở đây đặt lên CHÍNH `appEl` — đây là dạng đúng: element-scope chỉ
+  /// áp cho các message gửi tới element đó, không rò ra mặc định toàn tiến
+  /// trình như khi đặt lên system-wide. Đừng "gom" nó về `Focused.withAXTimeout`.
+  ///
+  /// F4: `defaultAXTimeout` (0,1) chứ không `hotPathAXTimeout` vì người gọi duy
+  /// nhất là `axFocusedElement`, chạy trên `simulationQueue` — chẹn ở đó không
+  /// đụng event tap.
   private static func focusedElement(ofPID pid: pid_t) -> AXUIElement? {
     guard pid > 0 else { return nil }
     let appEl = AXUIElementCreateApplication(pid)
-    AXUIElementSetMessagingTimeout(appEl, 0.1)
+    AXUIElementSetMessagingTimeout(appEl, Focused.defaultAXTimeout)
     var ref: CFTypeRef?
     guard
       AXUIElementCopyAttributeValue(appEl, kAXFocusedUIElementAttribute as CFString, &ref)
@@ -544,9 +569,21 @@ class EventSimulator {
   /// 2. app-element của `axTargetPID` (nếu event cho PID hợp lệ),
   /// 3. DUYỆT overlay đã biết (Spotlight/Dock/SystemUIServer) — đường CHÍNH cho
   ///    Spotlight Tahoe vì systemwide=nil và eventTargetPID sai.
-  private static func axFocusedElement() -> AXUIElement? {
+  /// - Parameter targetPID: PID đích của CHÍNH lần gửi này, chụp đồng bộ lúc
+  ///   vào `sendReplacement`. KHÔNG đọc `axTargetPID` ở đây — lúc hàm này chạy
+  ///   thì tap thread có thể đã ghi đè bằng PID của app khác.
+  private static func axFocusedElement(targetPID: pid_t) -> AXUIElement? {
+    // Không đặt timeout ở đây nữa: chỗ này chạy trên `simulationQueue` và muốn
+    // đúng bằng `Focused.defaultAXTimeout` (0,1) — mà đó ĐÃ là mặc định tiến
+    // trình, đặt lúc launch. Lời gọi cũ chỉ ghi đè mặc định toàn tiến trình
+    // bằng chính giá trị của nó, từ một thread khác, để giành với hai chỗ đang
+    // đặt 0,05 — thắng thua tuỳ thứ tự chạy. Xem `Focused.withAXTimeout`.
+    //
+    // F4: ĐÂY là đường DUY NHẤT được hưởng 0,1 mặc định, và nó hưởng đúng vì
+    // không nằm trên tap thread. Mọi đường chạy mỗi phím trên tap thread mượn
+    // `Focused.hotPathAXTimeout`. Nếu sau này có ai gọi hàm này ĐỒNG BỘ từ tap
+    // thread thì phải bọc lại bằng ngân sách đường nóng, không phải để nguyên.
     let systemWide = AXUIElementCreateSystemWide()
-    AXUIElementSetMessagingTimeout(systemWide, 0.1)
     var focusedRef: CFTypeRef?
     if AXUIElementCopyAttributeValue(
          systemWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
@@ -555,8 +592,8 @@ class EventSimulator {
     }
 
     // (2) PID đích từ event — nếu hợp lệ và là ô nhập được.
-    if axTargetPID > 0, let el = focusedElement(ofPID: axTargetPID), isEditableTextElement(el) {
-      os_log("axDirect: focus via target pid=%d", log: axLog, type: .info, axTargetPID)
+    if targetPID > 0, let el = focusedElement(ofPID: targetPID), isEditableTextElement(el) {
+      os_log("axDirect: focus via target pid=%d", log: axLog, type: .info, targetPID)
       return el
     }
 
@@ -576,8 +613,11 @@ class EventSimulator {
 
   /// - Parameter usesNFC: trục mà caller đã dùng để đếm `backspaceCount`;
   ///   quyết định `axDeleteStart` lùi theo grapheme hay theo scalar.
-  static func axDirectReplace(backspaceCount: Int, insert: String, usesNFC: Bool) -> Bool {
-    guard let element = axFocusedElement() else {
+  /// - Parameter targetPID: PID đích của lần gửi này (xem `axTargetPID`).
+  static func axDirectReplace(
+    backspaceCount: Int, insert: String, usesNFC: Bool, targetPID: pid_t
+  ) -> Bool {
+    guard let element = axFocusedElement(targetPID: targetPID) else {
       os_log("axDirect: no focused element (systemwide + app pid both nil)",
              log: axLog, type: .default)
       return false
@@ -754,21 +794,27 @@ class EventSimulator {
   /// ngoài. Nên không thể gate theo "systemwide nil"; phải kiểm tra: focused
   /// element thuộc tiến trình overlay đã biết + role text/search.
   private static func overlaySearchIsFocused() -> Bool {
-    let systemWide = AXUIElementCreateSystemWide()
-    AXUIElementSetMessagingTimeout(systemWide, 0.05)
-    var ref: CFTypeRef?
-    guard AXUIElementCopyAttributeValue(
-            systemWide, kAXFocusedUIElementAttribute as CFString, &ref) == .success,
-          let r = ref, CFGetTypeID(r) == AXUIElementGetTypeID()
-    else { return false }
-    let el = r as! AXUIElement
-    // PID của focused element → có phải overlay đã biết (Spotlight/Dock…)?
-    var pid: pid_t = 0
-    guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return false }
-    let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
-    let isOverlay = overlayBundleIds.contains { bundle == $0 || bundle.hasPrefix($0) }
-    guard isOverlay else { return false }
-    return isEditableTextElement(el)
+    // `sendReplacement` gọi hàm này ĐỒNG BỘ trên TAP THREAD (trước khi dispatch
+    // sang `simulationQueue`) → ngân sách đường nóng. Phạm vi bọc cả
+    // `isEditableTextElement` vì hai lời gọi AX đó cũng nằm trên tap thread.
+    // Trước đây 0,05 đặt thẳng lên system-wide và không khôi phục — xem
+    // `Focused.withAXTimeout`.
+    return Focused.withAXTimeout(Focused.hotPathAXTimeout) {
+      let systemWide = AXUIElementCreateSystemWide()
+      var ref: CFTypeRef?
+      guard AXUIElementCopyAttributeValue(
+              systemWide, kAXFocusedUIElementAttribute as CFString, &ref) == .success,
+            let r = ref, CFGetTypeID(r) == AXUIElementGetTypeID()
+      else { return false }
+      let el = r as! AXUIElement
+      // PID của focused element → có phải overlay đã biết (Spotlight/Dock…)?
+      var pid: pid_t = 0
+      guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return false }
+      let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
+      let isOverlay = overlayBundleIds.contains { bundle == $0 || bundle.hasPrefix($0) }
+      guard isOverlay else { return false }
+      return isEditableTextElement(el)
+    }
   }
 
   /// v4.15: dạng ký tự THỰC SỰ phát ra, bám theo dạng lưu của field.
@@ -789,6 +835,12 @@ class EventSimulator {
     normalizeToNFC: Bool
   ) -> EventSendTelemetry {
     let diffChars = emittedCharacters(rawDiffChars, normalizeToNFC: normalizeToNFC)
+    // Chụp PID đích NGAY BÂY GIỜ: hàm này chạy đồng bộ trên tap thread, trong
+    // đúng lần gọi tap callback vừa ghi `axTargetPID` cho phím này. Nhánh
+    // `.axDirect` bên dưới flush TRỄ trên `simulationQueue`, lúc đó biến global
+    // có thể đã mang PID của app khác (người dùng đổi app đúng giữa chừng) →
+    // ghi AX nhầm ô. Mang theo giá trị, đừng đọc lại lúc flush.
+    let targetPID = axTargetPID
     let touchedCharacters = backspaceCount + diffChars.count
     guard touchedCharacters > 0 else {
       return EventSendTelemetry(
@@ -863,7 +915,7 @@ class EventSimulator {
             if attempt > 0 { usleep(5000) }
             if axDirectReplace(
               backspaceCount: backspaceCount, insert: String(diffChars),
-              usesNFC: normalizeToNFC) {
+              usesNFC: normalizeToNFC, targetPID: targetPID) {
               return
             }
           }

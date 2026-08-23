@@ -7113,3 +7113,1102 @@ final class FocusedFieldStabilityV424Tests: XCTestCase {
   // `testR5_FieldKindFlipMidWordChangesTheBackspaceArithmetic` ở trên đo đúng độ
   // lệch đó (2 vs 3) và ở lại làm chứng cứ.
 }
+
+// MARK: - ===========================================
+// MARK: - T4 — ĐƠN VỊ XOÁ CỦA Ô NHẬP (phép đo, không phải giả định)
+// MARK: - ===========================================
+//
+// Đo ngày 2026-08-23 bằng `Tools/probe` (macOS 26, Apple Silicon): đặt sẵn `x`+`ề`
+// vào ô ở hai dạng chuẩn hoá, gửi ĐÚNG MỘT Backspace, đọc lại. vkey KHÔNG tham
+// gia phép đo — đo chính bản thân ô nhập.
+//
+//   Ô                            NFD (4 scalar)            ⇒ đơn vị xoá
+//   AppKit / NSTextView          4 scalar → 1 scalar       ⇒ GRAPHEME
+//   Blink <input type=text>      4 scalar → 3 scalar       ⇒ SCALAR
+//   Blink contenteditable        4 scalar → 3 scalar       ⇒ SCALAR
+//
+// (`contenteditable` chính là loại ô Zalo / Messenger / Slack / Discord dùng để
+// soạn tin — tức nhánh NFD của vkey.)
+//
+// ⇒ HAI ENGINE XOÁ THEO HAI ĐƠN VỊ KHÁC NHAU. Nhưng điều đó KHÔNG biến nhánh nào
+// hiện tại thành sai, vì bất biến v4.15 — "dạng PHÁT RA == dạng dùng để ĐẾM" —
+// làm cả hai nhánh tự nhất quán:
+//
+//   • Nhánh NFD (Zalo/Messenger/Slack/Discord — Electron ngoài whitelist NFC):
+//     vkey phát NFD ⇒ ô giữ NFD; vkey đếm scalar; Blink xoá scalar. KHỚP.
+//   • Nhánh NFC (Chrome web content từ v4.21; omnibox; app Apple):
+//     vkey phát NFC ⇒ ô giữ NFC; mà ở dạng NFC 1 grapheme ĐÚNG BẰNG 1 scalar,
+//     nên đếm grapheme cũng ra đúng số backspace dù engine xoá theo scalar. KHỚP.
+//
+// ⚠️ NGƯỜI ĐỌC SAU: ĐỪNG "SỬA" TRỤC CỦA BẤT KỲ APP NÀO VÌ THẤY BẢNG TRÊN.
+// Bảng trên nói đơn vị xoá KHÁC NHAU; nó KHÔNG nói việc gán trục đang sai. Việc
+// gán trục hiện tại (`usesNFCGraphemeStorage`, nhánh `.webContent → isBrowserApp`,
+// `nfcNativeEditorBundlePrefixes`) đã được phép đo này XÁC NHẬN là đúng cho cả
+// hai nhánh. Lỗi "mất chữ" ở Zalo/Messenger KHÔNG phải lỗi trục chuẩn hoá — tìm ở
+// T1 (đổi app giữa từ) và T2 (thứ tự phím). Chi tiết: `Tools/probe/README.md`.
+//
+// ⚠️ RỦI RO CÒN LẠI, CHƯA ĐO: cả hai nhánh chỉ đúng khi ô đang chứa chữ DO CHÍNH
+// VKEY PHÁT RA. Chữ đến từ nguồn khác ở dạng khác (dán vào, app tự điền, chữ gõ
+// trước khi đổi app) thì số đếm lệch. Đây là ca đáng đo tiếp, đừng suy đoán.
+//
+// (Ghi chú: khối ⚠️ "GIỚI HẠN CỦA PHÉP ĐO" trong `InputProcessor.usesNFCForFocusedField`
+// nói phép đo này CHƯA TỪNG làm — nay đã làm; comment đó đã cũ.)
+
+// MARK: - ===========================================
+// MARK: - T3 — CHỐT TRỤC THEO TỪ: ĐÃ THỬ, ĐÃ LÙI
+// MARK: - ===========================================
+//
+// ĐỌC KHỐI NÀY TRƯỚC KHI VÁ LẦN THỨ NĂM.
+//
+// T3 KHÔNG đổi trục của app nào. Nó đổi THỜI ĐIỂM quyết định trục: từ "đo lại mỗi
+// phím" (13 chỗ tự gọi `usesNFCForFocusedField()`) thành "đo MỘT lần rồi chốt tới
+// hết TỪ" — chốt cất trong `WordBuffer`, `newWord()` là đường mở khoá duy nhất,
+// `EventHook` chỉ chụp AX ở ranh giới từ. Cơ chế chạy được; hai vòng rà soát đối
+// kháng còn tìm thêm 4 lỗi mức CAO và vá xong cả 4. Nó VẪN BỊ LÙI, vì lý do không
+// nằm ở cài đặt mà ở TIỀN ĐỀ:
+//
+//   (1) PHÉP ĐO Ở PHÍM 1 LÀ PHÉP ĐO TỆ NHẤT (ngay sau click/⌘S, AX còn trả ô CŨ),
+//       nhưng ở bản đo-mỗi-phím nó KHÔNG CÓ HẬU QUẢ: phím 1 luôn cho
+//       `lastTransformed == ""` ⇒ `bs == 0`, chỉ chèn một ký tự ASCII, trục không
+//       quan sát được. Phép đo THẬT SỰ có hậu quả là phím đầu tiên SINH DẤU
+//       (thường phím 3–5, tức 200–500ms sau khi focus đổi) — lúc AX đã lắng.
+//       Chốt theo từ lấy đúng phép đo tệ nhất rồi dán nó lên cả từ.
+//   (2) TRỤC SAI KHÔNG ĐỐI XỨNG. Chốt nhầm NFC trong ô Blink là VÔ HẠI: ở dạng NFC
+//       1 grapheme đúng bằng 1 scalar (đã ĐO — xem khối T4 ngay trên và
+//       `Tools/probe/README.md`). Chốt nhầm NFD trong ô AppKit thì hỏng CÂM: gõ
+//       `Nooij` ra `Ṇ̂i`. Độ lệch của đúng ca đó nằm trong `HeadParityGoldenTests`
+//       — `Nooij` cần 2 backspace ở trục NFC nhưng 3 ở trục NFD.
+//   (3) TRONG CA ⌘S mở hộp thoại Lưu của app Electron, đo-mỗi-phím TỰ HỘI TỤ VỀ
+//       ĐÚNG (phép đo ôi bị thay ngay phím kế tiếp, mà chiều lật NFD→NFC là chiều
+//       LÀNH theo (2)); chốt thì đóng băng cái sai cho trọn từ.
+//
+// ⇒ Đổi một lỗi ngẫu nhiên hiếm lấy một lỗi hệ thống trong thao tác hằng ngày.
+//
+// ĐIỀU KIỆN TIÊN QUYẾT NẾU MUỐN THỬ LẠI — hai con số, ĐO TRƯỚC bằng `Tools/probe`,
+// đừng suy đoán: (i) trục có THẬT SỰ lật giữa một từ không, và bao lâu một lần;
+// (ii) sau click/⌘S thì bao lâu AX mới báo đúng ô. Nếu (ii) NHỎ HƠN khoảng cách
+// tới phím sinh dấu đầu tiên thì chốt không giải quyết vấn đề gì cả. Không có hai
+// con số đó thì mọi hàng rào quanh chốt chỉ là phỏng đoán. Xem
+// `InputProcessor.emitPlan()` và `Focused.fieldKind(from:)` mục (e)/(f).
+//
+// THỨ SỐNG SÓT của cả đợt — và là thứ đáng có lưới — là `EmitPlan`: refactor
+// THUẦN KIỂU, không nhớ gì, không đổi một byte nào của chuỗi phát ra, chỉ biến bất
+// biến v4.15 ("dạng ĐẾM == dạng PHÁT") từ quy ước review thành ràng buộc compiler.
+// Lưới cho nó: `EmitPlanTypeConstraintTests` và `HeadParityGoldenTests` phía dưới.
+//
+// ⚠️ TÊN LỚP `EmitPlanWordLockT3Tests` LÀ TÊN LỊCH SỬ — không còn "word lock" nào
+// để khoá. Ba test còn lại trong lớp khoá đúng ba thứ sống sót: bảng app × field →
+// trục cùng phép đo T4 chống lưng nó, tính đồng nhất với thuật toán tiền-refactor,
+// và bất biến đếm-==-phát ở `pop`.
+
+/// Một bước phát, so sánh được. `scalars` CÓ MẶT CÓ LÝ DO: Swift so sánh `String`
+/// theo TƯƠNG ĐƯƠNG CHUẨN TẮC, nên "ếng" dạng NFC `==` "ếng" dạng NFD — mà chính
+/// hai dạng đó mới là thứ đi ra dây. Thiếu số scalar thì test mù đúng chỗ cần nhìn.
+private struct T3EmitStep: Equatable, CustomStringConvertible {
+  let bs: Int
+  let text: String
+  let scalars: Int
+  init(_ bs: Int, _ chars: [Character]) {
+    self.bs = bs
+    let s = String(chars)
+    self.text = s
+    self.scalars = s.unicodeScalars.count
+  }
+
+  /// Init cho BẢNG VÀNG đo trên HEAD (`HeadParityGoldenTests`). `text` viết ở dạng
+  /// NFC trong source cho dễ đọc, còn `scalars` ghi RỜI — đó là chỗ duy nhất phân
+  /// biệt hai trục, vì `==` của `String` so theo tương đương chuẩn tắc nên không
+  /// nhìn ra dạng. Đừng "dọn" nó thành `T3EmitStep(bs, Array(text))`: làm thế là
+  /// tự tính lại `scalars` từ literal NFC ⇒ mọi dòng vàng NFD hoá thành NFC và
+  /// bảng hết khoá được gì.
+  init(golden bs: Int, _ text: String, scalars: Int) {
+    self.bs = bs
+    self.text = text
+    self.scalars = scalars
+  }
+
+  var description: String { "(bs=\(bs), \"\(text)\", \(scalars) scalar)" }
+}
+
+final class EmitPlanWordLockT3Tests: XCTestCase {
+
+  /// Electron ngoài whitelist NFC — cùng lớp với Zalo/Messenger/Discord. Ở app
+  /// này `fieldKind` MỚI thật sự quyết định trục (whitelist NFC short-circuit
+  /// trước `fieldKind`, nên app Apple/Telegram không dựng được ca lật trục).
+  private static let electronApp = "com.tinyspeck.slackmacgap"
+  private static let browserApp = "com.google.Chrome"
+
+  private var savedZWJF = true
+  private var savedFreeMark = false
+
+  override func setUp() {
+    super.setUp()
+    savedZWJF = Defaults[.allowedZWJF]
+    savedFreeMark = Defaults[.freeMarkModeEnabled]
+    Defaults[.allowedZWJF] = true
+    Defaults[.freeMarkModeEnabled] = false
+  }
+
+  override func tearDown() {
+    Defaults[.allowedZWJF] = savedZWJF
+    Defaults[.freeMarkModeEnabled] = savedFreeMark
+    super.tearDown()
+  }
+
+  // MARK: T4 — phép đo, viết thành assert chạy được
+
+  /// T4 — hai đơn vị xoá, hai cách đếm, và VÌ SAO CẢ HAI ĐỀU ĐÚNG.
+  ///
+  /// Đây là bản chạy được của bảng đo ở đầu file. Nó khoá đúng ba con số mà mọi
+  /// lập luận về trục dựa vào — nếu ai đó "tối ưu" `calcKeyStrokes*` và một trong
+  /// ba con số đổi, thì lập luận "trục hiện tại đúng" hết hiệu lực và test này đỏ
+  /// TRƯỚC khi người dùng mất chữ.
+  func testT4_DeleteUnitPerEngineMatchesTheCountingAxis() throws {
+    // Vật liệu của phép đo: `x` + `ề`.
+    let sample = "xề"
+    XCTAssertEqual(sample.precomposedStringWithCanonicalMapping.unicodeScalars.count, 2,
+      "NFC: x + U+1EC1")
+    XCTAssertEqual(sample.decomposedStringWithCanonicalMapping.unicodeScalars.count, 4,
+      "NFD: x + e + U+0302 + U+0300 — đúng 4 scalar mà probe đã đặt vào ô")
+
+    // AppKit xoá theo GRAPHEME: 1 Backspace ăn trọn cụm 3 scalar (4 → 1).
+    // vkey cho field NFC đếm theo grapheme ⇒ 1. Khớp với 1 lần nhấn.
+    let (nfcBs, nfcDiff) = EventSimulator.calcKeyStrokes(from: sample, to: "x")
+    XCTAssertEqual(nfcBs, 1, "trục NFC đếm grapheme = đúng số phím AppKit cần")
+    XCTAssertTrue(nfcDiff.isEmpty)
+
+    // Blink xoá theo SCALAR: mỗi Backspace bóc 1 scalar, nên phải nhấn 3 lần để
+    // hết cụm NFD 3 scalar. vkey cho field NFD đếm theo scalar ⇒ 3. Khớp.
+    let (nfdBs, nfdDiff) = EventSimulator.calcKeyStrokesNFD(from: sample, to: "x")
+    XCTAssertEqual(nfdBs, 3, "trục NFD đếm scalar = đúng số phím Blink cần")
+    XCTAssertTrue(nfdDiff.isEmpty)
+
+    // 1 vs 3 — ĐỘ LỆCH mà một lần lật trục giữa từ tạo ra. Đây là lý do T3 tồn
+    // tại: không phải để đổi trục, mà để trục KHÔNG ĐỔI GIỮA CHỪNG.
+    XCTAssertNotEqual(nfcBs, nfdBs)
+
+    // Và đây là vì sao nhánh NFC vẫn đúng dù Blink xoá theo scalar: ở dạng NFC,
+    // 1 grapheme ĐÚNG BẰNG 1 scalar, nên đếm grapheme ra cùng con số với đếm
+    // scalar. Bất biến v4.15 ("phát NFC ⇒ ô giữ NFC") là thứ giữ tiền đề này.
+    let nfc = sample.precomposedStringWithCanonicalMapping
+    XCTAssertEqual(nfc.count, nfc.unicodeScalars.count,
+      "ở dạng NFC, đếm grapheme == đếm scalar ⇒ nhánh NFC khớp cả engine xoá scalar")
+
+    // Bảng gán trục — hai đầu mút mà phép đo T4 xác nhận. KHÔNG ĐỔI CÁC DÒNG NÀY.
+    let electron = InputProcessor(method: .Telex)
+    electron.changeActiveApp(Self.electronApp)
+    electron.focusedFieldKind = .webContent
+    XCTAssertFalse(electron.usesNFCForFocusedField(),
+      "contenteditable của Electron: Blink xoá scalar + vkey phát NFD ⇒ trục NFD. ĐÚNG.")
+
+    let chrome = InputProcessor(method: .Telex)
+    chrome.changeActiveApp(Self.browserApp)
+    chrome.focusedFieldKind = .webContent
+    XCTAssertTrue(chrome.usesNFCForFocusedField(),
+      "web content của TRÌNH DUYỆT: vkey phát NFC ⇒ 1 grapheme == 1 scalar ⇒ trục NFC. ĐÚNG.")
+  }
+
+  // MARK: [ĐÃ XOÁ] hai test khoá "đo đúng MỘT lần mỗi từ"
+  //
+  // `testT3_FieldSourceIsReadExactlyOncePerWord` — đếm THẲNG số lần nguồn phân
+  // loại field bị đọc (qua điểm bơm `fieldKindProbe`) và khoá con số đó bằng 1
+  // cho trọn một từ, kèm "chốt nằm trong `WordBuffer`, `newWord()` là đường mở
+  // khoá DUY NHẤT" và "`pop(plan:)` dùng lại chốt chứ không đo lần hai".
+  //
+  // `testT3_NoisyFieldSourceCannotChangeTheEmittedSequence` — cho nguồn phân loại
+  // DAO ĐỘNG từng phím theo một lịch nhiễu cố ý ác (phím 6, tức bước bỏ dấu sắc,
+  // rơi vào phía NFD), rồi khoá rằng chuỗi (bs, diff) phát ra không đổi một byte
+  // so với nguồn đứng yên. Kèm lưới chống test rỗng: chạy thêm bản đo-mỗi-phím
+  // trên CÙNG lịch nhiễu và assert nó KHÁC — phím 6 cho 3 backspace ở trục NFC đã
+  // chốt so với 4 ở trục NFD bị lật giữa chừng.
+  //
+  // XOÁ VÌ CƠ CHẾ ĐÃ LÙI, không phải vì test sai: `lockedEmitPlan`,
+  // `storedEmitPlan` và `fieldKindProbe` đã gỡ khỏi production nên hai test này
+  // không còn biên dịch được. Lý do lùi (đầy đủ ở đầu MARK này): phép đo ở PHÍM 1
+  // là phép đo tệ nhất, mà ở bản đo-mỗi-phím nó lại KHÔNG có hậu quả — chốt theo
+  // từ lấy đúng phép đo đó rồi dán lên cả từ; và trong ca ⌘S mở hộp thoại Lưu của
+  // app Electron, đo-mỗi-phím TỰ HỘI TỤ VỀ ĐÚNG còn chốt thì đóng băng cái sai.
+  //
+  // MUỐN DỰNG LẠI: đo trước hai con số ở đầu MARK ((i) trục có lật giữa từ thật
+  // không, (ii) độ trễ AX sau click/⌘S), rồi mới bàn tới chốt.
+  //
+  // KỸ THUẬT ĐÁNG GIỮ nếu có vòng sau: đếm SỐ LẦN ĐỌC NGUỒN thay vì kiểm sự tồn
+  // tại của một biến tên là "chốt" — vòng vá (2) chết vì chốt của nó tự mở lại
+  // gần như mỗi phím (nó so bundle id THÔ, mà AX nhảy giữa app cha và tiến trình
+  // phụ từng phím) trong khi vẫn có đủ biến để một test ngây thơ nhìn thấy.
+  // MARK: [KHÔNG HỒI QUY] — ô ổn định ⇒ giống hệt hành vi cũ
+
+  /// [KHÔNG HỒI QUY] — với ô ỔN ĐỊNH, chuỗi (bs, diff) của HEAD GIỐNG HỆT thuật
+  /// toán TIỀN-T3, trên cả nhánh NFC lẫn nhánh NFD, và trục/chiến-lược-gửi mà
+  /// chốt mang theo đúng bằng giá trị hai resolver trả về.
+  ///
+  /// ĐÂY LÀ BẰNG CHỨNG "ĐỢT NÀY KHÔNG ĐỔI TRỤC CỦA AI". Bảng dưới liệt kê tường
+  /// minh trục kỳ vọng cho từng ô — nếu một bản vá sau này đổi trục của bất kỳ
+  /// app nào, test đỏ ở đúng dòng đó, kèm tên app.
+  func testT3_StableFieldEmitsExactlyThePreT3Sequence() throws {
+    // (app, fieldKind, trục NFC?, browser-chrome?)
+    let table: [(String, Focused.FieldKind, Bool, Bool)] = [
+      // Nhánh NFD — Electron ngoài whitelist (lớp Zalo/Messenger/Discord).
+      (Self.electronApp, .webContent, false, false),
+      (Self.electronApp, .unknown, false, false),
+      // …trừ chính ô cửa sổ: `.windowField` đi trục NFC ĐÚNG VÌ nó gửi bằng
+      // axDirect, mà `axDeleteStart` xoá theo grapheme. Hai vế phải cùng chốt.
+      (Self.electronApp, .windowField, true, true),
+      (Self.electronApp, .nativePanel, true, false),
+      // Nhánh NFC — trình duyệt thật.
+      (Self.browserApp, .webContent, true, false),
+      (Self.browserApp, .unknown, true, false),
+      (Self.browserApp, .windowField, true, true),  // omnibox
+      (Self.browserApp, .nativePanel, true, false),
+      // Whitelist NFC — short-circuit TRƯỚC fieldKind, nên fieldKind không đổi
+      // được gì (và browser-chrome phải TẮT, nếu không axDirect tràn ra mọi cửa sổ).
+      ("com.apple.Notes", .webContent, true, false),
+      ("com.apple.TextEdit", .windowField, true, false),
+      ("ru.keepcoder.Telegram", .webContent, true, false),
+      ("com.sublimetext.4", .unknown, true, false),
+    ]
+
+    for (app, kind, expectNFC, expectChrome) in table {
+      for word in ["tieengs", "ddieeuf"] {
+        // HEAD — mọi lần gửi lấy kế hoạch từ chốt.
+        let head = InputProcessor(method: .Telex)
+        head.changeActiveApp(app)
+        head.focusedFieldKind = kind
+        var headSeq: [T3EmitStep] = []
+        for c in word {
+          head.push(char: c)
+          let r = head.emitPlan().replacement(from: head.lastTransformed, to: head.transformed)
+          headSeq.append(T3EmitStep(r.backspaceCount, r.diffChars))
+        }
+
+        // TIỀN-T3 — đo field lại ở mỗi phím. Ô đứng yên nên phải ra y hệt.
+        let old = InputProcessor(method: .Telex)
+        old.changeActiveApp(app)
+        old.focusedFieldKind = kind
+        var oldSeq: [T3EmitStep] = []
+        for c in word {
+          old.push(char: c)
+          let (bs, diff) = EventSimulator.calcKeyStrokes(
+            from: old.lastTransformed, to: old.transformed,
+            usesNFC: old.usesNFCForFocusedField())
+          oldSeq.append(T3EmitStep(bs, diff))
+        }
+
+        XCTAssertEqual(headSeq, oldSeq,
+          "\(app) × \(kind) × \"\(word)\": ô ổn định PHẢI phát giống hệt bản tiền-T3")
+        XCTAssertEqual(head.transformed, old.transformed)
+        XCTAssertFalse(headSeq.isEmpty, "lưới an toàn: chuỗi rỗng thì so sánh trên là vô nghĩa")
+      }
+
+      // Chốt mang đúng giá trị hai resolver trả về — T3 giữ nguyên BẢNG ánh xạ
+      // app × field → trục, chỉ đổi THỜI ĐIỂM đọc nó.
+      let p = InputProcessor(method: .Telex)
+      p.changeActiveApp(app)
+      p.focusedFieldKind = kind
+      p.push(char: "a")
+      let plan = p.emitPlan()
+      XCTAssertEqual(plan.usesNFC, expectNFC, "\(app) × \(kind): trục")
+      XCTAssertEqual(plan.usesNFC, p.usesNFCForFocusedField(),
+        "\(app) × \(kind): chốt phải bằng resolver, không được lệch")
+      XCTAssertEqual(plan.fieldIsBrowserChrome, expectChrome, "\(app) × \(kind): axDirect?")
+      XCTAssertEqual(plan.fieldIsBrowserChrome, p.focusedFieldIsBrowserChrome(),
+        "\(app) × \(kind): vế chiến lược gửi cũng phải bằng resolver")
+    }
+  }
+
+  /// [KHÔNG HỒI QUY] — Backspace: trục dùng để ĐẾM bên trong `WordBuffer.pop`
+  /// đúng bằng trục sẽ PHÁT ra (bất biến v4.15, nay do KIỂU giữ).
+  ///
+  /// `pop` là đường duy nhất mà số đếm được tính ở NƠI KHÁC (nó phải replay
+  /// state trước khi đếm), nên nó cũng là chỗ dễ tuột nhất khỏi bất biến. Test
+  /// đối chiếu `pop(plan:)` với `pop(usesNFC:)` thô trên hai processor giống hệt.
+  func testT3_PopCountsAndEmitsOnTheSameLockedAxis() throws {
+    for (app, kind) in [(Self.electronApp, Focused.FieldKind.webContent),
+                        (Self.browserApp, .windowField)] {
+      let viaPlan = InputProcessor(method: .Telex)
+      viaPlan.changeActiveApp(app)
+      viaPlan.focusedFieldKind = kind
+      for c in "ddieeuf" { viaPlan.push(char: c) }
+      XCTAssertEqual(viaPlan.transformed, "điều")
+
+      let plan = viaPlan.emitPlan()
+      let r = viaPlan.pop(plan: plan)
+      XCTAssertEqual(r.plan.usesNFC, plan.usesNFC,
+        "số đếm và trục phát PHẢI đi chung một giá trị")
+
+      let viaRaw = InputProcessor(method: .Telex)
+      viaRaw.changeActiveApp(app)
+      viaRaw.focusedFieldKind = kind
+      for c in "ddieeuf" { viaRaw.push(char: c) }
+      let (bs, diff) = viaRaw.pop(usesNFC: plan.usesNFC)
+
+      XCTAssertEqual(T3EmitStep(r.backspaceCount, r.diffChars), T3EmitStep(bs, diff),
+        "\(app) × \(kind): pop(plan:) phải ra đúng cái pop(usesNFC:) ra")
+    }
+  }
+
+  // MARK: [ĐÃ XOÁ] test khoá cổng chụp AX theo ranh giới từ
+  //
+  // `testT3_AXSnapshotGateIsExactlyTheWordBoundary` khoá rằng `EventHook` chỉ gọi
+  // `syncFocusedContextForKeystroke()` khi `input.isAtWordBoundary`: ĐÚNG MỘT lần
+  // chụp AX cho mỗi từ và nó rơi vào PHÍM ĐẦU, cộng ca click chuột (nhánh
+  // `.leftMouseDown` gọi `newWord()` nên phím đầu ở ô mới vẫn được chụp lại).
+  //
+  // XOÁ VÌ CỔNG ĐÃ LÙI: `EventHook` chụp lại MỖI keyDown như HEAD, và
+  // `isAtWordBoundary` đã gỡ khỏi production (sau khi lùi thì không còn người đọc
+  // nào ngoài chính test này). Trớ trêu là con số mà test này khoá lại chính là
+  // chỗ tiền đề sai lộ ra: "một lần chụp, ở PHÍM ĐẦU" nghe như tiết kiệm AX, thực
+  // chất là chọn đúng phép đo tệ nhất — ngay sau click/⌘S, AX còn trả ô CŨ — rồi
+  // buộc cả từ vào nó.
+  //
+  // HỆ QUẢ CÒN LẠI, ĐỪNG GỘP NHẦM: bỏ cổng làm `Focused.snapshot()` chạy lại MỖI
+  // PHÍM trên tap thread, nên ngân sách riêng cho đường nóng (`hotPathAXTimeout`,
+  // B1) càng cần chứ không phải bớt cần. `HotPathAXBudgetF4Tests` giữ chỗ đó —
+  // đừng gộp hằng ấy về `defaultAXTimeout` cho gọn.
+}
+
+// MARK: - ===========================================
+// MARK: - [ĐÃ XOÁ] T3 — STICKY-ON-MISS ("đo hụt ≠ .unknown")
+// MARK: - ===========================================
+//
+// LỚP `StickyOnMissT3Tests` (3 test) ĐÃ XOÁ CÙNG VÒNG LÙI CHỐT TRỤC THEO TỪ.
+//
+// NÓ TỪNG KHOÁ GÌ. Khi đó `Focused.fieldKind(from:)` trả `FieldKind?`: `nil` =
+// KHÔNG ĐO ĐƯỢC (AX timeout / đứt chuỗi parent / chạm trần 25 cấp), khác hẳn
+// `.unknown` = "đo được, và nó thuộc loại unknown". Khác biệt không phải chữ
+// nghĩa: `.unknown` là một GIÁ TRỊ nằm bên phía NFD của trục và làm
+// `focusedFieldIsBrowserChrome()` trả false, nên biến một lần đọc hụt thành
+// `.unknown` là biến một hiccup AX thành một lần LẬT TRỤC + MẤT `.axDirect`.
+//   • `testStickyA_MissIsRepresentedAsNoValueNotAsUnknown` — HỢP ĐỒNG của kiểu:
+//     `FocusSnapshot.fieldKind` và `snapshot().fieldKind` phải là Optional.
+//   • `testStickyB_MissKeepsTheOmniboxOnAxDirectAndKeepsTheAxis` — HỆ QUẢ, hai
+//     dòng code thật đặt cạnh nhau: người đọc tuân hợp đồng (`if let`) giữ omnibox
+//     trên `.axDirect` và không lật trục; người đọc viết `?? .unknown` mất cả hai.
+//   • `testStickyC_WordLockSurvivesEvenIfTheStickyRuleWereRemoved` — ranh giới
+//     trách nhiệm giữa hai cơ chế: sticky hạ XÁC SUẤT chốt sai, chốt theo từ đảm
+//     bảo sai-thì-sai-NHẤT-QUÁN.
+//
+// XOÁ VÌ: `FieldKind?`, `AppState.adoptFocusSnapshot` và
+// `InputProcessor.focusMovedSinceFieldKindMeasured` đều đã gỡ; đo hụt lại là
+// `.unknown` như HEAD. Và vì chính test thứ ba ở trên nói ra ranh giới: sticky
+// sinh ra để ĐỠ CHO CHỐT. Không còn chốt thì nó chỉ còn là "giữ lại phân loại của
+// một ô có thể đã đóng" — tức thêm một trạng thái ÔI mới, đúng vào chỗ mà
+// đo-mỗi-phím của HEAD đang tự hội tụ về đúng.
+//
+// ĐIỀU KIỆN THỬ LẠI: sticky đi SAU chốt, không đi trước. Phải đo được (i) tần suất
+// `fieldKind(from:)` đo hụt THẬT trên máy dùng hằng ngày và (ii) trong số đó bao
+// nhiêu lần ô focus đã đổi so với phép đo trước. Vế (ii) mới là thứ quyết định
+// sticky lợi hay hại, và chưa ai đo. `Tools/probe`.
+//
+// CHIỀU MÀ HEAD VẪN GIỮ, đừng tưởng đã mất theo: `FocusedFieldStabilityV424Tests`
+// (ngay phía trên) khoá việc đọc hụt AXRole vẫn phải LEO PARENT thay vì bỏ cuộc.
+// Đó là hàng rào chống lật trục còn sống — và nó là hàng rào của HEAD, không phải
+// của đợt này.
+
+// MARK: - ===========================================
+// MARK: - B1 — mã chết đã gỡ & quyền sở hữu axTargetPID
+// MARK: - ===========================================
+final class DeadCodeAndPIDOwnershipB1Tests: XCTestCase {
+
+  /// B1.1 — chuỗi `isSearchOrComboFocused` đã biến mất TRỌN VẸN.
+  ///
+  /// Cái giá của việc giữ nó không phải là một biến thừa: `Focused.snapshot()`
+  /// phải đọc thêm `kAXRole` RIÊNG trên focused element — một round-trip AX MỖI
+  /// PHÍM, trên tap thread, cho một giá trị không ai đọc (người đọc duy nhất,
+  /// `isFixAutocompleteApp()`, đã gỡ ở v4.23). Mà timeout/độ trễ AX điều khiển
+  /// thẳng xác suất đọc hụt role ⇒ xác suất lật trục giữa từ. Một round-trip thừa
+  /// mỗi phím KHÔNG trung tính.
+  ///
+  /// Hai vế được khoá bằng hai cách khác nhau vì hai thứ khác nhau:
+  ///   • `FocusSnapshot.isComboOrSearch` — khoá lúc BIÊN DỊCH (init memberwise
+  ///     hai tham số chỉ tồn tại khi struct có đúng hai trường);
+  ///   • `InputProcessor.isSearchOrComboFocused` — khoá lúc CHẠY bằng Mirror,
+  ///     vì "một stored property KHÔNG tồn tại" không diễn đạt được bằng kiểu.
+  func testB1_1_DeadSearchOrComboChainIsFullyGone() throws {
+    let snapshotFields = Mirror(reflecting: Focused.FocusSnapshot(bundleId: nil, fieldKind: .unknown))
+      .children.compactMap(\.label)
+    XCTAssertEqual(snapshotFields, ["bundleId", "fieldKind"],
+      "FocusSnapshot chỉ còn hai trường — thêm trường nào cũng là thêm round-trip AX mỗi phím")
+
+    let processorFields = Mirror(reflecting: InputProcessor(method: .Telex))
+      .children.compactMap(\.label)
+    // Lưới an toàn: Mirror phải THẤY được stored property, nếu không assert dưới
+    // đây đúng một cách vô nghĩa.
+    XCTAssertTrue(processorFields.contains("focusedFieldKind"),
+      "đối chứng: Mirror có đọc được stored property của InputProcessor")
+    XCTAssertFalse(processorFields.contains { $0.contains("SearchOrCombo") },
+      "cờ chết đã gỡ — muốn dựng lại nhận diện ô search/combo thì đọc role TỪ "
+        + "`fieldKind` (nó đã đọc role node trong cùng rồi), ĐỪNG thêm lần đọc thứ hai")
+  }
+
+  /// B1.2 — timeout AX có MỘT trạng thái ổn định, không phải "kẻ ghi sau thắng".
+  ///
+  /// Đặt timeout lên system-wide element là đặt MẶC ĐỊNH CHO CẢ TIẾN TRÌNH. Trước
+  /// B1 có bốn chỗ cùng đặt, hai giá trị (0,05 và 0,1), từ hai thread, không chỗ
+  /// nào khôi phục — nên timeout thực tế của MỌI truy vấn AX nhảy tuỳ đường nào
+  /// chạy sau cùng. Nay trạng thái ổn định là `defaultAXTimeout`, còn chỗ cần
+  /// ngắn hơn thì MƯỢN CÓ THỜI HẠN qua `withAXTimeout`.
+  func testB1_2_AXTimeoutHasOneStableDefault() throws {
+    XCTAssertEqual(Focused.defaultAXTimeout, 0.1, accuracy: 0.0001,
+      "giá trị ổn định — `AppDelegate` cũng gọi setupAXTimeout(0.1)")
+    XCTAssertGreaterThan(Focused.defaultAXTimeout, 0.05,
+      "mặc định phải ≥ mọi giá trị mượn ngắn: xác suất đọc hụt kAXRole chỉ được GIẢM")
+
+    // `withAXTimeout` là một scope, không phải một lần ghi: nó trả giá trị của
+    // `body` ra ngoài và trả timeout về mặc định trong `defer`.
+    XCTAssertEqual(Focused.withAXTimeout(0.05) { 42 }, 42)
+    XCTAssertEqual(Focused.withAXTimeout(0.05) { "ok" }, "ok")
+  }
+
+  /// B1.3 — PID đích ĐI THEO LẦN GỬI, không được đọc lại từ global lúc flush.
+  ///
+  /// `axTargetPID` là hộp thư MỘT CHIỀU từ tap thread: đúng một người ghi
+  /// (`EventHook.eventTapCallback`) và đúng một người đọc (`sendReplacement`,
+  /// đọc ĐỒNG BỘ ngay lúc vào hàm, tức vẫn trong lần gọi tap callback đã ghi giá
+  /// trị đó). Nhánh `.axDirect` flush TRỄ trên `simulationQueue`; nếu tầng dưới
+  /// còn đọc lại global thì người dùng đổi app đúng giữa chừng sẽ khiến thao tác
+  /// gửi của app A ghi AX vào ô đang focus của app B.
+  ///
+  /// Khoá bằng CHỮ KÝ: chỉ riêng việc gán dưới đây biên dịch được đã chứng minh
+  /// PID đi bằng tham số. CỐ Ý KHÔNG GỌI hàm — `axDirectReplace` ghi thẳng vào ô
+  /// đang focus của máy chạy test.
+  func testB1_3_AxTargetPIDTravelsAsAParameter() throws {
+    let signatureLock: [Any] = [
+      EventSimulator.axDirectReplace(backspaceCount:insert:usesNFC:targetPID:)
+        as (Int, String, Bool, pid_t) -> Bool
+    ]
+    XCTAssertEqual(signatureLock.count, 1,
+      "axDirectReplace phải NHẬN targetPID; bỏ tham số này = quay lại đọc global lúc flush")
+
+    // Biến global vẫn còn (tap thread cần chỗ để ghi) và vẫn là pid_t.
+    let saved = EventSimulator.axTargetPID
+    defer { EventSimulator.axTargetPID = saved }
+    EventSimulator.axTargetPID = pid_t(4242)
+    XCTAssertEqual(EventSimulator.axTargetPID, pid_t(4242))
+  }
+}
+
+// MARK: - ===========================================
+// MARK: - [ĐÃ XOÁ] F1/F2 — hai ca hỏng CỦA chốt trục theo từ
+// MARK: - ===========================================
+//
+// HAI LỚP `EmitLockAtWordBoundaryF1Tests` (5 test) VÀ `StickyScopeF2Tests` (5
+// test) ĐÃ XOÁ, cùng hai helper `f1EmitSequence` / `f2AdoptFocusSnapshot`.
+//
+// CHÚNG TỪNG KHOÁ GÌ. Hai lỗi mức CAO mà 419 test xanh không nhìn thấy, cùng một
+// hình dạng: mọi test trước đó chỉ dựng ca "phân loại đang giữ là ĐÚNG, đừng để
+// nhiễu ghi đè"; không test nào dựng ca ngược lại — "phân loại đang giữ đã ÔI,
+// đừng dùng lại".
+//
+//   F1 — Backspace trên bộ đệm RỖNG (click sang ô mới rồi xoá nội dung cũ theo
+//        thói quen) ĐÓNG chốt trục cho một từ CHƯA TỒN TẠI. Nhánh `.Delete` viết
+//        `pop(plan: emitPlan())`, mà `emitPlan()` ở vị trí THAM SỐ nên được đánh
+//        giá VÔ ĐIỀU KIỆN; `pop` trả `(0, [])` và không đi qua `newWord()`, nên
+//        không có gì mở khoá. 5 test: ca tối thiểu (đo nhưng không chốt); ca đầy
+//        đủ click→Backspace→gõ, với lịch probe mô phỏng đúng ghi chú v3.6 (lần
+//        đọc AX đầu tiên sau click còn thấy focus CŨ); "che ≠ xoá" (getter che
+//        giá trị vs `newWord()` xoá `storedEmitPlan` thật); bất biến
+//        `isAtWordBoundary ⇒ lockedEmitPlan == nil` áp trên một kịch bản dài; và
+//        ca biên Backspace khôi phục từ vừa commit qua Space.
+//   F2 — Sticky-on-miss KHÔNG CÓ PHẠM VI. `focusedFieldKind` là biến toàn tiến
+//        trình, nên giữ lại phân loại của một ô đã đóng (hộp thoại Lưu native,
+//        `.nativePanel` ⇒ trục NFC) rồi áp cho ô kế tiếp (ô chat Electron ⇒ trục
+//        NFD) là lật trục ⇒ lệch backspace ⇒ ăn mất chữ. 5 test: ca hộp thoại Lưu;
+//        biến thể tệ hơn (`.windowField` ôi còn tuồn `.axDirect` vào editor
+//        Electron); "chưa đo lần nào thì không có gì để sticky"; chiều không hồi
+//        quy (không có sự kiện đổi focus ⇒ sticky vẫn phải giữ); và vòng đời MỘT
+//        CHIỀU của cờ `focusMovedSinceFieldKindMeasured` (sự kiện BẬT, chỉ phép đo
+//        thành công mới TẮT).
+//
+// XOÁ VÌ CẢ HAI CƠ CHẾ ĐÃ LÙI — không phải vì hai lỗi trên không có thật. Chúng có
+// thật; nhưng chúng là lỗi CỦA CHỐT. Không còn chốt thì không có gì để đóng băng ở
+// F1, và không có gì để bảo vệ ở F2.
+//
+// ⚠️ CHỖ NGƯỜI SAU DỄ HIỂU NGƯỢC. Ca ⌘S của F2 đọc như một lý do để GIỮ sticky có
+// phạm vi. Nó là lý do để lùi CẢ CỤM: ở đúng ca đó, đo-mỗi-phím của HEAD TỰ HỘI TỤ
+// VỀ ĐÚNG — phép đo ôi `.nativePanel` (NFC) bị thay bằng phép đo tươi ngay phím kế
+// tiếp, mà chiều lật NFD→NFC lại là chiều LÀNH (ở dạng NFC 1 grapheme đúng bằng 1
+// scalar; xem khối T4). Chốt thì đóng băng cái sai cho trọn từ. Nói gọn: cơ chế
+// thứ nhất đẻ ra lỗi, rồi cần cơ chế thứ hai để đỡ chính lỗi đó.
+//
+// ĐIỀU KIỆN THỬ LẠI, y như phần trên: `Tools/probe` phải trả lời TRƯỚC (i) trục có
+// THẬT SỰ lật giữa một từ không và bao lâu một lần; (ii) sau click/⌘S bao lâu thì
+// AX báo đúng ô. Nếu (ii) nhỏ hơn khoảng cách tới phím SINH DẤU đầu tiên (thường
+// phím 3–5, 200–500ms) thì chốt không giải quyết vấn đề gì cả.
+//
+// KỸ THUẬT ĐÁNG GIỮ LẠI, nếu có vòng sau: mỗi bài kiểm mang một LƯỚI CHỐNG TEST
+// RỖNG tường minh — assert rằng hai phân loại đem so THẬT SỰ cho hai chuỗi
+// (bs, diff) khác nhau, và độ lệch nằm ở SỐ BACKSPACE (chỗ ăn mất chữ), chứ không
+// phải ở chỗ hiển thị. Thiếu lưới đó, một test "ổn định" xanh được bằng cách chốt
+// cứng SAI. `HeadParityGoldenTests` phía dưới thừa kế đúng kỹ thuật này.
+
+// MARK: - ===========================================
+// MARK: - EmitPlan — BẤT BIẾN v4.15 GIỜ DO KIỂU GIỮ
+// MARK: - ===========================================
+//
+// ĐÂY LÀ GIÁ TRỊ CÒN LẠI CỦA CẢ ĐỢT, sau khi chốt trục theo từ, cổng chụp AX theo
+// ranh giới từ và sticky-on-miss đều đã lùi.
+//
+//   Bất biến v4.15: dạng dùng để ĐẾM backspace phải ĐÚNG BẰNG dạng PHÁT ra.
+//   Vi phạm = số backspace lệch scalar = ăn ngược vào chữ đã gõ. Đó chính là
+//   v4.14 ("gửi" → "ửi"), hồi quy nặng nhất lịch sử repo.
+//
+// Trước đây bất biến ấy chỉ là QUY ƯỚC: mỗi call site tự gọi
+// `usesNFCForFocusedField()`, tự NHỚ truyền đúng cái `Bool` đó xuống transport, và
+// người review phải tự kiểm 13 chỗ. Giờ số đếm và trục đi chung MỘT giá trị:
+// `EmitPlan.Replacement.init` là `fileprivate` nên chỉ factory của `EmitPlan` dựng
+// được, mọi đường dựng đều đếm bằng CHÍNH trục của plan đó, và transport nhận
+// `normalizeToNFC: replacement.plan.usesNFC` chứ không phải một tham số rời.
+//
+// ⚠️ `EmitPlan` KHÔNG NHỚ GÌ. `emitPlan()` đo lại mỗi lần gọi, hệt HEAD — đó là
+// điều `HeadParityGoldenTests` ngay dưới chứng minh bằng số. Đừng đọc lớp này như
+// di tích của chốt: chốt đã gỡ, cái này thì không.
+//
+// Lớp dưới khoá cả hai vế. Vế CHẠY ĐƯỢC: mọi đường dựng đếm đúng trục của mình, và
+// dạng đi ra dây có đúng số scalar như lúc đếm. Vế KHÔNG DIỄN ĐẠT ĐƯỢC BẰNG ASSERT
+// ("không còn đường nào khác để một trục lạ tới được transport") phải kiểm ở mức
+// NGUỒN — một `Replacement` dựng lậu làm test KHÔNG BIÊN DỊCH chứ không đỏ, nên
+// không có cách nào viết nó thành `XCTAssert`.
+final class EmitPlanTypeConstraintTests: XCTestCase {
+
+  /// Electron ngoài whitelist NFC (lớp Zalo/Messenger/Slack/Discord) — app DUY
+  /// NHẤT mà `fieldKind` thật sự quyết định trục, nên là chỗ duy nhất dựng được
+  /// hai trục cạnh nhau để so.
+  private static let electronApp = "com.tinyspeck.slackmacgap"
+  private static let browserApp = "com.google.Chrome"
+
+  private var savedZWJF = true
+  private var savedFreeMark = false
+
+  override func setUp() {
+    super.setUp()
+    savedZWJF = Defaults[.allowedZWJF]
+    savedFreeMark = Defaults[.freeMarkModeEnabled]
+    Defaults[.allowedZWJF] = true
+    Defaults[.freeMarkModeEnabled] = false
+  }
+
+  override func tearDown() {
+    Defaults[.allowedZWJF] = savedZWJF
+    Defaults[.freeMarkModeEnabled] = savedFreeMark
+    super.tearDown()
+  }
+
+  /// Dựng một bước phát THẬT có mang dấu: gõ "tieeng" rồi phím `s`, tức
+  /// `lastTransformed == "tiêng"` → `transformed == "tiếng"`, diff = "ếng".
+  /// Bước này được chọn vì nó là bước DUY NHẤT trong từ mà hai trục cho hai số
+  /// backspace khác nhau — mọi assert dưới đây vô nghĩa nếu chọn bước khác.
+  private func processorAtToneStep(app: String, kind: Focused.FieldKind) -> InputProcessor {
+    let p = InputProcessor(method: .Telex)
+    p.changeActiveApp(app)
+    p.focusedFieldKind = kind
+    for c in "tieengs" { p.push(char: c) }
+    return p
+  }
+
+  /// (1) MỌI đường dựng `Replacement` đều đếm bằng CHÍNH trục của plan sinh ra nó,
+  /// và trục ấy ĐI THEO giá trị chứ không nằm rời ở đâu đó.
+  ///
+  /// Ba đường dựng, đủ bộ: `replacement(from:to:)` (đường chính),
+  /// `insertion(of:)` (dự đoán từ / lưới an toàn auto-capitalize), và
+  /// `pop(plan:)` (cầu nối duy nhất cho số đếm tính ở nơi khác — `WordBuffer.pop`
+  /// phải replay state trước khi đếm nên không đếm hộ từ `EmitPlan` được).
+  func testEveryConstructionPathCountsOnItsOwnPlansAxis() throws {
+    for (app, kind) in [(Self.electronApp, Focused.FieldKind.webContent),
+                        (Self.browserApp, Focused.FieldKind.webContent),
+                        (Self.electronApp, Focused.FieldKind.windowField)] {
+      let p = processorAtToneStep(app: app, kind: kind)
+      let plan = p.emitPlan()
+
+      // LƯỚI CHỐNG TEST RỖNG, đặt TRƯỚC mọi assert khác: bước này phải phân biệt
+      // được hai trục, nếu không thì "đếm đúng trục" đúng một cách vô nghĩa.
+      let onPlanAxis = EventSimulator.calcKeyStrokes(
+        from: p.lastTransformed, to: p.transformed, usesNFC: plan.usesNFC)
+      let onOtherAxis = EventSimulator.calcKeyStrokes(
+        from: p.lastTransformed, to: p.transformed, usesNFC: !plan.usesNFC)
+      XCTAssertNotEqual(
+        T3EmitStep(onPlanAxis.0, onPlanAxis.1), T3EmitStep(onOtherAxis.0, onOtherAxis.1),
+        "\(app) × \(kind): bước 'tiêng'→'tiếng' PHẢI cho hai số khác nhau ở hai trục")
+
+      // (a) đường chính
+      let r = plan.replacement(from: p.lastTransformed, to: p.transformed)
+      XCTAssertEqual(r.plan.usesNFC, plan.usesNFC,
+        "trục ĐI THEO giá trị `Replacement`, không phải một Bool rời bên cạnh")
+      XCTAssertEqual(r.plan.fieldIsBrowserChrome, plan.fieldIsBrowserChrome,
+        "đường gửi cũng đi cùng — tách hai vế là mở lại cửa cho 'trường'→'truường'")
+      XCTAssertEqual(T3EmitStep(r.backspaceCount, r.diffChars),
+                     T3EmitStep(onPlanAxis.0, onPlanAxis.1),
+        "\(app) × \(kind): số đếm phải là số của trục TRONG plan")
+
+      // (b) chèn thuần — không có backspace nào để lệch, nhưng trục vẫn phải
+      //     đi theo vì transport dùng nó để chọn dạng emit.
+      let ins = plan.insertion(of: Array("ếng"))
+      XCTAssertEqual(ins.backspaceCount, 0, "insertion không xoá gì")
+      XCTAssertEqual(ins.plan.usesNFC, plan.usesNFC)
+      XCTAssertEqual(ins.plan.fieldIsBrowserChrome, plan.fieldIsBrowserChrome)
+
+      // (c) `pop(plan:)` — trục dùng để replay/đếm BÊN TRONG `WordBuffer.pop`
+      //     đúng bằng trục sẽ phát ra.
+      let popped = p.pop(plan: plan)
+      XCTAssertEqual(popped.plan.usesNFC, plan.usesNFC)
+      let raw = processorAtToneStep(app: app, kind: kind).pop(usesNFC: plan.usesNFC)
+      XCTAssertEqual(T3EmitStep(popped.backspaceCount, popped.diffChars),
+                     T3EmitStep(raw.0, raw.1),
+        "\(app) × \(kind): pop(plan:) phải ra đúng cái pop(usesNFC: plan.usesNFC) ra")
+    }
+  }
+
+  /// (2) DẠNG ĐI RA DÂY == DẠNG ĐÃ ĐẾM. Bất biến v4.15 viết thành số scalar.
+  ///
+  /// `EventSimulator.sendReplacement` KHÔNG phát thẳng `diffChars`: nó chạy qua
+  /// `emittedCharacters(_:normalizeToNFC:)` trước. Nếu `normalizeToNFC` khác trục
+  /// đã đếm, số scalar THỰC PHÁT khác số scalar đã đếm backspace — đó đúng là hình
+  /// dạng của v4.14. Test đo cả chiều đúng lẫn chiều sai.
+  func testWireFormHasTheSameScalarCountAsTheCountedForm() throws {
+    for (app, kind) in [(Self.electronApp, Focused.FieldKind.webContent),
+                        (Self.browserApp, Focused.FieldKind.webContent)] {
+      let p = processorAtToneStep(app: app, kind: kind)
+      let counted = p.emitPlan().replacement(from: p.lastTransformed, to: p.transformed)
+      let countedScalars = String(counted.diffChars).unicodeScalars.count
+
+      // CHIỀU ĐÚNG — đúng tham số mà `sendTypedReplacement` truyền xuống.
+      let wire = EventSimulator.emittedCharacters(
+        counted.diffChars, normalizeToNFC: counted.plan.usesNFC)
+      XCTAssertEqual(String(wire).unicodeScalars.count, countedScalars,
+        "\(app) × \(kind): transport KHÔNG được đổi số scalar so với lúc đếm")
+
+      // CHIỀU SAI — cùng `diffChars`, trục ngược. Chỉ nhánh NFD quan sát được:
+      // precompose bóp cụm NFD lại, phát ÍT scalar hơn số backspace đã đếm.
+      // (Nhánh NFC vô hại theo đúng phép đo T4 — ở dạng NFC 1 grapheme đã bằng 1
+      // scalar nên `normalizeToNFC: false` không đổi gì. Đó là lý do trục sai
+      // KHÔNG ĐỐI XỨNG, và cũng là một trong ba lý do lùi chốt theo từ.)
+      let wrongWire = EventSimulator.emittedCharacters(
+        counted.diffChars, normalizeToNFC: !counted.plan.usesNFC)
+      if counted.plan.usesNFC {
+        XCTAssertEqual(String(wrongWire).unicodeScalars.count, countedScalars,
+          "\(app): trục NFC — 1 grapheme == 1 scalar nên chiều ngược vô hại (T4)")
+      } else {
+        XCTAssertLessThan(String(wrongWire).unicodeScalars.count, countedScalars,
+          "\(app): trục NFD + normalizeToNFC=true ⇒ phát ít scalar hơn số đã đếm "
+            + "backspace = ăn mất ký tự trước nguyên âm mang dấu. ĐÂY là v4.14.")
+      }
+    }
+  }
+
+  /// (3) KHÔNG CÒN ĐƯỜNG NÀO KHÁC để một trục lạ tới được transport.
+  ///
+  /// Vế này không viết thành assert chạy được: dựng lậu một `Replacement` làm test
+  /// KHÔNG BIÊN DỊCH chứ không đỏ. Nên kiểm ở mức NGUỒN, mức TOKEN, và tự bỏ qua
+  /// nếu không đọc được file (test có thể chạy trên máy khác nơi biên dịch).
+  ///
+  /// Bốn thứ được khoá, mỗi thứ là một cách khác nhau để bất biến v4.15 tuột:
+  ///   (a) `init` của `Replacement` còn `fileprivate`;
+  ///   (b) mọi chỗ dựng `Replacement(plan:` nằm TRONG `struct EmitPlan`;
+  ///   (c) cả cây `vkey/` có ĐÚNG MỘT chỗ gọi `EventSimulator.sendReplacement(`;
+  ///   (d) và chỗ đó truyền `normalizeToNFC: replacement.plan.usesNFC`.
+  func testTheAxisCannotReachTransportByAnyOtherRoute() throws {
+    let repoRoot = URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent()   // vkeyTests/
+      .deletingLastPathComponent()   // <repo>
+    let ipPath = repoRoot.appendingPathComponent("vkey/App/InputProcessor.swift")
+    guard let src = try? String(contentsOf: ipPath, encoding: .utf8) else {
+      throw XCTSkip("không đọc được \(ipPath.path) — lưới bổ sung, bỏ qua")
+    }
+    let lines = src.components(separatedBy: "\n")
+    func isCode(_ l: String) -> Bool {
+      let t = l.trimmingCharacters(in: .whitespaces)
+      return !t.hasPrefix("//") && !t.hasPrefix("///") && !t.hasPrefix("*")
+    }
+
+    // (a)
+    XCTAssertTrue(
+      lines.contains { isCode($0) && $0.contains("fileprivate init(plan: EmitPlan") },
+      "`EmitPlan.Replacement.init` phải còn `fileprivate`. Nới nó ra là trả bất biến "
+        + "v4.15 về làm quy ước review — đúng trạng thái đã đẻ ra v4.14 (\"gửi\"→\"ửi\").")
+
+    // (b) — thân `struct EmitPlan` = từ dòng khai báo tới `// MARK:` kế tiếp.
+    guard let planDecl = lines.firstIndex(where: { isCode($0) && $0.hasPrefix("struct EmitPlan") })
+    else {
+      return XCTFail("`struct EmitPlan` đã biến mất khỏi InputProcessor.swift")
+    }
+    let planEnd = lines[(planDecl + 1)...].firstIndex { $0.hasPrefix("// MARK:") } ?? lines.endIndex
+    let planRange = planDecl..<planEnd
+    for i in lines.indices where isCode(lines[i]) && lines[i].contains("Replacement(plan:") {
+      XCTAssertTrue(planRange.contains(i),
+        "InputProcessor.swift:\(i + 1) dựng `Replacement` NGOÀI `EmitPlan`. Mọi đường "
+          + "dựng phải đếm bằng chính trục của plan; một đường ngoài là một đường "
+          + "truyền lệch trục xuống transport.")
+    }
+
+    // (c) — quét CẢ cây nguồn, không chỉ file này.
+    let appRoot = repoRoot.appendingPathComponent("vkey")
+    var callSites: [String] = []
+    if let walker = FileManager.default.enumerator(atPath: appRoot.path) {
+      for case let rel as String in walker where rel.hasSuffix(".swift") {
+        // Bản thân transport khai báo hàm; chỉ đếm NGƯỜI GỌI.
+        if rel.hasSuffix("EventSimulator.swift") { continue }
+        let p = appRoot.appendingPathComponent(rel)
+        guard let text = try? String(contentsOf: p, encoding: .utf8) else { continue }
+        for (n, l) in text.components(separatedBy: "\n").enumerated()
+        where isCode(l) && l.contains("EventSimulator.sendReplacement(") {
+          callSites.append("\(rel):\(n + 1)")
+        }
+      }
+    }
+    XCTAssertEqual(callSites.count, 1,
+      "transport chỉ được có MỘT người gọi (`sendTypedReplacement`). Thêm người gọi "
+        + "thứ hai là thêm một chỗ tự chọn `normalizeToNFC`. Thấy: \(callSites)")
+    XCTAssertTrue(callSites.first?.contains("InputProcessor.swift") ?? false,
+      "…và người gọi đó phải là `InputProcessor.sendTypedReplacement`. Thấy: \(callSites)")
+
+    // (d) — và người gọi đó lấy trục TỪ CHÍNH `replacement`.
+    let nfcArgs = lines.filter { isCode($0) && $0.contains("normalizeToNFC:") }
+      .map { $0.trimmingCharacters(in: .whitespaces) }
+    XCTAssertEqual(nfcArgs, ["normalizeToNFC: replacement.plan.usesNFC"],
+      "trục xuống transport phải đọc từ chính `Replacement` đã đếm ra số backspace. "
+        + "Một `Bool` rời ở đây là hình dạng chính xác của hồi quy v4.14.")
+  }
+}
+
+// MARK: - ===========================================
+// MARK: - ĐỐI CHIẾU HEAD — chuỗi (bs, diff) VIẾT CỨNG
+// MARK: - ===========================================
+//
+// ⚠️ SỐ TRONG BẢNG DƯỚI KHÔNG LẤY TỪ HÀNH VI HIỆN TẠI. Chúng được ĐO trên chính
+// HEAD (commit 5e22d85 — trước B1/B2, tức trước `EmitPlan`), theo đúng cách này:
+//
+//   git archive HEAD | tar -x -C <tmp>/head          # bản HEAD sạch, NGOÀI repo
+//   # thêm vào <tmp>/head/vkeyTests một test chỉ để in số, rồi:
+//   xcodebuild -project vkey.xcodeproj -scheme vkey -destination 'platform=macOS' \
+//     -derivedDataPath <tmp>/dd-head -only-testing:vkeyTests/<probe> test
+//
+// Đường đo trên HEAD chép nguyên văn `handleTextChar` của HEAD:
+//   push(char:) → EventSimulator.calcKeyStrokes(from: lastTransformed,
+//                   to: transformed, usesNFC: usesNFCForFocusedField())
+// Backspace: `pop(usesNFC: usesNFCForFocusedField())`. Macro: `macroTarget(...)`
+// rồi `calcKeyStrokes(from: current, to: target, usesNFC:)` — đúng số học của
+// `expandMacroIfMatch`. (Chính hàm đó KHÔNG gọi được trong test: nó phát event
+// thật vào ô đang focus của máy chạy test.)
+//
+// VÌ SAO CẦN BẢNG NÀY BÊN CẠNH `testT3_StableFieldEmitsExactlyThePreT3Sequence`.
+// Test kia so HAI ĐƯỜNG TRONG CÙNG MỘT CÂY NGUỒN, mà cả hai vế đều gọi chính
+// `EventSimulator.calcKeyStrokes` — nên một thay đổi trong THUẬT TOÁN DIFF đẩy cả
+// hai vế lệch CÙNG CHIỀU và test kia vẫn xanh.
+//
+// Đã kiểm bằng ĐỘT BIẾN chứ không suy luận (chạy trên bản sao ngoài repo): tắt
+// vòng lùi-prefix v3.6 trong `calcKeyStrokesNFD` (đổi điều kiện thành
+// `if false && …`) thì CẢ BA test của `EmitPlanWordLockT3Tests` vẫn XANH, còn
+// `testTypingSequencesMatchHeadExactly` dưới đây ĐỎ 8 chỗ. Đó chính xác là khoảng
+// trống mà bảng vàng lấp: một mỏ neo NGOÀI cây nguồn.
+//
+// Chiều còn lại thì hai bên trùng nhau — đột biến bảng app × field → trục (cho
+// `.webContent` trả `true` vô điều kiện) làm CẢ HAI cùng đỏ. Bảng vàng chỉ hơn ở
+// thông điệp: nó nói thẳng app nào, ô nào, từ nào, và in ra cả hai chuỗi số.
+//
+// NÓ CŨNG LÀ BẰNG CHỨNG NGHIỆM THU CỦA VÒNG LÙI: sau khi gỡ chốt trục theo từ,
+// cổng chụp AX và sticky-on-miss, hành vi phát ra phải trùng HEAD tới từng scalar.
+//
+// ⚠️ CÁCH ĐỌC MỘT DÒNG VÀNG. `scalars` có mặt vì Swift so sánh `String` theo TƯƠNG
+// ĐƯƠNG CHUẨN TẮC: "ếng" dạng NFC `==` "ếng" dạng NFD, mà chính hai dạng đó mới là
+// thứ đi ra dây. Chuỗi trong bảng viết ở dạng NFC cho dễ đọc; cột `scalars` là chỗ
+// duy nhất phân biệt hai trục.
+private struct GoldenSeq {
+  let word: String
+  let result: String
+  /// (backspaceCount, diff dạng NFC để đọc, SỐ SCALAR thật sự phát ra)
+  let steps: [(Int, String, Int)]
+}
+
+final class HeadParityGoldenTests: XCTestCase {
+
+  private static let electronApp = "com.tinyspeck.slackmacgap"
+  private static let browserApp = "com.google.Chrome"
+  private static let appleApp = "com.apple.Notes"
+
+  private var savedZWJF = true
+  private var savedFreeMark = false
+
+  override func setUp() {
+    super.setUp()
+    savedZWJF = Defaults[.allowedZWJF]
+    savedFreeMark = Defaults[.freeMarkModeEnabled]
+    Defaults[.allowedZWJF] = true
+    Defaults[.freeMarkModeEnabled] = false
+  }
+
+  override func tearDown() {
+    Defaults[.allowedZWJF] = savedZWJF
+    Defaults[.freeMarkModeEnabled] = savedFreeMark
+    super.tearDown()
+  }
+
+  // MARK: Bảng vàng, đo trên HEAD
+
+  /// Trục NFD — đếm theo SCALAR. Ô Blink/Electron ngoài whitelist NFC: đúng lớp ô
+  /// soạn tin Zalo / Messenger / Slack / Discord.
+  private static let nfdGolden: [GoldenSeq] = [
+    GoldenSeq(word: "tieengs", result: "tiếng", steps: [
+      (0, "t", 1), (0, "i", 1), (0, "e", 1), (1, "ê", 2), (0, "n", 1), (0, "g", 1),
+      (4, "ếng", 5),
+    ]),
+    GoldenSeq(word: "ddieeuf", result: "điều", steps: [
+      (0, "d", 1), (1, "đ", 1), (0, "i", 1), (0, "e", 1), (1, "ê", 2), (0, "u", 1),
+      (3, "ều", 4),
+    ]),
+    GoldenSeq(word: "nguoiwf", result: "người", steps: [
+      (0, "n", 1), (0, "g", 1), (0, "u", 1), (0, "o", 1), (0, "i", 1),
+      (3, "ươi", 5), (3, "ời", 4),
+    ]),
+    // `Nooij` là ca mà lời bàn về trục hay viện tới: chốt nhầm NFD trong một ô
+    // AppKit làm nó ra `Ṇ̂i`. Độ lệch cụ thể nằm ở bước cuối — 3 backspace ở đây
+    // so với 2 ở bảng NFC ngay dưới.
+    GoldenSeq(word: "Nooij", result: "Nội", steps: [
+      (0, "N", 1), (0, "o", 1), (1, "ô", 2), (0, "i", 1), (3, "ội", 4),
+    ]),
+  ]
+
+  /// Trục NFC — đếm theo GRAPHEME. App Apple/whitelist, web content trình duyệt
+  /// thật (từ v4.21), và ô cửa sổ (omnibox) của app nhóm NFD.
+  private static let nfcGolden: [GoldenSeq] = [
+    GoldenSeq(word: "tieengs", result: "tiếng", steps: [
+      (0, "t", 1), (0, "i", 1), (0, "e", 1), (1, "ê", 1), (0, "n", 1), (0, "g", 1),
+      (3, "ếng", 3),
+    ]),
+    GoldenSeq(word: "ddieeuf", result: "điều", steps: [
+      (0, "d", 1), (1, "đ", 1), (0, "i", 1), (0, "e", 1), (1, "ê", 1), (0, "u", 1),
+      (2, "ều", 2),
+    ]),
+    GoldenSeq(word: "nguoiwf", result: "người", steps: [
+      (0, "n", 1), (0, "g", 1), (0, "u", 1), (0, "o", 1), (0, "i", 1),
+      (3, "ươi", 3), (2, "ời", 2),
+    ]),
+    GoldenSeq(word: "Nooij", result: "Nội", steps: [
+      (0, "N", 1), (0, "o", 1), (1, "ô", 1), (0, "i", 1), (2, "ội", 2),
+    ]),
+  ]
+
+  /// Backspace: gõ trọn từ rồi bấm Delete 9 lần (nhiều hơn số phím đã gõ — để ca
+  /// "xoá quá tay trên bộ đệm đã cạn" cũng nằm trong bảng).
+  private static let nfdPopGolden: [(String, [(Int, String, Int)])] = [
+    ("ddieeuf", [(2, "u", 1), (0, "", 0), (0, "", 0), (0, "", 0), (0, "", 0),
+                 (1, "d", 1), (0, "", 0), (0, "", 0), (0, "", 0)]),
+    ("tieengs", [(3, "ng", 2), (0, "", 0), (0, "", 0), (0, "", 0), (0, "", 0),
+                 (0, "", 0), (0, "", 0), (0, "", 0), (0, "", 0)]),
+  ]
+
+  private static let nfcPopGolden: [(String, [(Int, String, Int)])] = [
+    ("ddieeuf", [(2, "êu", 2), (0, "", 0), (1, "e", 1), (0, "", 0), (0, "", 0),
+                 (1, "d", 1), (0, "", 0), (0, "", 0), (0, "", 0)]),
+    ("tieengs", [(3, "êng", 3), (0, "", 0), (0, "", 0), (1, "e", 1), (0, "", 0),
+                 (0, "", 0), (0, "", 0), (0, "", 0), (0, "", 0)]),
+  ]
+
+  // MARK: Tiện ích
+
+  private func expected(_ g: (Int, String, Int)) -> T3EmitStep {
+    T3EmitStep(golden: g.0, g.1, scalars: g.2)
+  }
+
+  /// Đường gõ THẬT của cây hiện tại: `push` → `emitPlan().replacement(from:to:)`.
+  /// Đây đúng là dòng ở `handleTextChar`; đổi nó thì test này hết là đối chiếu.
+  private func typeSequence(app: String, kind: Focused.FieldKind, word: String)
+    -> (steps: [T3EmitStep], result: String)
+  {
+    let p = InputProcessor(method: .Telex)
+    p.changeActiveApp(app)
+    p.focusedFieldKind = kind
+    var out: [T3EmitStep] = []
+    for c in word {
+      p.push(char: c)
+      let r = p.emitPlan().replacement(from: p.lastTransformed, to: p.transformed)
+      out.append(T3EmitStep(r.backspaceCount, r.diffChars))
+    }
+    return (out, p.transformed)
+  }
+
+  // MARK: Các bài đối chiếu
+
+  /// (1) GÕ — gồm cả bỏ dấu cuối từ ("tieengs", "ddieeuf") lẫn thay CẢ CỤM
+  /// ("nguoiwf": `w` viết lại "uo"→"ươ" giữa từ, rồi `f` viết lại "ươi"→"ời").
+  ///
+  /// Bảng ô ở đây cố ý phủ CẢ BỐN nhánh của việc gán trục, vì đó là thứ dễ bị
+  /// "sửa" nhất: whitelist NFC (short-circuit TRƯỚC fieldKind), trình duyệt thật,
+  /// Electron ngoài whitelist, và ô cửa sổ của app nhóm NFD.
+  func testTypingSequencesMatchHeadExactly() throws {
+    let cases: [(String, Focused.FieldKind, [GoldenSeq], Bool, Bool)] = [
+      (Self.electronApp, .webContent, Self.nfdGolden, false, false),
+      (Self.electronApp, .unknown, Self.nfdGolden, false, false),
+      (Self.electronApp, .windowField, Self.nfcGolden, true, true),   // omnibox-like
+      (Self.browserApp, .webContent, Self.nfcGolden, true, false),
+      (Self.appleApp, .unknown, Self.nfcGolden, true, false),         // whitelist NFC
+    ]
+
+    for (app, kind, golden, expectNFC, expectChrome) in cases {
+      // Bảng ánh xạ app × field → trục: khoá TRƯỚC, vì mọi con số dưới đây chỉ có
+      // nghĩa khi ô này thật sự đang ở trục ta nghĩ.
+      let probe = InputProcessor(method: .Telex)
+      probe.changeActiveApp(app)
+      probe.focusedFieldKind = kind
+      XCTAssertEqual(probe.usesNFCForFocusedField(), expectNFC, "\(app) × \(kind): trục")
+      XCTAssertEqual(probe.focusedFieldIsBrowserChrome(), expectChrome,
+        "\(app) × \(kind): axDirect?")
+
+      for g in golden {
+        let got = typeSequence(app: app, kind: kind, word: g.word)
+        XCTAssertEqual(got.result, g.result, "\(app) × \(kind) × \(g.word): engine")
+        XCTAssertEqual(got.steps, g.steps.map(expected),
+          "\(app) × \(kind) × \"\(g.word)\": chuỗi (bs, diff) LỆCH so với HEAD")
+      }
+    }
+  }
+
+  /// (2) BACKSPACE — đường duy nhất mà số đếm được tính ở nơi khác
+  /// (`WordBuffer.pop` phải replay state trước khi đếm).
+  func testBackspaceSequencesMatchHeadExactly() throws {
+    let cases: [(String, Focused.FieldKind, [(String, [(Int, String, Int)])])] = [
+      (Self.electronApp, .webContent, Self.nfdPopGolden),
+      (Self.browserApp, .webContent, Self.nfcPopGolden),
+      (Self.appleApp, .unknown, Self.nfcPopGolden),
+    ]
+
+    for (app, kind, golden) in cases {
+      for (word, steps) in golden {
+        let p = InputProcessor(method: .Telex)
+        p.changeActiveApp(app)
+        p.focusedFieldKind = kind
+        for c in word { p.push(char: c) }
+
+        var got: [T3EmitStep] = []
+        for _ in 0..<steps.count {
+          let r = p.pop(plan: p.emitPlan())   // = đúng dòng của nhánh `.Delete`
+          got.append(T3EmitStep(r.backspaceCount, r.diffChars))
+        }
+        XCTAssertEqual(got, steps.map(expected),
+          "\(app) × \(kind) × \"\(word)\": chuỗi Backspace LỆCH so với HEAD")
+      }
+    }
+  }
+
+  /// (3) MACRO — bung cả cụm một lần, và là đường phát có `diffChars` DÀI NHẤT
+  /// trong vkey, nên cũng là chỗ độ lệch trục nhìn rõ nhất: "Việt Nam " đi ra dây
+  /// là 11 scalar ở trục NFD nhưng 9 ở trục NFC.
+  ///
+  /// Bảng macro lấy `DefaultMacros.allDefaults` — bản seed sẵn cho mọi máy mới —
+  /// chứ không phải `Defaults[.macros]`, vì tiến trình test không có bảng của
+  /// người dùng. Số học thì y hệt `expandMacroIfMatch`.
+  func testMacroExpansionMatchesHeadExactly() throws {
+    let golden: [(String, Focused.FieldKind, [(String, String, Int, String, Int)])] = [
+      (Self.electronApp, .webContent, [
+        ("vn", "Việt Nam ", 2, "Việt Nam ", 11),
+        ("hn", "Hà Nội ", 2, "Hà Nội ", 10),
+      ]),
+      (Self.browserApp, .webContent, [
+        ("vn", "Việt Nam ", 2, "Việt Nam ", 9),
+        ("hn", "Hà Nội ", 2, "Hà Nội ", 7),
+      ]),
+      (Self.appleApp, .unknown, [
+        ("vn", "Việt Nam ", 2, "Việt Nam ", 9),
+        ("hn", "Hà Nội ", 2, "Hà Nội ", 7),
+      ]),
+    ]
+
+    for (app, kind, rows) in golden {
+      for (trigger, target, bs, diffText, diffScalars) in rows {
+        let p = InputProcessor(method: .Telex)
+        p.changeActiveApp(app)
+        p.focusedFieldKind = kind
+        for c in trigger { p.push(char: c) }
+
+        let current = p.transformed
+        let got = try XCTUnwrap(
+          InputProcessor.macroTarget(
+            for: current, endingChar: " ", macros: DefaultMacros.allDefaults),
+          "\(trigger): macro seed sẵn phải khớp — nếu không, ba assert dưới vô nghĩa")
+        XCTAssertEqual(got, target, "\(trigger): phần bung")
+
+        // Đúng dòng của `expandMacroIfMatch` trong cây hiện tại.
+        let r = p.emitPlan().replacement(from: current, to: got)
+        XCTAssertEqual(T3EmitStep(r.backspaceCount, r.diffChars),
+                       T3EmitStep(golden: bs, diffText, scalars: diffScalars),
+          "\(app) × \(kind) × macro \"\(trigger)\": LỆCH so với HEAD")
+      }
+    }
+  }
+
+  /// (4) LƯỚI CHỐNG BẢNG VÀNG RỖNG.
+  ///
+  /// Nếu hai bảng NFC/NFD trùng nhau thì ba bài trên xanh mà chẳng khoá được gì —
+  /// đúng cái bẫy đã làm 419 test xanh trong khi hai lỗi mức CAO đi qua. Bài này
+  /// assert rằng chúng KHÁC, và khác ở SỐ BACKSPACE (chỗ ăn mất chữ), chứ không
+  /// phải chỉ ở số scalar (chỗ hiển thị).
+  ///
+  /// Đồng thời ghi lại phép đo T4 dưới dạng bất đẳng thức: `Nooij` cần 2 backspace
+  /// ở ô AppKit (xoá GRAPHEME) và 3 ở ô Blink (xoá SCALAR). Chốt nhầm trục NFD
+  /// trong ô AppKit ⇒ gửi thừa 1 backspace ⇒ ăn ngược vào chữ đã gõ (`Ṇ̂i`); chốt
+  /// nhầm trục NFC trong ô Blink thì KHÔNG có độ lệch nào — trục sai không đối
+  /// xứng, và đó là một trong ba lý do lùi chốt theo từ.
+  func testTheTwoGoldenTablesActuallyDiffer() throws {
+    XCTAssertEqual(Self.nfdGolden.count, Self.nfcGolden.count)
+    for (nfd, nfc) in zip(Self.nfdGolden, Self.nfcGolden) {
+      XCTAssertEqual(nfd.word, nfc.word)
+      XCTAssertEqual(nfd.result, nfc.result, "hai trục phải cho CÙNG kết quả trên màn hình")
+      XCTAssertNotNil(zip(nfd.steps, nfc.steps).first { $0.0.0 != $0.1.0 },
+        "\"\(nfd.word)\": hai bảng phải khác nhau ở SỐ BACKSPACE, nếu không bảng vàng "
+          + "này không phân biệt được trục nào cả")
+    }
+
+    // T4 viết thành số: đơn vị xoá của hai engine, đo bằng `Tools/probe`.
+    let nfdNooij = try XCTUnwrap(Self.nfdGolden.first { $0.word == "Nooij" })
+    let nfcNooij = try XCTUnwrap(Self.nfcGolden.first { $0.word == "Nooij" })
+    XCTAssertEqual(nfcNooij.steps.last?.0, 2,
+      "ô AppKit xoá GRAPHEME ⇒ 1 phím ăn trọn cụm ⇒ đếm grapheme = 2")
+    XCTAssertEqual(nfdNooij.steps.last?.0, 3,
+      "ô Blink xoá SCALAR ⇒ mỗi phím bóc 1 scalar ⇒ đếm scalar = 3")
+  }
+}
+
+// MARK: - ===========================================
+// MARK: - F4 — HAI NGÂN SÁCH AX, KHÔNG PHẢI MỘT
+// MARK: - ===========================================
+final class HotPathAXBudgetF4Tests: XCTestCase {
+
+  /// F4 — `testB1_2_AXTimeoutHasOneStableDefault` khoá được "có MỘT mặc định ổn
+  /// định", nhưng KHÔNG khoá được ngân sách của đường NÓNG — nên vòng B1 nâng
+  /// `Focused.snapshot()` và `isSecureField()` từ 0,05 lên 0,1 mà 419 test vẫn
+  /// xanh. Đó là nhân đôi cận trên thời gian chẹn event tap, ở đúng đường chạy
+  /// mỗi phím, cho một lần leo cây tới ~50 message AX.
+  ///
+  /// Hai hằng vì có thật hai ngân sách: `defaultAXTimeout` cho việc chạy NGOÀI
+  /// tap thread (`simulationQueue`, `focusRefreshQueue` — nơi nhịp trễ 0,5s tồn
+  /// tại chính để chờ hộp thoại native hiện ra), `hotPathAXTimeout` cho mọi thứ
+  /// chạy TRÊN tap thread.
+  ///
+  /// ⚠️ SAU VÒNG LÙI, HẰNG NÀY CÀNG CẦN CHỨ KHÔNG PHẢI BỚT CẦN. Đợt T3 từng gắn
+  /// một cổng `if input.isAtWordBoundary` trước lời gọi chụp AX, tức mỗi TỪ mới
+  /// chụp một lần; cổng đó đã lùi cùng chốt trục, nên `Focused.snapshot()` chạy
+  /// lại MỖI keyDown như HEAD. Ai thấy "chỉ còn một chỗ gọi, gộp hai hằng cho
+  /// gọn" thì đang nhân đôi cận trên thời gian chẹn event tap của đường chạy mỗi
+  /// phím. Lý do lùi cổng: xem MARK "[ĐÃ XOÁ] test khoá cổng chụp AX theo ranh
+  /// giới từ" phía trên.
+  func testF4_HotPathAXBudgetIsSeparateFromTheBackgroundBudget() throws {
+    XCTAssertEqual(Focused.hotPathAXTimeout, 0.05, accuracy: 0.0001,
+      "ngân sách đường nóng — giá trị mà HEAD vô tình chốt lại qua focusedOverlayBundle()")
+    XCTAssertEqual(Focused.defaultAXTimeout, 0.1, accuracy: 0.0001,
+      "ngân sách nền — KHÔNG đổi ở đợt này")
+    XCTAssertLessThan(Focused.hotPathAXTimeout, Focused.defaultAXTimeout,
+      "gom hai hằng làm một là nâng cận trên chẹn tap của đường chạy mỗi phím")
+
+    // `snapshot` phải NHẬN ngân sách. Chữ ký là chỗ duy nhất ép được điều đó:
+    // nếu ai gỡ tham số, `performFocusedElementRefresh` hết đường xin ngân sách
+    // nền và cả hai người gọi lại dùng chung một con số.
+    // CỐ Ý KHÔNG GỌI — `snapshot()` đọc AX của máy đang chạy test.
+    let signatureLock: [Any] = [
+      Focused.snapshot(timeout:) as (Float) -> Focused.FocusSnapshot
+    ]
+    XCTAssertEqual(signatureLock.count, 1,
+      "Focused.snapshot phải nhận `timeout:` — hai người gọi, hai thread, hai ngân sách")
+
+    // `withAXTimeout` vẫn là SCOPE (mượn có thời hạn), không phải một lần ghi.
+    XCTAssertEqual(Focused.withAXTimeout(Focused.hotPathAXTimeout) { 7 }, 7)
+  }
+}
