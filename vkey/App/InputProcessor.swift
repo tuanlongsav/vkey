@@ -49,6 +49,16 @@ struct WordBuffer {
   var transformed = ""
 
   var previousWordState: TiengVietState?
+
+  /// v4.23: chuỗi phím GỐC của từ vừa commit, đi kèm `previousWordState`.
+  ///
+  /// `TiengVietState.chuKhongDau` KHÔNG chứa phím dấu — `withTone`/`withMu`/
+  /// `withGachD` không push ký tự nào — nên dựng lại `keys` từ nó (cách cũ)
+  /// khiến lần Backspace kế tiếp replay một chuỗi phím đã mất sạch dấu:
+  /// "chào" → "cha", "tiếng" → "tien", "đường" → "duon", kèm 5 backspace và
+  /// gõ lại cả cụm. `Snapshot` mang sẵn `keys` cũng vì đúng lý do này.
+  var previousKeys: [Character] = []
+
   var wordState = TiengVietState.empty
 
   /// Last valid snapshot for single-step rollback out of recovery mode.
@@ -65,7 +75,31 @@ struct WordBuffer {
     "bl", "cl", "fl", "gl", "pl", "sl", "vl",
     "br", "cr", "dr", "fr", "gr", "pr", "wr",
     "st", "sm", "sn", "sp", "sc", "sk", "sw",
-    "tw", "dw", "sh", "ps", "pn", "ts", "kn", "kr",
+    // v4.23: "kr" ĐÃ GỠ khỏi danh sách. Nó vừa ở đây vừa nằm trong
+    // `TiengViet.PhuAmGhep` và `TiengVietValidator.ValidInitials` như phụ âm
+    // đầu tiếng Việt HỢP LỆ — mâu thuẫn trực tiếp. `isImpossibleCluster` chạy
+    // TRƯỚC validator (và trước cả Free Mark) nên "kroong" bị khoá raw ngay ở
+    // phím 'r' → ra "kroong" thay vì "Krông" (Krông Pắc, Krông Ana, Krông
+    // Bông) — đúng nhóm tên riêng mà Free Mark tuyên bố phục vụ.
+    //
+    // ĐÂY LÀ NỚI GUARD THẬT, KHÔNG PHẢI DỌN MÂU THUẪN VÔ HẠI — CÓ GIÁ:
+    // gỡ "kr" mở đường cho từ tiếng Anh kr… đi vào engine, và phím dấu bị
+    // nuốt làm dấu. Đo trên engine: "kris" → "krí" (phím 's' thành dấu sắc
+    // trên "kri", KHÔNG hồi phục vì từ vẫn "hợp lệ"); "krispy" đi qua "krí" →
+    // "kríp" rồi mới hồi phục ở phím 'y'. Trước đây Kris/Krispy gõ sạch.
+    // ("kraft", "krill", "kremlin" vẫn tự hồi phục ở phím kế tiếp.)
+    //
+    // ĐÃ CÂN NHẮC VÀ LOẠI cách "chỉ cho qua khi có dấu hiệu tên riêng (chữ hoa
+    // đầu)": nó KHÔNG phân biệt được hai bên — "Krông" viết hoa thì "Kris",
+    // "Kraft", "Krispy Kreme" cũng viết hoa (đều là danh từ riêng). Gate theo
+    // chữ hoa chỉ đổi nạn nhân, còn làm hỏng thêm ca gõ "kroong" thường.
+    //
+    // Fix ĐÚNG TẦNG nằm ở `TiengVietValidator`: "kr" hiện nhận MỌI vần, nên
+    // "kri" được coi là âm tiết hợp lệ và ăn được dấu. Vần kr- thực tế chỉ có
+    // trong tên gọi Tây Nguyên (krông, krăk…); siết `ValidInitials`/vần cho
+    // "kr" mới lấy lại được cả hai. Chưa siết thì đây là đánh đổi có ý thức:
+    // ưu tiên địa danh tiếng Việt hơn một nhúm từ tiếng Anh hiếm.
+    "tw", "dw", "sh", "ps", "pn", "ts", "kn",
     "bb", "cc", "ff", "gg", "hh", "jj", "kk", "ll",
     "mm", "nn", "pp", "qq", "rr", "ss", "tt", "vv",
     "xx", "zz"
@@ -120,9 +154,12 @@ struct WordBuffer {
 
   mutating func newWord(storePrevious: Bool = false) {
     previousWordState = nil
+    previousKeys = []
     if !wordState.isBlank {
       if storePrevious {
         previousWordState = wordState
+        // v4.23: giữ CẢ phím dấu — xem chú thích ở `previousKeys`.
+        previousKeys = keys
       }
       wordState = .empty
     }
@@ -165,7 +202,12 @@ struct WordBuffer {
       if let prev = previousWordState {
         wordState = prev
         previousWordState = nil
-        keys = Array(wordState.chuKhongDau)
+        // v4.23: replay từ chuỗi phím GỐC. `chuKhongDau` không mang phím dấu
+        // nên dựng lại từ nó làm mọi backspace kế tiếp mất dấu (xem
+        // `previousKeys`). Fallback giữ hành vi cũ cho ai gán thẳng
+        // `previousWordState` mà không qua `newWord(storePrevious:)`.
+        keys = previousKeys.isEmpty ? Array(wordState.chuKhongDau) : previousKeys
+        previousKeys = []
         transformed = wordState.transformed
         lastTransformed = transformed
         stopProcessing = false
@@ -197,6 +239,12 @@ struct WordBuffer {
     stoppedByEnglishWord = false
     wordState = .empty
     lastValidSnapshot = nil
+    // v4.23: stage anywhere-dd cũng phải dựng lại theo chuỗi phím replay. Trước
+    // đây vòng lặp dưới ghi vào một biến CỤC BỘ nên `self.ddToggleStage` giữ
+    // nguyên giá trị của từ TRƯỚC khi backspace: "vcdd" → "vcđ" (stage=1), BS
+    // đưa màn hình về "vcd" mà stage vẫn 1 → gõ 'd' lại không toggle được nữa
+    // (ra "vcdd"), và mọi 'd' sau đó cũng vậy cho tới hết từ.
+    ddToggleStage = 0
 
     if keys.isEmpty {
       transformed = ""
@@ -205,8 +253,6 @@ struct WordBuffer {
 
     var currentKeys: [Character] = []
     var currentSnapshot: Snapshot? = nil
-    // 1.9.7: local stage cho anywhere-dd toggle khi replay recovery state.
-    var localDdToggleStage = 0
 
     for k in keys {
       let lastTransformedForStep = transformed
@@ -255,14 +301,16 @@ struct WordBuffer {
 
       if stopProcessing {
         // 1.9.7: anywhere-dd toggle khi replay recovery — match forward typing.
+        // v4.23: dùng THẲNG `ddToggleStage` (đã reset ở đầu hàm) thay cho biến
+        // cục bộ, để trạng thái sau replay khớp với màn hình.
         if k == "d" || k == "D" {
-          switch localDdToggleStage {
+          switch ddToggleStage {
           case 0:
             if let last = transformed.last, last == "d" || last == "D" {
               let lastIsUpper = last == "D"
               transformed.removeLast()
               transformed.append(lastIsUpper ? "Đ" : "đ")
-              localDdToggleStage = 1
+              ddToggleStage = 1
               wordState = wordState.push(k)
               continue
             }
@@ -271,7 +319,7 @@ struct WordBuffer {
               let wasUpper = last == "Đ"
               transformed.removeLast()
               transformed.append(contentsOf: wasUpper ? "DD" : "dd")
-              localDdToggleStage = 2
+              ddToggleStage = 2
               wordState = wordState.push(k)
               continue
             }
@@ -282,7 +330,7 @@ struct WordBuffer {
             break
           }
         } else {
-          localDdToggleStage = 0
+          ddToggleStage = 0
         }
         transformed.append(k)
         wordState = wordState.push(k)
@@ -687,79 +735,20 @@ struct WordBuffer {
   }
 }
 
-// MARK: - TransformationTracker
-
-/// TransformationTracker monitors for repeated transformation failures
-/// and auto-switches the sending strategy when a pattern is detected.
-/// This helps apps where the default strategy doesn't work reliably.
-struct TransformationTracker {
-
-  /// Current sending strategy for the active app
-  var currentStrategy: SendingStrategy = .batch
-  private var consecutiveFailures = 0
-  private var consecutiveHighRiskTransforms = 0
-
-  // MARK: - Strategy Management
-
-  mutating func resetForApp(_ bundleId: String) {
-    currentStrategy = EventSimulator.getStrategy(for: bundleId)
-    consecutiveFailures = 0
-    consecutiveHighRiskTransforms = 0
-  }
-
-  /// Detect transformation failures based on event creation status and
-  /// repeated high-risk transforms on apps that are known to be sensitive.
-  mutating func detectFailure(
-    telemetry: EventSendTelemetry,
-    appLikelySensitive: Bool
-  ) -> Bool {
-    guard telemetry.attemptedTransform else {
-      consecutiveHighRiskTransforms = max(0, consecutiveHighRiskTransforms - 1)
-      return false
-    }
-
-    if telemetry.createdEvents {
-      consecutiveFailures = max(0, consecutiveFailures - 1)
-    } else {
-      consecutiveFailures += 1
-    }
-
-    let isHighRisk = appLikelySensitive
-      && !telemetry.usedAsyncQueue
-      && telemetry.touchedCharacters >= 3
-    if isHighRisk {
-      consecutiveHighRiskTransforms += 1
-    } else {
-      consecutiveHighRiskTransforms = max(0, consecutiveHighRiskTransforms - 1)
-    }
-
-    return consecutiveFailures >= 2 || consecutiveHighRiskTransforms >= 3
-  }
-
-  /// Auto-switches to step-by-step mode if failures are detected.
-  mutating func autoSwitchIfNeeded(activeApp: String) {
-    guard Defaults[.autoSwitchStrategy] else { return }
-
-    // Don't auto-switch if already using step-by-step
-    if case .stepByStep = currentStrategy { return }
-
-    // v2.14: axDirect là strategy ĐẶC CHỦNG cho app nuốt synthetic event
-    // (Spotlight) — auto-switch sang stepByStep sẽ vô hiệu hoá nó và loạn
-    // chữ trở lại. Telemetry "fail" ở đây thường là false positive (Spotlight
-    // là search field → bị đánh dấu nhạy cảm).
-    if case .axDirect = currentStrategy { return }
-
-    // Switch to step-by-step for this session
-    #if DEBUG
-    let appName = EventSimulator.getAppName(for: activeApp)
-    print("[vkey] Auto-switched from \(currentStrategy) to step-by-step mode for \(appName) due to failures")
-    #endif
-
-    currentStrategy = .stepByStep
-  }
-}
-
 // MARK: - InputProcessor
+//
+// v4.23: `TransformationTracker` (đếm lỗi transform để TỰ đổi chiến lược gửi
+// phím) đã bị GỠ HẲN cùng công tắc `autoSwitchStrategy`. Nó là cơ chế chết:
+// `isHighRisk` đòi `!telemetry.usedAsyncQueue`, mà MỌI chỗ dựng
+// `EventSendTelemetry` với `attemptedTransform == true` đều đặt
+// `usedAsyncQueue: true` — bộ đếm high-risk không bao giờ tăng.
+// Nhánh còn lại (`consecutiveFailures >= 2`) thì bật được, nhưng chỉ khi
+// `CGEventSource(stateID: .privateState)` trả nil HAI LẦN liên tiếp — tức lỗi
+// hệ thống, không phải lỗi gõ. Nên cơ chế không bao giờ phản ứng với thứ nó
+// sinh ra để phát hiện (app nuốt/đảo synthetic event), và công tắc vô nghĩa.
+// Chiến lược gửi phím nay tra
+// thẳng `EventSimulator.getStrategy(for:)` (xem `effectiveTypingStrategy`).
+// Đừng dựng lại nếu chưa có phép đo chứng minh auto-switch cứu được app nào.
 
 class InputProcessor {
   static let FixAutocompleteApps = [
@@ -803,6 +792,21 @@ class InputProcessor {
   public var typingMethod: TypingMethods
   public var keyLayout = KeyboardUS()
   public var activeApp = ""
+
+  /// Ô đang focus có AX role là `AXSearchField` / `AXComboBox` không (AppState
+  /// đẩy vào). Đây là tín hiệu duy nhất phân biệt ô tìm kiếm có inline
+  /// autocomplete với web text area.
+  ///
+  /// v2.3.10: trước đó vkey nhận diện "app cần Shift+Left" theo bundle ID
+  /// (`FixAutocompleteApps`), nên cả text area của Google Docs/Sheets cũng bị
+  /// tính vào → Shift+Left bị JS handler của contenteditable bỏ qua, selection
+  /// không đổi mà vkey vẫn `sendString` → mọi âm tiết bị nhân đôi ("trình" →
+  /// "trinình", "các" → "cacác"). Chuyển sang AX role thì Docs/Sheets rơi về
+  /// `AXTextArea` và đi đường backspace bình thường.
+  ///
+  /// v4.23: hàm bọc `isFixAutocompleteApp()` đã gỡ cùng `TransformationTracker`
+  /// — nó chỉ còn phục vụ tham số `appLikelySensitive` của cơ chế chết đó.
+  /// Giữ lại chính cờ này vì nó là dữ liệu AX thật, không phải suy đoán.
   public var isSearchOrComboFocused = false
 
   /// v3.9: phân loại field đang focus (push-based từ AppState) — quyết định
@@ -820,11 +824,11 @@ class InputProcessor {
   /// Word buffer manages the current word state
   var wordBuffer = WordBuffer()
 
-  /// Transformation tracker manages per-app strategy and failure detection
-  var strategyTracker = TransformationTracker()
-
-  /// Track pasteboard change count to detect external paste operations
-  private var lastPasteboardChangeCount: Int = NSPasteboard.general.changeCount
+  // ⚠️ ĐÃ THỬ VÀ ĐÃ LÙI (v4.23): một `DispatchGroup pendingReplacements` làm
+  // "sổ nợ" của `EventSimulator.simulationQueue`, để phím mà vkey KHÔNG nuốt
+  // được xếp SAU replacement đang bay thay vì đi thẳng qua event tap. Cơ chế đó
+  // đã gỡ hẳn — lý do đầy đủ ghi ở `effectiveTypingStrategy`. Đừng dựng lại nếu
+  // chưa đọc chỗ đó.
 
   // 1.6.0: Word prediction state — track 2 previous committed words để
   // feed bigram + trigram model. `activePrediction` lưu prediction đang
@@ -912,9 +916,53 @@ class InputProcessor {
     return focused
   }
 
+  /// ⚠️ CỐ Ý KHÔNG GỌI `newWord()` Ở ĐÂY — ĐÃ THỬ, ĐÃ LÙI (v4.23). ĐỌC HẾT
+  /// TRƯỚC KHI "SỬA".
+  ///
+  /// (a) LỖI GỐC (P1, có thật, vẫn còn): số backspace của lần thay thế kế tiếp
+  ///     tính từ `transformed` của app CŨ, nên bộ đệm sống sót qua ranh giới app
+  ///     sẽ xoá vào văn bản CÓ SẴN của app mới. Gõ "vie" ở Safari, một app khác
+  ///     cướp focus mà KHÔNG sinh keyDown/mouseDown (nên không đường nào gọi
+  ///     `newWord()`), gõ tiếp "t" → calcKeyStrokes("vie"→"viêt") = 1 backspace
+  ///     + "êt", và backspace đó ăn mất ký tự cuối của ô bên app mới.
+  ///     Đường xoá cũ là `EventHook.setEnabled` (Smart Switch áp lại chế độ khi
+  ///     đổi app); v4.22 siết nó thành "chỉ khi trạng thái THẬT SỰ đổi" nên từ
+  ///     đó không còn đường nào xoá bộ đệm ở ranh giới app.
+  /// (b) ĐÃ VÁ THẾ NÀO: thêm `if app != activeApp { newWord() }` ngay tại đây —
+  ///     đúng tầng, và guard `!=` để không cắt từ khi hàm bị gọi lại cùng bundle.
+  /// (c) HỒI QUY ĐẺ RA: hàm này chạy trong callback event-tap, và trên macOS 26
+  ///     `activeApp` DAO ĐỘNG mỗi phím ở overlay (Spotlight): hai khối trong
+  ///     `EventHook.eventTapCallback` ghi nó từ hai nguồn lệch nhau
+  ///     (`eventTargetUnixProcessID` trả app NỀN, còn AX trả Spotlight). Guard
+  ///     `!=` vì thế đúng mà vô dụng — mỗi phím vẫn là một lần "đổi app" thật
+  ///     sự khác giá trị → `newWord()` xoá bộ đệm ở MỌI phím → `transformed`
+  ///     luôn rỗng → không dấu nào hình thành nữa, gõ tiếng Việt âm thầm thành
+  ///     gõ tiếng Anh. Vòng vá tiếp theo (gộp hai khối kia thành một bộ phân
+  ///     giải duy nhất) lại đẻ hồi quy khác — xem chú thích trong EventHook.
+  /// (d) QUYẾT ĐỊNH: sống chung với P1. Nó cần một chuỗi thao tác hiếm (đổi
+  ///     focus không qua chuột/bàn phím, GIỮA một từ dở) và hỏng đúng một ký
+  ///     tự; còn bản vá thì làm hỏng việc gõ tiếng Việt nói chung. Muốn vá lại
+  ///     thì điều kiện tiên quyết là `activeApp` phải ỔN ĐỊNH mỗi phím — chứng
+  ///     minh điều đó TRƯỚC trên máy thật (macOS 26 + Spotlight + Chrome web
+  ///     content), rồi mới tính đến việc xoá bộ đệm ở đây.
   public func changeActiveApp(_ app: String) {
+    let appChanged = app != activeApp
     activeApp = app
-    strategyTracker.resetForApp(app)
+    if appChanged {
+      // P8 (GIỮ, không thuộc phần bị lùi): cắt cửa sổ n-gram khi đổi app. Chỉ
+      // đụng `prev1Committed`/`prev2Committed` + cờ viết hoa, KHÔNG đụng bộ đệm
+      // từ đang gõ — nên không mất ký tự nào kể cả khi `activeApp` dao động như
+      // mô tả ở (c). ĐỪNG đọc thành "vô hại": trong lúc dao động, reset chạy
+      // MỖI PHÍM, nên `prev1Committed` luôn nil ⇒ bigram/trigram không bao giờ
+      // tra được và NGramStore không học cặp nào ở app đó; `pendingCapitalize`
+      // cũng bị xoá giữa Enter và phím chữ (gõ ra `a` thay vì `A`). Đó là xuống
+      // cấp gợi ý + viết hoa, chấp nhận được so với việc mất chữ, và đúng ý đồ
+      // A5 (đổi app = gián đoạn ngữ cảnh câu) khi app đổi THẬT.
+      // Đã truy riêng: KHÔNG sinh trạng thái lệch giữa cờ viết hoa và bộ đệm từ
+      // — `pendingCapitalize` chỉ bật bởi Enter/Space, cả hai đều qua `newWord()`,
+      // nên không dựng được ca "cờ bật + bộ đệm còn chữ".
+      resetSentenceCapitalizeState()
+    }
     clearActivePrediction()
     updateAdaptiveFlushDelay()
     refreshWordPredictionState()
@@ -928,6 +976,17 @@ class InputProcessor {
   public func resetSentenceCapitalizeState() {
     pendingCapitalize = false
     sentenceJustEnded = false
+    // v4.23: cửa sổ n-gram phải chết cùng ngữ cảnh câu. `prev1Committed`/
+    // `prev2Committed` trước đây chỉ có chỗ GHI (lúc commit), không chỗ nào gán
+    // nil — nên từ commit ở app/dòng TRƯỚC ghép với từ đầu tiên gõ ở chỗ MỚI
+    // thành một bigram RÁC, và cặp đó được ghi VĨNH VIỄN vào NGramStore
+    // (Defaults user-bigrams): commit "lương" trong Zalo, sang Xcode gõ tiếp là
+    // học cặp ("lương", <từ đầu tiên ở Xcode>). HUD cũng gợi ý theo câu của app
+    // trước. Mọi đường gọi hàm này (đổi app, Escape, mũi tên/Home/End, tổ hợp
+    // Cmd/Ctrl/Alt, click chuột trong EventHook) đều là gián đoạn ngữ cảnh nên
+    // là đúng chỗ để cắt cửa sổ.
+    prev1Committed = nil
+    prev2Committed = nil
   }
 
   /// Ẩn HUD / xoá prediction khi đoán từ không còn active (đổi app,
@@ -1011,9 +1070,14 @@ class InputProcessor {
       return Unmanaged.passUnretained(event)
     }
 
-    // Cập nhật changeCount để theo dõi paste thực — không reset word khi
-    // clipboard đổi từ app khác (trước đây gây mất buffer giữa chừng).
-    lastPasteboardChangeCount = NSPasteboard.general.changeCount
+    // v4.23: bỏ hẳn `lastPasteboardChangeCount = NSPasteboard.general.changeCount`
+    // ở đây. Biến đó chỉ có GHI, không chỗ nào ĐỌC — tính năng "phát hiện dán từ
+    // ngoài" mà comment cũ nhắc tới đã không còn tồn tại. Mà `changeCount` là một
+    // round-trip tới pasteboard server, chạy trên thread event-tap cho MỌI phím
+    // không kèm modifier: đúng loại chi phí làm macOS tắt tap khi máy tải nặng.
+    // KHÔNG khôi phục, vì mọi đường dán đều đã xoá bộ đệm sẵn: ⌘V rơi vào nhánh
+    // modifier ngay phía trên (`newWord()`), còn dán bằng menu / chuột phải thì
+    // mouseDown trong `EventHook` cũng đã gọi `newWord()`.
 
     // Dispatch based on key type
     if let taskKey = keyLayout.mapTask(keyCode: keyCode) {
@@ -1071,6 +1135,9 @@ class InputProcessor {
         clearActivePrediction()
       }
       newWord(storePrevious: taskKey == .Space)
+      // Space rơi xuống cuối hàm và được trả về app như event THẬT.
+      // (Đã thử hoãn nó qua `passThroughOrDefer` để giữ thứ tự với replacement
+      // đang bay — đã lùi, xem `effectiveTypingStrategy`.)
     } else if taskKey == .Escape {
       resetSentenceCapitalizeState()  // Esc = gián đoạn, huỷ chờ viết hoa
       let orig = String(wordBuffer.keys)
@@ -1082,8 +1149,7 @@ class InputProcessor {
         sendTypedReplacement(
           backspaceCount: numBackspaces,
           diffChars: diffChars,
-          usesNFC: usesNFC,
-          appLikelySensitive: isFixAutocompleteApp()
+          usesNFC: usesNFC
         )
         newWord()
         return nil // swallow ESC event
@@ -1097,8 +1163,7 @@ class InputProcessor {
         sendTypedReplacement(
           backspaceCount: numBackspaces,
           diffChars: diffChars,
-          usesNFC: usesNFC,
-          appLikelySensitive: isFixAutocompleteApp()
+          usesNFC: usesNFC
         )
         return nil
       }
@@ -1127,6 +1192,8 @@ class InputProcessor {
         return nil
       }
       newWord(storePrevious: true)
+      // Dấu câu kết từ trả về app như event THẬT. (Đã thử hoãn nó qua
+      // `passThroughOrDefer` — đã lùi, xem `effectiveTypingStrategy`.)
       return Unmanaged.passUnretained(event)
     }
 
@@ -1152,13 +1219,25 @@ class InputProcessor {
     push(char: newChar)
 
     if didAutoCapitalize {
+      // v4.23: phát KẾT QUẢ ENGINE, không phát `newChar` thô. Nhánh cũ giả định
+      // engine không bao giờ đụng ký tự ĐẦU của từ — sai khi `allowedZWJF` TẮT:
+      // Telex biến 'w' đứng một mình thành 'ư' (Telex.swift, nhánh w→ư). Khi đó
+      // lệnh gửi đi là "W" trong khi bộ đệm tin rằng màn hình có "Ư", mà event
+      // gốc thì bị nuốt (`return nil`) → mọi phím sau diff trên nền sai và cả từ
+      // hỏng. Diff từ `lastTransformed` (giá trị TRƯỚC push) sang `transformed`
+      // luôn đúng, kể cả khi engine không đụng gì (khi đó vẫn ra đúng 1 ký tự).
+      let usesNFC = usesNFCForFocusedField()
+      var (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+        from: lastTransformed, to: transformed, usesNFC: usesNFC)
+      if numBackspaces == 0 && diffChars.isEmpty {
+        // Lưới an toàn: đã nuốt event gốc rồi thì không được phát ra rỗng.
+        diffChars = [newChar]
+      }
       sendTypedReplacement(
-        backspaceCount: 0,
-        diffChars: [newChar],
-        // Chèn thuần (backspaceCount 0) — không có trục diff phải khớp; dạng
-        // emit vẫn bám field để ô tìm kiếm NFC nhận text precomposed.
-        usesNFC: usesNFCForFocusedField(),
-        appLikelySensitive: isFixAutocompleteApp()
+        backspaceCount: numBackspaces,
+        diffChars: diffChars,
+        // Dạng emit bám field để ô tìm kiếm NFC nhận text precomposed.
+        usesNFC: usesNFC
       )
       return nil
     }
@@ -1181,14 +1260,17 @@ class InputProcessor {
     if let firstDiffChar = diffChars.first,
       diffChars.count == 1 && firstDiffChar == newChar && numBackspaces == 0
     {
+      // Thả thẳng phím thật về app. ĐÂY là chỗ hai đường (event tap đồng bộ vs
+      // `simulationQueue` async) tách nhau — nguồn của race "push" → "pussh".
+      // Cách chống race vẫn là hạ chiến lược xuống `.batch` cho diff nhỏ, xem
+      // `effectiveTypingStrategy`; cơ chế hoãn phím đã thử và đã lùi.
       return Unmanaged.passUnretained(event)
     }
 
     sendTypedReplacement(
       backspaceCount: numBackspaces,
       diffChars: diffChars,
-      usesNFC: usesNFC,
-      appLikelySensitive: false
+      usesNFC: usesNFC
     )
     return nil
   }
@@ -1227,8 +1309,7 @@ class InputProcessor {
       sendTypedReplacement(
         backspaceCount: 0,
         diffChars: Array(prediction),
-        usesNFC: usesNFCForFocusedField(),
-        appLikelySensitive: isFixAutocompleteApp()
+        usesNFC: usesNFCForFocusedField()
       )
       PredictionEngine.shared.learnAcceptedPhrase(
         prediction,
@@ -1251,8 +1332,7 @@ class InputProcessor {
       sendTypedReplacement(
         backspaceCount: 0,
         diffChars: Array(recomputed),
-        usesNFC: usesNFCForFocusedField(),
-        appLikelySensitive: isFixAutocompleteApp()
+        usesNFC: usesNFCForFocusedField()
       )
       PredictionEngine.shared.learnAcceptedPhrase(
         recomputed,
@@ -1304,6 +1384,12 @@ class InputProcessor {
     case .Enter:
       pendingCapitalize = true
       sentenceJustEnded = false
+      // v4.23: Enter là ranh giới câu/dòng — cửa sổ n-gram của dòng trước không
+      // được nối sang dòng sau (xem `resetSentenceCapitalizeState`). Enter vốn
+      // KHÔNG chạy `applySpellDecisionOnCommit` nên từ đang gõ cũng chưa từng
+      // vào cửa sổ; cắt ở đây không mất dữ liệu học nào.
+      prev1Committed = nil
+      prev2Committed = nil
     case .Space:
       if sentenceJustEnded {
         pendingCapitalize = true
@@ -1320,15 +1406,6 @@ class InputProcessor {
     }
   }
 
-  private func observeTelemetry(_ telemetry: EventSendTelemetry, appLikelySensitive: Bool) {
-    if strategyTracker.detectFailure(
-      telemetry: telemetry,
-      appLikelySensitive: appLikelySensitive
-    ) {
-      strategyTracker.autoSwitchIfNeeded(activeApp: activeApp)
-    }
-  }
-
   /// Gửi replacement với chiến lược đúng ngữ cảnh (axDirect cho omnibox Chrome…).
   ///
   /// - Parameter usesNFC: quyết định chuẩn hoá của caller — PHẢI là chính giá
@@ -1342,13 +1419,15 @@ class InputProcessor {
   private func sendTypedReplacement(
     backspaceCount: Int,
     diffChars: [Character],
-    usesNFC: Bool,
-    appLikelySensitive: Bool
+    usesNFC: Bool
   ) -> EventSendTelemetry {
     let strategy = effectiveTypingStrategy(
       backspaceCount: backspaceCount,
       diffCharCount: diffChars.count
     )
+    // v4.23: bỏ tham số `appLikelySensitive`. Nó chỉ có một người dùng duy nhất
+    // là `observeTelemetry` → `TransformationTracker` (đã gỡ, xem MARK
+    // InputProcessor). Telemetry trả về giữ nguyên: đó là báo cáo của transport.
     let telemetry = EventSimulator.sendReplacement(
       backspaceCount: backspaceCount,
       diffChars: diffChars,
@@ -1357,17 +1436,56 @@ class InputProcessor {
       // caller đã dùng để chọn trục diff. NFC precompose, NFD giữ nguyên.
       normalizeToNFC: usesNFC
     )
-    observeTelemetry(telemetry, appLikelySensitive: appLikelySensitive)
     return telemetry
   }
 
   /// For tiny diffs (common during Telex tone mutation), force immediate batch sending
   /// to avoid async reordering with the next keystroke (e.g. "push" -> "pussh").
+  ///
+  /// ⚠️ NHÁNH `bs<=1 && diff<=1 → .batch` Ở CUỐI HÀM LÀ CÓ CHỦ Ý, KỂ CẢ KHI APP
+  /// ĐƯỢC CẤU HÌNH `.stepByStep`. ĐÃ THỬ MIỄN TRỪ, ĐÃ LÙI (v4.23):
+  ///
+  /// (a) LỖI GỐC (P5, có thật, vẫn còn): app trong whitelist `.stepByStep`
+  ///     (Telegram, Terminal/Warp/Hyper, Claude, Dock…) được chọn CHÍNH VÌ chúng
+  ///     cần nhịp nghỉ giữa backspace và ký tự thay thế — `EventSimulator
+  ///     .sendReplacement` nhánh `.stepByStep` có `usleep(3000)` chắn hai đầu,
+  ///     nhánh `.batch` thì không có khoảng nghỉ nào. Nhưng bs=1/diff=1 lại đúng
+  ///     là nhóm phím PHỔ BIẾN NHẤT (dd→đ, aa→â, ee→ê, oo→ô, w→ư/ơ, và mọi phím
+  ///     dấu gõ ngay sau nguyên âm cuối), nên ở nhóm đó chúng MẤT cushion.
+  /// (b) ĐÃ VÁ THẾ NÀO: thêm `if case .stepByStep = appStrategy { return
+  ///     .stepByStep }` ngay TRƯỚC nhánh `bs<=1 && diff<=1`.
+  /// (c) HỒI QUY ĐẺ RA — hai tầng, tầng sau nặng hơn tầng trước:
+  ///     • Bỏ downgrade là dựng lại đúng race mà docstring trên mô tả: phím 's'
+  ///       của "push" nằm ~8ms trên `simulationQueue`, phím 'h' không đổi gì nên
+  ///       đi THẲNG qua event tap → app nhận "puh" rồi mới nhận backspace →
+  ///       "pussh"/"puú".
+  ///     • Vá tiếp bằng cơ chế hoãn phím (`pendingReplacements` +
+  ///       `passThroughOrDefer`: nuốt phím thật, phát lại bằng `sendString` ở
+  ///       cuối hàng đợi) thì hỏng nặng hơn nữa. Hai chỗ chí mạng: `sendString`
+  ///       KHÔNG đi qua đường `.axDirect`, nên trong Spotlight/omnibox — đúng
+  ///       những ô phải dùng axDirect vì chúng nuốt synthetic event — ký tự hoãn
+  ///       mất hẳn; và Enter/Tab thì KHÔNG hoãn được (chúng mang ngữ nghĩa
+  ///       submit/chuyển field mà `sendString` không tái tạo), nên trong app chat
+  ///       `.stepByStep` gõ "chaof" rồi Enter là gửi đi tin "chao", còn backspace
+  ///       + "ò" rơi vào ô soạn của tin KẾ TIẾP.
+  /// (d) QUYẾT ĐỊNH: giữ downgrade. Chấp nhận `.stepByStep` không có cushion ở
+  ///     ca diff 1 ký tự — thiếu cushion thì thỉnh thoảng rớt/lặp một ký tự và
+  ///     người dùng gõ lại được; còn hai bản vá kia làm mất chữ trong Spotlight
+  ///     và gửi tin nhắn dở. Muốn vá lại thì phải giải bài toán THỨ TỰ mà không
+  ///     đổi ĐƯỜNG gửi (giữ nguyên axDirect, giữ nguyên event thật cho
+  ///     Enter/Tab), và phải kiểm được trên máy thật — không unit test nào ở
+  ///     đây chạm tới timing này.
   private func effectiveTypingStrategy(backspaceCount: Int, diffCharCount: Int) -> SendingStrategy {
+    // v4.23: tra thẳng bảng per-app. Trước đây giá trị này nằm trong
+    // `strategyTracker.currentStrategy`, vốn cũng chỉ được gán bằng đúng lời gọi
+    // này ở `resetForApp` và không bao giờ đổi nữa (auto-switch là cơ chế chết,
+    // đã gỡ) — nên hành vi chọn chiến lược không đổi.
+    let appStrategy = EventSimulator.getStrategy(for: activeApp)
+
     // axDirect (set qua bundle-id getStrategy) KHÔNG được downgrade — đa số
     // transform dấu là bs=1+diff=1; downgrade về .batch sẽ gửi synthetic event
     // vào Spotlight và loạn chữ trở lại.
-    if case .axDirect = strategyTracker.currentStrategy {
+    if case .axDirect = appStrategy {
       return .axDirect
     }
     // v3.9: browser-chrome field (thanh địa chỉ Chrome…) có inline autocomplete
@@ -1376,10 +1494,11 @@ class InputProcessor {
     if focusedFieldIsBrowserChrome() {
       return .axDirect
     }
+    // `.stepByStep` KHÔNG được miễn trừ ở đây — xem mục (c)/(d) trong docstring.
     if backspaceCount <= 1 && diffCharCount <= 1 {
       return .batch
     }
-    return strategyTracker.currentStrategy
+    return appStrategy
   }
 
   /// Chạy spell decision cho phím kết từ RỒI sang từ mới.
@@ -1563,12 +1682,13 @@ class InputProcessor {
           EventSimulator.sendString(typed, source: source)
         }
       }
-      observeTelemetry(EventSendTelemetry(
-        attemptedTransform: true,
-        createdEvents: true,
-        usedAsyncQueue: true,
-        touchedCharacters: current.count + target.count
-      ), appLikelySensitive: false)
+      // ⚠️ Đây là chuỗi gửi DÀI NHẤT trong vkey (Option+Backspace + usleep 10ms
+      // + gõ lại cả từ), nên cũng là cửa sổ race rộng nhất: phím đầu của TỪ KẾ
+      // TIẾP lọt qua event tap trước khi chuỗi này bay xong thì bị chính
+      // Option+Backspace xoá luôn. Đã thử đóng cửa sổ đó bằng hàng rào thứ tự
+      // (`pendingReplacements`) — đã lùi vì cơ chế hoãn phím đẻ hồi quy nặng
+      // hơn; xem `effectiveTypingStrategy`. Race này vì vậy VẪN CÒN, chỉ hiếm
+      // (đòi gõ tiếp trong ~10ms sau khi tự sửa chính tả kích hoạt).
       return true
 
     case .suggest(let suggestions):
@@ -1594,35 +1714,10 @@ class InputProcessor {
       sendTypedReplacement(
         backspaceCount: numBackspaces,
         diffChars: diffChars,
-        usesNFC: usesNFC,
-        appLikelySensitive: isFixAutocompleteApp()
+        usesNFC: usesNFC
       )
       return true
     }
-  }
-
-  /// v2.3.10: Detect khi nào nên dùng `sendSelectAndReplace` (Shift+Left) thay
-  /// vì backspace-based replacement. Chỉ áp dụng cho **search fields / combo
-  /// boxes** thực sự — nơi có inline autocomplete ghost text mà Shift+Left
-  /// bao trùm đúng cách.
-  ///
-  /// Trước v2.3.10: cũng return true cho TẤT CẢ Chrome / Safari / Firefox /…
-  /// (bundle ID match) — kể cả khi user đang gõ trong text area của Google
-  /// Docs / Sheets / web app. Hệ quả: Shift+Left bị contenteditable JS handler
-  /// của Docs bỏ qua → vkey gửi sendString sau Shift+Left mà selection chưa
-  /// thay đổi → mọi syllable Vietnamese bị duplicate ("trình → trinình",
-  /// "các → cacác", "kiểm → kiêmểm"…).
-  ///
-  /// Sau v2.3.10: chỉ check `isSearchOrComboFocused` (AX role = AXSearchField
-  /// hoặc AXComboBox). Browser URL bar / Google search box vẫn matched (search
-  /// field role) → giữ behavior cũ cho autocomplete URL. Web text area (Docs,
-  /// Sheets, contenteditable) role = AXTextArea → fall through sang
-  /// `sendReplacement` (backspace), hoạt động đúng trong contenteditable.
-  ///
-  /// `FixAutocompleteApps` list giữ lại cho documentation / future regression
-  /// (vd nếu một browser không expose AX role đúng — chưa thấy case nào).
-  func isFixAutocompleteApp() -> Bool {
-    return isSearchOrComboFocused
   }
 
   /// v2.3.13: Phân biệt apps theo text storage model để chọn diff algorithm:
@@ -1714,6 +1809,21 @@ class InputProcessor {
       // Chrome giữ nguyên NFC ở <input>, <input type=search> và
       // contenteditable (đo bằng cách gửi U+1EEF U+1EC1 rồi đọc lại AXValue).
       //
+      // ⚠️ GIỚI HẠN CỦA PHÉP ĐO — đọc kỹ trước khi lật trục này:
+      // Tất cả những gì đã đo ở trên là DẠNG LƯU TRỮ (AXValue / nội dung copy
+      // ra). Cái mà `calcKeyStrokes` thật sự cần lại là ĐƠN VỊ XOÁ của một
+      // synthetic backspace trong Blink — grapheme hay scalar — và repo CHƯA
+      // TỪNG đo con số đó. Hai thứ có thể lệch nhau (AX có thể chuẩn hoá trên
+      // đường ra), và có bằng chứng thực địa NGƯỢC chiều: CHANGELOG 4.15 ghi
+      // rằng quay về emit NFD + đếm NFD thì HẾT lỗi rụng phụ âm đầu trên
+      // Chrome/Electron/Slack/Discord. Nhánh này vì vậy là GIẢ ĐỊNH, không
+      // phải kết luận.
+      // Phép đo còn thiếu: trong ô web của Chrome, gõ một chữ có dấu (vd "ề"),
+      // gửi ĐÚNG 1 synthetic backspace, rồi đọc lại AXValue — nếu còn "e" thì
+      // Blink xoá theo scalar (trục NFD đúng), nếu ô rỗng thì xoá theo grapheme
+      // (trục NFC đúng). Chưa có số này thì đừng đổi logic ở đây theo cả hai
+      // chiều.
+      //
       // Giới hạn ở trình duyệt, KHÔNG áp cho mọi web content: Electron
       // (Slack/Discord/Zalo) cũng là web content nhưng chưa đo, nên giữ NFD
       // như cũ — đó cũng chính là phạm vi mà cờ 4.16 phóng quá tay.
@@ -1753,14 +1863,49 @@ class InputProcessor {
     macros: [Macro]
   ) -> String? {
     guard !current.isEmpty else { return nil }
+    let usable = macros.filter { !$0.from.isEmpty && !$0.to.isEmpty }
+
+    // Khớp CHÍNH XÁC trước: người dùng có thể khai hai macro chỉ khác hoa/thường
+    // ("vn" và "VN"), cả hai phải giữ nguyên phần bung riêng của mình.
+    if let macro = usable.first(where: { $0.from == current }) {
+      return macro.to + String(endingChar)
+    }
+
+    // v4.23: rồi mới khớp ĐÚNG MỘT biến thể — bản đã bị auto-capitalize viết
+    // hoa chữ đầu. Auto-capitalize chạy TRƯỚC khi macro được tra, mà toàn bộ
+    // macro seed sẵn đều chữ thường và cả hai tính năng đều BẬT mặc định — nên
+    // ở đầu mỗi câu/dòng "vn" đã thành "Vn", `"vn" != "Vn"`, macro không bao
+    // giờ bung: ra "Vn " thay vì "Việt Nam ". Giữa câu thì bung bình thường,
+    // nên lỗi chỉ lộ ở đầu câu.
+    //
+    // ⚠️ KHÔNG được nới thành khớp-bỏ-qua-hoa/thường (bản đầu của bản vá này đã
+    // làm thế và đó là hồi quy): cộng với `matchCase` viết HOA TOÀN BỘ khi
+    // nguồn all-caps, mọi viết tắt người Việt gõ HOA CÓ CHỦ Ý đều bị nuốt —
+    // "PM " (giờ chiều / Project Manager) ra "± ", "VN "→"VIỆT NAM ",
+    // "HN "→"HÀ NỘI ", "CTY "→"CÔNG TY ", "ARR "→"→", "DEG "→"°". Trước đây
+    // chúng đi qua nguyên vẹn, và lỗi cần vá chỉ đòi biến thể hoa-CHỮ-ĐẦU.
+    // ALL-CAPS vì vậy KHÔNG khớp — muốn nó bung thì khai macro all-caps riêng,
+    // nhánh khớp chính xác ở trên phục vụ đúng việc đó.
+    //
+    // `matchCase` vẫn dùng cho phần bung (tiền lệ của nhánh gợi ý chính tả
+    // `.suggest`), nhưng ở đây nó chỉ còn đi vào nhánh "hoa chữ đầu".
     guard
-      let macro = macros.first(where: {
-        !$0.from.isEmpty && !$0.to.isEmpty && $0.from == current
-      })
+      let macro = usable.first(where: { Self.autoCapitalizedVariant(of: $0.from) == current })
     else {
       return nil
     }
-    return macro.to + String(endingChar)
+    return matchCase(of: current, to: macro.to) + String(endingChar)
+  }
+
+  /// Chuỗi mà auto-capitalize tạo ra từ một trigger: viết hoa ĐÚNG chữ cái đầu,
+  /// phần còn lại giữ nguyên — khớp chính xác thao tác trong `handleTextChar`
+  /// (`String(newChar).uppercased()` cho ký tự ĐẦU TIÊN của từ).
+  ///
+  /// Trả `nil` khi trigger không mở đầu bằng chữ thường: khi đó auto-capitalize
+  /// không đổi được gì, và nhánh khớp chính xác ở trên đã lo.
+  static func autoCapitalizedVariant(of trigger: String) -> String? {
+    guard let first = trigger.first, first.isLowercase else { return nil }
+    return String(first).uppercased() + trigger.dropFirst()
   }
 
   /// Diff thay từ trigger bằng phần macro bung ra.
@@ -1856,8 +2001,7 @@ class InputProcessor {
     sendTypedReplacement(
       backspaceCount: backspaceCount,
       diffChars: diffChars,
-      usesNFC: usesNFC,
-      appLikelySensitive: isFixAutocompleteApp()
+      usesNFC: usesNFC
     )
     return true
   }

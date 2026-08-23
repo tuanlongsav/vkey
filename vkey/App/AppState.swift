@@ -82,7 +82,17 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// 1.7.x: cached bundle ID của focused app — cập nhật bởi NSWorkspace
     /// notification (cross-app) và async AX refresh trên mouse-click
     /// (cho in-app sub-window focus). EventHook callback đọc property
-    /// này thay vì gọi `Focused.focusedAppBundleId()` đồng bộ.
+    /// này thay vì tự gọi AX đồng bộ trên thread event-tap.
+    /// (v4.23 đã gỡ `Focused.focusedAppBundleId()`; chỗ trước đây dùng nó nay
+    /// đọc bundle id từ `Focused.snapshot()`.)
+    /// ⚠️ Property này có NĂM người ghi, không phải một — `frontmostApplication`
+    /// lúc seed (:163) và lúc `didActivateApplication` (:283),
+    /// `eventTargetUnixProcessID` qua `noteFocusedBundleId` (:340),
+    /// và `Focused.snapshot()` ở
+    /// :366 + :444. Ba trong năm KHÔNG phải snapshot, và trên macOS 26 chúng
+    /// bất đồng với nhau khi có overlay (xem `EventHook.eventTapCallback`).
+    /// Đừng "dọn" khối v2.11 hay `noteFocusedBundleId` vì tưởng đã có nguồn duy
+    /// nhất — làm thế là dựng lại đúng lỗi Spotlight của v2.11/v4.11.
     public private(set) var currentFocusedBundleId: String?
     public private(set) var currentFocusedElementIsSearchOrCombo = false {
         didSet {
@@ -92,6 +102,11 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// v3.9: phân loại field đang focus (web content / hộp thoại native /
     /// field cửa sổ chính). InputProcessor dùng để chọn diff NFC/NFD và chiến
     /// lược gửi (omnibox Chrome = windowField của app NFD → axDirect).
+    ///
+    /// ⚠️ CỐ Ý GÁN THẲNG từ mỗi ảnh chụp AX, KHÔNG qua cổng lọc nào. Đã thử thêm
+    /// một cổng `adoptFieldKind` (đóng băng phân loại suốt một từ + không cho
+    /// phỏng đoán kém tin cậy ghi đè) — đã lùi; lý do đầy đủ ghi ở
+    /// `Focused.fieldKind(from:)`.
     public private(set) var currentFocusedFieldKind: Focused.FieldKind = .unknown {
         didSet {
             inputProcessor.focusedFieldKind = currentFocusedFieldKind
@@ -348,6 +363,11 @@ class AppState: ObservableObject, FileMonitorDelegate {
 
     /// v3.13: snapshot AX đồng bộ ngay trước transform — `focusedFieldKind` async
     /// không kịp sau Cmd+L / click omnibox rồi gõ nhanh.
+    ///
+    /// ⚠️ Hàm này chạy MỖI keyDown (EventHook), nên một hiccup AX GIỮA từ vẫn có
+    /// thể lật trục NFC/NFD (lỗi F1 — xem `Focused.fieldKind(from:)`). Đã thử
+    /// chặn tại đây bằng một cổng đóng băng phân loại theo từ — đã lùi, lý do
+    /// ghi ở chính `Focused.fieldKind(from:)`. Đừng thêm lại cổng ở tầng này.
     public func syncFocusedContextForKeystroke() {
         let snap = Focused.snapshot()
         if let bid = snap.bundleId {

@@ -118,6 +118,31 @@ enum TiengVietParser {
     return result
   }
 
+  /// Phân tích PHẦN ĐUÔI đứng sau nguyên âm: chỉ tách phụ âm cuối + phần dư,
+  /// KHÔNG tách nguyên âm.
+  ///
+  /// Các rule "swap nguyên âm" bên dưới gán sẵn `reparsed.nguyenAm` rồi mới phân
+  /// tích phần đuôi. Nếu dùng `finishParsing` thì bước tách nguyên âm của nó GHI
+  /// ĐÈ nguyên âm vừa gán khi đuôi bắt đầu bằng nguyên âm — ký tự biến mất mà
+  /// `needsRecovery` vẫn false nên không có đường phục hồi ("veia" → "va",
+  /// "boui" → "bỉ", "haoan" → "hoân", "afoot" → "òt").
+  /// Ở đây đuôi bắt đầu bằng nguyên âm rơi thẳng vào `conLai`, nên guard
+  /// `reparsed.conLai.isEmpty` sẵn có của từng rule tự loại bỏ phép swap.
+  private static func parseDuoiSauNguyenAm(
+    result: inout ThanhPhanTieng,
+    remaining: String
+  ) -> ThanhPhanTieng {
+    var remaining = remaining
+
+    if let matched = TiengViet.PhuAmCuoiTrie.findLongestPrefix(in: remaining) {
+      result.phuAmCuoi = Array(matched)
+      remaining = String(remaining.dropFirst(matched.count))
+    }
+
+    result.conLai = Array(remaining)
+    return result
+  }
+
   /// Re-compute whether the given vowel group should be flagged as a "uo"-class
   /// vowel (móc on both u and o → "ươ"). Reads from `TiengViet.NguyenAmUO` so
   /// future additions to that table propagate without code changes here.
@@ -166,7 +191,7 @@ enum TiengVietParser {
       let tail = String(result.conLai.dropFirst())
       var reparsed = ThanhPhanTieng()
       reparsed.nguyenAm = [iChar, eChar]
-      reparsed = finishParsing(result: &reparsed, remaining: tail)
+      reparsed = parseDuoiSauNguyenAm(result: &reparsed, remaining: tail)
       // FIX (loanword): chỉ swap khi reparse tiêu hoá HẾT (conLai rỗng) — nếu
       // còn rác phía sau thì là từ tiếng Anh, giữ nguyên (vd "their" → "thie"+
       // "r" ⇒ KHÔNG thành "thier"). "veit" → "ie"+"t" (rỗng) vẫn fire.
@@ -200,7 +225,7 @@ enum TiengVietParser {
       let tail = String(result.conLai.dropFirst())
       var reparsed = ThanhPhanTieng()
       reparsed.nguyenAm = [uChar, oChar]
-      reparsed = finishParsing(result: &reparsed, remaining: tail)
+      reparsed = parseDuoiSauNguyenAm(result: &reparsed, remaining: tail)
       // FIX (loanword "source" → "suorce"): chỉ áp swap khi sau khi reparse
       // KHÔNG còn rác (conLai rỗng) — tức "uo" + (phụ âm cuối hợp lệ | hết chữ).
       // Nếu vẫn còn ký tự thừa thì đây là từ tiếng Anh, KHÔNG phải gõ nhầm
@@ -236,7 +261,7 @@ enum TiengVietParser {
       let tail = String(result.conLai.dropFirst())
       var reparsed = ThanhPhanTieng()
       reparsed.nguyenAm = [oChar, aChar, iChar]
-      reparsed = finishParsing(result: &reparsed, remaining: tail)
+      reparsed = parseDuoiSauNguyenAm(result: &reparsed, remaining: tail)
       // FIX (loanword): chỉ swap khi reparse tiêu hoá HẾT (conLai rỗng) — nếu
       // còn rác phía sau thì là từ tiếng Anh, giữ nguyên. "haoi" → "oai" (rỗng)
       // vẫn fire.
@@ -265,7 +290,7 @@ enum TiengVietParser {
       let remainingStr = String(result.phuAmCuoi + result.conLai)
       var reparsed = ThanhPhanTieng()
       reparsed.nguyenAm = [oChar, aChar]
-      reparsed = finishParsing(result: &reparsed, remaining: remainingStr)
+      reparsed = parseDuoiSauNguyenAm(result: &reparsed, remaining: remainingStr)
       // Guard 1 (regression "DaoTao" → "DoaTao", bản gõ tăng dần): phụ âm cuối
       // viết HOA trong khi nguyên âm "ao" viết thường ⇒ đây là ranh giới âm tiết
       // mới kiểu camelCase ("Dao|Tao"), KHÔNG phải "oa" + phụ âm cuối ("hoác").
@@ -305,42 +330,40 @@ enum TiengVietParser {
       let telexTones: [Character: DauThanh] = ["s": .sac, "f": .huyen, "r": .hoi, "x": .nga, "j": .nang]
       let vniTones: [Character: DauThanh] = ["1": .sac, "2": .huyen, "3": .hoi, "4": .nga, "5": .nang]
 
-      // Check if there is a tone mark and it is NOT the last character in the input (otherwise it is a trailing tone mark, not misplaced)
+      // Bỏ qua PHỤ ÂM ĐẦU khi đi tìm phím dấu đặt sai chỗ: s/x/r/f/j vừa là phím
+      // dấu Telex vừa là phụ âm đầu hợp lệ. Vòng cũ `break` ngay ở ký tự dấu ĐẦU
+      // TIÊN nên với "trfong" nó chốt vào chữ 'r' của cụm "tr" rồi guard
+      // `index > 0` vô hiệu hoá cả Rule 5 → "trfong" không ra "trồng".
+      //
+      // KHÔNG bỏ qua phụ âm đầu loanword (w/z/j/f, chỉ có khi allowedZWJF bật):
+      // tiếng Việt không có từ bản địa mở đầu bằng các chữ đó nên phím dấu phía
+      // sau là chữ cái thật, không phải gõ nhầm. Bỏ qua thì "from" ra "fỏm",
+      // "free" ra "fể", "frost" ra "fót" — cùng lý do với `startsWithForeignConsonant`
+      // ở các rule swap phía trên.
+      let phuAmDauKhopDau = TiengViet.PhuAmDauTrie.findLongestPrefix(in: String(originalInput))
+      let doDaiPhuAmDau = startsWithForeignConsonant(Array(phuAmDauKhopDau ?? ""))
+        ? 0
+        : (phuAmDauKhopDau?.count ?? 0)
+
       var toneIndex: Int? = nil
-      for (i, char) in originalInput.enumerated() {
-        let lower = char.lowercased().first!
-        if telexTones[lower] != nil || vniTones[lower] != nil {
-          toneIndex = i
-          break
+      if doDaiPhuAmDau < originalInput.count {
+        for i in doDaiPhuAmDau..<originalInput.count {
+          let lower = originalInput[i].lowercased().first!
+          if telexTones[lower] != nil || vniTones[lower] != nil {
+            toneIndex = i
+            break
+          }
         }
       }
 
       if let index = toneIndex, index > 0, index < originalInput.count - 1 {
-        var foundTone: DauThanh? = nil
-        var strippedChars: [Character] = []
-
-        // Try Telex tones
-        for char in originalInput {
-          let lower = char.lowercased().first!
-          if let tone = telexTones[lower], foundTone == nil {
-            foundTone = tone
-          } else {
-            strippedChars.append(char)
-          }
-        }
-
-        // If not found in Telex, try VNI tones
-        if foundTone == nil {
-          strippedChars = []
-          for char in originalInput {
-            let lower = char.lowercased().first!
-            if let tone = vniTones[lower], foundTone == nil {
-              foundTone = tone
-            } else {
-              strippedChars.append(char)
-            }
-          }
-        }
+        // Xoá ĐÚNG ký tự vừa tìm được. Vòng strip cũ quét lại từ đầu và bỏ ký tự
+        // dấu đầu tiên gặp ở BẤT KỲ đâu, nên với "trfong" nó xoá nhầm chữ 'r'
+        // của phụ âm đầu ("tfong") thay vì chữ 'f' đặt sai chỗ.
+        let kyTuDau = originalInput[index].lowercased().first!
+        let foundTone: DauThanh? = telexTones[kyTuDau] ?? vniTones[kyTuDau]
+        var strippedChars = originalInput
+        strippedChars.remove(at: index)
 
         if let tone = foundTone, !strippedChars.isEmpty {
           let tempResult = rawParse(strippedChars)

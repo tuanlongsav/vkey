@@ -409,6 +409,30 @@ func eventTapCallback(
   // 1.7.x: KHÔNG gọi AX đồng bộ trong callback. Đọc `currentFocusedBundleId`
   // do AppState cache (cập nhật bởi NSWorkspace.didActivateApplicationNotification).
   // Trên mouse-click hoặc phím chuyển focus, trigger async refresh.
+  //
+  // ⚠️ ĐÃ LÙI (v4.23) — ĐỌC TRƯỚC KHI "DỌN" HAI KHỐI GHI `activeApp` DƯỚI ĐÂY.
+  // Đúng, ở callback keyDown này có HAI chỗ ghi `input.activeApp` từ HAI nguồn
+  // khác nhau: khối ngay dưới (event-target PID, v2.11) và khối v2.10 (cache
+  // `currentFocusedBundleId`). Trên macOS 26 gõ vào Spotlight, hai nguồn đó trả
+  // hai giá trị khác nhau nên `activeApp` dao động MỖI PHÍM. Đó là bằng chứng
+  // thật. Hậu quả ở hình dạng hiện tại: KHÔNG đụng bộ đệm từ (nên không mất ký
+  // tự, không mất dấu) — nhưng cũng KHÔNG phải là vô hại tuyệt đối: mỗi lần đổi
+  // giá trị vẫn chạy `resetSentenceCapitalizeState()` (P8), tức trong lúc dao
+  // động thì cửa sổ n-gram không tích luỹ được và cờ viết hoa đầu câu bị xoá
+  // giữa Enter và phím chữ kế tiếp (gõ ra `a` thay vì `A`). Xuống cấp gợi ý,
+  // không hỏng chữ — xem chú thích ở `InputProcessor.changeActiveApp`.
+  //   (b) Đã thử gộp thành "một bộ phân giải duy nhất" (overlay AX → event-target
+  //       PID → cache), gỡ hẳn khối v2.10, và kéo `syncFocusedContextForKeystroke()`
+  //       lên chạy TRƯỚC khối này.
+  //   (c) Hồi quy: cách gộp đó chỉ an toàn khi `changeActiveApp` KHÔNG xoá bộ đệm.
+  //       Nó đi kèm bản vá thêm `newWord()` vào `changeActiveApp`, và cặp đó biến
+  //       dao động vô hại thành xoá bộ đệm mỗi phím → không dấu nào hình thành
+  //       nữa. Việc kéo ảnh chụp AX lên sớm cũng đổi thời điểm đọc AX cho MỌI
+  //       phím — không có cách nào kiểm bằng unit test ở đây.
+  //   (d) Quyết định: giữ nguyên hai khối như HEAD. Muốn gộp lại thì phải chứng
+  //       minh trên máy thật (macOS 26 + Spotlight + Chrome web content) rằng
+  //       giá trị phân giải ổn định ở mọi phím, và tuyệt đối KHÔNG kèm theo việc
+  //       cho `changeActiveApp` xoá bộ đệm — xem chú thích ở chính hàm đó.
   if let appState = eventHook.appState {
     // v2.11: xác định app ĐÍCH của event bằng PID đọc TỪ CHÍNH EVENT —
     // nguồn chính xác duy nhất cho overlay UIElement như Spotlight (Tahoe):

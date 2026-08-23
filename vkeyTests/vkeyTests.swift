@@ -1296,6 +1296,18 @@ final class vkeyTests: XCTestCase {
   /// mất ký tự trước nguyên âm mang dấu ("gửi"→"ửi", "sửa"→"ửa", "mất"→"ất").
   /// Mô phỏng field bằng buffer scalar NFD, áp đúng (backspaceCount, emit) mà
   /// InputProcessor sinh ra qua calcKeyStrokesNFD + emittedCharacters.
+  ///
+  /// ⚠️ PHẠM VI (đọc trước khi trích dẫn test này làm bằng chứng): `replayNFDField`
+  /// mô phỏng field bằng `fieldScalars.removeLast(bs)`, tức GIẢ ĐỊNH SẴN rằng một
+  /// backspace xoá MỘT SCALAR. Đó chính là giả thuyết đang cần kiểm chứng (xem
+  /// khối ⚠️ trong `InputProcessor.usesNFCForFocusedField`), nên test này KHÔNG
+  /// chứng minh Chromium xoá theo scalar — nó chỉ chứng minh: *nếu* field xoá
+  /// theo scalar thì trục diff phải là NFD. Mô hình còn lại (backspace xoá cả
+  /// cụm grapheme — app native NFC như Notes/Telegram/ChatGPT) nằm ở
+  /// `testNFCGraphemeFieldReplayKeepsLeadingConsonant` ngay bên dưới. Hai test
+  /// là hai NỬA của cùng một bất biến "đơn vị xoá của field == trục diff", và
+  /// phải luôn đi thành cặp; sửa một cái mà không sửa cái kia là dấu hiệu ai đó
+  /// vừa lẫn hai mô hình với nhau.
   func testNFDFieldReplayKeepsLeadingConsonant() throws {
     let engine = Telex()
     // (keys Telex, kết quả kỳ vọng) — mỗi từ 1 phụ âm đầu + nguyên âm mang dấu.
@@ -1341,6 +1353,65 @@ final class vkeyTests: XCTestCase {
       XCTAssertNotEqual(
         replayNFDField(states: states, normalizeToNFC: true), expected,
         "Emit NFC vào field NFD rụng chữ đầu (bug 4.14) — không được để tái diễn")
+    }
+  }
+
+  /// NỬA CÒN LẠI của `testNFDFieldReplayKeepsLeadingConsonant`: mô hình field
+  /// xoá theo CỤM GRAPHEME (app native lưu NFC — Notes, Telegram, ChatGPT,
+  /// Gemini). Ở đây `field.removeLast(bs)` bỏ nguyên một `Character`, nên
+  /// backspace đếm theo scalar (NFD) sẽ xoá LỐ: đúng bug "điều"→"đều" và
+  /// "gửi"→"ửi" đã gặp trên Telegram.
+  ///
+  /// Hai test cạnh nhau làm cho cả hai mô hình hiện diện tường minh, và cho
+  /// thấy bất biến thật không phải "NFC tốt hơn NFD" mà là: TRỤC ĐẾM BACKSPACE
+  /// PHẢI TRÙNG ĐƠN VỊ XOÁ CỦA FIELD. Trục nào đúng cho app nào là câu hỏi đo
+  /// đạc riêng — hai test này chỉ khoá phần số học, không khẳng định thay
+  /// `usesNFCForFocusedField`.
+  func testNFCGraphemeFieldReplayKeepsLeadingConsonant() throws {
+    let engine = Telex()
+    let cases: [(String, String)] = [
+      ("guiwr", "gửi"),
+      ("suawr", "sửa"),
+      ("nooij", "nội"),
+      ("looix", "lỗi"),
+      ("maast", "mất"),
+      // Ca Telegram/ChatGPT gốc: đếm scalar làm mất chữ "i" giữa từ.
+      ("ddieeuf", "điều"),
+    ]
+
+    // Field lưu grapheme: 1 backspace = 1 `Character`, emit luôn precompose.
+    func replayGraphemeField(states: [String], useNFDDiff: Bool) -> String {
+      var field: [Character] = []
+      var prev = ""
+      for s in states {
+        let (bs, diff) = useNFDDiff
+          ? EventSimulator.calcKeyStrokesNFD(from: prev, to: s)
+          : EventSimulator.calcKeyStrokes(from: prev, to: s)
+        field.removeLast(min(bs, field.count))
+        field.append(contentsOf: EventSimulator.emittedCharacters(diff, normalizeToNFC: true))
+        prev = s
+      }
+      return String(field).precomposedStringWithCanonicalMapping
+    }
+
+    for (keys, expected) in cases {
+      var buffer = WordBuffer()
+      var states: [String] = []
+      for c in keys {
+        buffer.push(char: c, engine: engine)
+        states.append(buffer.transformed)
+      }
+      XCTAssertEqual(
+        states.last?.precomposedStringWithCanonicalMapping, expected,
+        "Sanity: engine gõ '\(keys)' phải ra '\(expected)'")
+
+      XCTAssertEqual(
+        replayGraphemeField(states: states, useNFDDiff: false), expected,
+        "Field xoá-grapheme + diff NFC phải dựng đúng '\(expected)'")
+
+      XCTAssertNotEqual(
+        replayGraphemeField(states: states, useNFDDiff: true), expected,
+        "Diff NFD vào field xoá-grapheme xoá lố → mất chữ ('điều'→'đều')")
     }
   }
 
@@ -2424,6 +2495,79 @@ final class KeyboardUSTests: XCTestCase {
     XCTAssertNil(layout.mapTask(keyCode: 0))
   }
 
+  /// v4.23 (F4): Enter của BÀN PHÍM SỐ là 0x4C = 76 (`kVK_ANSI_KeypadEnter`)
+  /// và trước đây KHÔNG có trong `taskMap` — `mapTask` lẫn `mapText` đều nil
+  /// nên phím đi qua nguyên trạng: app xuống dòng mà bộ đệm vẫn giữ từ cũ, ký
+  /// tự đầu dòng mới diff với `lastTransformed` của dòng trước → backspace phát
+  /// NGƯỢC LÊN dòng trên. Mã 52 (0x34) từng được coi là "Enter bàn phím số"
+  /// nhưng nó không có trong Events.h (Enter của PowerBook đời cũ) — giữ nhưng
+  /// KHÔNG thay thế được 76.
+  func testKeypadEnterMapsToEnterTaskKey() throws {
+    let layout = KeyboardUS()
+    XCTAssertEqual(layout.mapTask(keyCode: 76), .Enter,
+      "0x4C kVK_ANSI_KeypadEnter phải cắt từ như Enter thường")
+    XCTAssertNil(layout.mapText(keyCode: 76, withShift: false),
+      "Enter bàn phím số không được map thành ký tự văn bản")
+    // Hai mã Enter cũ vẫn nguyên vẹn.
+    XCTAssertEqual(layout.mapTask(keyCode: 36), .Enter)
+    XCTAssertEqual(layout.mapTask(keyCode: 52), .Enter)
+  }
+
+  /// v4.23 (F4) + v4.24: Page Up/Down (0x74 = 116, 0x79 = 121) dời con trỏ y hệt
+  /// Home/End nên cũng phải cắt từ. `TaskKey` chưa có case riêng nên phải MƯỢN
+  /// một case của nhóm `JumpTaskKeys` (cả nhóm chạy đúng một nhánh: `newWord()`
+  /// + `resetSentenceCapitalizeState()`).
+  ///
+  /// KỲ VỌNG ĐÃ SỬA: v4.23 mượn `.ArrowUp`/`.ArrowDown` → nay `.Home`/`.End`.
+  /// Mũi tên lên/xuống là ứng viên số một cho một xử lý riêng trong tương lai
+  /// (điều hướng HUD gợi ý / chọn candidate); khi đó Page Up sẽ đi nhờ theo và
+  /// gây lỗi rất khó truy vì bảng keycode chẳng liên quan gì tới HUD.
+  /// `.Home`/`.End` cùng nghĩa "nhảy con trỏ một quãng lớn" (Page Up lùi về đầu,
+  /// Page Down tiến về cuối) và không phím nào trong hai là ứng viên cho xử lý
+  /// đặc thù của bộ gõ. Vẫn là MƯỢN — fix đúng bài phải thêm `.PageUp`/`.PageDown`
+  /// vào `KeyLayout/Keys.swift` VÀ `InputProcessor.JumpTaskKeys` cùng lúc.
+  func testPageUpDownMapToJumpTaskKeys() throws {
+    let layout = KeyboardUS()
+    XCTAssertEqual(layout.mapTask(keyCode: 116), .Home, "PageUp phải cắt từ")
+    XCTAssertEqual(layout.mapTask(keyCode: 121), .End, "PageDown phải cắt từ")
+    XCTAssertNotEqual(layout.mapTask(keyCode: 116), .ArrowUp,
+      "KHÔNG mượn mũi tên: xử lý riêng cho .ArrowUp sau này sẽ tóm nhầm Page Up")
+    XCTAssertNotEqual(layout.mapTask(keyCode: 121), .ArrowDown)
+    // Điều kiện SỐNG CÒN của việc mượn: case được mượn phải nằm trong
+    // `JumpTaskKeys`. Rơi khỏi danh sách đó là phím trượt hết mọi nhánh của
+    // `handleTaskKey` và KHÔNG cắt từ nữa — tệ hơn cả trước khi map.
+    for key in [TaskKey.Home, .End, .ArrowUp, .ArrowDown, .ArrowLeft, .ArrowRight] {
+      XCTAssertTrue(InputProcessor.JumpTaskKeys.contains(key),
+        "\(key) phải nằm trong JumpTaskKeys thì việc map mới có tác dụng")
+    }
+    // Home/End (đã có từ trước) không được đụng.
+    XCTAssertEqual(layout.mapTask(keyCode: 115), .Home)
+    XCTAssertEqual(layout.mapTask(keyCode: 119), .End)
+  }
+
+  /// v4.23 (F4): dấu câu trên bàn phím số. Không map thì phím đi qua nguyên
+  /// trạng — app chèn ký tự trong khi bộ đệm vẫn giữ từ cũ → ký tự kế tiếp diff
+  /// với `lastTransformed` đã lệch → backspace ăn ngược vào chữ đã gõ. Map vào
+  /// `keyMap` là đủ vì mọi ký tự này đều nằm trong `NewWordKeys`.
+  /// Keypad KHÔNG có biến thể shift trên macOS → hai chiều phải giống nhau.
+  func testKeypadPunctuationMapsToCharacters() throws {
+    let layout = KeyboardUS()
+    let expected: [(Int64, Character)] = [
+      (65, "."), (67, "*"), (69, "+"), (75, "/"), (78, "-"), (81, "="),
+    ]
+    for (code, want) in expected {
+      XCTAssertEqual(layout.mapText(keyCode: code, withShift: false), want,
+        "keypad \(code) phải ra '\(want)'")
+      XCTAssertEqual(layout.mapText(keyCode: code, withShift: true), want,
+        "keypad \(code) + Shift vẫn ra '\(want)' (keypad không có shift-variant)")
+      XCTAssertNil(layout.mapTask(keyCode: code),
+        "keypad \(code) là ký tự văn bản, không phải task key")
+    }
+    // Đối chứng: chữ số bàn phím số vẫn như cũ (VNI dùng chúng làm phím dấu).
+    XCTAssertEqual(layout.mapText(keyCode: 82, withShift: false), "0")
+    XCTAssertEqual(layout.mapText(keyCode: 92, withShift: false), "9")
+  }
+
   func testIsNumberKey() throws {
     let layout = KeyboardUS()
     XCTAssertTrue(layout.isNumberKey(keyCode: 18)) // 1
@@ -3454,19 +3598,32 @@ final class TiengVietValidatorTests: XCTestCase {
     XCTAssertEqual(decision2, .keepRaw)
   }
 
-  func testTransformationTrackerDetectsRepeatedFailureSignals() throws {
-    var tracker = TransformationTracker()
-    tracker.resetForApp("com.example.app")
-
-    let failure = EventSendTelemetry(
-      attemptedTransform: true,
-      createdEvents: false,
-      usedAsyncQueue: false,
-      touchedCharacters: 4
-    )
-
-    XCTAssertFalse(tracker.detectFailure(telemetry: failure, appLikelySensitive: true))
-    XCTAssertTrue(tracker.detectFailure(telemetry: failure, appLikelySensitive: true))
+  /// v4.23 — THAY THẾ `testTransformationTrackerDetectsRepeatedFailureSignals`.
+  ///
+  /// Test cũ dựng `TransformationTracker` và khẳng định hai telemetry lỗi liên
+  /// tiếp thì bộ đếm bật cờ. Cơ chế đó nay đã bị gỡ hẳn (kèm công tắc
+  /// `autoSwitchStrategy`) vì nó KHÔNG BAO GIỜ chạy được ngoài test: nhánh
+  /// `isHighRisk` đòi `usedAsyncQueue == false`, mà mọi call site thật dựng
+  /// `EventSendTelemetry` với `attemptedTransform == true` đều đặt
+  /// `usedAsyncQueue: true`. Test cũ pass chỉ vì nó tự tay dựng telemetry mà
+  /// transport không bao giờ phát ra — nó khoá một con đường chết, nên phải đi
+  /// cùng đoạn code chết chứ không được "sửa cho biên dịch được".
+  ///
+  /// Thay vào đó khoá ĐÚNG hành vi còn lại: chiến lược gửi phím tra THẲNG bảng
+  /// per-app, không qua tầng đệm nào nữa. `activeApp` rỗng (chưa có app nào) là
+  /// khác biệt hành vi DUY NHẤT của lần gỡ này — trước đây rơi vào `.batch`
+  /// (giá trị khởi tạo của struct), nay rơi vào fallback `.hybrid` của
+  /// `getStrategy`. Ghi lại tường minh để lần sau không ai coi là hồi quy.
+  func testSendingStrategyReadsPerAppTableWithHybridFallback() throws {
+    guard case .hybrid = EventSimulator.getStrategy(for: "") else {
+      return XCTFail("activeApp rỗng phải rơi về fallback .hybrid của getStrategy")
+    }
+    guard case .hybrid = EventSimulator.getStrategy(for: "com.example.khongkhaibao") else {
+      return XCTFail("App không khai báo phải fallback .hybrid")
+    }
+    guard case .stepByStep = EventSimulator.getStrategy(for: "com.apple.Terminal") else {
+      return XCTFail("App có khai báo phải lấy đúng strategy trong bảng")
+    }
   }
 
   func testStepByStepUnicodeUnitsPreserveWholeCharacter() throws {
@@ -4472,6 +4629,55 @@ final class AppSendingStrategyTests: XCTestCase {
       "Spotlight phải dùng axDirect — mọi strategy event-based đều bị nuốt backspace")
     XCTAssertTrue(isAxDirect("com.apple.systemuiserver"))
   }
+
+  /// v4.23 (F2): bundle ID upstream của Alacritty là "org.alacritty"; entry
+  /// "io.alacritty" thừa kế từ lúc fork và chưa ai đối chiếu — cùng lớp lỗi
+  /// "com.warp.Warp" (xem `testWarpBundleIdMatchesRealChannels`). Giữ CẢ HAI:
+  /// khớp bằng `hasPrefix` nên entry sai chỉ là không bao giờ khớp, còn bỏ đi
+  /// mà đoán sai chiều thì Alacritty lại âm thầm rơi về hybrid.
+  func testAlacrittyMatchesBothBundleIds() throws {
+    XCTAssertTrue(isStepByStep("org.alacritty"), "bundle ID upstream phải khớp")
+    XCTAssertTrue(isStepByStep("io.alacritty"), "entry cũ vẫn phải khớp")
+  }
+
+  /// v4.23 (F2): "com.termius-dmg.mac" chỉ bao bản DMG; bản Mac App Store mang
+  /// ID khác. Prefix rút gọn "com.termius" bao MỌI kênh mà không phá entry cũ
+  /// (chuỗi DMG cũng bắt đầu bằng "com.termius").
+  func testTermiusMatchesAllChannels() throws {
+    XCTAssertTrue(isStepByStep("com.termius-dmg.mac"), "bản DMG (entry cũ)")
+    XCTAssertTrue(isStepByStep("com.termius.mac"), "bản Mac App Store")
+  }
+
+  /// v4.23 (F3): app CHAT trước đây bị bỏ sót nên rơi hết về `.hybrid(800)`
+  /// mặc định — ô soạn tin là contenteditable (Electron) hoặc text engine
+  /// riêng (Qt), batch/hybrid gửi cụm backspace + retype async không sync với
+  /// composition → rớt/lặp chữ đúng lớp lỗi Claude Desktop ("gửi"→"ửi",
+  /// "điêu"→"điều" hụt). Chat là chỗ gõ tiếng Việt nhiều nhất nên đổi
+  /// stepByStep (chậm hơn) là đánh đổi có chủ ý.
+  func testChatAppsUseStepByStep() throws {
+    for bundle in [
+      "com.vng.zalo",                 // Electron (đã kiểm trên máy)
+      "com.vng.zalo.zalocall",        // helper cùng prefix
+      "com.tinyspeck.slackmacgap",    // Slack
+      "com.hnc.Discord",              // Discord (bao cả Canary/PTB)
+      "com.facebook.archon",          // Messenger
+      "desktop.WhatsApp",             // WhatsApp bản Electron tải từ web
+      "com.viber.osx",                // Viber (Qt/QML, không phải Electron)
+    ] {
+      XCTAssertTrue(isStepByStep(bundle), "\(bundle) phải dùng .stepByStep")
+    }
+  }
+
+  /// Đối chứng cho F3: WhatsApp bản Mac App Store là Catalyst/AppKit thật nên
+  /// CỐ Ý không thêm — nó phải giữ `.hybrid` mặc định. Nếu ai đó "dọn" bằng
+  /// cách đổi prefix thành "WhatsApp" hay "net.whatsapp" thì test này vỡ.
+  func testMASWhatsAppStaysOnDefaultHybrid() throws {
+    XCTAssertFalse(isStepByStep("net.whatsapp.WhatsApp"),
+      "bản Catalyst/AppKit không cần stepByStep")
+    guard case .hybrid = EventSimulator.getStrategy(for: "net.whatsapp.WhatsApp") else {
+      return XCTFail("bản MAS phải rơi về .hybrid mặc định")
+    }
+  }
 }
 
 // MARK: - ===========================================
@@ -4565,6 +4771,35 @@ final class ZWJFOffTelexTests: XCTestCase {
     try withZWJF(true) {
       XCTAssertEqual(telex("web"), "web")
       XCTAssertEqual(telex("w"), "w")
+    }
+  }
+
+  /// v4.23 (E12): gõ `w` LẦN HAI phải huỷ sạch, không để lại chữ 'u' giả.
+  ///
+  /// Telex cổ điển biến `w` đứng một mình thành `ư` bằng cách TỰ SINH chữ 'u'
+  /// rồi đặt móc. Phím `w` kế tiếp trước đây chỉ toggle TẮT móc, nên chữ 'u'
+  /// tự sinh ở lại: "ww" ra "uw", "www" ra "uww", "tww" ra "tuw" — gõ URL
+  /// ("www.") thành rác. Nay `w` thứ hai rơi xuống push thô nên chuỗi hiện
+  /// đúng phím đã gõ.
+  ///
+  /// Giới hạn đã biết: KHÔNG ra được đúng một chữ "w" cho ca "ww" vì
+  /// `WordBuffer.shouldAppendRawKey` đòi `new.count == old.count`, chuỗi rỗng
+  /// không được nối phím thô. "ww" (đúng những phím đã gõ) là kết quả tốt nhất
+  /// đạt được mà không đụng InputProcessor.
+  func testDoubleWCancelsWithoutGhostU_whenZWJFOff() throws {
+    try withZWJF(false) {
+      XCTAssertEqual(telex("ww"), "ww", "w thứ hai huỷ, không để lại 'u' tự sinh")
+      XCTAssertEqual(telex("www"), "www", "gõ 'www.' phải ra 'www', không phải 'uww'")
+      XCTAssertEqual(telex("tww"), "tww", "sau phụ âm cũng vậy — không phải 'tuw'")
+
+      // Đối chứng: mọi đường móc HỢP LỆ phải nguyên vẹn.
+      XCTAssertEqual(telex("w"), "ư")
+      XCTAssertEqual(telex("tw"), "tư")
+      XCTAssertEqual(telex("nhw"), "như")
+      // 'u' do NGƯỜI DÙNG gõ thì `w` vẫn là lệnh móc, và `w` thứ hai vẫn là
+      // đường huỷ móc CŨ (chữ 'u' thật ở lại) — không được nhầm hai ca.
+      XCTAssertEqual(telex("uw"), "ư")
+      XCTAssertEqual(telex("uww"), "uw")
     }
   }
 }
@@ -4968,6 +5203,64 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(processor.transformed, "v", "Second dot segment must stay lowercase")
     typeKey(processor, code: 45) // n
     XCTAssertEqual(processor.transformed, "vn")
+  }
+
+  /// v4.23 (P4): nhánh auto-capitalize phải phát KẾT QUẢ ENGINE, không phát ký
+  /// tự thô vừa viết hoa.
+  ///
+  /// Nhánh cũ gửi thẳng `[newChar]` với giả định "engine không bao giờ đụng ký
+  /// tự ĐẦU của từ". Giả định đó SAI khi `allowedZWJF` tắt: Telex cổ điển biến
+  /// `w` đứng một mình thành `ư`. Khi đó lệnh gửi đi là "W" trong khi bộ đệm
+  /// tin rằng màn hình có "Ư" — mà event gốc đã bị nuốt (`return nil`) — nên
+  /// mọi phím sau diff trên nền sai và cả từ hỏng.
+  ///
+  /// PHẠM VI: `sendTypedReplacement` là private và transport post CGEvent thật,
+  /// nên test không đọc được chuỗi đã phát. Cái khoá được ở đây là ĐIỀU KIỆN
+  /// TIÊN QUYẾT của lỗi (engine thật sự đổi ký tự đầu) cùng cặp
+  /// `lastTransformed → transformed` mà nhánh mới lấy diff, và số học của diff
+  /// đó khác hẳn ký tự thô.
+  func testAutoCapitalizeEmitsEngineResultNotRawKey() throws {
+    let savedZWJF = Defaults[.allowedZWJF]
+    Defaults[.autoCapitalizeEnabled] = true
+    Defaults[.allowedZWJF] = false
+    defer {
+      Defaults.reset(.autoCapitalizeEnabled)
+      Defaults[.allowedZWJF] = savedZWJF
+    }
+
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 36) // Enter → chờ viết hoa
+    let result = typeLetter(processor, code: 13) // w
+    XCTAssertSwallowed(result, "Auto-capitalize nuốt event gốc — vkey phải tự phát")
+
+    XCTAssertEqual(processor.transformed, "Ư",
+      "Telex cổ điển: 'W' đầu từ thành 'Ư' — engine ĐỤNG vào ký tự đầu")
+    XCTAssertEqual(processor.lastTransformed, "",
+      "Diff phải lấy từ trạng thái TRƯỚC push (rỗng ở đầu từ)")
+
+    let (backspaces, diffChars) = EventSimulator.calcKeyStrokes(
+      from: processor.lastTransformed, to: processor.transformed, usesNFC: true)
+    XCTAssertEqual(backspaces, 0)
+    XCTAssertEqual(diffChars, ["Ư"], "Phải phát 'Ư' — nhánh cũ phát 'W' và lệch đệm")
+    XCTAssertNotEqual(diffChars, ["W"])
+  }
+
+  /// Đối chứng P4: ca thường (engine không đụng ký tự đầu) phải cho ra ĐÚNG
+  /// một ký tự như trước — công thức mới không được làm phình diff.
+  func testAutoCapitalizeOrdinaryLetterStillEmitsSingleChar() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+
+    let processor = makeNotesProcessor()
+    typeKey(processor, code: 36) // Enter
+    let result = typeLetter(processor, code: 9) // v
+    XCTAssertSwallowed(result)
+    XCTAssertEqual(processor.transformed, "V")
+
+    let (backspaces, diffChars) = EventSimulator.calcKeyStrokes(
+      from: processor.lastTransformed, to: processor.transformed, usesNFC: true)
+    XCTAssertEqual(backspaces, 0)
+    XCTAssertEqual(diffChars, ["V"])
   }
 
   // MARK: - Auto-capitalize helpers
@@ -5586,4 +5879,1237 @@ final class SandboxHelperBundleTests: XCTestCase {
     hook.setEnabled(false)
     XCTAssertEqual(p.transformed, "", "tắt/bật thật sự vẫn reset đệm")
   }
+}
+
+// MARK: - ===========================================
+// MARK: - v4.23 — Quy luật ngữ âm & phím dấu còn thiếu trong engine
+// MARK: - ===========================================
+//
+// Mỗi test dưới đây khoá đúng MỘT lỗi engine đã vá ở v4.23, dùng nguyên chuỗi
+// phím repro. Tên test mang mã lỗi (E1…E10) để tra ngược được sang CHANGELOG.
+// Mỗi nhóm luôn kèm ĐỐI CHỨNG: những chuỗi phím chạy đúng từ trước và không
+// được phép vỡ khi ai đó nới/siết lại luật.
+final class EngineFixesV423Tests: XCTestCase {
+
+  private var savedFreeMark = false
+  private var savedZWJF = true
+  private var savedAutoTypo = true
+  private var savedNewStyle = true
+
+  override func setUp() {
+    super.setUp()
+    savedFreeMark = Defaults[.freeMarkModeEnabled]
+    savedZWJF = Defaults[.allowedZWJF]
+    savedAutoTypo = Defaults[.autoTypoCorrection]
+    savedNewStyle = Defaults[.newStyleTonePlacement]
+    // Chốt cấu hình mặc định của app: mọi kỳ vọng dưới đây đo ở đúng cấu hình
+    // này. Không dùng `Defaults.reset` vì tearDown phải trả lại giá trị CŨ.
+    Defaults[.freeMarkModeEnabled] = false
+    Defaults[.allowedZWJF] = true
+    Defaults[.autoTypoCorrection] = true
+    Defaults[.newStyleTonePlacement] = true
+  }
+
+  override func tearDown() {
+    Defaults[.freeMarkModeEnabled] = savedFreeMark
+    Defaults[.allowedZWJF] = savedZWJF
+    Defaults[.autoTypoCorrection] = savedAutoTypo
+    Defaults[.newStyleTonePlacement] = savedNewStyle
+    super.tearDown()
+  }
+
+  /// Gõ chuỗi phím qua ĐÚNG đường InputProcessor (gồm cả recovery + khôi phục
+  /// tiếng Anh), trả về chuỗi hiển thị trên màn hình.
+  private func telex(_ keys: String) -> String {
+    let p = InputProcessor(method: .Telex)
+    p.newWord()
+    for c in keys { p.push(char: c) }
+    return p.transformed
+  }
+
+  private func vni(_ keys: String) -> String {
+    let p = InputProcessor(method: .VNI)
+    p.newWord()
+    for c in keys { p.push(char: c) }
+    return p.transformed
+  }
+
+  // MARK: E1 — bảng vần thiếu "ng" cho e / uâ / yê
+
+  /// `ValidVowelEndings` thiếu "ng" ở ba nhân âm tiết nên `needsRecovery` ném
+  /// nguyên từ về phím thô: gõ "xẻng", "kẻng", "leng keng", "bâng khuâng",
+  /// "chim yểng" đều không ra chữ. Đây là thiếu SÓT DỮ LIỆU chứ không phải
+  /// luật — ba vần này có thật và phổ biến.
+  func testE1_MissingNgEndingForE_UA_YE() {
+    XCTAssertEqual(telex("xengr"), "xẻng")
+    XCTAssertEqual(telex("kengr"), "kẻng")
+    XCTAssertEqual(telex("lengf"), "lèng")
+    XCTAssertEqual(telex("kengf"), "kèng")
+    XCTAssertEqual(telex("khuaang"), "khuâng")   // bâng khuâng
+    XCTAssertEqual(telex("yeengr"), "yểng")      // chim yểng
+
+    // VNI cùng vần, cùng lỗi (bảng vần dùng chung cho hai kiểu gõ).
+    XCTAssertEqual(vni("xeng3"), "xẻng")
+    XCTAssertEqual(vni("khua6ng"), "khuâng")
+    XCTAssertEqual(vni("ye6ng3"), "yểng")
+  }
+
+  /// Đối chứng E1: dạng KHÔNG dấu của chính các vần đó vốn đã chạy — thêm "ng"
+  /// vào bảng không được làm chúng đổi nghĩa.
+  func testE1_ControlPlainFormsUnchanged() {
+    XCTAssertEqual(telex("xeng"), "xeng")
+    XCTAssertEqual(telex("leng"), "leng")
+    XCTAssertEqual(telex("khuaan"), "khuân")
+    XCTAssertEqual(telex("yeen"), "yên")
+  }
+
+  // MARK: E2 — VNI: phím 7 thứ hai của cụm "uo" toggle TẮT móc
+
+  /// Vần "ươ" có hai nguyên âm mang móc nên lối gõ đầy đủ có HAI phím móc,
+  /// trong khi `dauMu` chỉ có MỘT ô: phím `7` thứ hai rơi vào `withMu` và
+  /// toggle tắt móc vừa đặt. Telex đã có guard này từ lâu (`dduwow` → được),
+  /// VNI thì không — nên 235/7.184 âm tiết "ươ" (được, người, trường, nước…)
+  /// gõ ra chữ sai.
+  func testE2_VNISecondHornKeyOnUOKeepsHorn() {
+    XCTAssertEqual(vni("nu7o7c1"), "nước")
+    XCTAssertEqual(vni("d9u7o7ng2"), "đường")
+    XCTAssertEqual(vni("tu7o7i"), "tươi")
+    XCTAssertEqual(vni("ngu7o7i2"), "người")
+    XCTAssertEqual(vni("tru7o7ng2"), "trường")
+    XCTAssertEqual(vni("d9u7o75c"), "được")
+  }
+
+  /// Đối chứng E2: đường HUỶ móc là hai phím móc KỀ NHAU, phải giữ nguyên —
+  /// guard mới không được nuốt nó.
+  func testE2_VNIHornToggleOffStillWorks() {
+    XCTAssertEqual(vni("u7"), "ư")
+    XCTAssertEqual(vni("o7"), "ơ")
+    XCTAssertEqual(vni("u7u7"), "uu", "hai phím 7 kề nhau vẫn huỷ móc")
+  }
+
+  // MARK: E3 — VNI thiếu guard `conLai` (đối xứng với Telex)
+
+  /// Telex bỏ qua phím dấu khi âm tiết còn phần không hợp lệ (`conLai`); VNI
+  /// thì không, nên chữ số bị NUỐT vào làm dấu: "leg2" ra "lèg" thay vì giữ
+  /// nguyên (Telex "legf" giữ "legf").
+  func testE3_VNISkipsMarkKeysWhenSyllableHasLeftovers() {
+    for keys in ["leg2", "bag2", "tag1", "log2", "dog9"] {
+      XCTAssertEqual(vni(keys), keys, "\(keys): còn conLai thì phím số là chữ số")
+    }
+  }
+
+  /// Đối chứng E3: validator CỐ Ý thả `conLai == ["g"]` đi qua (typo "gn"→"ng")
+  /// nên đường gõ nhầm vẫn phải chạy — guard mới không được chặn nó.
+  func testE3_VNITypoGnStillCorrected() {
+    XCTAssertEqual(vni("phuo7gn2"), "phường")
+  }
+
+  // MARK: E4 — nguyên âm ba oeo/oao bị hiểu nhầm là lệnh dấu mũ
+
+  /// Điều kiện đặt mũ cũ chỉ hỏi "nguyên âm CÓ CHỨA ký tự này ở bất kỳ đâu",
+  /// nên chữ 'o' thứ hai của "oeo"/"oao" bị coi là gõ lặp: "khoeo" ra "khôe",
+  /// "ngoaos" ra "ngốa". Hai cụm này có sẵn trong `TiengViet.NguyenAmGhep`.
+  func testE4_TripleVowelOeoOaoIsNotCircumflexCommand() {
+    XCTAssertEqual(telex("khoeo"), "khoeo")
+    XCTAssertEqual(telex("ngoeo"), "ngoeo")
+    XCTAssertEqual(telex("ngoeos"), "ngoéo")
+    XCTAssertEqual(telex("khoeof"), "khoèo")
+    XCTAssertEqual(telex("ngoeoj"), "ngoẹo")
+    XCTAssertEqual(telex("ngoaos"), "ngoáo")
+  }
+
+  /// Đối chứng E4 — CHÍNH LÀ cái lưới đã bắt được lần siết quá tay đầu tiên.
+  /// Không được siết thành "ký tự liền trước phải TRÙNG": Telex của vkey cho
+  /// gõ mũ TRỄ sau phụ âm cuối ("theme" → "thêm"), siết như vậy là phá luôn.
+  func testE4_LateCircumflexAfterFinalConsonantStillWorks() {
+    XCTAssertEqual(telex("theme"), "thêm")
+    XCTAssertEqual(telex("toong"), "tông")
+  }
+
+  // MARK: E5 — dấu mũ hoa/thường: bất đối xứng là CỐ Ý
+
+  /// KỲ VỌNG ĐÃ SỬA (v4.24). Bản E5 gốc đòi "hai chiều phải như nhau" và khoá
+  /// `telex("aA") == "â"`. Đo lại thì vế đó SAI TỪ ĐẦU, và chính nó là hồi quy
+  /// R7: chiều `aA` → `â` không cứu được ca nào (corpus 7.184 âm tiết, selftest
+  /// 127 ca, 5.622 ca gõ thanh sớm, 227.624 từ /usr/share/dict/words đều y
+  /// nguyên) mà làm hỏng 803/9.844 tên riêng camelCase, hỏng theo kiểu MẤT CHỮ:
+  /// "dataAccess" → "datccess", "photoObject" → "photObject", "LeEm" → "Lêm".
+  /// Kỳ vọng cũ → mới: `telex("aA")` từ `"â"` thành `"aA"`.
+  ///
+  /// Bất đối xứng có lý do, không phải sót:
+  ///   • Shift ở phím ĐẦU của cặp = viết hoa cả từ, phím sau vẫn là gõ lặp
+  ///     ⇒ "Aa" → "Â".
+  ///   • Shift ở phím SAU nghĩa là người gõ vừa CHỦ ĐỘNG mở một chữ hoa mới —
+  ///     không ai bấm Shift để gõ ra chữ â THƯỜNG ⇒ "aA" giữ nguyên.
+  /// Xem thêm `EngineRegressionFixesV424Tests.testR7_...` (chiều camelCase).
+  func testE5_CircumflexCaseAsymmetryIsIntentional() {
+    XCTAssertEqual(telex("Aa"), "Â", "Shift ở phím ĐẦU = viết hoa cả từ, phím sau là gõ lặp")
+    XCTAssertEqual(telex("aA"), "aA",
+      "Shift ở phím SAU = mở chữ hoa mới, KHÔNG phải lệnh đặt mũ")
+    // Hai đường thuần một kiểu chữ không đụng tới.
+    XCTAssertEqual(telex("aa"), "â")
+    XCTAssertEqual(telex("AAn"), "Ân")
+  }
+
+  // MARK: E6 — rule swap nguyên âm ghi đè nguyên âm vừa gán
+
+  /// Bốn rule "swap nguyên âm" gán sẵn `reparsed.nguyenAm` rồi mới phân tích
+  /// phần đuôi. Dùng `finishParsing` thì bước tách nguyên âm của nó GHI ĐÈ
+  /// nguyên âm vừa gán khi đuôi bắt đầu bằng nguyên âm — ký tự BIẾN MẤT mà
+  /// `needsRecovery` vẫn false, nên không có đường phục hồi: "veia" ra "va",
+  /// "boui" ra "bỉ", "haoan" ra "hoân", "afoot" ra "òt". Mất chữ âm thầm là
+  /// lớp lỗi tệ nhất — người gõ không thấy gì bất thường cho tới khi đọc lại.
+  func testE6_VowelSwapDoesNotSwallowFollowingVowel() {
+    for keys in ["veia", "boui", "bouir", "haoan", "afoot"] {
+      XCTAssertEqual(telex(keys), keys, "\(keys): swap không tiêu hoá hết ⇒ giữ phím thô")
+    }
+  }
+
+  /// Đối chứng E6: các đường swap HỢP LỆ (đuôi tiêu hoá hết) vẫn phải chạy.
+  func testE6_ValidVowelSwapsUnaffected() {
+    XCTAssertEqual(telex("veit"), "viet")
+    XCTAssertEqual(telex("haois"), "hoái")
+    XCTAssertEqual(telex("haong"), "hoang")
+    XCTAssertEqual(telex("phuowgn"), "phương")
+  }
+
+  // MARK: E7 — quét phím dấu đặt sai chỗ dừng ngay ở phụ âm đầu
+
+  /// s/x/r/f/j vừa là phím dấu Telex vừa là phụ âm đầu hợp lệ. Vòng quét cũ
+  /// `break` ở ký tự dấu ĐẦU TIÊN nên với "trfong" nó chốt vào chữ 'r' của cụm
+  /// "tr", rồi guard `index > 0` vô hiệu hoá cả Rule 5 → không ra "tròng".
+  /// Bước strip cũng phải xoá ĐÚNG ký tự tại vị trí tìm được, không phải "ký
+  /// tự dấu đầu tiên gặp ở bất kỳ đâu" (xoá nhầm 'r' → "tfong").
+  func testE7_MisplacedToneScanSkipsInitialConsonant() {
+    XCTAssertEqual(telex("trfong"), "tròng")
+    XCTAssertEqual(telex("sfai"), "sài")
+    XCTAssertEqual(telex("xfin"), "xìn")
+    XCTAssertEqual(telex("rfa"), "rà")
+  }
+
+  /// Đối chứng E7: phụ âm đầu KHÔNG phải phím dấu vốn đã chạy đúng.
+  func testE7_ExistingMisplacedToneCasesUnchanged() {
+    XCTAssertEqual(telex("thfong"), "thòng")
+    XCTAssertEqual(telex("nhfa"), "nhà")
+    XCTAssertEqual(telex("tafi"), "tài")
+    XCTAssertEqual(telex("hoafng"), "hoàng")
+  }
+
+  /// Đối chứng E7 QUAN TRỌNG NHẤT: phụ âm đầu loanword (w/z/j/f, chỉ tồn tại
+  /// khi `allowedZWJF` bật) KHÔNG được bỏ qua. Tiếng Việt không có từ bản địa
+  /// mở đầu bằng các chữ đó nên phím dấu phía sau là chữ cái thật. Bỏ qua thì
+  /// "from" ra "fỏm", "free" ra "fể", "frost" ra "fót" — 31 từ EN hỏng.
+  func testE7_ForeignInitialConsonantsAreNotSkipped() {
+    XCTAssertEqual(telex("from"), "from")
+    XCTAssertEqual(telex("free"), "free")
+    XCTAssertEqual(telex("frost"), "frost")
+  }
+
+  // MARK: E8 — không huỷ được dấu do Parser TỰ SUY RA
+
+  /// `uuTienDauThanh` là dấu Parser tự suy ra từ phím dấu đặt sai chỗ ("thfi" →
+  /// thì). Trước đây nó được áp VÔ ĐIỀU KIỆN mỗi khi `dauThanh == .bang`, nên
+  /// thao tác gõ đúp phím dấu để HUỶ không bao giờ gỡ được dấu đó và phím dấu
+  /// bị nuốt im lặng: "thfiff" vẫn ra "thì", "mfass" ra "màs".
+  func testE8_DoubleToneKeyCancelsParserInferredTone() {
+    XCTAssertEqual(telex("thfiff"), "thif", "gõ đúp 'f' phải huỷ được dấu tự suy ra")
+    XCTAssertEqual(telex("mfass"), "mas", "gõ đúp 's' phải huỷ được dấu tự suy ra")
+  }
+
+  /// Đối chứng E8: gõ MỘT lần phím dấu vẫn ra dấu như cũ.
+  func testE8_SingleToneKeyStillInfersTone() {
+    XCTAssertEqual(telex("thfi"), "thì")
+    XCTAssertEqual(telex("mfas"), "má")
+  }
+
+  // MARK: E9 — Free Mark Mode miễn luôn cả luật thanh nhập
+
+  /// Free Mark nới VỊ TRÍ đặt dấu (tên riêng, tiếng dân tộc) — nhưng bản cũ
+  /// miễn TOÀN BỘ validator cho âm tiết đơn chữ thường, nên bật Free Mark là
+  /// "art" ra "ảt", "soft" ra "sòt", "hurt" ra "hủt". Luật thanh nhập (âm tiết
+  /// kết bằng phụ âm tắc chỉ nhận sắc/nặng) là tuyệt đối, giữ lại nó không làm
+  /// mất ca Free Mark hợp lệ nào.
+  func testE9_FreeMarkStillObeysCheckedToneRule() {
+    let saved = Defaults[.freeMarkModeEnabled]
+    Defaults[.freeMarkModeEnabled] = true
+    defer { Defaults[.freeMarkModeEnabled] = saved }
+
+    for word in ["art", "chart", "part", "soft", "hurt", "text", "exit", "merit"] {
+      XCTAssertEqual(telex(word), word,
+        "Free Mark bật: '\(word)' không được biến thành âm tiết thanh-nhập bất khả")
+    }
+    // Đối chứng: sắc/nặng trên phụ âm tắc vẫn hợp lệ khi Free Mark bật.
+    XCTAssertEqual(telex("batj"), "bạt")
+    XCTAssertEqual(telex("bats"), "bát")
+  }
+
+  /// Đối chứng E9: cùng bộ từ đó khi Free Mark TẮT phải cho kết quả Y HỆT —
+  /// công tắc này không được đổi kết quả của luật tuyệt đối.
+  func testE9_SameResultWhenFreeMarkOff() {
+    for word in ["art", "chart", "part", "soft", "hurt", "text", "exit", "merit"] {
+      XCTAssertEqual(telex(word), word)
+    }
+  }
+
+  // MARK: E10 — vần bất khả sinh ra SAU khi áp dấu mũ
+
+  /// Rule 5 chỉ chạy khi âm tiết CÓ phụ âm cuối, Rule 6 chỉ soi cụm nguyên âm
+  /// GỐC (chưa mang mũ) — nên không luật nào bắt được nhân bất khả sinh ra sau
+  /// khi áp mũ: "khoee" ra "khôe", "hoaan" ra "hoân", "tauw" ra "taư",
+  /// "cuwuc" ra "cuưc". Các vần ôe/oâ/aư/uư không tồn tại trong tiếng Việt.
+  func testE10_ImpossibleRhymeAfterCircumflexRecoversToRawKeys() {
+    for keys in ["khoee", "hoaan", "tauw", "cuwuc", "khoeoo"] {
+      XCTAssertEqual(telex(keys), keys, "\(keys): vần sau khi áp mũ không tồn tại ⇒ phím thô")
+    }
+  }
+
+  /// Đối chứng E10: bảng `NhanCoDauMuHopLe` liệt kê theo VỊ TRÍ đặt mũ THẬT,
+  /// nên các vần có mũ hợp lệ phải đi qua nguyên vẹn — kể cả "ưu" (mũ ở chữ u
+  /// ĐẦU) vốn dễ bị nhầm với "uư" (mũ ở chữ u sau, không tồn tại).
+  func testE10_ValidCircumflexRhymesUnaffected() {
+    let cases = [
+      ("khoer", "khoẻ"), ("khuaan", "khuân"), ("dduwowngf", "đường"),
+      ("nguwowif", "người"), ("tieengs", "tiếng"), ("ruowuj", "rượu"),
+      ("xuaats", "xuất"), ("xoawn", "xoăn"),
+    ]
+    for (keys, want) in cases {
+      XCTAssertEqual(telex(keys), want, "\(keys) phải ra \(want)")
+    }
+  }
+
+  // MARK: E11 — guard "âm tiết đã có dấu" nuốt luôn lối gõ "thanh trước, mũ sau"
+  //
+  // (Số hiệu E11 trước đây bỏ trống: đợt v4.23 nhảy từ E10 sang E12 —
+  // `ZWJFOffTelexTests.testDoubleWCancelsWithoutGhostU_whenZWJFOff`.)
+
+  /// Nhánh đặt mũ Telex chặn mọi âm tiết ĐÃ mang dấu, gộp chung dấu MŨ/MÓC với
+  /// dấu THANH. Gộp như vậy giết luôn lối gõ hợp lệ "phím thanh trước, phím mũ
+  /// sau": đo trên 5.622 âm tiết có dấu của corpus thì chặn hết làm hỏng thêm
+  /// 557 âm tiết — gần trọn nhóm nhân iê/uô/yê/uyê, tức những từ dùng hằng ngày.
+  ///
+  /// Nay chỉ nhận là lệnh đặt mũ khi phím này gõ ĐÔI LIỀN KỀ với một chữ CŨNG gõ
+  /// SAU phím thanh (`TiengVietState.viTriGoDauThanh`) — xem đối chứng ngay dưới
+  /// để thấy khe hở được mở HẸP đến mức nào.
+  func testE11_ToneKeyBeforeCircumflexStillPlacesMu() {
+    let cases = [
+      ("tifeen", "tiền"), ("vijeec", "việc"), ("biseet", "biết"),
+      ("xusaat", "xuất"), ("cujooc", "cuộc"), ("nghijeen", "nghiện"),
+      ("nhifeeu", "nhiều"), ("khusyeen", "khuyến"),
+    ]
+    for (keys, want) in cases {
+      XCTAssertEqual(telex(keys), want, "\(keys) phải ra \(want)")
+    }
+  }
+
+  /// Đối chứng E11 — CHÍNH LÀ cái guard vừa nới, nên phải khoá lại cho chặt.
+  /// Nới rộng hơn "gõ đôi liền kề sau phím thanh" là hỏng ngay ba nhóm:
+  ///   • kéo dài kiểu chat, chữ ghép đôi nằm TRƯỚC phím thanh — "quasa" sẽ ra
+  ///     "quấ" (phá luôn dấu sắc), "chưa"+a mất cả dấu móc;
+  ///   • gõ mũ TRỄ trên âm tiết đã có thanh ("define") — nới cả nhóm này thì
+  ///     /usr/share/dict/words hỏng thêm 129 từ, còn siết như hiện tại chỉ 4;
+  ///   • từ mượn có phím dấu kẹp giữa hai nguyên âm giống nhau ("wifi").
+  func testE11_ChatLengtheningAndLateMuStillBlocked() {
+    XCTAssertEqual(telex("quasa"), "quasa")
+    XCTAssertNotEqual(telex("quasa"), "quấ", "dấu sắc KHÔNG được biến thành dấu mũ")
+    XCTAssertEqual(telex("chuwaa"), "chưaa")
+    XCTAssertEqual(telex("chuwaaa"), "chưaaa")
+    XCTAssertEqual(telex("wifi"), "wifi")
+    XCTAssertEqual(telex("define"), "define", "mũ TRỄ sau phím thanh vẫn bị chặn")
+    XCTAssertEqual(telex("tosoi"), "tosoi",
+      "khe hở chỉ mở cho gõ ĐÔI LIỀN KỀ — 'tosoi' (mũ rời) vẫn nằm ngoài")
+    // Thứ tự chuẩn (mũ trước, thanh sau) không đụng tới.
+    XCTAssertEqual(telex("toosi"), "tối")
+  }
+
+  /// E11 — GIÁ đã đo, ghi lại tường minh chứ không giấu.
+  ///
+  /// Mở lối "thanh trước, mũ sau" làm /usr/share/dict/words (227.624 từ) đi từ
+  /// 6.730 lên 6.734 ca hỏng: đúng 4 từ có phím dấu rồi mới tới cặp "ee" liền
+  /// kề. Lợi ròng vẫn DƯƠNG (cứu 557 âm tiết tiếng Việt) nên đây là đánh đổi có
+  /// chủ ý, không phải sơ suất.
+  ///
+  /// ⚠️ Test này khoá HÀNH VI HIỆN TẠI, KHÔNG phải hành vi mong muốn. Nếu ai đó
+  /// siết đúng hơn (vd đòi cụm nguyên âm sau khi áp mũ phải là vần tiếng Việt có
+  /// thật) và test FAIL thì CẬP NHẬT kỳ vọng ở đây — đừng revert E11.
+  func testE11_KnownCostOnEnglishDoubleEWords() {
+    XCTAssertEqual(telex("fusee"), "fuế")
+    XCTAssertEqual(telex("puree"), "puể")
+    XCTAssertEqual(telex("tureen"), "tuển")
+    XCTAssertEqual(telex("usee"), "uế")
+  }
+}
+
+// MARK: - ===========================================
+// MARK: - v4.23 — Backspace / replay ở tầng WordBuffer
+// MARK: - ===========================================
+final class WordBufferReplayV423Tests: XCTestCase {
+
+  private var savedZWJF = true
+  private var savedAutoTypo = true
+  private var savedNewStyle = true
+  private var savedFreeMark = false
+
+  override func setUp() {
+    super.setUp()
+    savedZWJF = Defaults[.allowedZWJF]
+    savedAutoTypo = Defaults[.autoTypoCorrection]
+    savedNewStyle = Defaults[.newStyleTonePlacement]
+    savedFreeMark = Defaults[.freeMarkModeEnabled]
+    // Chốt cấu hình mặc định: kỳ vọng dưới đây đo ở đúng cấu hình này. Bộ test
+    // KHÔNG chạy song song nên phải tự pin thay vì tin vào thứ tự lớp.
+    Defaults[.allowedZWJF] = true
+    Defaults[.autoTypoCorrection] = true
+    Defaults[.newStyleTonePlacement] = true
+    Defaults[.freeMarkModeEnabled] = false
+  }
+
+  override func tearDown() {
+    Defaults[.allowedZWJF] = savedZWJF
+    Defaults[.autoTypoCorrection] = savedAutoTypo
+    Defaults[.newStyleTonePlacement] = savedNewStyle
+    Defaults[.freeMarkModeEnabled] = savedFreeMark
+    super.tearDown()
+  }
+
+  /// P2 — Backspace ngay sau khi commit một từ phải replay CHUỖI PHÍM GỐC.
+  ///
+  /// `TiengVietState.chuKhongDau` KHÔNG chứa phím dấu (`withTone`/`withMu`/
+  /// `withGachD` không push ký tự nào), nên dựng lại `keys` từ nó — cách cũ —
+  /// khiến mọi backspace kế tiếp replay một chuỗi phím đã MẤT SẠCH DẤU:
+  /// "chào" → "cha", "tiếng" → "tien", "đường" → "duon", kèm cả cụm bị xoá và
+  /// gõ lại. `previousKeys` giữ đúng những phím user đã bấm.
+  func testP2_BackspaceAfterCommitReplaysOriginalKeys() throws {
+    let engine = Telex()
+    // (phím, chữ đã commit, keys sau BS#1, chữ sau BS#2)
+    let cases: [(String, String, String, String)] = [
+      ("chaof", "chào", "chaof", "chao"),
+      ("tieengs", "tiếng", "tieengs", "tiêng"),
+      ("dduwowngf", "đường", "dduwowngf", "đương"),
+    ]
+
+    for (keys, committed, wantKeys, afterSecondBS) in cases {
+      var buffer = WordBuffer()
+      for c in keys { buffer.push(char: c, engine: engine) }
+      XCTAssertEqual(buffer.transformed, committed, "Sanity: '\(keys)' phải ra '\(committed)'")
+
+      // Space commit từ (đường `newWord(storePrevious: true)` của handleTextChar).
+      buffer.newWord(storePrevious: true)
+
+      // BS#1: xoá dấu cách → khôi phục từ vừa commit vào bộ đệm.
+      _ = buffer.pop(engine: engine, usesNFC: true)
+      XCTAssertEqual(buffer.transformed, committed)
+      XCTAssertEqual(String(buffer.keys), wantKeys,
+        "'\(keys)': replay phải giữ CẢ phím dấu, không chỉ chuKhongDau")
+
+      // BS#2: bỏ một phím — kết quả phải khớp đường Backspace không qua commit.
+      _ = buffer.pop(engine: engine, usesNFC: true)
+      XCTAssertEqual(buffer.transformed, afterSecondBS,
+        "'\(keys)': bỏ 1 phím phải ra '\(afterSecondBS)'")
+    }
+  }
+
+  /// P2 — pin hành vi CŨ để thấy rõ nó sai ở đâu, và khoá luôn nhánh fallback.
+  ///
+  /// `previousKeys` rỗng (ai đó gán thẳng `previousWordState` mà không qua
+  /// `newWord(storePrevious:)`) thì `pop` quay về đúng công thức cũ. Fallback
+  /// đó phải TỒN TẠI để không phá call site lạ, nhưng kết quả của nó chính là
+  /// bug: chuỗi phím mất dấu.
+  func testP2_EmptyPreviousKeysFallsBackToToneLessReplay() throws {
+    let engine = Telex()
+    var buffer = WordBuffer()
+    for c in "chaof" { buffer.push(char: c, engine: engine) }
+    buffer.newWord(storePrevious: true)
+    buffer.previousKeys = []   // ép đi nhánh fallback = công thức CŨ
+
+    _ = buffer.pop(engine: engine, usesNFC: true)
+    XCTAssertEqual(String(buffer.keys), "chao",
+      "Fallback dựng keys từ chuKhongDau — phím dấu 'f' biến mất")
+    _ = buffer.pop(engine: engine, usesNFC: true)
+    XCTAssertEqual(buffer.transformed, "cha",
+      "Đây là kết quả SAI của hành vi cũ, giữ lại để đối chiếu")
+  }
+
+  /// P3 — `reconstructState` phải reset `ddToggleStage`.
+  ///
+  /// Vòng replay cũ ghi vào một biến CỤC BỘ nên `self.ddToggleStage` giữ nguyên
+  /// giá trị của từ TRƯỚC khi backspace: "vcdd" → "vcđ" (stage = 1), Backspace
+  /// đưa màn hình về "vcd" mà stage vẫn 1 → gõ 'd' lại KHÔNG toggle được nữa
+  /// (ra "vcdd"), và mọi 'd' sau đó cũng vậy cho tới hết từ.
+  func testP3_ReconstructStateResetsDdToggleStage() throws {
+    let engine = Telex()
+    var buffer = WordBuffer()
+    for c in "vcdd" { buffer.push(char: c, engine: engine) }
+    XCTAssertEqual(buffer.transformed, "vcđ", "anywhere-dd: 'vcdd' → 'vcđ'")
+    XCTAssertEqual(buffer.ddToggleStage, 1)
+
+    _ = buffer.pop(engine: engine, usesNFC: true)
+    XCTAssertEqual(buffer.transformed, "vcd")
+    XCTAssertEqual(buffer.ddToggleStage, 0,
+      "Sau replay, stage phải khớp MÀN HÌNH ('vcd' — chưa toggle)")
+
+    buffer.push(char: "d", engine: engine)
+    XCTAssertEqual(buffer.transformed, "vcđ",
+      "Gõ 'd' lại phải toggle được; hành vi cũ kẹt ở 'vcdd'")
+  }
+
+  /// P6 — "kr" đã gỡ khỏi `impossible2LetterPrefixes`.
+  ///
+  /// Nó vừa nằm ở đó vừa nằm trong `TiengViet.PhuAmGhep` và
+  /// `TiengVietValidator.ValidInitials` như phụ âm đầu tiếng Việt HỢP LỆ —
+  /// mâu thuẫn trực tiếp. `isImpossibleCluster` chạy TRƯỚC validator (và trước
+  /// cả Free Mark) nên "kroong" bị khoá raw ngay ở phím 'r' → ra "kroong" thay
+  /// vì "Krông" (Krông Pắc, Krông Ana, Krông Bông).
+  func testP6_KrPrefixNoLongerBlocksVietnamesePlaceNames() throws {
+    let engine = Telex()
+
+    func typed(_ keys: String) -> String {
+      var b = WordBuffer()
+      for c in keys { b.push(char: c, engine: engine) }
+      return b.transformed
+    }
+
+    XCTAssertEqual(typed("kroong"), "krông", "Krông — tên địa danh Tây Nguyên")
+    // Đối chứng: từ tiếng Anh mở đầu "kr" vẫn được validator/lexicon giữ raw,
+    // chỉ là khoá muộn hơn 1 phím.
+    XCTAssertEqual(typed("krill"), "krill")
+    XCTAssertEqual(typed("kraft"), "kraft")
+    // Đối chứng cho `testGoNhanhEngineInnovations` (dòng "kr initials"):
+    // "krong" không có phím mũ nên vẫn ra "krong" như trước.
+    XCTAssertEqual(typed("krong"), "krong")
+  }
+}
+
+// MARK: - ===========================================
+// MARK: - v4.23 — Ranh giới đổi app: bộ đệm & ngữ cảnh câu
+// MARK: - ===========================================
+final class AppSwitchBoundaryV423Tests: XCTestCase {
+
+  private var savedZWJF = true
+  private var savedFreeMark = false
+
+  override func setUp() {
+    super.setUp()
+    savedZWJF = Defaults[.allowedZWJF]
+    savedFreeMark = Defaults[.freeMarkModeEnabled]
+    Defaults[.allowedZWJF] = true
+    Defaults[.freeMarkModeEnabled] = false
+  }
+
+  override func tearDown() {
+    Defaults[.allowedZWJF] = savedZWJF
+    Defaults[.freeMarkModeEnabled] = savedFreeMark
+    super.tearDown()
+  }
+
+  // ⚠️ ĐÃ XOÁ (v4.24) — `testP1_RealAppChangeClearsWordBuffer`.
+  //
+  // Test đó khoá: đang gõ "vie" ở Safari mà `changeActiveApp("com.google.Chrome")`
+  // thì `transformed` phải về "" và phím kế tiếp mở TỪ MỚI. Nó khoá đúng một
+  // dòng `newWord()` trong `InputProcessor.changeActiveApp`. Dòng đó đã bị GỠ,
+  // nên test đi theo — giữ lại là khoá một con đường không còn tồn tại.
+  //
+  // VÌ SAO GỠ: hàm ấy chạy trong callback event-tap, mà trên macOS 26 `activeApp`
+  // DAO ĐỘNG mỗi phím ở overlay (Spotlight) — hai khối trong `EventHook` ghi nó
+  // từ hai nguồn lệch nhau (`eventTargetUnixProcessID` trả app NỀN, AX trả
+  // Spotlight). Guard `app != activeApp` vì thế đúng mà vô dụng: mỗi phím là một
+  // lần "đổi app" thật sự khác giá trị → xoá bộ đệm ở MỌI phím → không dấu nào
+  // hình thành nữa, gõ tiếng Việt âm thầm biến thành gõ tiếng Anh. Vòng vá tiếp
+  // theo (gộp hai khối thành một bộ phân giải duy nhất) lại đẻ hồi quy khác.
+  //
+  // CA HỎNG QUAY LẠI (P1 — chấp nhận sống chung): một app cướp focus mà KHÔNG
+  // sinh keyDown/mouseDown, đúng lúc đang gõ dở một từ → bộ đệm của app cũ sống
+  // sót, và số backspace của lần thay thế kế tiếp (tính trên "vie") ăn mất ký tự
+  // cuối của ô bên app mới. Hiếm, hỏng đúng một ký tự, gõ lại được — rẻ hơn hẳn
+  // "mất dấu ở mọi app".
+  //
+  // MUỐN VÁ LẠI: đọc docstring (a)→(d) của `InputProcessor.changeActiveApp`
+  // TRƯỚC. Điều kiện tiên quyết là chứng minh trên máy thật rằng `activeApp` ỔN
+  // ĐỊNH ở mọi phím (macOS 26 + Spotlight + Chrome web content). Dựng lại
+  // `newWord()` khi chưa có bằng chứng đó thì
+  // `testR1_ActiveAppPingPongMustNotTouchTheWordBuffer` sẽ đỏ — và nó đỏ có lý do.
+
+  /// P1 — một lời gọi `changeActiveApp` KHÔNG được giết bộ đệm từ.
+  ///
+  /// Sau khi nửa "xoá đệm khi đổi app" của P1 bị LÙI (v4.24 — xem khối chú thích
+  /// ngay trên), test này xanh một cách hiển nhiên: không đường nào trong
+  /// `changeActiveApp` đụng tới bộ đệm nữa. Giữ lại làm TRIPWIRE — ai thêm
+  /// `newWord()` vào đó mà quên guard sẽ thấy nó đỏ trước khi kịp đi hết vòng lặp
+  /// vá-rồi-lùi lần nữa.
+  ///
+  /// Bối cảnh vẫn nguyên giá trị: `changeActiveApp` bị gọi lại với CÙNG bundle
+  /// rất thường xuyên (`AppState.activeApplicationDidChange` gọi không guard; AX
+  /// nhảy qua lại giữa app cha và tiến trình phụ của nó). Xoá vô điều kiện chính
+  /// là dựng lại lỗi v4.22 — từ đang gõ bị cắt đôi giữa chừng ("Nooij" → "Nôị").
+  func testP1_SameAppReassignmentKeepsWordBuffer() throws {
+    let p = InputProcessor(method: .Telex)
+    p.changeActiveApp("com.apple.Safari")
+    p.newWord()
+    for c in "nooi" { p.push(char: c) }
+    XCTAssertEqual(p.transformed, "nôi")
+
+    p.changeActiveApp("com.apple.Safari")   // gán lại ĐÚNG giá trị cũ
+    XCTAssertEqual(p.transformed, "nôi", "Gán lại cùng bundle không được xoá đệm")
+
+    p.push(char: "j")
+    XCTAssertEqual(p.transformed, "nội", "Dấu nặng vẫn áp được lên cả cụm")
+  }
+
+  /// P8 — ngữ cảnh câu chết cùng ranh giới app.
+  ///
+  /// `changeActiveApp` nay gọi `resetSentenceCapitalizeState()`. Nửa quan sát
+  /// được từ test là cờ chờ-viết-hoa: sau Enter ở app A, chuyển sang app B thì
+  /// chữ đầu tiên gõ ở B KHÔNG được tự viết hoa — câu đó thuộc về app A.
+  ///
+  /// PHẠM VI: nửa còn lại của P8 (`prev1Committed`/`prev2Committed` — cửa sổ
+  /// n-gram) là `private` và chỉ quan sát được qua `NGramStore` file-backed,
+  /// nên KHÔNG assert ở đây; đừng đọc test này như bằng chứng cửa sổ n-gram đã
+  /// bị cắt.
+  func testP8_PendingCapitalizeDiesOnRealAppChange() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+
+    func press(_ p: InputProcessor, code: UInt16) -> Unmanaged<CGEvent>? {
+      let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(code), keyDown: true)!
+      event.flags = []
+      return p.handleEvent(event: event)
+    }
+
+    // Đối chứng: KHÔNG đổi app → vẫn tự viết hoa như cũ.
+    let staying = InputProcessor(method: .Telex)
+    staying.changeActiveApp("com.apple.Notes")
+    _ = press(staying, code: 36)          // Enter
+    _ = press(staying, code: 0)           // a
+    XCTAssertEqual(staying.transformed, "A", "Cùng app: Enter vẫn mở câu mới")
+
+    // Đổi app thật giữa Enter và chữ cái → ngữ cảnh câu của app cũ phải chết.
+    let switching = InputProcessor(method: .Telex)
+    switching.changeActiveApp("com.apple.Notes")
+    _ = press(switching, code: 36)        // Enter (ở Notes)
+    switching.changeActiveApp("com.apple.Safari")
+    _ = press(switching, code: 0)         // a (ở Safari)
+    XCTAssertEqual(switching.transformed, "a",
+      "Câu vừa xuống dòng thuộc app CŨ — không được viết hoa hộ app mới")
+  }
+}
+
+// MARK: - ===========================================
+// MARK: - v4.23 — Macro bung được sau khi auto-capitalize viết hoa trigger
+// MARK: - ===========================================
+final class MacroCaseInsensitiveV423Tests: XCTestCase {
+
+  /// P7 — auto-capitalize viết hoa chữ đầu câu TRƯỚC khi macro được tra, mà
+  /// toàn bộ macro seed sẵn đều chữ thường và CẢ HAI tính năng đều bật mặc
+  /// định. Ở đầu mỗi câu/dòng "vn" đã thành "Vn", `"vn" != "Vn"` nên macro
+  /// không bao giờ bung: ra "Vn " thay vì "Việt Nam ". Giữa câu thì bung bình
+  /// thường — nên lỗi chỉ lộ ở đầu câu và rất dễ bị bỏ qua.
+  func testP7_MacroExpandsWhenTriggerWasAutoCapitalized() throws {
+    let macros = [Macro(from: "vn", to: "Việt Nam")]
+    XCTAssertEqual(
+      InputProcessor.macroTarget(for: "vn", endingChar: " ", macros: macros),
+      "Việt Nam ", "chữ thường: bung như trước")
+    XCTAssertEqual(
+      InputProcessor.macroTarget(for: "Vn", endingChar: " ", macros: macros),
+      "Việt Nam ", "đầu câu (auto-capitalize) cũng phải bung")
+  }
+
+  /// P7 — KỲ VỌNG ĐÃ SỬA (v4.24). Bản gốc khoá `"VN"` → `"VIỆT NAM "`, tức khoá
+  /// đúng cái HỒI QUY (R4): nó là hệ quả của khớp-bỏ-qua-hoa/thường cộng với
+  /// `matchCase` viết HOA TOÀN BỘ, và nó nuốt mọi viết tắt người Việt gõ HOA CÓ
+  /// CHỦ Ý. Kỳ vọng cũ → mới: `"VIỆT NAM "` thành `nil`.
+  ///
+  /// Lỗi P7 cần vá chỉ đòi biến thể hoa-CHỮ-ĐẦU (thứ auto-capitalize thật sự tạo
+  /// ra ở đầu câu), nên khớp thu hẹp về đúng `autoCapitalizedVariant`. Muốn
+  /// all-caps bung thì khai macro all-caps riêng — nhánh khớp CHÍNH XÁC phục vụ
+  /// đúng việc đó (`testP7_ExactCaseMacroWinsOverCaseInsensitiveMatch`).
+  func testP7_AllCapsTriggerDoesNotExpand() throws {
+    let macros = [Macro(from: "vn", to: "Việt Nam")]
+    XCTAssertNil(
+      InputProcessor.macroTarget(for: "VN", endingChar: " ", macros: macros),
+      "ALL-CAPS là viết tắt có chủ ý, không phải trigger bị auto-capitalize")
+    // Đối chứng đi kèm: biến thể hoa-CHỮ-ĐẦU vẫn bung, và `matchCase` vẫn lo
+    // phần bung cho nó — nửa fix gốc của P7 không được mất theo.
+    XCTAssertEqual(
+      InputProcessor.macroTarget(for: "Vn", endingChar: " ", macros: macros),
+      "Việt Nam ")
+  }
+
+  /// R4 [chiều HỒI QUY] — đo trên ĐÚNG bảng macro mà user thật có
+  /// (`DefaultMacros.allDefaults`, seed sẵn cho mọi máy mới). Khớp
+  /// bỏ-qua-hoa/thường biến mọi viết tắt gõ HOA thành macro: "PM " (giờ chiều /
+  /// Project Manager) → "± ", "VN " → "VIỆT NAM ", "HN " → "HÀ NỘI ",
+  /// "CTY " → "CÔNG TY ", "ARR " → "→", "DEG " → "°". Trước v4.23 chúng đi qua
+  /// nguyên vẹn — đây là chữ BIẾN MẤT khỏi văn bản người dùng, không phải tính
+  /// năng.
+  func testR4_AllCapsAbbreviationsPassThroughUnexpanded() throws {
+    let macros = DefaultMacros.allDefaults
+    for trigger in ["PM", "VN", "HN", "SG", "CTY", "ARR", "DEG", "GTE"] {
+      XCTAssertNil(
+        InputProcessor.macroTarget(for: trigger, endingChar: " ", macros: macros),
+        "\(trigger) gõ HOA là viết tắt có chủ ý — không được bung macro")
+    }
+  }
+
+  /// R4 [chiều FIX GỐC] — nửa còn lại của P7 phải sống: biến thể hoa-CHỮ-ĐẦU
+  /// (đầu câu, sau khi auto-capitalize viết hoa trigger) vẫn bung, chữ thường
+  /// giữa câu vẫn bung. Cộng thêm ranh giới của chính `autoCapitalizedVariant`,
+  /// vì đó là chỗ duy nhất quyết định "biến thể nào được nhận".
+  func testR4_AutoCapitalizedVariantStillExpands() throws {
+    let macros = DefaultMacros.allDefaults
+    XCTAssertEqual(
+      InputProcessor.macroTarget(for: "vn", endingChar: " ", macros: macros),
+      "Việt Nam ", "giữa câu (chữ thường) — đường vốn đã chạy")
+    XCTAssertEqual(
+      InputProcessor.macroTarget(for: "Vn", endingChar: " ", macros: macros),
+      "Việt Nam ", "đầu câu (auto-capitalize) — chính là lỗi P7 đã vá")
+    XCTAssertEqual(
+      InputProcessor.macroTarget(for: "Hn", endingChar: " ", macros: macros), "Hà Nội ")
+    XCTAssertEqual(
+      InputProcessor.macroTarget(for: "Cty", endingChar: " ", macros: macros), "Công ty ")
+    // Phần bung không có chữ cái thì `matchCase` không đụng được gì.
+    XCTAssertEqual(
+      InputProcessor.macroTarget(for: "Pm", endingChar: " ", macros: macros), "± ")
+
+    // Ranh giới: CHỈ viết hoa chữ đầu, và chỉ khi trigger mở đầu bằng chữ thường.
+    XCTAssertEqual(InputProcessor.autoCapitalizedVariant(of: "vn"), "Vn")
+    XCTAssertEqual(InputProcessor.autoCapitalizedVariant(of: "tphcm"), "Tphcm")
+    XCTAssertNil(InputProcessor.autoCapitalizedVariant(of: "VN"),
+      "trigger đã viết hoa thì auto-capitalize không tạo ra được biến thể nào")
+    XCTAssertNil(InputProcessor.autoCapitalizedVariant(of: ""))
+  }
+
+  /// P7 — khớp CHÍNH XÁC phải được thử TRƯỚC. Người dùng có quyền khai hai
+  /// macro chỉ khác hoa/thường; mỗi cái phải giữ phần bung riêng của mình.
+  func testP7_ExactCaseMacroWinsOverCaseInsensitiveMatch() throws {
+    let macros = [
+      Macro(from: "vn", to: "Việt Nam"),
+      Macro(from: "VN", to: "Vietnam Ltd"),
+    ]
+    XCTAssertEqual(
+      InputProcessor.macroTarget(for: "VN", endingChar: " ", macros: macros),
+      "Vietnam Ltd ", "khớp chính xác thắng, KHÔNG được matchCase thành ALL-CAPS")
+    XCTAssertEqual(
+      InputProcessor.macroTarget(for: "vn", endingChar: " ", macros: macros),
+      "Việt Nam ")
+  }
+
+  /// Đối chứng P7: không có macro nào khớp thì vẫn trả nil (không được vì nới
+  /// hoa/thường mà bung nhầm), và macro rỗng bị bỏ qua như cũ.
+  func testP7_NoMatchAndEmptyMacrosStillReturnNil() throws {
+    let macros = [Macro(from: "vn", to: "Việt Nam")]
+    XCTAssertNil(InputProcessor.macroTarget(for: "vni", endingChar: " ", macros: macros))
+    XCTAssertNil(InputProcessor.macroTarget(for: "", endingChar: " ", macros: macros))
+    XCTAssertNil(InputProcessor.macroTarget(
+      for: "vn", endingChar: " ", macros: [Macro(from: "vn", to: "")]))
+  }
+}
+
+// MARK: - ===========================================
+// MARK: - v4.24 — Vá 9 hồi quy do đợt v4.23 đẻ ra
+// MARK: - ===========================================
+//
+// Cả 9 hồi quy lọt qua 391 test vì lưới cũ chỉ khoá MỘT chiều: "ca mà bản vá
+// sinh ra để sửa phải đúng". Không test nào hỏi ngược lại — "bản vá có làm hỏng
+// thứ đang chạy đúng không". Vì vậy MỖI test trong khối này khoá ĐỒNG THỜI hai
+// chiều, và cố ý để chúng CẠNH NHAU trong cùng một hàm:
+//   • [HỒI QUY] ca mà bản vá v4.23 làm hỏng — nay phải xanh;
+//   • [FIX GỐC] ca mà bản vá v4.23 sinh ra để sửa — không được mất.
+// Người sửa engine lần sau đọc một chỗ là thấy cả hai mép của ranh giới.
+//
+// Ba bản vá KHÔNG có test ở đây — và HAI trong ba đã bị LÙI HẲN (v4.24). Lý do
+// ghi thẳng tại chỗ gần nhất:
+//   • R3 (miễn trừ `.stepByStep` khỏi downgrade + hàng rào thứ tự
+//     `pendingReplacements`/`passThroughOrDefer`) — ĐÃ LÙI; xem khối chú thích
+//     cuối `EngineRegressionFixesV424Tests`.
+//   • R5 (cờ `fieldKindIsReliable` + cổng `AppState.adoptFieldKind` đóng băng
+//     phân loại field trong một từ) — ĐÃ LÙI; xem `FocusedFieldStabilityV424Tests`.
+//   • R9 chỉ sửa docstring; hành vi được khoá bằng hai test R9 dưới đây.
+//
+// R1 (bộ phân giải `activeApp` một-nguồn + `newWord()` trong `changeActiveApp`)
+// cũng đã bị LÙI — xem `AppSwitchResolverV424Tests` và `AppSwitchBoundaryV423Tests`.
+// Ba chỗ lùi đó KHÔNG phải dọn dẹp: lỗi chúng vá (P1/P5/F1) là lỗi CÓ SẴN đang
+// chạy trong v4.23, còn thuốc thì hai lần liền độc hơn bệnh. Mỗi chỗ đều có khối
+// chú thích (a) lỗi gốc (b) đã vá thế nào (c) hồi quy đẻ ra (d) vì sao sống chung.
+
+final class EngineRegressionFixesV424Tests: XCTestCase {
+
+  private var savedFreeMark = false
+  private var savedZWJF = true
+  private var savedAutoTypo = true
+  private var savedNewStyle = true
+
+  override func setUp() {
+    super.setUp()
+    savedFreeMark = Defaults[.freeMarkModeEnabled]
+    savedZWJF = Defaults[.allowedZWJF]
+    savedAutoTypo = Defaults[.autoTypoCorrection]
+    savedNewStyle = Defaults[.newStyleTonePlacement]
+    // Chốt cấu hình mặc định của app — mọi kỳ vọng dưới đây đo ở đúng cấu hình
+    // này (và ở cùng cấu hình với `EngineFixesV423Tests`). Bộ test KHÔNG chạy
+    // song song nên phải tự pin thay vì tin vào thứ tự lớp.
+    Defaults[.freeMarkModeEnabled] = false
+    Defaults[.allowedZWJF] = true
+    Defaults[.autoTypoCorrection] = true
+    Defaults[.newStyleTonePlacement] = true
+  }
+
+  override func tearDown() {
+    Defaults[.freeMarkModeEnabled] = savedFreeMark
+    Defaults[.allowedZWJF] = savedZWJF
+    Defaults[.autoTypoCorrection] = savedAutoTypo
+    Defaults[.newStyleTonePlacement] = savedNewStyle
+    super.tearDown()
+  }
+
+  /// Gõ chuỗi phím qua ĐÚNG đường InputProcessor (gồm cả recovery + khôi phục
+  /// tiếng Anh), trả về chuỗi hiển thị trên màn hình.
+  private func telex(_ keys: String) -> String {
+    let p = InputProcessor(method: .Telex)
+    p.newWord()
+    for c in keys { p.push(char: c) }
+    return p.transformed
+  }
+
+  // MARK: R2 — Rule 7 bắn vào đúng trạng thái mà Rule 5c cố ý tha
+
+  /// "ao" + dấu trăng khi CHƯA có phụ âm cuối là trạng thái TRUNG GIAN: phụ âm
+  /// cuối tới thì parser đảo "ao" → "oa" và ra hoặc / ngoặc / khoăn / choắt.
+  /// Rule 5c tha nó từ lâu (có test khoá). Rule 7 — thêm ở v4.23 cho E10 — thì
+  /// không, mà nhân "ăo" đâu có trong `NhanCoDauMuHopLe`, nên cả nhóm gõ NGHỊCH
+  /// thứ tự a/o bị chốt `stopProcessing` ngay ở phím `w` và recovery không nhả
+  /// ra nữa. Nay hai luật gọi CHUNG một carve-out (`dangChoPhuAmCuoiDeDaoAO`)
+  /// nên không lệch nhau được.
+  func testR2_SwappedAOOrderStillReachesTheFinalConsonantSwap() {
+    // [HỒI QUY] thứ tự nghịch (a trước o) phải về được tới đích.
+    XCTAssertEqual(telex("haowcj"), "hoặc")
+    XCTAssertEqual(telex("chaowts"), "choắt")
+    XCTAssertEqual(telex("ngaowcj"), "ngoặc")
+    XCTAssertEqual(telex("khaown"), "khoăn")
+    // …và trạng thái trung gian phải SỐNG qua từng phím, không bị chốt sớm.
+    XCTAssertEqual(telex("haow"), "hăo", "trạng thái chờ đảo, chưa có phụ âm cuối")
+    XCTAssertEqual(telex("haowc"), "hoăc", "phụ âm cuối tới ⇒ parser đảo ao → oa")
+
+    // [FIX GỐC] thứ tự thuận vốn đã chạy — carve-out không được nới rộng ra
+    // thành "tha mọi thứ", cũng không được siết vào làm hỏng nhóm này.
+    XCTAssertEqual(telex("hoawcj"), "hoặc")
+    XCTAssertEqual(telex("ngoawcj"), "ngoặc")
+    XCTAssertEqual(telex("khoawn"), "khoăn")
+    XCTAssertEqual(telex("choawts"), "choắt")
+    XCTAssertEqual(telex("xoawn"), "xoăn")
+  }
+
+  /// R2 [FIX GỐC] — E10 vẫn phải bắt được nhân bất khả sinh ra SAU khi áp mũ.
+  /// Carve-out chỉ được mở đúng bằng "ăo mở", không rộng hơn một ly: nếu ai đó
+  /// vá R2 bằng cách tắt hẳn Rule 7 thì test này vỡ.
+  func testR2_ImpossibleRhymeAfterMuStillRecoversToRawKeys() {
+    for keys in ["khoee", "hoaan", "tauw", "cuwuc", "khoeoo", "taiw"] {
+      XCTAssertEqual(telex(keys), keys,
+        "\(keys): vần sau khi áp mũ không tồn tại ⇒ phải về phím thô")
+    }
+    // Và các vần CÓ mũ hợp lệ vẫn đi qua nguyên vẹn.
+    XCTAssertEqual(telex("khuaan"), "khuân")
+    XCTAssertEqual(telex("dduwowngf"), "đường")
+    XCTAssertEqual(telex("ruowuj"), "rượu")
+    XCTAssertEqual(telex("tieengs"), "tiếng")
+  }
+
+  // MARK: R6 — guard "nguyên âm ba" (E4) chặn quá rộng
+
+  /// E4 chặn 'o' thứ hai của "oeo"/"oao" bị hiểu nhầm thành lệnh mũ. Guard đầu
+  /// tiên chỉ hỏi "ký tự liền trước có phải nguyên âm KHÁC không" — quá rộng:
+  /// "toio" cũng khớp (liền trước là 'i') nên rơi xuống phím thô, mất lối gõ mũ
+  /// TRỄ sau nguyên âm. Nay có thêm vế bắt buộc: cụm nguyên âm NỐI THÊM ký tự
+  /// này phải là vần CÓ THẬT. "oe"+o = "oeo" có thật ⇒ nguyên âm ba; "oi"+o =
+  /// "oio" không tồn tại ⇒ chắc chắn là lệnh đặt mũ.
+  func testR6_LateCircumflexAfterAnotherVowelStillWorks() {
+    XCTAssertEqual(telex("toio"), "tôi", "[HỒI QUY] mũ trễ sau NGUYÊN ÂM")
+    XCTAssertEqual(telex("theme"), "thêm", "[FIX GỐC] mũ trễ sau PHỤ ÂM CUỐI")
+    XCTAssertEqual(telex("toong"), "tông")
+  }
+
+  /// R6 [FIX GỐC] — nguyên âm ba vẫn KHÔNG được coi là lệnh đặt mũ. Đây chính
+  /// là lưới đã bắt được lần siết quá tay đầu tiên của E4.
+  func testR6_TripleVowelIsStillNotACircumflexCommand() {
+    XCTAssertEqual(telex("khoeo"), "khoeo")
+    XCTAssertEqual(telex("ngoeo"), "ngoeo")
+    XCTAssertEqual(telex("ngoeos"), "ngoéo")
+    XCTAssertEqual(telex("khoeof"), "khoèo")
+    XCTAssertEqual(telex("ngoeoj"), "ngoẹo")
+    XCTAssertEqual(telex("khoeor"), "khoẻo")
+    XCTAssertEqual(telex("ngoaos"), "ngoáo")
+    XCTAssertEqual(telex("ngoaor"), "ngoảo")
+  }
+
+  // MARK: R7 — "đối xứng hoa/thường" làm MẤT CHỮ trong tên camelCase
+
+  /// Xem `EngineFixesV423Tests.testE5_CircumflexCaseAsymmetryIsIntentional` cho
+  /// lập luận; đây là chiều mà E5 gốc không hề đo. Chiều `aA` → `â` khiến chữ
+  /// HOA nuốt chữ thường liền trước, và nuốt ÂM THẦM — người gõ không thấy gì
+  /// bất thường cho tới khi đọc lại tên biến.
+  func testR7_CircumflexCaseAsymmetryKeepsCamelCaseNamesIntact() {
+    // [HỒI QUY] tên camelCase phải đi qua NGUYÊN VẸN.
+    XCTAssertEqual(telex("dataAccess"), "dataAccess", "chiều aA→â làm mất chữ 'a'")
+    XCTAssertEqual(telex("photoObject"), "photoObject")
+    XCTAssertEqual(telex("LeEm"), "LeEm")
+
+    // [FIX GỐC] chiều `Aa` → `Â` (Shift ở phím ĐẦU = viết hoa cả từ) vẫn chạy,
+    // và các đường thuần một kiểu chữ không đổi.
+    XCTAssertEqual(telex("Aa"), "Â")
+    XCTAssertEqual(telex("Leem"), "Lêm")
+    XCTAssertEqual(telex("AAn"), "Ân")
+    XCTAssertEqual(telex("aa"), "â")
+  }
+
+  // MARK: R9 — Free Mark: docstring nói "TOÀN BỘ", hành vi là "gần như toàn bộ"
+
+  /// Bản vá R9 sửa TÀI LIỆU và giữ nguyên hành vi E9, nên phần khoá được là
+  /// đúng cái tài liệu mới hứa — và phải khoá CẢ HAI vế của chữ "gần như", vì
+  /// hiểu lệch vế nào cũng dẫn tới một bản vá sai.
+  func testR9_FreeMarkLoosensStructureButKeepsTheCheckedToneRule() {
+    let saved = Defaults[.freeMarkModeEnabled]
+    Defaults[.freeMarkModeEnabled] = true
+    defer { Defaults[.freeMarkModeEnabled] = saved }
+
+    // VẾ 1 — "gần như TOÀN BỘ": Free Mark VẪN nới cấu trúc vần. Đây là lý do
+    // tồn tại của công tắc (tên riêng, tiếng dân tộc) và là chiều dễ bị siết
+    // nhầm nhất khi ai đó đọc E9 rồi tưởng Free Mark đã bị vô hiệu hoá.
+    XCTAssertEqual(telex("khoee"), "khôe", "Free Mark bật: vần ôe được phép")
+    XCTAssertEqual(telex("tauw"), "taư")
+    XCTAssertEqual(telex("cuwuc"), "cuưc")
+    XCTAssertEqual(telex("xeengr"), "xểng")
+
+    // VẾ 2 — "KHÔNG phải toàn bộ": luật thanh nhập là tuyệt đối, vẫn chạy.
+    for word in ["art", "chart", "soft", "hurt", "hocr", "latf", "machx", "hopf", "bakr"] {
+      XCTAssertEqual(telex(word), word,
+        "Free Mark bật: '\(word)' không được biến thành âm tiết thanh-nhập bất khả")
+    }
+    // Sắc/nặng trên phụ âm tắc thì hợp lệ, không được chặn nhầm.
+    XCTAssertEqual(telex("batj"), "bạt")
+    XCTAssertEqual(telex("bats"), "bát")
+  }
+
+  /// R9 — cái Free Mark MẤT đi vì E9, đo tường minh: đúng nhóm âm tiết kết bằng
+  /// phụ âm tắc mang huyền/hỏi/ngã. Hai điều được khoá ở đây:
+  ///   1. nhóm đó hỏng ra CHUỖI PHÍM THÔ — người gõ nhìn thấy ngay đúng phím
+  ///      mình bấm, không phải kiểu mất chữ âm thầm;
+  ///   2. bật/tắt công tắc cho kết quả Y HỆT — tức E9 không lấy mất của Free
+  ///      Mark âm tiết tiếng Việt nào, chỉ lấy mất tổ hợp bất khả.
+  func testR9_FreeMarkCostIsRawKeysAndIdenticalWithSwitchOff() {
+    let saved = Defaults[.freeMarkModeEnabled]
+    defer { Defaults[.freeMarkModeEnabled] = saved }
+    let words = ["hocr", "latf", "machx", "hopf", "bakr"]
+
+    Defaults[.freeMarkModeEnabled] = false
+    let off = words.map { telex($0) }
+    Defaults[.freeMarkModeEnabled] = true
+    let on = words.map { telex($0) }
+
+    XCTAssertEqual(on, words, "hỏng ra phím THÔ, nhìn thấy được")
+    XCTAssertEqual(on, off, "công tắc Free Mark không đổi kết quả của luật tuyệt đối")
+  }
+
+  // MARK: R8 — giá của việc gỡ "kr" khỏi bảng chặn (P6), chưa vá, đã đo
+
+  /// Bản vá đợt này CỐ Ý chỉ sửa comment: gate theo chữ hoa không phân biệt được
+  /// hai bên ("Krông" viết hoa thì "Kris"/"Kraft"/"Krispy Kreme" cũng viết hoa),
+  /// còn fix đúng tầng là siết vần cho phụ âm đầu "kr" trong `TiengVietValidator`
+  /// — hiện "kr" nhận MỌI vần nên "kri" được coi là âm tiết hợp lệ và ăn được
+  /// dấu.
+  ///
+  /// ⚠️ Khoá HÀNH VI HIỆN TẠI, không phải hành vi mong muốn: `telex("kris")` ra
+  /// "krí" là LỖI CÒN TỒN. Siết đúng tầng sẽ làm dòng đó FAIL — khi ấy CẬP NHẬT
+  /// kỳ vọng, đừng đưa "kr" trở lại `impossible2LetterPrefixes` (làm vậy là giết
+  /// lại Krông Pắc / Krông Ana / Krông Bông).
+  func testR8_KrPrefixTradeoffIsMeasuredNotHidden() {
+    // [FIX GỐC] địa danh Tây Nguyên gõ được.
+    XCTAssertEqual(telex("kroong"), "krông")
+    XCTAssertEqual(telex("krong"), "krong")
+    // Từ tiếng Anh kr… tự hồi phục ở phím kế tiếp — khoá muộn hơn 1 phím.
+    XCTAssertEqual(telex("kraft"), "kraft")
+    XCTAssertEqual(telex("krill"), "krill")
+    XCTAssertEqual(telex("kremlin"), "kremlin")
+    XCTAssertEqual(telex("krispy"), "krispy", "nháy 'krí'→'kríp' rồi hồi phục ở 'y'")
+    // GIÁ đã biết: 4 ký tự là hết từ nên không còn phím nào để hồi phục.
+    XCTAssertEqual(telex("kris"), "krí", "GIÁ đã đo — xem docstring trước khi 'sửa'")
+  }
+
+  // MARK: R3 — hàng rào thứ tự phím: ĐÃ THỬ, ĐÃ LÙI (v4.24), KHÔNG có test
+  //
+  // Chỗ này từng giải thích vì sao cơ chế hoãn phím của v4.23 không viết được
+  // test. Cơ chế đó nay đã GỠ HẲN (`pendingReplacements`, `noteReplacementEnqueued`,
+  // `hasPendingReplacements`, `passThroughOrDefer`), cùng với miễn trừ
+  // `.stepByStep` trong `effectiveTypingStrategy`. Ghi lại để lần sau không ai
+  // vá lại một cách mù quáng:
+  //
+  //   • LỖI GỐC (P5, có thật, VẪN CÒN): nhánh `bs<=1 && diff<=1 → .batch` hạ cả
+  //     app whitelist `.stepByStep` (Telegram, Terminal/Warp, Claude, Dock…)
+  //     xuống `.batch`, tức bỏ mất `usleep(3000)` chắn hai đầu backspace — đúng ở
+  //     nhóm phím PHỔ BIẾN NHẤT (dd→đ, aa→â, ee→ê, w→ư/ơ, và mọi phím dấu gõ
+  //     ngay sau nguyên âm cuối). Nhóm đó mất cushion.
+  //   • ĐÃ VÁ THẾ NÀO: (1) miễn trừ `.stepByStep` khỏi downgrade; rồi (2) khi (1)
+  //     dựng lại đúng race mà downgrade sinh ra để tránh ("push" → "pussh": phím
+  //     'h' không đổi gì nên đi THẲNG qua event tap, vượt mặt backspace còn nằm
+  //     trên `simulationQueue`), thêm một "sổ nợ" hàng đợi để NUỐT phím tới và
+  //     phát lại nó bằng `sendString` ở cuối hàng đợi.
+  //   • HỒI QUY ĐẺ RA (nặng hơn bệnh): `sendString` KHÔNG đi đường `.axDirect`,
+  //     nên trong Spotlight/omnibox — đúng những ô phải dùng axDirect vì chúng
+  //     nuốt synthetic event — ký tự hoãn MẤT HẲN. Và Enter/Tab thì không hoãn
+  //     được (chúng mang ngữ nghĩa submit/chuyển field mà `sendString` không tái
+  //     tạo): trong app chat `.stepByStep`, gõ "chaof" rồi Enter là GỬI ĐI tin
+  //     "chao", còn backspace + "ò" rơi vào ô soạn của tin KẾ TIẾP.
+  //   • QUYẾT ĐỊNH: sống chung với P5. Thiếu cushion thì thỉnh thoảng rớt/lặp một
+  //     ký tự và người dùng gõ lại được; hai bản vá kia làm mất chữ trong
+  //     Spotlight và gửi tin nhắn dở.
+  //
+  // Vì sao vẫn KHÔNG có test, kể cả nếu ai đó vá lại:
+  //   • `effectiveTypingStrategy` (và cả cụm đã gỡ) đều `private` —
+  //     `@testable import` chỉ mở tới `internal`, không gọi được từ đây.
+  //   • Thứ bị vá là THỨ TỰ TỚI APP của các event, mà mọi nhánh đều kết thúc bằng
+  //     `CGEvent.post` THẬT vào app đang focus của máy chạy test. Một test trung
+  //     thực phải gõ vào app thật rồi đọc lại nội dung ô — kiểm thử tích hợp, và
+  //     nó phá màn hình người chạy.
+  //   • Nhịp bị khoá là cửa sổ ~8ms giữa hai phím; mô phỏng bằng `usleep` cho ra
+  //     kết quả phụ thuộc tải máy — test nhấp nháy còn tệ hơn không có test.
+  //
+  // Phần CÒN khoá được nằm ở `AppSendingStrategyTests`: bảng
+  // `EventSimulator.getStrategy(for:)` phải tiếp tục trả `.stepByStep` cho
+  // Dock/Terminal/Telegram/Zalo/Slack… ⚠️ Ranh giới dễ đọc nhầm: bảng đó là chiến
+  // lược MẶC ĐỊNH theo app, còn `effectiveTypingStrategy` VẪN được phép hạ nó
+  // xuống `.batch` ở ca diff 1 ký tự (đó chính là P5). Đừng đọc các test kia như
+  // bằng chứng rằng mọi lần gửi tới Telegram đều đi `.stepByStep`.
+}
+
+// MARK: - ===========================================
+// MARK: - v4.24 (R1) — "app đang nhận phím": bộ phân giải MỘT-NGUỒN ĐÃ LÙI
+// MARK: - ===========================================
+//
+// v4.23 gộp hai khối ghi `activeApp` trong `EventHook.eventTapCallback` thành
+// MỘT bộ phân giải (overlay AX → event-target PID → cache) và kéo ảnh chụp AX
+// lên chạy sớm hơn. Bản gộp đó ĐÃ LÙI (v4.24): nó chỉ an toàn khi đi kèm
+// `newWord()` trong `changeActiveApp`, mà cặp ấy biến dao động `activeApp` vô
+// hại thành xoá bộ đệm mỗi phím → không dấu nào hình thành nữa.
+//
+// HEAD hôm nay lại có hai khối, và `activeApp` lại được phép dao động ở overlay.
+// Điều đó KHÔNG SAO — hậu quả duy nhất là đặt lại chiến lược gửi, vì không còn
+// ai xoá bộ đệm theo nó. Hai test dưới đây khoá đúng ranh giới ấy.
+final class AppSwitchResolverV424Tests: XCTestCase {
+
+  private var savedZWJF = true
+  private var savedFreeMark = false
+
+  override func setUp() {
+    super.setUp()
+    savedZWJF = Defaults[.allowedZWJF]
+    savedFreeMark = Defaults[.freeMarkModeEnabled]
+    Defaults[.allowedZWJF] = true
+    Defaults[.freeMarkModeEnabled] = false
+  }
+
+  override func tearDown() {
+    Defaults[.allowedZWJF] = savedZWJF
+    Defaults[.freeMarkModeEnabled] = savedFreeMark
+    super.tearDown()
+  }
+
+  /// R1 — `activeApp` được phép DAO ĐỘNG; bộ đệm từ thì KHÔNG được chết theo.
+  ///
+  /// Trên macOS 26 với Smart Switch TẮT, gõ vào Spotlight: `eventTargetUnixProcessID`
+  /// trả app NỀN (vd Excel) còn ảnh AX trả `com.apple.Spotlight`. Hai khối trong
+  /// `EventHook.eventTapCallback` ghi `input.activeApp` từ hai nguồn đó, nên giá
+  /// trị kéo qua kéo lại MỖI PHÍM. Đó là sự thật của HEAD và vkey sống chung với
+  /// nó.
+  ///
+  /// ⚠️ ĐÂY LÀ TRIPWIRE CHO MỘT QUYẾT ĐỊNH, KHÔNG PHẢI TEST KHOÁ MỘT FIX. Bản
+  /// v4.23 cho `changeActiveApp` gọi `newWord()`; cộng với dao động trên, mỗi
+  /// phím thành một lần "đổi app" ⇒ `transformed` luôn rỗng ⇒ không dấu nào hình
+  /// thành ⇒ gõ tiếng Việt âm thầm biến thành gõ tiếng Anh ở MỌI app. Bản vá đó
+  /// đã lùi; test này đỏ đúng lúc ai đó dựng lại nó.
+  ///
+  /// CỐ Ý KHÔNG assert chiều ngược lại (đổi app THẬT có xoá đệm hay không): P1 là
+  /// lỗi đang được chấp nhận sống chung — xem khối chú thích trong
+  /// `AppSwitchBoundaryV423Tests` và docstring (a)→(d) của
+  /// `InputProcessor.changeActiveApp`. Một bản vá P1 ĐÚNG trong tương lai (điều
+  /// kiện tiên quyết: chứng minh trên máy thật rằng `activeApp` ổn định mỗi phím)
+  /// sẽ phải sửa chính test này một cách CÓ CHỦ Ý, sau khi đọc hết lịch sử đó.
+  func testR1_ActiveAppPingPongMustNotTouchTheWordBuffer() throws {
+    let overlay = "com.apple.Spotlight"
+    let background = "com.microsoft.Excel"
+
+    // Hai nguồn bất đồng bộ ⇒ mỗi phím phân giải ra một app khác. Dấu vẫn phải
+    // hình thành đủ trên cả cụm.
+    let pingPong = InputProcessor(method: .Telex)
+    pingPong.changeActiveApp(overlay)
+    pingPong.newWord()
+    var flip = false
+    for c in "tieengs" {
+      flip.toggle()
+      pingPong.changeActiveApp(flip ? background : overlay)
+      pingPong.push(char: c)
+    }
+    XCTAssertEqual(pingPong.transformed, "tiếng",
+      "dao động activeApp từng phím KHÔNG được đụng tới bộ đệm từ")
+
+    // Đối chứng: phân giải ổn định (ca gõ Spotlight bình thường) cũng ra "tiếng"
+    // — nếu ca này đỏ thì lỗi nằm ở engine, không ở ranh giới đổi app.
+    let stable = InputProcessor(method: .Telex)
+    stable.changeActiveApp(overlay)
+    stable.newWord()
+    for c in "tieengs" {
+      stable.changeActiveApp(overlay)
+      stable.push(char: c)
+    }
+    XCTAssertEqual(stable.transformed, "tiếng")
+  }
+
+  /// R1 — ba viên gạch thuần mà đường nhận diện "app đang nhận phím" của HEAD
+  /// vẫn đi qua. Bộ phân giải gộp của v4.23 đã lùi, nhưng cả `isOverlayBundle`
+  /// lẫn `canonicalAppBundle` đều CÓ SẴN ở HEAD và vẫn được `EventHook` gọi —
+  /// nếu một trong ba đổi nghĩa thì việc nhận diện app đổi hành vi mà chẳng test
+  /// nào khác nhìn thấy.
+  func testR1_ResolverBuildingBlocksKeepTheirMeaning() throws {
+    // Nhánh 1 — overlay đang thực-focus THẮNG event-target PID (bằng chứng
+    // v4.11: `eventTargetUnixProcessID` trả app NỀN cho phím Spotlight trên
+    // macOS 26). Ở HEAD, danh sách overlay là thứ quyết định `focusedOverlayBundle()`
+    // có ghi đè bundle của event-target hay không, khi Smart Switch BẬT.
+    XCTAssertTrue(EventSimulator.isOverlayBundle("com.apple.Spotlight"))
+    XCTAssertTrue(EventSimulator.isOverlayBundle("com.apple.dock"))
+    XCTAssertTrue(EventSimulator.isOverlayBundle("com.apple.systemuiserver"))
+    // App thường KHÔNG được coi là overlay: coi nhầm thì cache focused-bundle
+    // (vốn chỉ ghi khi AX trả về bundle, nên DÍNH) biến thành latch overlay —
+    // đúng thứ v4.11 đã gỡ và bản vá này không được dựng lại.
+    XCTAssertFalse(EventSimulator.isOverlayBundle("com.microsoft.Excel"))
+    XCTAssertFalse(EventSimulator.isOverlayBundle("com.google.Chrome"))
+
+    // Nhánh 2/3 — giá trị phân giải xong còn phải quy về app CHA, nếu không mỗi
+    // phím trong hộp thoại Lưu lại là một lần "đổi app" (lỗi v4.22: "Nooij" →
+    // "Nôị"). Cả hai khối ghi `activeApp` ở HEAD đều đi qua đúng hàm này.
+    XCTAssertEqual(
+      InputProcessor.canonicalAppBundle(
+        focused: "com.apple.appkit.xpc.openAndSavePanelService",
+        frontmost: "com.apple.TextEdit"),
+      "com.apple.TextEdit")
+    XCTAssertEqual(
+      InputProcessor.canonicalAppBundle(focused: "com.apple.Safari.SandboxBroker",
+                                        frontmost: "com.apple.Safari"),
+      "com.apple.Safari")
+    // …mà app khác THẬT thì vẫn phải nhận ra là khác — nếu không, chiến lược gửi
+    // của app này bị áp cho app kia (và một bản vá P1 tương lai cũng chết theo).
+    XCTAssertEqual(
+      InputProcessor.canonicalAppBundle(focused: "com.google.Chrome",
+                                        frontmost: "com.apple.Safari"),
+      "com.google.Chrome")
+  }
+}
+
+// MARK: - ===========================================
+// MARK: - v4.24 (R5) — vì sao đọc hụt AXRole vẫn phải LEO PARENT
+// MARK: - ===========================================
+//
+// CẢ HAI bản vá R5 đã bị LÙI (v4.24): (1) `Focused.fieldKind(from:)` bỏ cuộc sớm
+// và trả `.unknown` khi đọc hụt `AXRole`; rồi (2) cờ `fieldKindIsReliable` +
+// `AppState.adoptFieldKind` đóng băng phân loại suốt một từ. HEAD lại leo parent
+// khi đọc hụt, không có cờ tin cậy, không đóng băng — lý do đầy đủ (a)→(d) nằm
+// trong docstring của `Focused.fieldKind(from:)`.
+//
+// PHẠM VI của cả lớp này: `Focused.fieldKind(from:)` là `private` và đòi một
+// `AXUIElement` sống của cây AX thật, thứ không dựng được trong unit test. Nên ở
+// đây khoá HAI HỆ QUẢ của việc để `.unknown` lọt ra — đó cũng đúng là hai lý do
+// khiến bản vá (1) bị lùi, và là hai thứ sẽ hỏng nếu ai đó dựng nó lại.
+final class FocusedFieldStabilityV424Tests: XCTestCase {
+
+  /// R5 (a) — hệ quả thứ nhất của `.unknown`: thanh địa chỉ Chrome MẤT
+  /// `.axDirect`, vì `focusedFieldIsBrowserChrome()` đòi đúng `.windowField`.
+  /// Mất axDirect là quay lại synthetic backspace trong ô có inline autocomplete
+  /// bôi đen — đúng lỗi "trường" → "truường" mà axDirect sinh ra để tránh.
+  ///
+  /// Đây là hồi quy mà bản vá "đọc hụt `AXRole` thì bỏ cuộc sớm" của v4.23 gây
+  /// ra: chỉ cần MỘT lần đọc hụt ở node trong cùng là omnibox rơi về synthetic
+  /// backspace suốt phần còn lại của từ. Bản vá đã lùi; test ở lại vì nó khoá
+  /// đúng ranh giới mà bất kỳ vòng vá nào sau này cũng phải giữ.
+  func testR5_UnknownFieldKindWouldCostTheOmniboxItsAxDirect() throws {
+    let p = InputProcessor(method: .Telex)
+    p.changeActiveApp("com.google.Chrome")
+
+    p.focusedFieldKind = .windowField
+    XCTAssertTrue(p.focusedFieldIsBrowserChrome(),
+      "omnibox = windowField của app nhóm NFD ⇒ axDirect")
+
+    p.focusedFieldKind = .unknown
+    XCTAssertFalse(p.focusedFieldIsBrowserChrome(),
+      "bỏ cuộc sớm ở một node đọc hụt ⇒ omnibox rơi về synthetic backspace")
+
+    // Đối chứng: windowField trong app NHÓM NFC (Notes) KHÔNG phải browser-chrome
+    // — ranh giới này phải giữ, không thì axDirect bị ép vào mọi cửa sổ.
+    p.changeActiveApp("com.apple.Notes")
+    p.focusedFieldKind = .windowField
+    XCTAssertFalse(p.focusedFieldIsBrowserChrome())
+  }
+
+  /// R5 (b) — hệ quả thứ hai: một hiccup AX giữa từ vẫn LẬT TRỤC, chỉ đổi chiều.
+  /// Trong app nhóm NFD ngoài whitelist, `.windowField` đi trục NFC còn `.unknown`
+  /// đi trục NFD, mà hai trục đếm backspace KHÁC NHAU cho cùng một bước chuyển.
+  /// Ký tự 1–3 phát theo trục A, ký tự 4 đếm theo trục B ⇒ lệch backspace ⇒ ăn
+  /// ngược vào chữ đã gõ (đúng lớp lỗi v4.14 "đếm một đằng, phát một nẻo").
+  ///
+  /// Vì thế bản vá "bỏ cuộc sớm" không giải quyết được gì — nó chỉ đổi chiều lật.
+  /// Vòng vá kế tiếp (đóng băng phân loại suốt một từ bằng `AppState.adoptFieldKind`)
+  /// cũng ĐÃ LÙI: nó so app bằng bundle id THÔ trong khi AX nhảy qua lại giữa app
+  /// cha và tiến trình phụ (hộp thoại Lưu của app sandbox, helper của Chromium),
+  /// nên chốt tự mở lại gần như mỗi phím — thêm một tầng trạng thái mà không chặn
+  /// được gì.
+  ///
+  /// CA HỎNG CÒN LẠI (F1, chấp nhận sống chung): cần đúng một hiccup AX rơi vào
+  /// giữa một từ. Muốn vá lại thì chốt phải đặt ở chỗ ĐẾM backspace (bất biến
+  /// "dạng emit == dạng đếm" của v4.15), KHÔNG phải ở chỗ ĐO field, và phải nhận
+  /// diện app theo `InputProcessor.canonicalAppBundle` chứ không so bundle id
+  /// thô. Hai con số 2 vs 3 dưới đây là thước đo độ lệch đó.
+  func testR5_FieldKindFlipMidWordChangesTheBackspaceArithmetic() throws {
+    let (nfcBs, _) = EventSimulator.calcKeyStrokes(from: "điêu", to: "điều")
+    let (nfdBs, _) = EventSimulator.calcKeyStrokesNFD(from: "điêu", to: "điều")
+    XCTAssertEqual(nfcBs, 2)
+    XCTAssertEqual(nfdBs, 3)
+    XCTAssertNotEqual(nfcBs, nfdBs,
+      "hai trục KHÔNG hoán đổi được giữa chừng một từ")
+
+    // Và đây đúng là hai giá trị mà một lần đọc AX hụt hoán đổi được.
+    let p = InputProcessor(method: .Telex)
+    p.changeActiveApp("com.tinyspeck.slackmacgap")   // Electron, ngoài whitelist NFC
+    p.focusedFieldKind = .windowField
+    XCTAssertTrue(p.usesNFCForFocusedField(), "đọc được ⇒ windowField ⇒ trục NFC")
+    p.focusedFieldKind = .unknown
+    XCTAssertFalse(p.usesNFCForFocusedField(), "đọc hụt ⇒ unknown ⇒ trục NFD")
+
+    // [FIX GỐC v4.14] Đối chứng: app trong whitelist NFC short-circuit TRƯỚC
+    // fieldKind, nên hiccup không lật được trục — hàng rào cũ vẫn còn nguyên.
+    let telegram = InputProcessor(method: .Telex)
+    telegram.changeActiveApp("ru.keepcoder.Telegram")
+    for kind in [Focused.FieldKind.windowField, .unknown, .webContent, .nativePanel] {
+      telegram.focusedFieldKind = kind
+      XCTAssertTrue(telegram.usesNFCForFocusedField(),
+        "\(kind): app whitelist NFC không được đổi trục theo fieldKind")
+    }
+  }
+
+  // ⚠️ ĐÃ XOÁ (v4.24) — `testR5_SnapshotWithoutFocusedElementIsMarkedReliable`.
+  //
+  // Test đó khoá `snap.fieldKindIsReliable == true` cho nhánh "không có focused
+  // element" của `Focused.snapshot()` — tức khoá đúng cờ tin cậy mà bản vá R5
+  // vòng hai thêm vào `FocusSnapshot`. Cờ đó đã bị GỠ cùng
+  // `AppState.adoptFieldKind`, nên test KHÔNG BIÊN DỊCH ĐƯỢC nữa; nó đi theo cơ
+  // chế của nó thay vì được "sửa cho biên dịch được" (phần còn lại —
+  // `fieldKind == .unknown`, `isComboOrSearch == false` — chỉ chạy khi máy chạy
+  // test tình cờ không có focused element, nên không khoá được gì).
+  //
+  // VÌ SAO GỠ CỜ: cổng đóng băng dùng nó so app bằng bundle id THÔ, trong khi AX
+  // nhảy qua lại giữa app cha và tiến trình phụ (hộp thoại Lưu của app sandbox,
+  // helper của Chromium) — chốt tự mở lại gần như mỗi phím: thêm một tầng trạng
+  // thái mà không chặn được gì. Vòng vá TRƯỚC đó ("đọc hụt thì bỏ cuộc sớm, trả
+  // `.unknown`") còn tệ hơn: nó làm omnibox Chrome mất `.axDirect` thường trực —
+  // xem `testR5_UnknownFieldKindWouldCostTheOmniboxItsAxDirect`.
+  //
+  // CA HỎNG QUAY LẠI (F1 — chấp nhận sống chung): một hiccup AX rơi đúng vào giữa
+  // một từ lật `fieldKind` `.windowField` ↔ `.unknown`, hai bên trục NFC/NFD, nên
+  // ký tự đầu từ phát theo trục này còn ký tự sau đếm backspace theo trục kia ⇒
+  // lệch backspace ⇒ ăn ngược vào chữ đã gõ.
+  // `testR5_FieldKindFlipMidWordChangesTheBackspaceArithmetic` ở trên đo đúng độ
+  // lệch đó (2 vs 3) và ở lại làm chứng cứ.
 }

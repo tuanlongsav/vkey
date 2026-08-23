@@ -388,7 +388,11 @@ extension Defaults.Keys {
   static let currentVersion = Key<String>("current-version", default: "0.1")
   static let typingMethod = Key<TypingMethods>("typing-method", default: .Telex)
   static let allowedZWJF = Key<Bool>("allowed-zwjf", default: true)
-  static let autoSwitchStrategy = Key<Bool>("auto-switch-strategy", default: true)
+  // v4.23: GỠ `autoSwitchStrategy` ("auto-switch-strategy"). Nó là công tắc của
+  // `TransformationTracker` — cơ chế tự đổi chiến lược gửi phím không bao giờ
+  // chạy được (xem MARK InputProcessor). Không có UI, không nằm trong
+  // export/import của UserDataMigration, nên gỡ key không phá bản export cũ nào;
+  // giá trị đã lưu trong UserDefaults chỉ nằm im. Đừng thêm lại.
   /// Tự động chuyển sang tiếng Anh khi launcher app (Spotlight/Raycast/Alfred…) lên foreground.
   static let smartSwitchEnabled = Key<Bool>("smart-switch-enabled", default: true)
   /// Danh sách các ứng dụng tự động chuyển sang gõ Tiếng Anh khi kích hoạt.

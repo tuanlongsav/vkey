@@ -55,7 +55,8 @@ enum TiengVietValidator {
     "a": ["c", "ch", "m", "n", "ng", "nh", "p", "t", "k"],
     "ă": ["c", "m", "n", "ng", "p", "t", "k"],
     "â": ["c", "m", "n", "ng", "p", "t"],
-    "e": ["c", "m", "n", "p", "t"],
+    // "ng" bị thiếu ⇒ leng keng / xẻng / kẻng bị needsRecovery ném về phím thô.
+    "e": ["c", "m", "n", "ng", "p", "t"],
     "ê": ["c", "ch", "m", "n", "nh", "p", "t"],
     "i": ["c", "ch", "m", "n", "nh", "p", "t"],
     "o": ["c", "m", "n", "ng", "p", "t"],
@@ -83,8 +84,8 @@ enum TiengVietValidator {
     // oă - xoắn, loắt...
     "oă": ["c", "m", "n", "ng", "p", "t"],
 
-    // uâ - luật, xuân...
-    "uâ": ["n", "t"],
+    // uâ - luật, xuân, bâng khuâng ("ng" từng bị thiếu ⇒ "khuaang" không gõ được)
+    "uâ": ["n", "ng", "t"],
 
     // uê - huệch, tuềnh... (hiếm)
     "uê": ["c", "ch", "n", "nh"],
@@ -96,9 +97,9 @@ enum TiengVietValidator {
     "uyê": ["n", "t"],
     "uye": ["n", "t"],
 
-    // yê - yến, yêm...
-    "yê": ["m", "n", "p", "t"],
-    "ye": ["m", "n", "p", "t"],
+    // yê - yến, yêm, yểng ("ng" từng bị thiếu ⇒ "yeengr" không gõ được)
+    "yê": ["m", "n", "ng", "p", "t"],
+    "ye": ["m", "n", "ng", "p", "t"],
 
     // Nguyên âm ghép KHÔNG có phụ âm cuối (tập rỗng)
     // Đây là các nhân âm tiết hoàn chỉnh
@@ -123,6 +124,26 @@ enum TiengVietValidator {
     "ưi": [],
     "ươi": [],
     "ưu": [],
+  ]
+
+  /// Nhân âm tiết (từ 2 nguyên âm trở lên) hợp lệ SAU khi đã đặt dấu mũ/móc/trăng
+  /// — tức đúng chuỗi nguyên âm sắp hiện lên màn hình.
+  ///
+  /// Rule 5 chỉ chạy khi âm tiết CÓ phụ âm cuối và Rule 6 chỉ soi cụm nguyên âm
+  /// GỐC (chưa mang mũ), nên không luật nào bắt được nhân bất khả sinh ra SAU khi
+  /// áp mũ: "khoee" → "khôe", "hoaan" → "hoân", "tauw" → "taư", "cuwuc" → "cuưc"
+  /// đều lọt validator và hiện ra màn hình dù ôe/oâ/aư/uư không tồn tại.
+  ///
+  /// Liệt kê theo VỊ TRÍ đặt mũ thật (xem `TiengVietTransformer.nhanSauDauMu`),
+  /// nên "ưu" (mũ ở chữ u đầu) hợp lệ còn "uư" (mũ ở chữ u sau) thì không.
+  static let NhanCoDauMuHopLe: Set<String> = [
+    // Dấu mũ (^)
+    "iê", "yê", "uô", "uâ", "uê", "uyê", "âu", "ây", "ôi", "êu",
+    "uôi", "iêu", "yêu", "uây",
+    // Dấu móc
+    "ươ", "uơ", "ươi", "ươu", "ưa", "ưi", "ưu", "ơi",
+    // Dấu trăng
+    "oă",
   ]
 
   /// Tổ hợp nguyên âm không tồn tại trong tiếng Việt
@@ -239,12 +260,8 @@ enum TiengVietValidator {
         return true
       }
 
-      // Rule 5b (thanh nhập): âm tiết kết bằng phụ âm tắc chỉ nhận sắc hoặc
-      // nặng. Gõ trúng huyền/hỏi/ngã ⇒ âm tiết bất khả ("ỏt", "òc", "ãch"),
-      // nên phím dấu phải rơi xuống thành chữ cái thường qua đường recovery.
-      // Đây là quy luật tuyệt đối, không ngoại lệ, nên guard này không bao giờ
-      // chặn nhầm từ thật.
-      if PhuAmCuoiTac.contains(phuAmCuoi), ThanhKhongDiVoiAmTac.contains(dauThanh) {
+      // Rule 5b (thanh nhập) — xem `viPhamThanhNhap`.
+      if viPhamThanhNhap(thanhPhan, dauThanh: dauThanh) {
         return true
       }
     }
@@ -255,13 +272,8 @@ enum TiengVietValidator {
       let nguyenAmDau = thanhPhan.nguyenAm.first,
       String(nguyenAmDau).lowercased() == "a"
     {
-      // "ao" khi CHƯA có phụ âm cuối là trạng thái TRUNG GIAN: phụ âm cuối tới
-      // thì parser đảo "ao" → "oa" (hoặc, ngoặc, khoăn, choắt). Bắn ở đây sẽ
-      // chốt stopProcessing và chặn luôn đường đó, vì recovery không nhả ra.
       // Các cặp còn lại (ai/au/ay) parser không bao giờ đảo nên bắn ngay là đúng.
-      let dangChoPhuAmCuoiDeDao = thanhPhan.phuAmCuoi.isEmpty
-        && String(thanhPhan.nguyenAm).lowercased() == "ao"
-      if !dangChoPhuAmCuoiDeDao {
+      if !dangChoPhuAmCuoiDeDaoAO(thanhPhan, dauMu: dauMu) {
         return true
       }
     }
@@ -284,7 +296,57 @@ enum TiengVietValidator {
       return true
     }
 
+    // Rule 7: nhân âm tiết SAU khi áp dấu mũ phải là vần có thật. Rule 5 bỏ qua
+    // âm tiết MỞ và Rule 6 chỉ soi cụm nguyên âm gốc, nên "khoee"/"hoaan"/"tauw"
+    // lọt tới màn hình. Chỉ xét khi đã có mũ và nhân từ 2 nguyên âm trở lên —
+    // nhân một nguyên âm mang mũ (â/ê/ô/ư/ơ/ă) luôn hợp lệ.
+    //
+    // Phải tôn trọng carve-out của Rule 5c, nếu không luật này bắn đúng vào
+    // trạng thái trung gian mà Rule 5c cố ý tha ("ăo" mở): nhân là "ăo" — không
+    // có trong bảng — nên thứ tự gõ đảo a/o ("haowcj" → hoặc, "chaowts" → choắt,
+    // "ngaowcj" → ngoặc, "khaown" → khoăn) bị chốt recovery ngay ở phím `w` và
+    // không bao giờ tới được bước đảo "ao" → "oa".
+    if dauMu != .khongMu, thanhPhan.nguyenAm.count >= 2,
+      !dangChoPhuAmCuoiDeDaoAO(thanhPhan, dauMu: dauMu)
+    {
+      let nhan = TiengVietTransformer
+        .nhanSauDauMu(thanhPhanTieng: thanhPhan, dauMu: dauMu)
+        .lowercased()
+      if !NhanCoDauMuHopLe.contains(nhan) {
+        return true
+      }
+    }
+
     return false
+  }
+
+  /// Trạng thái TRUNG GIAN "ao" + dấu trăng, CHƯA có phụ âm cuối.
+  ///
+  /// Ngay khi phụ âm cuối tới, parser đảo "ao" → "oa" và âm tiết thành hoặc /
+  /// ngoặc / khoăn / choắt. Đảo được cả khi người dùng gõ nghịch thứ tự a/o
+  /// ("haowcj"), nên trạng thái này là đường đi hợp lệ chứ không phải input rác.
+  /// Bắn recovery ở đây chốt `stopProcessing` và chặn luôn đường đó — recovery
+  /// không nhả ra. Rule 5c và Rule 7 cùng phải tha, nên tách thành một hàm để
+  /// hai luật không lệch nhau nữa.
+  private static func dangChoPhuAmCuoiDeDaoAO(
+    _ thanhPhan: ThanhPhanTieng, dauMu: DauMu
+  ) -> Bool {
+    dauMu == .muNgua
+      && thanhPhan.phuAmCuoi.isEmpty
+      && String(thanhPhan.nguyenAm).lowercased() == "ao"
+  }
+
+  /// Luật thanh nhập (Rule 5b), tách riêng để `TiengVietState` gọi được.
+  ///
+  /// Âm tiết kết bằng phụ âm tắc (c/ch/p/t/k) chỉ nhận sắc hoặc nặng. Gõ trúng
+  /// huyền/hỏi/ngã ⇒ âm tiết bất khả ("ỏt", "òc", "ãch"), nên phím dấu phải rơi
+  /// xuống thành chữ cái thường qua đường recovery. Đây là quy luật tuyệt đối,
+  /// không ngoại lệ, nên guard này không bao giờ chặn nhầm từ thật — kể cả khi
+  /// người dùng bật Free Mark Mode (xem `TiengVietState.needsRecovery`).
+  static func viPhamThanhNhap(_ thanhPhan: ThanhPhanTieng, dauThanh: DauThanh) -> Bool {
+    guard !thanhPhan.phuAmCuoi.isEmpty else { return false }
+    let phuAmCuoi = String(thanhPhan.phuAmCuoi).lowercased()
+    return PhuAmCuoiTac.contains(phuAmCuoi) && ThanhKhongDiVoiAmTac.contains(dauThanh)
   }
 
   // MARK: - Phương thức nội bộ

@@ -97,8 +97,9 @@ class EventSimulator {
   /// AZERTY / Dvorak keymaps.
   private enum KeyCode {
     static let delete: CGKeyCode = 0x33      // Backspace / Delete-Left
-    static let leftArrow: CGKeyCode = 0x7B
     static let forwardDelete: CGKeyCode = 0x75  // v2.12: xoá suggestion auto-select
+    // 0x7B (leftArrow) đã gỡ cùng `sendShiftLeft`: đường Shift+Left bỏ từ
+    // v2.3.10, hằng số chỉ còn nuôi hàm chết. Nếu cần lại thì thêm mới.
   }
 
   /// Per-app sending strategy configuration.
@@ -121,14 +122,63 @@ class EventSimulator {
     AppSendingConfig(bundlePrefix: "dev.warp.Warp", strategy: .stepByStep, name: "Warp"),
     AppSendingConfig(bundlePrefix: "co.zeit.hyper", strategy: .stepByStep, name: "Hyper"),
     AppSendingConfig(bundlePrefix: "org.tabby", strategy: .stepByStep, name: "Tabby"),
-    AppSendingConfig(bundlePrefix: "io.alacritty", strategy: .stepByStep, name: "Alacritty"),
+    // Alacritty: bundle ID upstream (extra/osx/Alacritty.app/Contents/Info.plist)
+    // là "org.alacritty". Entry "io.alacritty" thừa kế từ lúc fork, chưa ai đối
+    // chiếu — cùng lớp lỗi "com.warp.Warp" ở trên. GIỮ cả hai: khớp bằng
+    // hasPrefix nên entry không đúng chỉ đơn giản là không bao giờ khớp, còn
+    // bỏ đi mà đoán sai chiều thì Alacritty lại âm thầm rơi về hybrid.
+    AppSendingConfig(bundlePrefix: "org.alacritty", strategy: .stepByStep, name: "Alacritty"),
+    AppSendingConfig(bundlePrefix: "io.alacritty", strategy: .stepByStep, name: "Alacritty (legacy id)"),
     AppSendingConfig(bundlePrefix: "com.github.wez.wezterm", strategy: .stepByStep, name: "WezTerm"),
     AppSendingConfig(bundlePrefix: "com.raphaelamorim.rio", strategy: .stepByStep, name: "Rio"),
+    // Termius: "com.termius-dmg.mac" chỉ bao bản DMG; bản Mac App Store mang ID
+    // khác ("com.termius.mac"). Giữ entry DMG (đứng trước để tên log không đổi)
+    // và thêm prefix rút gọn "com.termius" bao MỌI kênh — chuỗi
+    // "com.termius-dmg.mac" cũng bắt đầu bằng "com.termius" nên thêm là vô hại.
     AppSendingConfig(bundlePrefix: "com.termius-dmg.mac", strategy: .stepByStep, name: "Termius"),
+    AppSendingConfig(bundlePrefix: "com.termius", strategy: .stepByStep, name: "Termius"),
 
     // Electron apps thường cần stepByStep vì input model phức tạp (composition events
     // không sync với CGEvent injection thông thường).
     AppSendingConfig(bundlePrefix: "com.anthropic.claudefordesktop", strategy: .stepByStep, name: "Claude"),
+
+    // App CHAT — cùng luật Electron ngay trên, trước đây bị bỏ sót nên rơi hết
+    // về .hybrid(800) mặc định: ô soạn tin là contenteditable, batch/hybrid gửi
+    // cụm backspace + retype async không sync với composition của Chromium →
+    // rớt/lặp chữ đúng lớp lỗi Claude Desktop. ĐÁNH ĐỔI CÓ CHỦ Ý: stepByStep
+    // chậm hơn (2ms/phím) nhưng không rớt chữ; chat là chỗ gõ tiếng Việt nhiều
+    // nhất nên ưu tiên đúng hơn nhanh.
+    //
+    // ⚠️ PHẠM VI THẬT CỦA CÁC ENTRY NÀY HẸP HƠN VẺ NGOÀI — đọc trước khi tin.
+    // `InputProcessor.effectiveTypingStrategy` hạ MỌI app xuống `.batch` khi
+    // `backspaceCount <= 1 && diffCharCount <= 1`, và nhánh đó nằm SAU bảng này.
+    // Nghĩa là phần lớn phím KHÔNG đi stepByStep dù app có tên ở đây:
+    //   `caa`→"câ", `dd`→"đ", `ee`→"ê", `oo`→"ô", `w`→"ư"  ⇒ .batch (diff 1 ký tự)
+    //   `chaof`→"chào" (bs=1, diff=2), thay cả cụm            ⇒ .stepByStep
+    // Từng có bản vá miễn trừ `.stepByStep` khỏi downgrade đó, nhưng nó dựng lại
+    // race "push"→"pussh" và đã bị lùi (xem docstring `effectiveTypingStrategy`).
+    // Nên các entry dưới đây chỉ bảo vệ ca "thay cả cụm" — đúng ca Telegram từng
+    // mất chữ đầu, nhưng KHÔNG phải mọi phím.
+    // Mức tin cậy của từng bundle ID ghi ngay tại chỗ — đừng "dọn" entry nào
+    // chưa kiểm chứng, entry sai chỉ đơn giản là không khớp (hasPrefix).
+    // ĐÃ KIỂM trên máy: Zalo.app có Electron Framework.framework, ID com.vng.zalo
+    // (helper com.vng.zalo.zalocall cũng khớp prefix này).
+    AppSendingConfig(bundlePrefix: "com.vng.zalo", strategy: .stepByStep, name: "Zalo"),
+    // Slack & Discord: ID đối chiếu được ngay trong repo (vkeyTests dùng đúng hai
+    // chuỗi này làm ví dụ Electron). "com.hnc.Discord" bao cả Canary/PTB.
+    AppSendingConfig(bundlePrefix: "com.tinyspeck.slackmacgap", strategy: .stepByStep, name: "Slack"),
+    AppSendingConfig(bundlePrefix: "com.hnc.Discord", strategy: .stepByStep, name: "Discord"),
+    // Messenger for macOS (Electron). ID theo tài liệu cộng đồng, CHƯA kiểm
+    // được ở đây (app không cài trên máy này) → độ tin cậy trung bình.
+    AppSendingConfig(bundlePrefix: "com.facebook.archon", strategy: .stepByStep, name: "Messenger"),
+    // WhatsApp Desktop bản Electron tải từ web. Bản Mac App Store là Catalyst
+    // (ID "net.whatsapp.WhatsApp") — AppKit thật nên CỐ Ý không thêm, để nó
+    // dùng .hybrid mặc định. Chưa kiểm trên máy → tin cậy trung bình.
+    AppSendingConfig(bundlePrefix: "desktop.WhatsApp", strategy: .stepByStep, name: "WhatsApp"),
+    // Viber: ĐÃ KIỂM trên máy — ID com.viber.osx, Frameworks toàn Qt* nên là
+    // Qt/QML, KHÔNG phải Electron. Xếp cùng nhóm vì cùng lớp "text engine
+    // riêng, không phải AppKit" như Telegram, chứ không phải vì Electron.
+    AppSendingConfig(bundlePrefix: "com.viber.osx", strategy: .stepByStep, name: "Viber"),
 
     // Telegram for macOS (native Swift/AppKit, "ru.keepcoder.Telegram"). Ô soạn
     // tin là custom NSTextInputClient view: batch/hybrid gửi cụm backspace +
@@ -577,6 +627,11 @@ class EventSimulator {
     if start + len > valueLength { len = valueLength - start }
     if len < 0 { len = 0 }
 
+    // ĐỪNG "sửa" precompose này theo `usesNFC`: truy hết mọi đường tới
+    // `.axDirect` thì field đích LUÔN là NSTextField của Apple (Spotlight,
+    // SystemUIServer, omnibox Chromium Views) — đều lưu NFC, nên ghi NFC vào là
+    // ĐÚNG. Chỗ thật sự phải khớp trục là `axDeleteStart` (lùi grapheme vs
+    // scalar) ngay phía trên; đổi dòng này chỉ làm lệch thêm.
     let insertNFC = insert.precomposedStringWithCanonicalMapping
     let newValue = valueNS.replacingCharacters(
       in: NSRange(location: start, length: len), with: insertNFC)
@@ -850,29 +905,8 @@ class EventSimulator {
     }
   }
 
-  /// Sends Shift+Left arrow key events to select text to the left.
-  /// This extends any existing selection (including inline autocomplete).
-  static func sendShiftLeft(
-    _ count: Int,
-    source: CGEventSource? = nil
-  ) {
-    guard count > 0 else { return }
-
-    let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
-    guard let source = eventSource else { return }
-
-    guard
-      let downEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.leftArrow, keyDown: true),
-      let upEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.leftArrow, keyDown: false)
-    else { return }
-
-    downEvent.flags = [.maskShift, .maskNonCoalesced]
-    upEvent.flags = [.maskShift, .maskNonCoalesced]
-
-    for _ in 0..<count {
-      downEvent.post(tap: .cgSessionEventTap)
-      upEvent.post(tap: .cgSessionEventTap)
-    }
-  }
-
+  // `sendShiftLeft` đã gỡ: đường "bôi đen bằng Shift+Left rồi ghi đè" bị bỏ từ
+  // v2.3.10 (CHANGELOG), sau đó không caller nào trong source lẫn test gọi nữa —
+  // 22 dòng chết còn kéo theo hằng `KeyCode.leftArrow`. Ô có inline autocomplete
+  // giờ đi đường `.axDirect` (`axDirectReplace` xử lý cả vùng selection ở cuối).
 }

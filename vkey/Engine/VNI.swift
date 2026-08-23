@@ -74,6 +74,14 @@ class VNI: TypingMethod {
   public func push(char: Character, state: TiengVietState) -> (state: TiengVietState, appliedMark: Bool) {
     let thanhPhan = state.thanhPhanTieng
 
+    // Bỏ qua nếu từ có phần không hợp lệ (conLai) — đối xứng với Telex.push.
+    // Validator CỐ Ý thả conLai==["g"] đi qua (typo "gn"→"ng") nên nhánh dưới
+    // vẫn chạy được: thiếu guard này thì "leg2" ra "lèg", nuốt luôn chữ số 2
+    // (Telex "legf" giữ nguyên "legf").
+    if !thanhPhan.conLai.isEmpty {
+      return (state.push(char), false)
+    }
+
     // Xử lý d9 → đ (phím 9 sau chữ d)
     if state.chuKhongDau.count == 1,
       let chuCaiDau = state.chuKhongDau.first,
@@ -111,6 +119,11 @@ class VNI: TypingMethod {
       // Phím 7: dấu móc (horn) cho u, o → ư, ơ
       case "7":
         if thanhPhan.nguyenAmChua1KyTu(mangKyTu: ["u", "o", "U", "O"]) {
+          // Phím `7` thứ hai của cụm "uo" là của chữ 'o' → giữ móc, không toggle
+          // tắt. Thiếu guard này thì "nu7o7c1" ra "nuóc", "d9u7o7ng2" ra "đuòng".
+          if let giuNguyen = state.giuMuMocTrenUO() {
+            return (giuNguyen, true)
+          }
           return (state.withMu(.muMoc), true)
         }
 

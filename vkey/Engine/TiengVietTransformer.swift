@@ -65,6 +65,18 @@ enum TiengVietTransformer {
     }
   }
 
+  /// Nhân âm tiết (nguyên âm) SAU khi áp dấu mũ — chỉ chạy bước 2 của
+  /// `transform`, không đặt dấu thanh, không ghép phụ âm.
+  ///
+  /// Có mặt để `TiengVietValidator` (Rule 7) kiểm được vần đã mang mũ mà KHÔNG
+  /// phải chép lại luật đặt mũ ở đây; chép lại thì hai bên sẽ trôi khác nhau và
+  /// validator lại xét một vần khác với vần đang hiện trên màn hình.
+  static func nhanSauDauMu(thanhPhanTieng: ThanhPhanTieng, dauMu: DauMu) -> String {
+    var tieng = thanhPhanTieng
+    apDungDauMu(vaoTieng: &tieng, dauMu: dauMu, soNguyenAm: tieng.nguyenAm.count)
+    return String(tieng.nguyenAm)
+  }
+
   // MARK: - Áp dụng dấu mũ
 
   /// Áp dụng dấu mũ (^, móc, trăng) vào nguyên âm theo quy tắc

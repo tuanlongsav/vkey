@@ -17,17 +17,6 @@ public struct Focused {
     AXUIElementSetMessagingTimeout(systemWide, timeoutSeconds)
   }
 
-  public static func focusedAppBundleId() -> String? {
-    guard let focusedElement = Focused.element() else { return nil }
-    var pid: pid_t = 0
-    if AXUIElementGetPid(focusedElement, &pid) == .success {
-      if let app = NSRunningApplication(processIdentifier: pid) {
-        return app.bundleIdentifier
-      }
-    }
-    return nil
-  }
-
   public static func element() -> AXUIElement? {
     let systemWideElement = AXUIElementCreateSystemWide()
     return systemWideElement.getAttribute(property: kAXFocusedUIElementAttribute)
@@ -52,14 +41,40 @@ public struct Focused {
     case unknown
   }
 
-  public static func fieldKind() -> FieldKind {
-    guard let focusedElement = Focused.element() else { return .unknown }
-    return fieldKind(from: focusedElement)
-  }
-
   /// Core leo cây AX từ `element` — tách ra để `snapshot()` tái dùng.
   /// Thứ tự kiểm tra QUAN TRỌNG: `AXWebArea` luôn là con của cửa sổ nên gặp
   /// TRƯỚC `AXWindow` → web content phân loại đúng trước khi chạm window.
+  ///
+  /// ⚠️ NHÁNH "ĐỌC HỤT `AXRole` → LEO PARENT" LÀ CÓ CHỦ Ý. ĐÃ THỬ SỬA, ĐÃ LÙI
+  /// (v4.23/v4.24). ĐỌC HẾT TRƯỚC KHI ĐỘNG VÀO:
+  ///
+  /// (a) LỖI GỐC (F1, có thật, vẫn còn): hàm này chạy MỖI keyDown
+  ///     (`AppState.syncFocusedContextForKeystroke`). Một hiccup AX giữa chừng
+  ///     có thể đổi kết quả `.windowField` ↔ `.unknown`, mà hai giá trị đó nằm
+  ///     hai bên trục NFC/NFD. Ký tự 1-3 của một từ phát theo trục A, ký tự 4
+  ///     đếm backspace trên `lastTransformed` theo trục B → số backspace lệch →
+  ///     ăn ngược vào chữ đã gõ (lớp lỗi v4.14 "đếm một đằng, phát một nẻo").
+  /// (b) ĐÃ VÁ THẾ NÀO: (1) phân biệt `AXError` "app trả lời nhưng không có
+  ///     role" với "gọi AX hụt hẳn", đọc hụt thì BỎ CUỘC SỚM trả `.unknown`;
+  ///     rồi (2) đổi thành vẫn leo parent nhưng kèm cờ `fieldKindIsReliable`,
+  ///     và cho `AppState.adoptFieldKind` đóng băng phân loại suốt một từ.
+  /// (c) HỒI QUY ĐẺ RA:
+  ///     • Cách (1) làm thanh địa chỉ Chrome MẤT `.axDirect`:
+  ///       `focusedFieldIsBrowserChrome()` đòi `.windowField`, mà chỉ cần một
+  ///       lần đọc hụt ở node trong cùng là ra `.unknown` → omnibox rơi về
+  ///       synthetic backspace, dựng lại đúng lỗi "trường" → "truường". Và nó
+  ///       VẪN lật trục giữa từ, chỉ đổi chiều (đọc được = `.windowField`/NFC,
+  ///       hiccup = `.unknown`/NFD).
+  ///     • Cách (2) so app bằng bundle id THÔ, trong khi AX nhảy qua lại giữa
+  ///       app cha và tiến trình phụ của nó (hộp thoại Lưu của app sandbox,
+  ///       helper của Chromium) — nên chốt đóng băng tự mở lại gần như mỗi
+  ///       phím, tức tốn thêm một tầng trạng thái mà không chặn được gì.
+  /// (d) QUYẾT ĐỊNH: giữ hành vi HEAD — đọc hụt thì leo parent, không có cờ tin
+  ///     cậy, không đóng băng. F1 vẫn còn nhưng cần đúng một hiccup AX rơi vào
+  ///     đúng giữa một từ; hai bản vá kia hỏng thường trực ở omnibox. Muốn vá
+  ///     lại thì chốt phải đặt ở chỗ ĐẾM backspace (bất biến "dạng emit == dạng
+  ///     đếm" của v4.15), không phải ở chỗ ĐO field, và phải nhận diện app theo
+  ///     `InputProcessor.canonicalAppBundle` chứ không so bundle id thô.
   private static func fieldKind(from element: AXUIElement) -> FieldKind {
     var current: AXUIElement? = element
     var depth = 0
