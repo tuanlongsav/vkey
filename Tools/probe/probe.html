@@ -1,0 +1,148 @@
+<!--
+  probe.html — đo ĐƠN VỊ XOÁ của ô nhập trong engine Blink (Chrome, Electron:
+  Zalo/Messenger/Slack/Discord). Đây là câu hỏi T4 treo từ v4.14.
+
+  Vì sao cần trang riêng thay vì đọc qua Accessibility:
+  Chrome KHÔNG phơi web content ra AX theo cách vkey đọc được, và ngay cả khi
+  đọc được thì AX có thể chuẩn hoá chuỗi trên đường ra — nghĩa là phép đo "đọc
+  lại rồi so" sẽ nói dối về dạng lưu thật. JS trong chính trang thì đọc đúng
+  cái DOM đang giữ, không qua tầng nào.
+
+  Mở bằng: file:///…/Tools/probe/probe.html  (không cần server)
+-->
+<meta charset="utf-8">
+<title>vkey — đo đơn vị xoá của ô nhập</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px/1.55 -apple-system, BlinkMacSystemFont, sans-serif;
+         max-width: 62rem; margin: 2rem auto; padding: 0 1.5rem; }
+  h1 { font-size: 1.35rem; margin-bottom: .2rem; }
+  .sub { opacity: .7; margin-top: 0; }
+  .field { border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+           border-radius: 10px; padding: 1rem; margin: 1rem 0; }
+  .field h2 { font-size: 1rem; margin: 0 0 .6rem; }
+  input, textarea, .ce { width: 100%; box-sizing: border-box; font-size: 1.25rem;
+          padding: .55rem .7rem; border-radius: 7px;
+          border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+          background: color-mix(in srgb, currentColor 4%, transparent); color: inherit; }
+  .ce { min-height: 2.6rem; }
+  .out { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+         white-space: pre-wrap; margin-top: .55rem; opacity: .92; }
+  .verdict { font-weight: 600; margin-top: .4rem; }
+  .g { color: #2e7d32; } .s { color: #1565c0; } .n { color: #c62828; }
+  ol { padding-left: 1.2rem; } li { margin: .3rem 0; }
+  code { background: color-mix(in srgb, currentColor 10%, transparent);
+         padding: .1rem .32rem; border-radius: 4px; }
+  .steps { border-left: 3px solid color-mix(in srgb, currentColor 30%, transparent);
+           padding: .2rem 0 .2rem 1rem; margin: 1rem 0; }
+</style>
+
+<h1>vkey — đo đơn vị xoá của ô nhập</h1>
+<p class="sub">Trả lời câu hỏi: một phím Backspace ăn <b>một scalar</b> hay <b>trọn một cụm chữ có dấu</b>?</p>
+
+<div class="steps">
+  <b>Cách đo</b>
+  <ol>
+    <li>Bật vkey, chế độ <b>tiếng Việt</b>, kiểu <b>Telex</b>.</li>
+    <li>Bấm vào một ô bên dưới, gõ <code>eef</code> → phải ra <b>ề</b>.</li>
+    <li>Bấm <b>đúng một lần</b> phím Backspace.</li>
+    <li>Đọc dòng phán quyết ngay dưới ô đó.</li>
+  </ol>
+  Làm lần lượt cho cả ba loại ô — chúng có thể cho kết quả khác nhau.
+</div>
+
+<div class="field">
+  <h2>1. <code>&lt;input type="text"&gt;</code> — ô nhập thường</h2>
+  <input id="f1" autocomplete="off" spellcheck="false" placeholder="gõ eef rồi bấm Backspace một lần">
+  <div class="out" id="o1"></div>
+</div>
+
+<div class="field">
+  <h2>2. <code>&lt;textarea&gt;</code></h2>
+  <textarea id="f2" rows="2" spellcheck="false" placeholder="gõ eef rồi bấm Backspace một lần"></textarea>
+  <div class="out" id="o2"></div>
+</div>
+
+<div class="field">
+  <h2>3. <code>contenteditable</code> — đây là loại ô mà Zalo / Messenger / Slack / Discord dùng để soạn tin</h2>
+  <div class="ce" id="f3" contenteditable="true" spellcheck="false"></div>
+  <div class="out" id="o3"></div>
+</div>
+
+<script>
+  const hex = s => [...s].map(c => 'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0'));
+
+  function describe(s) {
+    const cps = hex(s);
+    const graphemes = typeof Intl !== 'undefined' && Intl.Segmenter
+      ? [...new Intl.Segmenter('vi', { granularity: 'grapheme' }).segment(s)].length
+      : null;
+    return {
+      cps,
+      text: s,
+      scalars: cps.length,
+      graphemes,
+      utf16: s.length,
+    };
+  }
+
+  // Lịch sử để nhận ra "vừa bấm Backspace một lần" và phán quyết.
+  const history = new WeakMap();
+
+  function verdictFor(prev, now) {
+    if (prev === null || now.length >= prev.length) return '';
+    const removed = prev.length - now.length;           // đơn vị UTF-16
+    const prevCp = hex(prev), nowCp = hex(now);
+    const removedCp = prevCp.length - nowCp.length;     // đơn vị scalar
+
+    // Trường hợp cụm 'ề' = U+1EC1 (NFC, 1 scalar) hoặc e + U+0302 + U+0300 (NFD, 3 scalar).
+    if (removedCp >= 1 && nowCp.length > 0 && nowCp[nowCp.length - 1] !== 'U+1EC1'
+        && (nowCp[nowCp.length - 1] === 'U+0065' || nowCp[nowCp.length - 1] === 'U+0302')) {
+      return ['s', 'XOÁ THEO SCALAR — Backspace chỉ bóc một scalar, cụm chữ vỡ ra. → trục NFD đúng cho ô này.'];
+    }
+    if (removedCp === 1 && prevCp[prevCp.length - 1] === 'U+1EC1') {
+      return ['g', 'XOÁ THEO GRAPHEME — Backspace ăn trọn cụm "ề" (ô đang lưu NFC). → trục NFC đúng cho ô này.'];
+    }
+    if (removedCp >= 2) {
+      return ['g', `XOÁ THEO GRAPHEME — một Backspace ăn ${removedCp} scalar cùng lúc (ô đang lưu NFD nhưng xoá theo cụm). → trục NFC đúng cho ô này.`];
+    }
+    return ['', `đã bớt ${removedCp} scalar / ${removed} utf16 unit.`];
+  }
+
+  function wire(fieldId, outId) {
+    const el = document.getElementById(fieldId);
+    const out = document.getElementById(outId);
+    const read = () => (el.value !== undefined ? el.value : el.textContent);
+
+    const render = () => {
+      const s = read();
+      const d = describe(s);
+      const prev = history.get(el) ?? null;
+      const v = s.length < (prev ?? '').length ? verdictFor(prev, s) : '';
+      history.set(el, s);
+
+      out.innerHTML =
+        `text      : ${JSON.stringify(d.text)}\n` +
+        `scalars   : [${d.cps.join(' ')}]  (${d.scalars})\n` +
+        `graphemes : ${d.graphemes ?? '?'}\n` +
+        `utf16     : ${d.utf16}` +
+        (v ? `\n<span class="verdict ${v[0]}">${v[1]}</span>` : '');
+    };
+
+    ['input', 'keyup', 'compositionend'].forEach(ev => el.addEventListener(ev, render));
+    el.addEventListener('focus', () => { history.set(el, read()); render(); });
+    render();
+  }
+
+  wire('f1', 'o1');
+  wire('f2', 'o2');
+  wire('f3', 'o3');
+
+  // Tiện cho việc đọc bằng console / devtools từ xa:
+  //   vkeyProbe()  → trạng thái cả ba ô
+  window.vkeyProbe = () => ({
+    input: describe(document.getElementById('f1').value),
+    textarea: describe(document.getElementById('f2').value),
+    contenteditable: describe(document.getElementById('f3').textContent),
+  });
+</script>
