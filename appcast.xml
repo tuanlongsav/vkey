@@ -6,6 +6,36 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.24 — "Rà lại cách bỏ dấu"</title>
+      <sparkle:version>42400</sparkle:version>
+      <sparkle:shortVersionString>4.24</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 23 Aug 2026 09:05:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.24/vkey-4.24.dmg"
+        sparkle:edSignature="mYo62+0UP3LzFiQzGbPA4Z/JAcCPxwY1FYza3AXyRQHC7u7UPcsZOr6nKfSytfsLiNSWUAiqRs9JcmULbamHBw=="
+        length="6603110"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.24 — Rà lại cách bỏ dấu</h2>
+        <p><b>Bản sửa lỗi gõ, nên cập nhật.</b> 23 lỗi trong cách bỏ dấu và cách gõ lại chữ, tìm bằng một đợt rà soát toàn bộ engine rồi kiểm chứng lại trên cả 7.184 âm tiết tiếng Việt. Tỉ lệ âm tiết gõ hỏng: Telex 79 → 58, VNI <b>259 → 7</b>.</p>
+        <ul>
+          <li><b>VNI gõ được vần "ươ" theo đúng trình tự chuẩn</b> — trước đây <code>nu7o7c1</code> ra "nuóc" chứ không phải "nước", vì phím <code>7</code> thứ hai lại tắt dấu móc thay vì giữ. Ảnh hưởng <b>235 âm tiết</b>, gồm những từ thông dụng nhất: <i>được, người, trường, nước, hương, thương</i>. Chỉ lối gõ tắt một phím <code>7</code> mới đúng nên lỗi này ẩn suốt nhiều bản.</li>
+          <li><b>Gõ dấu thanh trước dấu mũ giờ chạy</b> — <code>tifeen</code> ra "tiền", <code>vijeec</code> ra "việc", <code>xusaat</code> ra "xuất". Thêm <b>557 âm tiết</b> gõ được theo lối tự do này.</li>
+          <li><b>Bốn nhóm vần bị chặn oan nay gõ được</b> — <i>xẻng, kẻng</i> và cả họ vần "eng", cùng <i>khuâng</i>, <i>yểng</i>, <i>ngoéo, khoèo, ngoẹo, ngoáo</i>.</li>
+          <li><b>Xoá lùi sau khi đã xuống từ không còn nuốt dấu</b> — gõ "chào", Space, rồi Backspace hai lần: trước ra "cha", nay ra "chà". Với "đường" thì trước mất sạch cả đ, ư, ơ lẫn dấu huyền.</li>
+          <li><b>Huỷ dấu bằng cách gõ đúp phím dấu giờ luôn có tác dụng</b> — trước đây với chữ mà bộ gõ tự đoán dấu (<code>thfi</code> → "thì") thì gõ <code>f</code> bao nhiêu lần dấu vẫn không mất.</li>
+          <li><b>"Đặt dấu tự do" không còn phá chữ tiếng Anh</b> — bật tính năng này rồi gõ <i>art</i> trước đây ra "ảt", <i>text</i> ra "tẽt". Đo trên 63 từ mẫu: 28 từ hỏng, nay 0. Vị trí đặt dấu vẫn tự do như cũ.</li>
+          <li><b>Gõ được tên riêng bắt đầu bằng "Kr"</b> — <i>Krông Pắc, Krông Ana, Krông Bông</i>.</li>
+          <li><b>Gõ tắt sửa hai lỗi</b> — <code>PM</code> không còn tự biến thành <code>±</code>, và gõ tắt giờ bung được ở <b>đầu câu</b> (trước đây <code>vn</code> ở đầu dòng không ra "Việt Nam" vì đã bị viết hoa thành <code>Vn</code>).</li>
+          <li><b>Phím Enter ở bàn phím số</b> giờ được nhận là kết thúc từ, không còn làm hỏng chữ ở dòng trước.</li>
+        </ul>
+        <p><b>Ba lỗi ở tầng gửi phím cố ý chưa sửa.</b> Chúng đã được vá hai lần và cả hai lần bản vá gây hại nặng hơn lỗi gốc, nên giữ nguyên hành vi cũ kèm ghi chú đầy đủ trong mã nguồn: đổi app giữa lúc gõ dở không xoá bộ đệm từ; chiến lược gửi từng phím không có nhịp chờ ở thao tác thay 1 ký tự; phân loại ô nhập có thể đổi trục chuẩn hoá giữa từ khi Accessibility trả lỗi.</p>
+        <p>407 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.23 — "Dọn nhà"</title>
       <sparkle:version>42300</sparkle:version>
       <sparkle:shortVersionString>4.23</sparkle:shortVersionString>

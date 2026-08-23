@@ -2,6 +2,103 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.24] - 2026-08-23 — "Rà lại cách bỏ dấu"
+
+**Bản sửa lỗi gõ, nên cập nhật.** 23 lỗi trong engine bỏ dấu và trong đường gõ
+lại chữ, tìm bằng một đợt rà soát toàn bộ rồi kiểm chứng lại trên cả 7.184 âm
+tiết tiếng Việt bằng một harness chạy thật engine. Tỉ lệ âm tiết gõ hỏng:
+Telex 79 → 58, VNI **259 → 7**.
+
+### ⌨️ Bỏ dấu — những lỗi ảnh hưởng nhiều người nhất
+
+- **VNI: vần "ươ" gõ theo trình tự chuẩn bị hỏng.** Phím `7` thứ hai trong cụm
+  "uo" lại TẮT dấu móc thay vì giữ, nên `nu7o7c1` ra "nuóc" chứ không phải
+  "nước". **235/7.184 âm tiết** hỏng, gồm gần hết nhóm từ thông dụng nhất:
+  *được, người, trường, nước, hương, thương, tướng*. Telex vốn có chốt chặn cho
+  ca này; luật chung nay đặt ở `TiengVietState` để hai kiểu gõ dùng chung.
+  Lỗi ẩn lâu vì lối gõ tắt một phím `7` (`nuo7c1`) vẫn đúng.
+- **Gõ dấu thanh trước dấu mũ bị chặn.** `tifeen` không ra "tiền", `vijeec`
+  không ra "việc", `xusaat` không ra "xuất". Chốt chặn cũ được nới sau khi đo ba
+  phương án: **cứu 557 âm tiết**, giá phải trả đúng 4 từ tiếng Anh hiếm.
+- **Bảng vần thiếu "ng" ở ba hàng** (`e`, `uâ`, `yê`) nên *xẻng, kẻng, khuâng,
+  yểng* bị đẩy về chữ thô. Quét toàn corpus xác nhận đúng ba hàng này thiếu,
+  không hàng nào khác; 34 âm tiết bị chặn.
+- **Nguyên âm ba `oeo`/`oao` bị hiểu nhầm là lệnh đặt mũ** — `ngoeos` ra "ngốe"
+  thay vì "ngoéo"; cả họ *khoeo, khoèo, ngoẹo, ngoáo*.
+- **Huỷ dấu bằng gõ đúp không có tác dụng với chữ mà bộ gõ tự đoán dấu.**
+  `thfi` ra "thì" (đúng), nhưng `thfif`, `thfiff`, `thfifff` vẫn ra "thì" — phím
+  dấu bị nuốt im lặng, không có cách nào gỡ ngoài xoá lùi.
+- **"Đặt dấu tự do" bỏ qua cả luật thanh nhập**, biến từ tiếng Anh một âm tiết
+  thành âm tiết Việt bất khả: *art* → "ảt", *text* → "tẽt", *soft* → "sòt".
+  Đo trên 63 từ mẫu: 28 hỏng khi bật, nay 0. Vị trí đặt dấu vẫn tự do như cũ.
+- **Sửa lỗi gõ nhầm thứ tự dấu chết với từ mở đầu bằng s/x/r/tr** — `trfong`
+  không thành "tròng" vì chữ `r` trong cụm "tr" bị nhận nhầm là phím dấu.
+- **Một nhánh phân tích ghi đè nguyên âm đã nhận**, làm mất ký tự mà không có
+  đường phục hồi: `touis` ra "tí".
+- **Thêm luật chặn nhân âm tiết bất khả sinh ra sau khi áp dấu mũ** — `khoee`
+  trước đây lọt ra màn hình thành "khôe".
+- **VNI nuốt chữ số khi âm tiết còn ký tự dư** — `leg2` ra "lèg".
+- **`w` đứng một mình để lại chữ "u" ma** khi tắt tuỳ chọn cho phép âm tiết đầu
+  w/z/j/f — `ww` ra "uw".
+- **Giữ nguyên bất đối xứng hoa/thường của dấu mũ**: cho `aA` ra "â" nghe hợp lý
+  nhưng đo được là làm hỏng 803/9.844 tên kiểu camelCase (*dataAccess* →
+  "datccess"), nên `Aa` → "Â" vẫn là chiều duy nhất.
+
+### 🔤 Gõ lại chữ, gõ tắt, phím
+
+- **Xoá lùi sau khi đã xuống từ làm mất dấu.** Gõ "chào" + Space rồi Backspace
+  hai lần ra "cha" thay vì "chà"; "đường" mất sạch cả đ, ư, ơ lẫn dấu huyền.
+  Nguyên nhân: chuỗi phím được dựng lại từ phần chữ không dấu, vốn không chứa
+  phím dấu nào. Nay chuỗi phím gốc được giữ lại khi xuống từ.
+- **Trạng thái `dd`↔`đ` kẹt sau khi xoá lùi** — gõ "vcdd" ra "vcđ", Backspace,
+  rồi gõ `d` lại thì ra "vcdd" và mọi `d` sau đó cũng vậy cho tới hết từ.
+- **Gõ tắt không bung được ở đầu câu** — `vn` đầu dòng đã bị viết hoa thành `Vn`
+  trước khi so khớp. Nay khớp cả biến thể hoa chữ đầu.
+- **Gõ tắt nuốt viết tắt gõ HOA** — `PM` biến thành `±`, `VN` thành "VIỆT NAM".
+  Nay chỉ biến thể hoa-chữ-đầu mới khớp.
+- **Gõ được tên riêng bắt đầu bằng "Kr"** (*Krông Pắc, Krông Ana*) — "kr" trước
+  đây vừa nằm trong danh sách cụm bất khả vừa là phụ âm đầu hợp lệ.
+- **Enter ở bàn phím số (mã 76) không được nhận** nên không kết thúc từ, khiến
+  ký tự đầu dòng mới phát lệnh xoá lùi ngược lên dòng trước. Thêm cả nhóm dấu
+  câu bàn phím số; Page Up/Down có task riêng thay vì mượn phím mũi tên.
+- **Ký tự đầu câu bị phát thô thay vì kết quả engine**, làm lệch bộ đệm với màn
+  hình khi engine có biến đổi chính ký tự đó.
+- **Cửa sổ n-gram không bị cắt khi đổi app**, học cặp từ rác vào kho dữ liệu bền
+  và gợi ý dựa trên câu của app trước.
+
+### 🧹 Gỡ bỏ
+
+- **`TransformationTracker` và công tắc "tự đổi chiến lược gửi phím".** Cơ chế
+  này không bao giờ chạy được: nhánh phát hiện đòi một điều kiện mà không call
+  site thật nào tạo ra, nên bộ đếm không bao giờ tăng và công tắc không đổi được
+  gì. Chiến lược gửi phím nay tra thẳng bảng theo app.
+- Bỏ một lệnh đọc pasteboard chạy trên mọi phím cho một giá trị không ai đọc.
+- Bỏ `sendShiftLeft` và hai hàm không còn nơi gọi.
+
+### 🎯 Ứng dụng
+
+- Thêm sáu app chat vào bảng chiến lược gửi phím (Zalo, Slack, Discord,
+  Messenger, WhatsApp, Viber) — cùng nhóm với Telegram. Lưu ý phạm vi: chỉ có
+  tác dụng ở thao tác thay cả cụm, không phải mọi phím.
+- Sửa bundle ID của Alacritty (`org.alacritty`) và bao thêm bản Termius App
+  Store — hai entry cũ chưa từng khớp gì.
+
+### ⚠️ Ba lỗi cố ý CHƯA sửa
+
+Ba lỗi ở tầng gửi phím đã được vá hai lần, và **cả hai lần bản vá gây hại nặng
+hơn lỗi gốc** — lần cuối suýt để app chat gửi tin nhắn dở khi bấm Enter. Cả ba
+nay được giữ nguyên hành vi cũ, kèm chú thích tại chỗ ghi rõ lỗi gốc, đã thử
+những gì, hỏng ra sao, và điều kiện cần chứng minh trước khi thử lại:
+
+- Đổi app giữa lúc gõ dở không xoá bộ đệm từ.
+- Chiến lược `stepByStep` không có nhịp chờ ở thao tác thay 1 ký tự.
+- Phân loại ô nhập có thể đổi trục chuẩn hoá giữa từ khi Accessibility trả lỗi.
+
+Ngoài ra, đơn vị xoá của ô nhập nền Chromium chưa từng được đo, nên trục chuẩn
+hoá cho Zalo/Messenger giữ nguyên giả định cũ.
+
+**407 test pass** (349 → 407).
+
 ## [4.23] - 2026-08-09 — "Dọn nhà"
 
 **Bản bảo trì. Cách gõ không đổi một chút nào.** Lý do phát hành: sau đợt dọn,

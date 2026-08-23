@@ -8,15 +8,21 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.23](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 349 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.24](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 407 test pass · [Tải bản mới nhất](../../releases/latest)
 
-## Mới ở v4.23
+## Mới ở v4.24
 
-**Bản bảo trì — cách gõ không đổi.** Phát hành để mã nguồn và bản đã ship khớp nhau sau đợt dọn dẹp.
+**Bản sửa lỗi gõ, nên cập nhật.** 23 lỗi trong cách bỏ dấu và cách gõ lại chữ, tìm bằng một đợt rà soát toàn bộ engine rồi kiểm chứng lại trên cả 7.184 âm tiết tiếng Việt.
 
-- **Từ điển tham chiếu Anh–Việt giờ mới thật sự chạy** — công tắc này bật sẵn từ v1.5.0 nhưng dữ liệu đi kèm luôn rỗng, nên nó chưa từng làm gì. Đã có 3.039 cặp Anh–Việt. Gói từ điển đi độc lập với app nên bạn đã nhận rồi, không cần cài 4.23.
-- **App nhẹ đi** — bỏ ~2.000 dòng mã chết và bộ icon iOS/watchOS mà bản macOS không dùng tới.
-- **Hai thông báo chẩn đoán** (event tap bị tắt ngầm, tạo event tap thất bại) trước đây mất hút ở bản phát hành, nay đọc được bằng Console.
+- **VNI gõ được vần "ươ" theo đúng trình tự chuẩn** — trước đây `nu7o7c1` ra "nuóc" chứ không phải "nước", vì phím `7` thứ hai lại tắt dấu móc thay vì giữ. Ảnh hưởng **235 âm tiết**, gồm những từ thông dụng nhất: *được, người, trường, nước, hương, thương*. Chỉ lối gõ tắt một phím `7` mới đúng, nên lỗi này ẩn suốt nhiều bản.
+- **Gõ dấu thanh trước dấu mũ giờ chạy** — `tifeen` ra "tiền", `vijeec` ra "việc", `xusaat` ra "xuất". Thêm **557 âm tiết** gõ được theo lối tự do này.
+- **Bốn nhóm vần bị chặn oan nay gõ được** — *xẻng, kẻng* và cả họ vần "eng", cùng *khuâng*, *yểng*, *ngoéo, khoèo, ngoẹo, ngoáo*.
+- **Xoá lùi sau khi đã xuống từ không còn nuốt dấu** — gõ "chào", Space, rồi Backspace hai lần: trước ra "cha", nay ra "chà". Với "đường" thì trước mất sạch cả đ, ư, ơ lẫn dấu huyền.
+- **Huỷ dấu bằng cách gõ đúp phím dấu giờ luôn có tác dụng** — trước đây với chữ mà bộ gõ tự đoán dấu (`thfi` → "thì") thì gõ `f` bao nhiêu lần dấu vẫn không mất.
+- **"Đặt dấu tự do" không còn phá chữ tiếng Anh** — bật tính năng này rồi gõ *art* trước đây ra "ảt", *text* ra "tẽt". Đo trên 63 từ mẫu: 28 từ hỏng, nay 0.
+- **Gõ được tên riêng bắt đầu bằng "Kr"** — *Krông Pắc, Krông Ana, Krông Bông*.
+- **Gõ tắt (macro) sửa hai lỗi** — `PM` không còn tự biến thành `±`, và gõ tắt giờ bung được ở **đầu câu** (trước đây `vn` ở đầu dòng không ra "Việt Nam" vì đã bị viết hoa thành `Vn`).
+- **Phím Enter ở bàn phím số** giờ được nhận là kết thúc từ, không còn làm hỏng chữ ở dòng trước.
 
 Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md)
 
