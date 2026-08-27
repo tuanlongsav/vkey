@@ -185,7 +185,7 @@ Sử dụng script hỗ trợ:
 ```bash
 ./Tools/sparkle_sign_update.sh \
   --archive /path/to/vkey-2.4.dmg \
-  --private-key /Users/longht/Desktop/Claude/vkey/vkey_private_key.key
+  --private-key /Volumes/DATA/Claude/vkey/vkey_private_key.key
 ```
 
 Script sẽ in ra fragment:
@@ -389,7 +389,7 @@ git commit -m "vX.Y ... | README rà soát ✓"
 
 - Không commit private key lên git.
 - Nên lưu private key trong nơi an toàn và backup.
-- File gợi ý dùng local: `/Users/longht/Desktop/Claude/vkey/vkey_private_key.key`
+- File gợi ý dùng local: `/Volumes/DATA/Claude/vkey/vkey_private_key.key`
 - Nếu đổi key, cần kế hoạch key rotation theo tài liệu Sparkle.
 
 ### Developer ID key (ký app, v3.5+)
