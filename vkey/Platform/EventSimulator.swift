@@ -510,24 +510,14 @@ class EventSimulator {
   /// Spotlight trên macOS 26 (sai), còn hàm này đọc đúng Spotlight. Nhẹ —
   /// KHÔNG walk field-kind, timeout ngắn để không treo callback.
   static func focusedOverlayBundle() -> String? {
-    // Chạy trên TAP THREAD (EventHook), MỖI keyDown khi Smart Switch bật →
-    // ngân sách đường nóng, mượn có thời hạn rồi trả lại mặc định. Trước đây
-    // chỗ này đặt 0,05 thẳng lên system-wide và không khôi phục, tức lặng lẽ hạ
-    // timeout của MỌI truy vấn AX trong tiến trình. Xem `Focused.withAXTimeout`.
-    return Focused.withAXTimeout(Focused.hotPathAXTimeout) {
-      let sw = AXUIElementCreateSystemWide()
-      var ref: CFTypeRef?
-      guard
-        AXUIElementCopyAttributeValue(sw, kAXFocusedUIElementAttribute as CFString, &ref)
-          == .success,
-        let r = ref, CFGetTypeID(r) == AXUIElementGetTypeID()
-      else { return nil }
-      let el = r as! AXUIElement
-      var pid: pid_t = 0
-      guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return nil }
-      let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
-      return isOverlayBundle(bundle) ? bundle : nil
-    }
+    // Chỉ mượn ngân sách đường nóng cho MỘT lời gọi system-wide fetch; đọc pid/
+    // bundle trên chính focused element dùng timeout element-scope.
+    guard let el = Focused.focusedElement(timeout: Focused.hotPathAXTimeout) else { return nil }
+    AXUIElementSetMessagingTimeout(el, Focused.hotPathAXTimeout)
+    var pid: pid_t = 0
+    guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return nil }
+    let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
+    return isOverlayBundle(bundle) ? bundle : nil
   }
 
   /// Element focus đọc qua app-element của 1 pid (timeout ngắn, không treo).
@@ -553,7 +543,10 @@ class EventSimulator {
   }
 
   /// True nếu element là ô text/search nhập được (có AXValue settable).
-  private static func isEditableTextElement(_ el: AXUIElement) -> Bool {
+  private static func isEditableTextElement(
+    _ el: AXUIElement, timeout: Float = Focused.defaultAXTimeout
+  ) -> Bool {
+    AXUIElementSetMessagingTimeout(el, timeout)
     var roleRef: CFTypeRef?
     AXUIElementCopyAttributeValue(el, kAXRoleAttribute as CFString, &roleRef)
     let role = (roleRef as? String) ?? ""
@@ -794,27 +787,14 @@ class EventSimulator {
   /// ngoài. Nên không thể gate theo "systemwide nil"; phải kiểm tra: focused
   /// element thuộc tiến trình overlay đã biết + role text/search.
   private static func overlaySearchIsFocused() -> Bool {
-    // `sendReplacement` gọi hàm này ĐỒNG BỘ trên TAP THREAD (trước khi dispatch
-    // sang `simulationQueue`) → ngân sách đường nóng. Phạm vi bọc cả
-    // `isEditableTextElement` vì hai lời gọi AX đó cũng nằm trên tap thread.
-    // Trước đây 0,05 đặt thẳng lên system-wide và không khôi phục — xem
-    // `Focused.withAXTimeout`.
-    return Focused.withAXTimeout(Focused.hotPathAXTimeout) {
-      let systemWide = AXUIElementCreateSystemWide()
-      var ref: CFTypeRef?
-      guard AXUIElementCopyAttributeValue(
-              systemWide, kAXFocusedUIElementAttribute as CFString, &ref) == .success,
-            let r = ref, CFGetTypeID(r) == AXUIElementGetTypeID()
-      else { return false }
-      let el = r as! AXUIElement
-      // PID của focused element → có phải overlay đã biết (Spotlight/Dock…)?
-      var pid: pid_t = 0
-      guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return false }
-      let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
-      let isOverlay = overlayBundleIds.contains { bundle == $0 || bundle.hasPrefix($0) }
-      guard isOverlay else { return false }
-      return isEditableTextElement(el)
-    }
+    guard let el = Focused.focusedElement(timeout: Focused.hotPathAXTimeout) else { return false }
+    AXUIElementSetMessagingTimeout(el, Focused.hotPathAXTimeout)
+    var pid: pid_t = 0
+    guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return false }
+    let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
+    let isOverlay = overlayBundleIds.contains { bundle == $0 || bundle.hasPrefix($0) }
+    guard isOverlay else { return false }
+    return isEditableTextElement(el, timeout: Focused.hotPathAXTimeout)
   }
 
   /// v4.15: dạng ký tự THỰC SỰ phát ra, bám theo dạng lưu của field.

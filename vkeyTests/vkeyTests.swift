@@ -7465,6 +7465,82 @@ final class EmitPlanWordLockT3Tests: XCTestCase {
   // PHÍM trên tap thread, nên ngân sách riêng cho đường nóng (`hotPathAXTimeout`,
   // B1) càng cần chứ không phải bớt cần. `HotPathAXBudgetF4Tests` giữ chỗ đó —
   // đừng gộp hằng ấy về `defaultAXTimeout` cho gọn.
+
+  // MARK: F1 — chốt NFD sau lần gửi có backspace (khác chốt-theo-từ đã lùi)
+
+  /// Electron web content: sau lần gửi NFD đầu tiên có `bs > 0`, hiccup AX đổi
+  /// `.webContent` → `.windowField` giữa từ KHÔNG được lật trục sang NFC.
+  func testF1_NfdEmitPlanSurvivesMidWordFieldFlip() throws {
+    let p = InputProcessor(method: .Telex)
+    p.changeActiveApp(Self.electronApp)
+    p.focusedFieldKind = .webContent
+
+    let word = "tieengs"
+    var lockedSeq: [T3EmitStep] = []
+    for (i, c) in word.enumerated() {
+      p.push(char: c)
+      let r = p.emitPlan().replacement(from: p.lastTransformed, to: p.transformed)
+      if !r.isEmpty {
+        p.recordConsequentialEmitForTests(r)
+        lockedSeq.append(T3EmitStep(r.backspaceCount, r.diffChars))
+      }
+      if i == 4 { p.focusedFieldKind = .windowField }
+    }
+
+    let baseline = InputProcessor(method: .Telex)
+    baseline.changeActiveApp(Self.electronApp)
+    baseline.focusedFieldKind = .webContent
+    var baseSeq: [T3EmitStep] = []
+    for c in word {
+      baseline.push(char: c)
+      let r = baseline.emitPlan().replacement(
+        from: baseline.lastTransformed, to: baseline.transformed)
+      if !r.isEmpty {
+        baseSeq.append(T3EmitStep(r.backspaceCount, r.diffChars))
+      }
+    }
+
+    XCTAssertEqual(lockedSeq, baseSeq,
+      "chốt NFD sau bs>0 phải giữ chuỗi phát ổn định dù fieldKind dao động")
+    XCTAssertFalse(p.emitPlan().usesNFC, "vẫn trên nhánh NFD sau flip")
+  }
+
+  /// Hộp thoại Lưu (nativePanel/NFC): không kích hoạt chốt NFD — AX vẫn được đo
+  /// lại mỗi phím để tự hội tụ NFC.
+  func testF1_NativePanelNeverArmsNfdLockSoAxisCanSelfHeal() throws {
+    let p = InputProcessor(method: .Telex)
+    p.changeActiveApp(Self.electronApp)
+    p.focusedFieldKind = .nativePanel
+
+    for c in "nooij" {
+      p.push(char: c)
+      let r = p.emitPlan().replacement(from: p.lastTransformed, to: p.transformed)
+      if !r.isEmpty { p.recordConsequentialEmitForTests(r) }
+    }
+    XCTAssertTrue(p.emitPlan().usesNFC, "nativePanel ⇒ NFC")
+
+    p.focusedFieldKind = .unknown
+    XCTAssertFalse(p.emitPlan().usesNFC,
+      "không có chốt NFD ⇒ hiccup về .unknown vẫn đo lại, không đóng băng NFC")
+  }
+
+  /// `.unknown` không đủ tin cậy để chốt — tránh đóng băng NFD khi hộp thoại Lưu
+  /// vừa mở mà AX chưa kịp báo `.nativePanel`.
+  func testF1_UnknownFieldKindNeverArmsNfdLock() throws {
+    let p = InputProcessor(method: .Telex)
+    p.changeActiveApp(Self.electronApp)
+    p.focusedFieldKind = .unknown
+
+    for c in "tuw" {
+      p.push(char: c)
+      let r = p.emitPlan().replacement(from: p.lastTransformed, to: p.transformed)
+      if !r.isEmpty { p.recordConsequentialEmitForTests(r) }
+    }
+
+    p.focusedFieldKind = .nativePanel
+    XCTAssertTrue(p.emitPlan().usesNFC,
+      ".unknown không chốt NFD ⇒ chuyển sang nativePanel vẫn đo lại NFC")
+  }
 }
 
 // MARK: - ===========================================
@@ -8203,10 +8279,12 @@ final class HotPathAXBudgetF4Tests: XCTestCase {
     // nền và cả hai người gọi lại dùng chung một con số.
     // CỐ Ý KHÔNG GỌI — `snapshot()` đọc AX của máy đang chạy test.
     let signatureLock: [Any] = [
-      Focused.snapshot(timeout:) as (Float) -> Focused.FocusSnapshot
+      Focused.snapshot(timeout:) as (Float) -> Focused.FocusSnapshot,
+      Focused.focusedElement(timeout:) as (Float) -> AXUIElement?
     ]
-    XCTAssertEqual(signatureLock.count, 1,
-      "Focused.snapshot phải nhận `timeout:` — hai người gọi, hai thread, hai ngân sách")
+    XCTAssertEqual(signatureLock.count, 2,
+      "Focused.snapshot + focusedElement phải nhận `timeout:` — fetch system-wide "
+        + "tách khỏi leo cây element-scope")
 
     // `withAXTimeout` vẫn là SCOPE (mượn có thời hạn), không phải một lần ghi.
     XCTAssertEqual(Focused.withAXTimeout(Focused.hotPathAXTimeout) { 7 }, 7)

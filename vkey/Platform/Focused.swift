@@ -83,6 +83,19 @@ public struct Focused {
     return systemWideElement.getAttribute(property: kAXFocusedUIElementAttribute)
   }
 
+  /// Lấy focused element với ngân sách chờ `timeout`.
+  ///
+  /// Khi `timeout == defaultAXTimeout` thì đọc qua mặc định toàn tiến trình đã
+  /// đặt lúc launch — KHÔNG ghi đè global. Các ngân sách ngắn hơn (đường nóng)
+  /// chỉ mượn global trong MỘT lời gọi `element()` rồi trả lại, thay vì bọc cả
+  /// lần leo cây `fieldKind` (~50 message) trong cùng một cửa sổ process-wide.
+  static func focusedElement(timeout: Float = defaultAXTimeout) -> AXUIElement? {
+    if timeout == defaultAXTimeout {
+      return element()
+    }
+    return withAXTimeout(timeout) { element() }
+  }
+
   /// v3.9: phân loại ngữ cảnh của focused element (leo cây AX) để caller quyết
   /// định kiểu diff (NFC/NFD) và chiến lược gửi (synthetic vs axDirect).
   public enum FieldKind {
@@ -162,11 +175,12 @@ public struct Focused {
   ///     `Tools/probe`, đừng suy luận — (i) trục có THẬT SỰ lật giữa một từ
   ///     không, và tần suất bao nhiêu; (ii) sau click/⌘S thì bao lâu AX mới báo
   ///     đúng ô. Không có hai con số đó thì mọi hàng rào chỉ là phỏng đoán.
-  private static func fieldKind(from element: AXUIElement) -> FieldKind {
+  private static func fieldKind(from element: AXUIElement, timeout: Float) -> FieldKind {
     var current: AXUIElement? = element
     var depth = 0
     // Trần 25 cấp: vòng lặp luôn có cận trên để không treo trên cây bệnh/đệ quy.
     while let el = current, depth < 25 {
+      AXUIElementSetMessagingTimeout(el, timeout)
       guard let role: String = el.getAttribute(property: kAXRoleAttribute) else {
         // Role không đọc được ở node này (AX timeout/lỗi) — leo parent thay vì
         // bỏ cuộc sớm (sheet/dialog có thể nằm sâu hơn node lỗi).
@@ -219,18 +233,17 @@ public struct Focused {
   ///   bắt hộp thoại native xuất hiện muộn — cắt ngân sách của nó là cắt đúng
   ///   thứ nó sinh ra để làm.
   public static func snapshot(timeout: Float = hotPathAXTimeout) -> FocusSnapshot {
-    withAXTimeout(timeout) {
-      guard let element = Focused.element() else {
-        return FocusSnapshot(bundleId: nil, fieldKind: .unknown)
-      }
-      var bundleId: String? = nil
-      var pid: pid_t = 0
-      if AXUIElementGetPid(element, &pid) == .success {
-        bundleId = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
-      }
-      let kind = Focused.fieldKind(from: element)
-      return FocusSnapshot(bundleId: bundleId, fieldKind: kind)
+    guard let element = focusedElement(timeout: timeout) else {
+      return FocusSnapshot(bundleId: nil, fieldKind: .unknown)
     }
+    AXUIElementSetMessagingTimeout(element, timeout)
+    var bundleId: String? = nil
+    var pid: pid_t = 0
+    if AXUIElementGetPid(element, &pid) == .success {
+      bundleId = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
+    }
+    let kind = Focused.fieldKind(from: element, timeout: timeout)
+    return FocusSnapshot(bundleId: bundleId, fieldKind: kind)
   }
 
   /// Whether the currently focused UI element (in the frontmost app) is a
@@ -248,13 +261,12 @@ public struct Focused {
   /// F4: chạy trên TAP THREAD (`EventHook`), mỗi event trong lúc secure input
   /// đang bật — nên đi bằng ngân sách đường nóng.
   public static func isSecureField() -> Bool {
-    withAXTimeout(hotPathAXTimeout) {
-      guard let focusedElement = Focused.element() else { return false }
-      if let subrole: String = focusedElement.getAttribute(property: kAXSubroleAttribute) {
-        return subrole == (kAXSecureTextFieldSubrole as String)
-      }
-      return false
+    guard let focusedElement = focusedElement(timeout: hotPathAXTimeout) else { return false }
+    AXUIElementSetMessagingTimeout(focusedElement, hotPathAXTimeout)
+    if let subrole: String = focusedElement.getAttribute(property: kAXSubroleAttribute) {
+      return subrole == (kAXSecureTextFieldSubrole as String)
     }
+    return false
   }
 }
 

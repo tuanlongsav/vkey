@@ -32,11 +32,9 @@ import Foundation
 /// TRỌN kế hoạch phát của MỘT lần thay thế: trục chuẩn hoá + đường gửi, dựng từ
 /// MỘT phép đo field.
 ///
-/// ⚠️ ĐÂY LÀ REFACTOR THUẦN KIỂU. `EmitPlan` KHÔNG nhớ gì và KHÔNG đổi giá trị
-/// nào: `InputProcessor.emitPlan()` đo lại ở mỗi lần gọi, nên với cùng một chuỗi
-/// phím và cùng một nguồn phân loại, chuỗi `(backspaceCount, diffChars)` phát ra
-/// giống hệt bản trước refactor. (Một chốt-theo-TỪ đã được thử ở đây và đã lùi —
-/// xem `InputProcessor.emitPlan()`.)
+/// ⚠️ REFACTOR THUẦN KIỂU + một ngoại lệ F1: `WordBuffer.nfdEmitPlan` chốt NHÁNH
+/// NFD sau lần gửi đầu tiên có `backspaceCount > 0` trong từ (xem
+/// `InputProcessor.emitPlan()`). Ô ổn định vẫn phát giống hệt bản đo-mỗi-phím.
 ///
 /// VÌ SAO LÀ MỘT KIỂU CHỨ KHÔNG PHẢI MỘT `Bool` RỜI. Bất biến v4.15 — "dạng dùng
 /// để ĐẾM backspace phải đúng bằng dạng PHÁT ra" — trước đây chỉ là QUY ƯỚC:
@@ -152,6 +150,12 @@ struct WordBuffer {
   // `lockedEmitPlan`/`storedEmitPlan` và `dropEmitLockAtWordBoundary()`.
   // `WordBuffer` không còn nhớ gì về trục chuẩn hoá — `InputProcessor.emitPlan()`
   // ĐO lại mỗi lần gọi, như HEAD. Lý do lùi ở `InputProcessor.emitPlan()`.
+  //
+  // F1 (v4.25): chỉ chốt NHÁNH NFD sau lần gửi ĐẦU TIÊN có `backspaceCount > 0`
+  // trong từ. Khác chốt-theo-từ đã lùi: không chốt ở phím 1 (bs luôn 0), không
+  // chốt NFC (lật NFC→NFD trong Blink vô hại; lật NFD→NFC trong AppKit hỏng câm),
+  // và hộp thoại Lưu (nativePanel/NFC) không bao giờ kích hoạt chốt này.
+  var nfdEmitPlan: EmitPlan? = nil
 
   private static let impossible2LetterPrefixes: Set<String> = [
     "bl", "cl", "fl", "gl", "pl", "sl", "vl",
@@ -253,6 +257,7 @@ struct WordBuffer {
     ddToggleStage = 0
     lastTransformed = ""
     transformed = ""
+    nfdEmitPlan = nil
   }
 
   // MARK: - Pop (Backspace)
@@ -1128,7 +1133,8 @@ class InputProcessor {
     }
   }
 
-  /// Kế hoạch phát cho MỘT lần gửi. ĐO MỖI LẦN GỌI — hàm này KHÔNG nhớ gì.
+  /// Kế hoạch phát cho MỘT lần gửi. Đo lại mỗi lần gọi, trừ khi `nfdEmitPlan`
+  /// đã kích hoạt (F1 — chốt NFD sau lần gửi đầu có `backspaceCount > 0`).
   ///
   /// Việc nó gom được cả hai vế (trục chuẩn hoá + browser-chrome) từ MỘT phép
   /// đo `currentFieldKind()` là toàn bộ giá trị còn lại của nó: đọc hai lần
@@ -1153,19 +1159,38 @@ class InputProcessor {
   ///     ĐÚNG (chiều lật NFD→NFC là chiều lành); chốt thì đóng băng cái sai cho
   ///     trọn từ.
   /// ⇒ Đổi một lỗi ngẫu nhiên hiếm lấy một lỗi hệ thống trong thao tác hằng
-  /// ngày. Không đáng.
+  /// ngày. Không đáng — nên v4.25 chỉ chốt NHÁNH NFD sau lần gửi có
+  /// `backspaceCount > 0`, không chốt NFC, không chốt ở phím 1.
   ///
-  /// ĐIỀU KIỆN TIÊN QUYẾT NẾU MUỐN THỬ LẠI: phải ĐO TRƯỚC bằng `Tools/probe` —
+  /// ĐIỀU KIỆN TIÊN QUYẾT NẾU MUỐN MỞ RỘNG CHỐT: phải ĐO TRƯỚC bằng `Tools/probe` —
   /// (i) trục có THẬT SỰ lật giữa một từ không, tần suất bao nhiêu; (ii) sau
   /// click/⌘S thì bao lâu AX mới báo đúng ô. Không có hai con số đó thì mọi hàng
   /// rào quanh chốt chỉ là phỏng đoán. Xem thêm `Focused.fieldKind(from:)`
   /// mục (e)/(f).
   func emitPlan() -> EmitPlan {
+    if let locked = wordBuffer.nfdEmitPlan {
+      return locked
+    }
     let kind = currentFieldKind()
     return EmitPlan(
       usesNFC: usesNFC(forFieldKind: kind),
       fieldIsBrowserChrome: isBrowserChrome(forFieldKind: kind)
     )
+  }
+
+  /// Kích hoạt chốt NFD (F1) sau lần gửi có backspace thật sự trên nhánh NFD.
+  ///
+  /// Chỉ chốt khi AX đã thấy `.webContent` — không chốt trên `.unknown` (hiccup
+  /// thường gặp khi hộp thoại Lưu vừa mở và AX chưa kịp báo `.nativePanel`).
+  private func noteConsequentialNfdEmit(_ plan: EmitPlan, backspaceCount: Int) {
+    guard backspaceCount > 0, !plan.usesNFC, wordBuffer.nfdEmitPlan == nil else { return }
+    guard currentFieldKind() == .webContent else { return }
+    wordBuffer.nfdEmitPlan = plan
+  }
+
+  /// Ghi nhận lần gửi đã xảy ra — chỉ cho test (`@testable import`).
+  internal func recordConsequentialEmitForTests(_ replacement: EmitPlan.Replacement) {
+    noteConsequentialNfdEmit(replacement.plan, backspaceCount: replacement.backspaceCount)
   }
 
   /// Pop THEO KẾ HOẠCH — trục dùng để replay/đếm bên trong `WordBuffer.pop`
@@ -1537,6 +1562,7 @@ class InputProcessor {
   ) -> EventSendTelemetry {
     let backspaceCount = replacement.backspaceCount
     let diffChars = replacement.diffChars
+    noteConsequentialNfdEmit(replacement.plan, backspaceCount: backspaceCount)
     let strategy = effectiveTypingStrategy(
       plan: replacement.plan,
       backspaceCount: backspaceCount,
