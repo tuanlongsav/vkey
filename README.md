@@ -8,7 +8,14 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.24](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 407 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.25](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 424 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.25
+
+**Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ trong Zalo/Messenger/Slack hoặc app Electron.** Hai thay đổi ở đường nóng; cách gõ khi ô ổn định không đổi.
+
+- **Giữ trục gõ suốt một từ trong web content Electron** — khi Accessibility hiccup đổi phân loại ô giữa chừng, vkey không còn lật sang đếm backspace sai rồi ăn ngược vào chữ đã gõ. Chỉ chốt nhánh NFD sau lần gửi đầu có backspace thật; hộp thoại Lưu AppKit vẫn tự hội tụ khi AX báo sai.
+- **Hết race timeout Accessibility** giữa mỗi phím và refresh nền — giảm hiccup `kAXRole` làm lật trục giữa từ.
 
 ## Mới ở v4.24
 

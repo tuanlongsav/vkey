@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.25 — "Giữ trục gõ giữa từ"</title>
+      <sparkle:version>42500</sparkle:version>
+      <sparkle:shortVersionString>4.25</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 28 Aug 2026 17:28:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.25/vkey-4.25.dmg"
+        sparkle:edSignature="m83k3+FRN9AhD853wPkegjmaW+Q71ziIWJGXVKT80FDTDSB5nXrI8wHw4PfxDVJDtQ8iqn5AFWqTKTbY4fVfAg=="
+        length="6603295"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.25 — Giữ trục gõ giữa từ</h2>
+        <p><b>Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ trong Zalo/Messenger/Slack hoặc app Electron.</b> Hai thay đổi ở đường nóng; cách gõ khi ô ổn định không đổi.</p>
+        <ul>
+          <li><b>Giữ trục gõ suốt một từ trong web content Electron</b> — khi Accessibility hiccup đổi phân loại ô giữa chừng, vkey không còn lật sang đếm backspace sai rồi ăn ngược vào chữ đã gõ. Chỉ chốt nhánh NFD sau lần gửi đầu có backspace thật; hộp thoại Lưu AppKit vẫn tự hội tụ.</li>
+          <li><b>Hết race timeout Accessibility</b> giữa mỗi phím và refresh nền — giảm hiccup <code>kAXRole</code> làm lật trục giữa từ.</li>
+        </ul>
+        <p>424 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.24 — "Rà lại cách bỏ dấu"</title>
       <sparkle:version>42400</sparkle:version>
       <sparkle:shortVersionString>4.24</sparkle:shortVersionString>
