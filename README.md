@@ -8,7 +8,13 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.25](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 424 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.26](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 425 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.26
+
+**Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume (ô chat bong bóng).** Một thay đổi nhỏ; cách gõ ở app khác không đổi.
+
+- **Hết mất chữ ở Plume** — gõ "chứ" trước đây thành "cứ" (mất phụ âm) vì vkey đếm backspace theo NFD trong khi WKWebView xoá theo grapheme. Nay dùng NFC như Safari / Telegram.
 
 ## Mới ở v4.25
 

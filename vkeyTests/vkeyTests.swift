@@ -110,11 +110,42 @@ final class vkeyTests: XCTestCase {
     // field-kind mong manh). Telegram + ChatGPT cùng lớp Gemini.
     XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "ru.keepcoder.Telegram"))
     XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.openai.chat"))
+    XCTAssertTrue(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.htl.plume"))
     // KHÔNG whitelist: Qt tdesktop (delete-unit chưa xác minh), Electron/Chromium
     // (Zalo, Cursor, Slack) vốn NFD scalar-delete đúng sẵn — bảo đảm cô lập.
     XCTAssertFalse(InputProcessor.usesNFCGraphemeStorage(bundleId: "org.telegram.desktop"))
     XCTAssertFalse(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.vng.zalo"))
     XCTAssertFalse(InputProcessor.usesNFCGraphemeStorage(bundleId: "com.tinyspeck.slackmacgap"))
+  }
+
+  /// Regression — Plume (WKWebView Messenger bubble) gõ "chứ" ra "cứ" (mất "h").
+  /// WebKit xoá grapheme; NFD scalar+snap đếm 2 backspace cho chư→chứ trong khi
+  /// NFC chỉ cần 1. Whitelist NFC short-circuit mọi fieldKind (kể cả .webContent
+  /// / .unknown khi AX đọc được AXWebArea trong card).
+  func testPlumeMessengerBubbleUsesNFC() throws {
+    let (nfcBs, _) = EventSimulator.calcKeyStrokes(from: "chư", to: "chứ", usesNFC: true)
+    XCTAssertEqual(nfcBs, 1, "NFC: một grapheme (ư→ứ)")
+    let (nfdBs, _) = EventSimulator.calcKeyStrokes(from: "chư", to: "chứ", usesNFC: false)
+    XCTAssertEqual(nfdBs, 2, "NFD snap: hai scalar — đúng lỗ hổng ăn mất h")
+
+    for kind in [Focused.FieldKind.webContent, .unknown, .windowField] {
+      let p = InputProcessor(method: .Telex)
+      p.changeActiveApp("com.htl.plume")
+      p.focusedFieldKind = kind
+      XCTAssertTrue(p.usesNFCForFocusedField(), "Plume × \(kind) phải NFC")
+      var last = ""
+      for c in "chuws" {
+        p.push(char: c)
+        let r = p.emitPlan().replacement(from: last, to: p.transformed)
+        // Mọi bước có backspace trên trục NFC phải ≤1 cho cụm này; bước dấu
+        // thanh (s) đặc biệt không được lên 2 (đó là NFD snap).
+        if c == "s" {
+          XCTAssertEqual(r.backspaceCount, 1, "Plume chuws@s: bs NFC=1, không phải NFD=2")
+        }
+        last = p.transformed
+      }
+      XCTAssertEqual(p.transformed, "chứ")
+    }
   }
 
   /// Regression — Telegram gõ "gửi" ra "ửi" (mất chữ ĐẦU). Khác lớp với

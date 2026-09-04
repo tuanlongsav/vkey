@@ -6,6 +6,27 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.26 — "Hết mất chữ ở Plume"</title>
+      <sparkle:version>42600</sparkle:version>
+      <sparkle:shortVersionString>4.26</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 04 Sep 2026 18:17:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.26/vkey-4.26.dmg"
+        sparkle:edSignature="d1dGnJyQz9DqLUiOqBS0yTGUd+yZfL2H755vueL3ThfKFhQBh/pjN0+cQC6oABrUdWi9+Nebl2TU9ypxQpOLDQ=="
+        length="6603292"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.26 — Hết mất chữ ở Plume</h2>
+        <p><b>Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume (ô chat bong bóng WKWebView).</b> Một whitelist NFC; cách gõ ở app khác không đổi.</p>
+        <ul>
+          <li><b>Plume (<code>com.htl.plume</code>): hết mất chữ kiểu "chứ"→"cứ"</b> — ô soạn tin là Messenger trong WKWebView, WebKit xoá theo grapheme như Safari, nhưng bundle không nằm whitelist NFC nên vkey đếm NFD. Bước <code>chư</code>→<code>chứ</code> cần 2 backspace trong khi ô chỉ cần 1 → xoá thêm phụ âm đứng trước. Nay whitelist NFC (cùng lớp Telegram / ChatGPT / Gemini).</li>
+        </ul>
+        <p>425 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.25 — "Giữ trục gõ giữa từ"</title>
       <sparkle:version>42500</sparkle:version>
       <sparkle:shortVersionString>4.25</sparkle:shortVersionString>

@@ -1937,6 +1937,11 @@ class InputProcessor {
     // AX không phân loại field thành .windowField → rơi NFD → mất chữ. Whitelist.
     // (lowercased để nhất quán với nhánh Gemini, chịu biến thể hoa/thường.)
     if bundleId.lowercased() == "com.openai.chat" { return true }
+    // Plume — native AppKit + WKWebView nhúng Messenger. WebKit xoá theo
+    // GRAPHEME (như Safari), nhưng bundle không phải com.apple.* / trình duyệt
+    // → rơi NFD. `calcKeyStrokesNFD` snap dấu rời làm chư→chứ = 2 backspace
+    // trong khi ô chỉ cần 1 → xoá thêm "h" ("chứ"→"cứ"). Whitelist NFC.
+    if bundleId.lowercased().hasPrefix("com.htl.plume") { return true }
     return false
   }
 

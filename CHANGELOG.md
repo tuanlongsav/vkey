@@ -2,6 +2,23 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.26] - 2026-09-04 — "Hết mất chữ ở Plume"
+
+**Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume
+(ô chat bong bóng WKWebView).** Một whitelist NFC; cách gõ ở app khác không đổi.
+
+### ⌨️ Tầng gửi phím
+
+- **Plume (`com.htl.plume`): hết mất chữ kiểu "chứ"→"cứ"** — ô soạn tin là
+  Messenger trong WKWebView, WebKit xoá theo grapheme như Safari, nhưng bundle
+  không nằm whitelist NFC nên vkey đếm NFD. `calcKeyStrokesNFD` snap dấu rời
+  làm bước `chư`→`chứ` cần 2 backspace trong khi ô chỉ cần 1 → xoá thêm phụ âm
+  đứng trước. Nay whitelist NFC (cùng lớp Telegram / ChatGPT / Gemini).
+
+### 🧪 Test
+
+- 425 test pass (+1 khoá trục NFC và chuỗi `chuws`→`chứ` trên Plume).
+
 ## [4.25] - 2026-08-28 — "Giữ trục gõ giữa từ"
 
 **Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ trong Zalo/Messenger/Slack
