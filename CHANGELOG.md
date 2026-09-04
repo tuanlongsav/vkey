@@ -2,6 +2,28 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.27] - 2026-09-04 — "Plume hết mất đ ở để"
+
+**Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume.**
+Whitelist NFC ở 4.26 đã hết "chứ"→"cứ"; bản này vá lớp gửi còn lại —
+"để"→"ể". Cách gõ ở app khác không đổi.
+
+### ⌨️ Tầng gửi phím
+
+- **Plume: hết mất "đ" khi gõ "để"** — Messenger Lexical trong WKWebView gộp
+  hai backspace liên tiếp khi vkey gửi `.batch` (delay 0). Chuỗi `dd`/`ee`/dấu
+  hỏi của `ddeer` thành BS+BS trước khi insert kịp tới → ăn mất "đ". Nay Plume
+  dùng `.stepByStep` và giữ cushion cả ở transform 1 ký tự (miễn trừ hẹp, không
+  mở lại cho Telegram/Spotlight — tránh race "push"→"pussh" đã buộc lùi P5).
+- **Rà lớp "thanh trên nguyên âm đã có mũ/móc"** — cùng số học NFD thừa 1 BS
+  đã vá bằng NFC ở 4.26: `đê→để/đề`, `vê→về`, `tô→tố`, `điêu→điều`,
+  `tiêng→tiếng`, …
+
+### 🧪 Test
+
+- 425 test pass (mở rộng regression Plume: `chuws`→`chứ`, `ddeer`→`để`, cushion
+  hẹp, chiến lược stepByStep).
+
 ## [4.26] - 2026-09-04 — "Hết mất chữ ở Plume"
 
 **Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume

@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.27 — "Plume hết mất đ ở để"</title>
+      <sparkle:version>42700</sparkle:version>
+      <sparkle:shortVersionString>4.27</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 04 Sep 2026 20:19:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.27/vkey-4.27.dmg"
+        sparkle:edSignature="t3f5J/X6UVYI+UtvDG8Jirx0/nuYNZCyqbgPTN2UkKtYc4cRUc2f4wwP1TtKhP/d1Q7BS3rKDCv3adV5ixaLDA=="
+        length="6600696"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.27 — Plume hết mất đ ở để</h2>
+        <p><b>Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume.</b> Whitelist NFC ở 4.26 đã hết "chứ"→"cứ"; bản này vá lớp gửi còn lại — "để"→"ể". Cách gõ ở app khác không đổi.</p>
+        <ul>
+          <li><b>Plume: hết mất "đ" khi gõ "để"</b> — Messenger Lexical trong WKWebView gộp hai backspace liên tiếp khi vkey gửi <code>.batch</code> (delay 0). Nay Plume dùng <code>.stepByStep</code> và giữ cushion cả ở transform 1 ký tự (miễn trừ hẹp, không mở lại cho Telegram/Spotlight).</li>
+          <li><b>Rà lớp thanh trên nguyên âm đã có mũ/móc</b> — cùng số học NFD thừa 1 BS đã vá bằng NFC ở 4.26: <code>để/đề</code>, <code>về</code>, <code>điều</code>, <code>tiếng</code>, …</li>
+        </ul>
+        <p>425 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.26 — "Hết mất chữ ở Plume"</title>
       <sparkle:version>42600</sparkle:version>
       <sparkle:shortVersionString>4.26</sparkle:shortVersionString>

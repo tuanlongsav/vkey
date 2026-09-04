@@ -171,6 +171,10 @@ class EventSimulator {
     // Messenger for macOS (Electron). ID theo tài liệu cộng đồng, CHƯA kiểm
     // được ở đây (app không cài trên máy này) → độ tin cậy trung bình.
     AppSendingConfig(bundlePrefix: "com.facebook.archon", strategy: .stepByStep, name: "Messenger"),
+    // Plume — native AppKit + WKWebView nhúng Messenger (ô chat bong bóng).
+    // Lexical trong WKWebView dễ gộp hai backspace liên tiếp khi .batch (delay 0)
+    // → "để" thành "ể". stepByStep + miễn trừ downgrade ở effectiveTypingStrategy.
+    AppSendingConfig(bundlePrefix: "com.htl.plume", strategy: .stepByStep, name: "Plume"),
     // WhatsApp Desktop bản Electron tải từ web. Bản Mac App Store là Catalyst
     // (ID "net.whatsapp.WhatsApp") — AppKit thật nên CỐ Ý không thêm, để nó
     // dùng .hybrid mặc định. Chưa kiểm trên máy → tin cậy trung bình.

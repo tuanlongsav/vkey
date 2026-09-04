@@ -1613,11 +1613,14 @@ class InputProcessor {
   ///       submit/chuyển field mà `sendString` không tái tạo), nên trong app chat
   ///       `.stepByStep` gõ "chaof" rồi Enter là gửi đi tin "chao", còn backspace
   ///       + "ò" rơi vào ô soạn của tin KẾ TIẾP.
-  /// (d) QUYẾT ĐỊNH: giữ downgrade. Chấp nhận `.stepByStep` không có cushion ở
-  ///     ca diff 1 ký tự — thiếu cushion thì thỉnh thoảng rớt/lặp một ký tự và
-  ///     người dùng gõ lại được; còn hai bản vá kia làm mất chữ trong Spotlight
-  ///     và gửi tin nhắn dở. Muốn vá lại thì phải giải bài toán THỨ TỰ mà không
-  ///     đổi ĐƯỜNG gửi (giữ nguyên axDirect, giữ nguyên event thật cho
+  /// (d) QUYẾT ĐỊNH: giữ downgrade cho hầu hết app. Chấp nhận `.stepByStep` không
+  ///     có cushion ở ca diff 1 ký tự — thiếu cushion thì thỉnh thoảng rớt/lặp một
+  ///     ký tự và người dùng gõ lại được; còn hai bản vá kia làm mất chữ trong
+  ///     Spotlight và gửi tin nhắn dở. **Ngoại lệ hẹp:** `keepsCushionOnSmallDiffs`
+  ///     (Plume) giữ chiến lược gốc cả ở diff 1 ký tự — Messenger Lexical trong
+  ///     WKWebView gộp BS liên tiếp khi `.batch` ("để"→"ể"). Không mở lại miễn trừ
+  ///     toàn bảng stepByStep. Muốn vá rộng hơn thì phải giải bài toán THỨ TỰ mà
+  ///     không đổi ĐƯỜNG gửi (giữ nguyên axDirect, giữ nguyên event thật cho
   ///     Enter/Tab), và phải kiểm được trên máy thật — không unit test nào ở
   ///     đây chạm tới timing này.
   ///
@@ -1651,11 +1654,25 @@ class InputProcessor {
     if plan.fieldIsBrowserChrome {
       return .axDirect
     }
-    // `.stepByStep` KHÔNG được miễn trừ ở đây — xem mục (c)/(d) trong docstring.
+    // `.stepByStep` KHÔNG được miễn trừ ở đây — xem mục (c)/(d) trong docstring
+    // — TRỪ Plume: xem `keepsCushionOnSmallDiffs`.
     if backspaceCount <= 1 && diffCharCount <= 1 {
+      if InputProcessor.keepsCushionOnSmallDiffs(bundleId: activeApp) {
+        return appStrategy
+      }
       return .batch
     }
     return appStrategy
+  }
+
+  /// App cần giữ nhịp nghỉ của chiến lược gốc (thường `.stepByStep`) cả ở
+  /// transform 1 ký tự. Hiện chỉ Plume: Messenger Lexical trong WKWebView gộp
+  /// hai backspace liên tiếp khi `.batch` (delay 0) — `dd`/`ee`/dấu thanh của
+  /// "ddeer" thành chuỗi BS+BS trước khi insert kịp tới, ăn mất "đ" ("để"→"ể").
+  /// Miễn trừ hẹp hơn P5 (không mở lại cho cả bảng stepByStep) để tránh race
+  /// "push"→"pussh" trên Telegram/Spotlight đã buộc lùi miễn trừ toàn cục.
+  static func keepsCushionOnSmallDiffs(bundleId: String) -> Bool {
+    bundleId.lowercased().hasPrefix("com.htl.plume")
   }
 
   /// Chạy spell decision cho phím kết từ RỒI sang từ mới.
