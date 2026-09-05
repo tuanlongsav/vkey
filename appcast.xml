@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.28 — "Plume nhận đúng app khi gõ"</title>
+      <sparkle:version>42800</sparkle:version>
+      <sparkle:shortVersionString>4.28</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sat, 05 Sep 2026 16:45:00 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.28/vkey-4.28.dmg"
+        sparkle:edSignature="/jFp9S0lY9i7fwbsYx5eAEdUxRXGNRtsngkAfOhUC/pfLVRWw7yNCTDTvONinl1fzn6zqCdd73R+UTcdG5n0AA=="
+        length="6603109"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.28 — Plume nhận đúng app khi gõ</h2>
+        <p><b>Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume (ô chat bong bóng nonactivating).</b> 4.26/4.27 đã whitelist NFC và cushion, nhưng mỗi phím vẫn bị ghi đè <code>activeApp</code> về app nền. Cách gõ ở app khác không đổi.</p>
+        <ul>
+          <li><b>Plume: hết mất chữ kiểu "về"→"ề", "dở"→"ở", "fix"→"fx"</b> — bubble dùng <code>.nonactivatingPanel</code> nên cache AX của phím trước (Chrome…) ghi đè app đích. Nay chụp AX trước rồi chọn app theo ô đang focus.</li>
+          <li><b><code>com.apple.WebKit.*</code> quy về app host</b> — WKWebView out-of-process không còn bị coi là app riêng.</li>
+          <li><b>Messenger Electron giữ cushion</b> ở transform 1 ký tự (cùng lớp Lexical với Plume).</li>
+        </ul>
+        <p>425 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.27 — "Plume hết mất đ ở để"</title>
       <sparkle:version>42700</sparkle:version>
       <sparkle:shortVersionString>4.27</sparkle:shortVersionString>

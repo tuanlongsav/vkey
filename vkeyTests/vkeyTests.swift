@@ -119,10 +119,12 @@ final class vkeyTests: XCTestCase {
   }
 
   /// Regression — Plume (WKWebView Messenger bubble) mất phụ âm khi đặt dấu
-  /// trên nguyên âm đã có mũ/móc. Hai lớp:
-  /// 1) Trục: NFD snap đếm +1 backspace so với NFC (chư→chứ, đê→để, …).
-  /// 2) Transport: `.batch` (delay 0) để Lexical gộp BS liên tiếp của dd/ee/dấu
-  ///    → "để"→"ể". Whitelist NFC + stepByStep + giữ cushion ở diff 1 ký tự.
+  /// trên nguyên âm đã có mũ/móc. Ba lớp:
+  /// 1) Trục: NFD snap đếm +1 backspace so với NFC (chư→chứ, đê→để, vê→về, …).
+  /// 2) Transport: `.batch` (delay 0) để Lexical gộp BS → "để"→"ể" / "fix"→"fx".
+  /// 3) Attribution (v4.28): panel `.nonactivatingPanel` làm cache AX đọng ở
+  ///    app nền và ghi đè activeApp → mất (1)+(2) dù whitelist đúng. Whitelist
+  ///    NFC + stepByStep + cushion + chụp AX trước khi chọn activeApp.
   func testPlumeMessengerBubbleUsesNFC() throws {
     // (1) Số học — cả lớp "thanh trên nguyên âm đã có mũ/móc".
     let toneOnMarked: [(String, String)] = [
@@ -138,6 +140,8 @@ final class vkeyTests: XCTestCase {
     }
 
     XCTAssertTrue(InputProcessor.keepsCushionOnSmallDiffs(bundleId: "com.htl.plume"))
+    XCTAssertTrue(InputProcessor.keepsCushionOnSmallDiffs(bundleId: "com.facebook.archon"),
+      "Messenger Electron cùng Lexical — giữ cushion như Plume")
     XCTAssertFalse(InputProcessor.keepsCushionOnSmallDiffs(bundleId: "ru.keepcoder.Telegram"),
       "Telegram giữ P5 — không mở miễn trừ cushion toàn cục")
     guard case .stepByStep = EventSimulator.getStrategy(for: "com.htl.plume") else {
@@ -176,6 +180,42 @@ final class vkeyTests: XCTestCase {
         last = p.transformed
       }
       XCTAssertEqual(p.transformed, "để")
+
+      // về / dở — cùng lớp thanh trên nguyên âm đã mũ/móc (mất phụ âm → "ề"/"ở").
+      for (keys, want) in [("veef", "về"), ("dowr", "dở")] {
+        last = ""
+        p.newWord()
+        var toneKey: Character?
+        if keys.hasSuffix("f") { toneKey = "f" }
+        if keys.hasSuffix("r") { toneKey = "r" }
+        for c in keys {
+          p.push(char: c)
+          let r = p.emitPlan().replacement(from: last, to: p.transformed)
+          if c == toneKey {
+            XCTAssertEqual(r.backspaceCount, 1, "Plume \(keys)@\(c): bs NFC=1 (NFD=2 ăn phụ âm)")
+            XCTAssertFalse(r.diffChars.isEmpty)
+          }
+          last = p.transformed
+        }
+        XCTAssertEqual(p.transformed, want, "Plume \(keys)")
+      }
+
+      // "fix" — tiếng Anh có phím dấu Telex bao quanh: f…x. Engine biến fi→fĩ
+      // (bs=1, nuốt x). Nếu gửi NFD/thừa BS sẽ thành "fx" (mất i).
+      last = ""
+      p.newWord()
+      var fixTrace: [(Character, String, Int, String)] = []
+      for c in "fix" {
+        p.push(char: c)
+        let r = p.emitPlan().replacement(from: last, to: p.transformed)
+        fixTrace.append((c, p.transformed, r.backspaceCount, String(r.diffChars)))
+        last = p.transformed
+      }
+      XCTAssertEqual(p.transformed, "fĩ", "Telex 'fix' đặt ngã lên i → fĩ, không phải giữ 'fix'")
+      if let xStep = fixTrace.last {
+        XCTAssertEqual(xStep.2, 1, "fix@x bs phải 1 — bs≥2 hoặc bs=1+pass-through x → 'fx'. trace=\(fixTrace)")
+        XCTAssertEqual(xStep.3, "ĩ", "fix@x phải retype ĩ (nuốt phím x), không thả x thật. trace=\(fixTrace)")
+      }
     }
   }
 
@@ -5901,6 +5941,16 @@ final class SandboxHelperBundleTests: XCTestCase {
                                         frontmost: "com.apple.Safari"),
       "com.apple.Safari",
       "hộp thoại Lưu ngoài tiến trình vẫn thuộc app đang dùng")
+    XCTAssertEqual(
+      InputProcessor.canonicalAppBundle(focused: "com.apple.WebKit.WebContent",
+                                        frontmost: "com.htl.plume"),
+      "com.htl.plume",
+      "WKWebView out-of-process phải quy về app host (Plume)")
+    XCTAssertEqual(
+      InputProcessor.canonicalAppBundle(focused: "com.apple.WebKit.WebContent",
+                                        frontmost: "com.apple.Safari"),
+      "com.apple.Safari",
+      "WKWebView trong Safari quy về Safari")
   }
 
   /// Đối chứng: app khác thật thì vẫn phải nhận ra là khác.

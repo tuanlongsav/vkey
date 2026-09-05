@@ -1007,6 +1007,12 @@ class InputProcessor {
     // Hộp thoại Mở/Lưu ngoài tiến trình — dùng chung cho mọi app sandbox nên
     // tên nó không dính gì tới app cha.
     if focused == "com.apple.appkit.xpc.openAndSavePanelService" { return frontmost }
+    // WKWebView out-of-process: event/AX đôi khi báo `com.apple.WebKit.WebContent`
+    // trong khi ô thuộc app host (Plume nhúng Messenger, Safari, …). Quy về app
+    // đang trước — với panel nonactivating (Plume bubble) thì frontmost có thể
+    // vẫn là app nền; đường EventHook ưu tiên bundle từ AX focused element trước
+    // khi gọi hàm này, nên nhánh này chủ yếu bắt trường hợp event-target = WebKit.
+    if focused.hasPrefix("com.apple.WebKit.") { return frontmost }
     return focused
   }
 
@@ -1666,13 +1672,15 @@ class InputProcessor {
   }
 
   /// App cần giữ nhịp nghỉ của chiến lược gốc (thường `.stepByStep`) cả ở
-  /// transform 1 ký tự. Hiện chỉ Plume: Messenger Lexical trong WKWebView gộp
-  /// hai backspace liên tiếp khi `.batch` (delay 0) — `dd`/`ee`/dấu thanh của
-  /// "ddeer" thành chuỗi BS+BS trước khi insert kịp tới, ăn mất "đ" ("để"→"ể").
-  /// Miễn trừ hẹp hơn P5 (không mở lại cho cả bảng stepByStep) để tránh race
-  /// "push"→"pussh" trên Telegram/Spotlight đã buộc lùi miễn trừ toàn cục.
+  /// transform 1 ký tự. Messenger Lexical (Plume WKWebView + Messenger Electron)
+  /// gộp hai backspace liên tiếp khi `.batch` (delay 0) — thanh trên nguyên âm
+  /// đã mũ/móc (`vê`→`về`, `dơ`→`dở`, `đê`→`để`) và cả `fi`→`fĩ` thành mất chữ
+  /// đứng trước ("ề"/"ở"/"ể"/"fx"). Miễn trừ hẹp hơn P5 (không mở lại cho cả
+  /// bảng stepByStep kiểu Telegram/Spotlight) để tránh race "push"→"pussh".
   static func keepsCushionOnSmallDiffs(bundleId: String) -> Bool {
-    bundleId.lowercased().hasPrefix("com.htl.plume")
+    let id = bundleId.lowercased()
+    return id.hasPrefix("com.htl.plume")
+      || id.hasPrefix("com.facebook.archon")
   }
 
   /// Chạy spell decision cho phím kết từ RỒI sang từ mới.

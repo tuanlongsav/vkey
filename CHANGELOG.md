@@ -2,6 +2,29 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.28] - 2026-09-05 — "Plume nhận đúng app khi gõ"
+
+**Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume
+(ô chat bong bóng nonactivating).** 4.26/4.27 đã whitelist NFC và cushion, nhưng
+mỗi phím vẫn bị ghi đè `activeApp` về app nền → vá vẫn không chạy. Cách gõ ở app
+khác không đổi.
+
+### ⌨️ Tầng gửi phím & nhận diện app
+
+- **Plume: hết mất chữ kiểu "về"→"ề", "dở"→"ở", "fix"→"fx"** — bubble dùng
+  `.nonactivatingPanel` nên không kích hoạt app. Cache AX của phím trước (Chrome…)
+  ghi đè `activeApp` sau khi event-target đã là Plume → mất NFC + cushion, thừa
+  backspace. Nay chụp AX **trước** rồi chọn app theo ô đang focus; overlay
+  Spotlight vẫn thắng khi Smart Switch bật.
+- **`com.apple.WebKit.*` quy về app host** — WKWebView out-of-process không còn
+  bị coi là app riêng.
+- **Messenger Electron (`com.facebook.archon`) giữ cushion** ở transform 1 ký tự
+  (cùng lớp Lexical với Plume; không mở miễn trừ cho Telegram/Spotlight).
+
+### 🧪 Test
+
+- 425 test pass (mở rộng Plume: `veef`/`dowr`/`fix`, WebKit→host, cushion Messenger).
+
 ## [4.27] - 2026-09-04 — "Plume hết mất đ ở để"
 
 **Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume.**

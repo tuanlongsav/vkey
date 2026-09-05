@@ -8,7 +8,14 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.27](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 425 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.28](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 425 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.28
+
+**Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume (ô chat bong bóng).** 4.26/4.27 đã có NFC + cushion nhưng bị ghi đè app đích mỗi phím.
+
+- **Hết mất chữ ở Plume kiểu "về"→"ề", "dở"→"ở", "fix"→"fx"** — panel nonactivating làm vkey tưởng đang gõ ở app nền. Nay nhận đúng app theo ô đang focus trước khi gửi phím.
+- **WKWebView / Messenger** — tiến trình WebKit quy về app host; Messenger Electron giữ cushion như Plume.
 
 ## Mới ở v4.27
 

@@ -406,77 +406,58 @@ func eventTapCallback(
   }
 
   // ── Focus Tracking & Smart Switch Overlay Probing ──────────────────────────
-  // 1.7.x: KHÔNG gọi AX đồng bộ trong callback. Đọc `currentFocusedBundleId`
-  // do AppState cache (cập nhật bởi NSWorkspace.didActivateApplicationNotification).
-  // Trên mouse-click hoặc phím chuyển focus, trigger async refresh.
+  // 1.7.x: KHÔNG gọi AX đồng bộ trong callback… — đã đổi ở v4.28: chụp AX mỗi
+  // keyDown TRƯỚC khi chọn activeApp (cùng snapshot nuôi fieldKind).
   //
-  // ⚠️ ĐÃ LÙI (v4.23) — ĐỌC TRƯỚC KHI "DỌN" HAI KHỐI GHI `activeApp` DƯỚI ĐÂY.
-  // Đúng, ở callback keyDown này có HAI chỗ ghi `input.activeApp` từ HAI nguồn
-  // khác nhau: khối ngay dưới (event-target PID, v2.11) và khối v2.10 (cache
-  // `currentFocusedBundleId`). Trên macOS 26 gõ vào Spotlight, hai nguồn đó trả
-  // hai giá trị khác nhau nên `activeApp` dao động MỖI PHÍM. Đó là bằng chứng
-  // thật. Hậu quả ở hình dạng hiện tại: KHÔNG đụng bộ đệm từ (nên không mất ký
-  // tự, không mất dấu) — nhưng cũng KHÔNG phải là vô hại tuyệt đối: mỗi lần đổi
-  // giá trị vẫn chạy `resetSentenceCapitalizeState()` (P8), tức trong lúc dao
-  // động thì cửa sổ n-gram không tích luỹ được và cờ viết hoa đầu câu bị xoá
-  // giữa Enter và phím chữ kế tiếp (gõ ra `a` thay vì `A`). Xuống cấp gợi ý,
-  // không hỏng chữ — xem chú thích ở `InputProcessor.changeActiveApp`.
-  //   (b) Đã thử gộp thành "một bộ phân giải duy nhất" (overlay AX → event-target
-  //       PID → cache), gỡ hẳn khối v2.10, và kéo `syncFocusedContextForKeystroke()`
-  //       lên chạy TRƯỚC khối này.
-  //   (c) Hồi quy: cách gộp đó chỉ an toàn khi `changeActiveApp` KHÔNG xoá bộ đệm.
-  //       Nó đi kèm bản vá thêm `newWord()` vào `changeActiveApp`, và cặp đó biến
-  //       dao động vô hại thành xoá bộ đệm mỗi phím → không dấu nào hình thành
-  //       nữa. Việc kéo ảnh chụp AX lên sớm cũng đổi thời điểm đọc AX cho MỌI
-  //       phím — không có cách nào kiểm bằng unit test ở đây.
-  //   (d) Quyết định: giữ nguyên hai khối như HEAD. Muốn gộp lại thì phải chứng
-  //       minh trên máy thật (macOS 26 + Spotlight + Chrome web content) rằng
-  //       giá trị phân giải ổn định ở mọi phím, và tuyệt đối KHÔNG kèm theo việc
-  //       cho `changeActiveApp` xoá bộ đệm — xem chú thích ở chính hàm đó.
+  // ⚠️ v4.28 — THỨ TỰ KHỐI DƯỚI LÀ CÓ CHỦ Ý. Đọc trước khi "dọn":
+  //
+  // Trước đây (v4.23 quyết định giữ hai khối): (1) event-target PID →
+  // changeActiveApp, (2) cache `currentFocusedBundleId` (AX của PHÍM TRƯỚC) →
+  // changeActiveApp lại, (3) `syncFocusedContextForKeystroke` cập nhật cache
+  // cho phím SAU. Panel `.nonactivatingPanel` (Plume chat bubble) không kích
+  // hoạt app → frontmost + cache AX đọng ở app nền trong khi ô gõ thuộc Plume.
+  // Bước (2) ghi đè activeApp về app nền → mất whitelist NFC + cushion →
+  // "về"→"ề", "dở"→"ở", "fix"→"fx".
+  //
+  // Nay: chụp AX trước → một lần phân giải ưu tiên bundle của focused UI
+  // element; overlay Spotlight vẫn thắng khi Smart Switch bật; event-target
+  // chỉ fallback khi AX hụt. KHÔNG kèm `newWord()` ở `changeActiveApp`.
   if let appState = eventHook.appState {
-    // v2.11: xác định app ĐÍCH của event bằng PID đọc TỪ CHÍNH EVENT —
-    // nguồn chính xác duy nhất cho overlay UIElement như Spotlight (Tahoe):
-    // không phát didActivateApplicationNotification, còn AX refresh thì race
-    // (chạy lúc ⌘Space keyDown, TRƯỚC khi overlay mở). v2.10 dựa vào 2 đường
-    // đó nên sending strategy không bao giờ được áp cho Spotlight → ký tự đôi.
+    if type == .keyDown {
+      // Chụp AX trước khi chọn activeApp — cùng snapshot nuôi fieldKind bên
+      // dưới (handleEvent). Trước đây chụp SAU nên cache luôn lệch một phím.
+      appState.syncFocusedContextForKeystroke()
+    }
+
     if type == .keyDown || type == .leftMouseDown || type == .rightMouseDown {
       let targetPID = pid_t(event.getIntegerValueField(.eventTargetUnixProcessID))
       if targetPID > 0 {
-        // v2.15: cập nhật PID đích cho axDirect (đường fallback khi system-wide
-        // không cho focused element).
+        // v2.15: PID đích cho axDirect (fallback khi system-wide không cho focus).
         EventSimulator.axTargetPID = targetPID
         if targetPID != eventHook.lastEventTargetPID {
           eventHook.lastEventTargetPID = targetPID
           eventHook.lastEventTargetBundleId =
             NSRunningApplication(processIdentifier: targetPID)?.bundleIdentifier
         }
-        if let bid = eventHook.lastEventTargetBundleId {
-          // v4.11: FIX GỐC nháy Việt↔Anh khi gõ Spotlight (Smart Switch bật).
-          // macOS 26: `eventTargetUnixProcessID` cho phím Spotlight trả PID APP
-          // NỀN (vd Excel), KHÔNG phải Spotlight — trong khi systemwide-focused
-          // MỚI đúng là Spotlight. Trước đây hai nguồn ghi `currentFocusedBundleId`
-          // lệch nhau (event-target=Excel vs snapshot=Spotlight) → Smart Switch
-          // lật `enabled` mỗi phím → nháy liên tục. Sửa: hỏi systemwide-focused;
-          // nếu là overlay editable thì DÙNG overlay đó làm focused bundle (nguồn
-          // đúng) → activeApp + currentFocusedBundleId NHẤT QUÁN. Chỉ tốn 1 AX
-          // check nhẹ (không walk field-kind) khi Smart Switch bật. (Overlay latch
-          // v4.10 đã gỡ — vô dụng vì event-target không bao giờ = overlay.)
-          var focusedBid = bid
-          if Defaults[.smartSwitchEnabled], let ov = EventSimulator.focusedOverlayBundle() {
-            focusedBid = ov
-          }
-          // v4.22: tiến trình phụ của chính app đang dùng (hộp thoại Lưu của app
-          // sandbox) không phải app khác — quy về app cha, nếu không mỗi phím là
-          // một lần "chuyển app" và từ đang gõ bị cắt.
-          focusedBid = InputProcessor.canonicalAppBundle(
-            focused: focusedBid,
-            frontmost: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
-          if focusedBid != input.activeApp {
-            input.changeActiveApp(focusedBid)
-            // Đồng bộ cache focused-bundle để Smart Switch per-keystroke (block
-            // bên dưới) thấy đúng app/overlay đích.
-            appState.noteFocusedBundleId(focusedBid)
-          }
+      }
+
+      let frontmost = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+      // Ưu tiên AX focused element (đúng nonactivating Plume / WKWebView host).
+      // Overlay Spotlight thắng khi Smart Switch bật (event-target trả app nền
+      // trên macOS 26). Event-target chỉ khi AX hụt.
+      var focusedBid = appState.currentFocusedBundleId
+        ?? eventHook.lastEventTargetBundleId
+      if Defaults[.smartSwitchEnabled],
+         let ov = EventSimulator.focusedOverlayBundle()
+      {
+        focusedBid = ov
+      }
+      if let focusedBid {
+        let resolved = InputProcessor.canonicalAppBundle(
+          focused: focusedBid, frontmost: frontmost)
+        if resolved != input.activeApp {
+          input.changeActiveApp(resolved)
+          appState.noteFocusedBundleId(resolved)
         }
       }
     }
@@ -497,20 +478,6 @@ func eventTapCallback(
     if type == .leftMouseDown || type == .rightMouseDown || isFocusShiftingKey
       || isCommandCombo {
       appState.refreshFocusedBundleIdAsync()
-    }
-
-    // v2.10: đồng bộ sending strategy theo FOCUSED bundle — overlay (Spotlight)
-    // có thể không kích hoạt activeApplicationDidChange nên strategy bị kẹt ở
-    // app cũ → backspace/replace sai. Guard `!=` nên chỉ chạy khi focus đổi
-    // thật, không reset tracker mỗi phím.
-    if type == .keyDown,
-       let rawFocusedBundleId = appState.currentFocusedBundleId {
-      let focusedBundleId = InputProcessor.canonicalAppBundle(
-        focused: rawFocusedBundleId,
-        frontmost: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
-      if focusedBundleId != input.activeApp {
-        input.changeActiveApp(focusedBundleId)
-      }
     }
 
     if Defaults[.smartSwitchEnabled],
@@ -561,22 +528,8 @@ func eventTapCallback(
     == Bundle.main.bundleIdentifier
 
   if type == .keyDown && eventHook.processing && !skipVietnameseIME {
-    // ĐÃ LÙI — chụp AX chạy MỖI keyDown như HEAD.
-    //
-    // Đã thử cổng `if input.isAtWordBoundary` (chỉ chụp ở ranh giới từ), đi kèm
-    // chốt trục theo TỪ ở `InputProcessor.emitPlan()`. Lùi cả cụm vì tiền đề của
-    // chốt sai: phép đo ở phím ĐẦU của từ là phép đo TỆ NHẤT (ngay sau click/⌘S,
-    // AX còn thấy focus CŨ) mà cổng này lại làm nó thành phép đo DUY NHẤT cho cả
-    // từ; trục sai không đối xứng (chốt nhầm NFD trong ô AppKit hỏng câm); và
-    // trong ca ⌘S mở hộp thoại Lưu, HEAD tự hội tụ về đúng còn chốt thì đóng
-    // băng cái sai. Lý do đầy đủ ở `Focused.fieldKind(from:)` mục (e).
-    //
-    // Muốn thử lại: ĐO TRƯỚC bằng `Tools/probe` — trục có thật sự lật giữa từ
-    // không, và bao lâu sau click/⌘S thì AX mới báo đúng ô (mục (f) ở đó).
-    //
-    // Chi phí của việc chụp mỗi phím là có thật; nó được ghìm bằng ngân sách
-    // `Focused.hotPathAXTimeout` (0,05) chứ không bằng cách chụp thưa đi.
-    eventHook.appState?.syncFocusedContextForKeystroke()
+    // AX snapshot đã chạy ở khối Focus Tracking phía trên (v4.28) — trước khi
+    // chọn activeApp — nên không chụp lại ở đây (tránh 2× ~50 message AX/phím).
     return input.handleEvent(event: event)
   } else if type == .leftMouseDown || type == .rightMouseDown {
     input.newWord()
