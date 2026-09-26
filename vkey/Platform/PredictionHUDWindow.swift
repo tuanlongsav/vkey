@@ -54,9 +54,14 @@ final class PredictionHUDWindow {
       // Tái dùng controller, chỉ thay `rootView`: SwiftUI diff trên đồ thị sẵn
       // có. Trước đây MỖI từ (Space sau mỗi từ khi bật đoán từ) dựng mới cả
       // NSHostingController + cây view + NSVisualEffectView nền + ảnh mask +
-      // các CALayer, rồi vứt bộ cũ. Đo trên máy thật (9 ngày, 551 MB): mỗi lần
-      // dựng lại để lại ~8 đối tượng KVO không bao giờ được gỡ; tái dùng thì
-      // số đó đứng yên.
+      // các CALayer, rồi vứt bộ cũ.
+      //
+      // ⚠️ ĐỪNG quay lại dựng mới mỗi lần hiện. Đo trên máy thật (v4.28, 9 ngày,
+      // footprint 551 MB): view cũ ĐƯỢC giải phóng (heap chỉ còn 2–3 view HUD),
+      // nhưng mỗi lần dựng để lại đúng 1 vùng shared memory 16 KB + 2
+      // `NSKeyValueDependencyContext` + 4 `NSKeyValueDependency` (của AppKit,
+      // không phải của vkey) — 27.808 vùng = 435 MB, ~3.100 lần/ngày. Rò nằm
+      // trong framework nên chỉ tránh được bằng cách không tạo lại view.
       existing.rootView = view
       controller = existing
     } else {
