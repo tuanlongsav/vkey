@@ -8,7 +8,15 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.28](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 425 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.29](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 432 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.29
+
+**Bản sửa lỗi bộ nhớ, nên cập nhật nếu bật Đoán từ.** v4.28 chạy liên tục 9 ngày lên ~551 MB vì mỗi lần hiện gợi ý lại dựng mới cả khung HUD; macOS giữ lại phần thừa của khung cũ.
+
+- **HUD đoán từ dùng lại một khung duy nhất** — hết phình bộ nhớ theo số từ đã gõ (đo trên máy thật: 435 MB sau ~28.000 lần hiện).
+- **Lịch sử clipboard gọn hơn** — không giữ bản ảnh/PDF mà Excel/Word/Safari kèm theo đoạn chữ; dán lại vẫn giữ định dạng.
+- **Đường gõ phím nhẹ hơn** — không giải mã lại cài đặt (Smart Switch, macro, từ điển cá nhân, theme) ở mỗi phím.
 
 ## Mới ở v4.28
 

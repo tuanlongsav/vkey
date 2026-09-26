@@ -49,6 +49,49 @@ tự điền, hoặc chữ gõ trước khi đổi app — thì số đếm lệ
 
 ---
 
+## Kết quả đã đo — bộ nhớ phình khi dựng lại HUD (v4.28 → v4.29)
+
+**Trên máy thật** — v4.28 chạy liên tục 9 ngày, footprint 551 MB. Đo bằng
+`vmmap --summary` + `heap` trên tiến trình đang chạy:
+
+| Loại | Số lượng | Chia cho số vùng 16 KB |
+|---|---|---|
+| Vùng `shared memory` 16 KB | 27.808 (435 MB, 92% đã bị nén/swap) | 1 |
+| `NSKeyValueDependencyContext` (AppKit) | 56.065 | 2,02 |
+| `NSKeyValueDependency` (AppKit) | 112.290 | 4,04 |
+
+Heap chỉ còn 2–3 view HUD đang sống, tức view cũ **được** giải phóng; thứ còn
+lại là dữ liệu nội bộ của AppKit kèm trang shared memory. Tỉ lệ cố định cho thấy
+cả ba sinh ra từ cùng một sự kiện, khoảng 28.000 lần ≈ 3.100 lần/ngày — đúng cỡ
+số lần HUD đoán từ hiện (v4.28 dựng `NSHostingController` mới mỗi lần hiện).
+
+**`hudleak` trên GitHub Actions** (macOS 15.7, Xcode 16.4, máy ảo), 300 lần mỗi kiểu:
+
+| Kiểu | shared memory | `…Context` | `NSKeyValueDependency` |
+|---|---|---|---|
+| `rebuild` (cách v4.28) | +2 | +600 | +6.000 |
+| `hosting` (dựng lại, view không blur) | +2 | +600 | +5.400 |
+| `blur` (chỉ gắn/gỡ NSVisualEffectView) | 0 | 0 | +300 |
+| `reuse` (cách v4.29) | 0 | 0 | 0 |
+| `reuse-hide` (v4.29 + ẩn/hiện mỗi lần) | 0 | 0 | 0 |
+
+⇒ **Thủ phạm là tạo NSHostingController/NSHostingView mới** trong panel sống
+lâu: +2 context mỗi lần, đúng tỉ lệ trên máy thật, kể cả khi view không có lớp
+blur. Dùng lại khung thì không tăng, kể cả khi ẩn/hiện. Rò nằm trong framework
+nên chỉ tránh được bằng cách **không dựng lại** — xem comment ở
+`PredictionHUDWindow.show`.
+
+⚠️ Trên máy ảo macOS 15.7, vùng shared memory **không** tăng theo; phần 16 KB
+mỗi lần chỉ thấy trên máy thật. Sau khi cài 4.29 phải đo lại trên máy thật
+(`vmmap --summary` + `heap`, sau vài giờ gõ có bật Đoán từ): cả ba số phải đứng yên.
+
+```bash
+swiftc -parse-as-library -O Tools/probe/hudleak.swift -o /tmp/hudleak
+/tmp/hudleak rebuild 300     # rebuild | reuse | reuse-hide | hosting | blur
+```
+
+---
+
 ## keyprobe — robot gõ
 
 ```bash

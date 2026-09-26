@@ -54,7 +54,7 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             test-without-building 2>&1 | tee "$RUNNER_TEMP/test.log" \
             | grep -E "error:|' failed \(|Executed [0-9]+ test|\*\* TEST" || true
-          grep -q "\*\* TEST SUCCEEDED \*\*" "$RUNNER_TEMP/test.log"
+          grep -qE "\*\* TEST (EXECUTE )?SUCCEEDED \*\*" "$RUNNER_TEMP/test.log"
 
       - name: Package Debug app
         if: always() && matrix.ref != 'main'

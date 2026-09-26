@@ -2,6 +2,53 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.29] - 2026-09-26 — "Hết phình RAM"
+
+**Bản sửa lỗi bộ nhớ, nên cập nhật nếu bật Đoán từ.** v4.28 chạy liên tục 9 ngày
+lên ~551 MB: mỗi lần HUD đoán từ hiện, vkey dựng lại toàn bộ khung HUD và macOS
+giữ lại phần thừa của khung cũ. Nay HUD dùng lại một khung duy nhất. Cách gõ
+không đổi.
+
+### 🧠 Bộ nhớ
+
+- **HUD đoán từ / HUD thông báo dùng lại khung cũ** — trước đây mỗi lần hiện
+  dựng mới cả `NSHostingController` + lớp blur + ảnh mask. View cũ vẫn được giải
+  phóng, nhưng mỗi lần dựng lại để lại 2 `NSKeyValueDependencyContext` + 4
+  `NSKeyValueDependency` của AppKit kèm 1 vùng shared memory 16 KB — đo trên máy
+  thật: 27.808 vùng = 435 MB sau ~28.000 lần hiện. Mask blur chỉ vẽ lại khi bán
+  kính đổi; HUD không còn theo dõi theme bằng `@Default` (đọc lúc hiện).
+- **Lịch sử clipboard không giữ bản ảnh/PDF đi kèm chữ** — Excel/Word/Safari
+  kèm TIFF/PDF/webarchive của cùng vùng chọn (nhận cả tên kiểu đời cũ của
+  Office); dán lại vẫn giữ định dạng qua RTF/HTML. Mỗi loại dữ liệu chỉ đọc qua
+  pasteboard một lần; TIFF lớn đi kèm không còn làm chữ bị từ chối "quá lớn".
+- **Vá rò `FileMonitor`** — mỗi lần cấp lại quyền Trợ năng rò một monitor + fd.
+- **N-gram chỉ nạp khi bật Đoán từ** (mặc định tắt), nạp trên luồng nền.
+
+### ⚡ Đường gõ phím
+
+- Event tap có `autoreleasepool` riêng; queue gửi phím và queue đọc AX xả pool
+  theo từng khối.
+- Không giải mã lại cài đặt dạng JSON ở mỗi phím/mỗi từ: cấu hình Smart Switch,
+  macro, từ điển cá nhân, theme, rule tiêu đề cửa sổ (regex biên dịch một lần;
+  không hỏi AX tiêu đề khi không có rule nào bật).
+- Gộp các lần làm mới focus liên tiếp; không vẽ lại menu bar khi gán lại cùng
+  trạng thái; khởi động không dựng từ điển hai lần.
+
+### ⚠️ Thay đổi hành vi
+
+- Lịch sử clipboard không còn lưu ảnh/PDF/webarchive/RTFD đi kèm văn bản (item
+  mang URL — vd "Sao chép ảnh" của trình duyệt — giữ nguyên như trước).
+- Bảng Top từ/cụm có thể tạm giữ tới 125% giới hạn trước khi cắt (biên để không
+  sắp xếp lại cả bảng ở mỗi từ).
+
+### 🧪 Test & đo
+
+- 432 test pass (+7: lọc bản dựng clipboard, tên kiểu pasteboard đời cũ,
+  cache Defaults, từ điển cá nhân).
+- `Tools/probe/hudleak.swift` — tái hiện ngoài app: dựng lại
+  `NSHostingController` mỗi lần hiện → +2 `NSKeyValueDependencyContext` mỗi lần
+  (kể cả khi view không có lớp blur); dùng lại khung, có hoặc không ẩn/hiện → 0.
+
 ## [4.28] - 2026-09-05 — "Plume nhận đúng app khi gõ"
 
 **Bản sửa lỗi tầng gửi phím, nên cập nhật nếu gõ Messenger qua app Plume
