@@ -38,19 +38,28 @@ final class NoticeHUDWindow {
       title: title,
       message: message,
       style: style,
-      backgroundStrength: backgroundStrength
+      backgroundStrength: backgroundStrength,
+      uiTheme: Defaults[.uiTheme]
     )
     let contentSize = Self.contentSize(title: title, message: message)
     let panel = ensurePanel()
 
-    let controller = NSHostingController(rootView: view)
-    if #available(macOS 13.0, *) {
-      controller.sizingOptions = []
+    // Tái dùng controller như `PredictionHUDWindow` — dựng mới mỗi lần hiện
+    // để lại KVO + ảnh mask của đồ thị cũ.
+    let controller: NSHostingController<NoticeHUDView>
+    if let existing = hostingController {
+      existing.rootView = view
+      controller = existing
+    } else {
+      controller = NSHostingController(rootView: view)
+      if #available(macOS 13.0, *) {
+        controller.sizingOptions = []
+      }
+      controller.view.wantsLayer = true
+      controller.view.layer?.backgroundColor = NSColor.clear.cgColor
+      hostingController = controller
+      panel.contentViewController = controller
     }
-    controller.view.wantsLayer = true
-    controller.view.layer?.backgroundColor = NSColor.clear.cgColor
-    hostingController = controller
-    panel.contentViewController = controller
 
     let margin = HUDMetrics.shadowMargin
     let windowSize = CGSize(
@@ -172,10 +181,10 @@ private struct NoticeHUDView: View {
   let message: String
   let style: NoticeHUDWindow.Style
   let backgroundStrength: Double
+  /// Giá trị đọc lúc `show()` — xem `PredictionHUDView.uiTheme`.
+  let uiTheme: UITheme
 
   private var palette: NoticeHUDPalette { NoticeHUDPalette.forStyle(style) }
-
-  @Default(.uiTheme) private var uiTheme
 
   /// Đồng bộ với setting độ mờ HUD — nền cảnh báo vẫn đủ tương phản ở mọi mức.
   private var scrimStrength: Double { 0.55 + 0.45 * backgroundStrength }

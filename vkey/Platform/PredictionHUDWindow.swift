@@ -44,7 +44,8 @@ final class PredictionHUDWindow {
       prediction: prediction,
       fontSize: fontSize,
       backgroundStrength: backgroundStrength,
-      contentSize: contentSize
+      contentSize: contentSize,
+      uiTheme: Defaults[.uiTheme]
     )
     let panel = ensurePanel()
 
@@ -52,8 +53,10 @@ final class PredictionHUDWindow {
     if let existing = hostingController {
       // Tái dùng controller, chỉ thay `rootView`: SwiftUI diff trên đồ thị sẵn
       // có. Trước đây MỖI từ (Space sau mỗi từ khi bật đoán từ) dựng mới cả
-      // NSHostingController + cây view + NSVisualEffectView nền + các CALayer,
-      // rồi vứt bộ cũ.
+      // NSHostingController + cây view + NSVisualEffectView nền + ảnh mask +
+      // các CALayer, rồi vứt bộ cũ. Đo trên máy thật (9 ngày, 551 MB): mỗi lần
+      // dựng lại để lại ~8 đối tượng KVO không bao giờ được gỡ; tái dùng thì
+      // số đó đứng yên.
       existing.rootView = view
       controller = existing
     } else {
@@ -493,15 +496,26 @@ struct PredictionHUDView: View {
   let fontSize: Int
   let backgroundStrength: Double
   let contentSize: CGSize
+  /// Theme là GIÁ TRỊ đọc lúc `show()`, không phải `@Default(.uiTheme)`. Mỗi
+  /// `@Default` là một `@StateObject` → Task tách rời → AsyncStream → một KVO
+  /// observer trên `UserDefaults.standard`, và chỉ được gỡ khi cả đồ thị view
+  /// bị huỷ. HUD này hiện ở MỖI từ; viên HUD chỉ sống ~3 giây nên theo dõi
+  /// live không mang lại gì — `show()` kế tiếp đọc theme mới.
+  let uiTheme: UITheme
 
-  init(prediction: String, fontSize: Int, backgroundStrength: Double, contentSize: CGSize) {
+  init(
+    prediction: String,
+    fontSize: Int,
+    backgroundStrength: Double,
+    contentSize: CGSize,
+    uiTheme: UITheme = Defaults[.uiTheme]
+  ) {
     self.prediction = prediction
     self.fontSize = fontSize
     self.backgroundStrength = backgroundStrength
     self.contentSize = contentSize
+    self.uiTheme = uiTheme
   }
-
-  @Default(.uiTheme) private var uiTheme
 
   var body: some View {
     Group {
