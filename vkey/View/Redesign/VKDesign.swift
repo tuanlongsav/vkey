@@ -55,9 +55,17 @@ extension Color {
 enum VK {
 
   /// Cấu hình của theme đang chọn (font/bo góc/mật độ/độ trong) — đọc per-theme.
-  static var theme: ThemeConfig {
-    let key = Defaults[.uiTheme].rawValue
-    return Defaults[.themeConfigs][key] ?? ThemeConfig.defaultFor(Defaults[.uiTheme])
+  ///
+  /// Cache lại: `theme` nằm sau MỌI token màu nhấn / bo góc / mật độ / font, một
+  /// lần render menu bar hay Settings chạm nó hàng chục tới hàng trăm lần, và
+  /// mỗi lần đọc thẳng `Defaults[.themeConfigs]` là giải mã JSON cả ba theme.
+  /// Cache huỷ đồng bộ khi `uiTheme`/`themeConfigs` đổi — trước lượt render kế
+  /// tiếp mà `@Default` của view lên lịch.
+  static var theme: ThemeConfig { themeCache.value }
+
+  private static let themeCache = DefaultsDerivedCache<ThemeConfig>(.uiTheme, .themeConfigs) {
+    let current = Defaults[.uiTheme]
+    return Defaults[.themeConfigs][current.rawValue] ?? ThemeConfig.defaultFor(current)
   }
 
   /// Theme Neural AI đang bật?

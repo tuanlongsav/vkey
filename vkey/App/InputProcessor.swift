@@ -979,7 +979,11 @@ class InputProcessor {
   init(method: TypingMethods) {
     typingMethod = method
     engine = typingMethod == .Telex ? Telex() : VNI()
-    LexiconManager.shared.reload()
+    // Chỉ khởi tạo sớm (nạp từ điển ngoài đường gõ phím). `init` của
+    // LexiconManager đã tự `reload()` — gọi thêm ở đây từng làm mỗi lần khởi
+    // động dựng lại toàn bộ từ điển hai lần song song (đọc + giải mã gói JSON
+    // ~0,4 MB, dựng bốn Set), và lần nữa mỗi khi có InputProcessor mới.
+    _ = LexiconManager.shared
   }
 
   public func changeTypingMethod(newMethod: TypingMethods) {
@@ -2186,6 +2190,13 @@ class InputProcessor {
     return true
   }
 
+  /// Bảng macro đã giải mã. Path bung macro chạy ở MỌI phím kết từ (space +
+  /// dấu câu), và `Defaults[.macros]` là mảng `Codable` — đọc thẳng là giải mã
+  /// JSON lại từng macro (34 macro seed sẵn trở lên) cho mỗi từ gõ ra.
+  private static let macrosCache = DefaultsDerivedCache<[Macro]>(.macros) {
+    Defaults[.macros]
+  }
+
   /// Expands the current word using the user's macro table if it matches.
   /// When a match is found, replaces the on-screen word with the expansion plus
   /// the word-ending character, then returns true so the caller can swallow the
@@ -2200,7 +2211,7 @@ class InputProcessor {
       let target = Self.macroTarget(
         for: current,
         endingChar: endingChar,
-        macros: Defaults[.macros]
+        macros: Self.macrosCache.value
       )
     else {
       return false

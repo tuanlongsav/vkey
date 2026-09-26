@@ -59,13 +59,19 @@ final class FileMonitor {
       queue: DispatchQueue.main
     )
 
-    source.setEventHandler {
-      let event = self.source.data
-      self.process(event: event)
+    // `[weak self]`: source giữ handler, self giữ source — bắt `self` mạnh ở
+    // đây là vòng tham chiếu, `deinit` không bao giờ chạy. Mà
+    // `AppState.registerSwitchFileMonitor` tạo monitor MỚI ở mỗi lần
+    // `setupTrustedSession` (launch, poll quyền, xong onboarding, watchdog cấp
+    // lại quyền), nên mỗi lần đó rò nguyên monitor cũ + fd + DispatchSource.
+    source.setEventHandler { [weak self] in
+      guard let self else { return }
+      self.process(event: self.source.data)
     }
 
-    source.setCancelHandler {
-      try? self.fileHandle.close()
+    // Đóng qua chính handle (không qua self) — handler huỷ chạy sau `deinit`.
+    source.setCancelHandler { [fileHandle] in
+      try? fileHandle.close()
     }
 
     fileHandle.seekToEndOfFile()

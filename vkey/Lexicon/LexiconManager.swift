@@ -21,6 +21,28 @@ final class LexiconManager {
 
   private let updatePackageURL: URL
 
+  /// Ba danh sách từ điển cá nhân, đã chuẩn hoá (`normalizedDictionaryToken`).
+  struct PersonalDictionary: Sendable {
+    let allow: Set<String>
+    let deny: Set<String>
+    let keep: Set<String>
+  }
+
+  /// Trước đây MỖI lần tra (`isVietnameseWord`, `shouldKeepVietnamese`,
+  /// `isInstantRestoreEnglish`) đọc `[String]` từ Defaults, chuẩn hoá từng mục
+  /// rồi dựng `Set` mới — `isInstantRestoreEnglish` chạy mỗi phím, còn
+  /// `SpellDecisionEngine`/thống kê/đoán từ gọi `isVietnameseWord` nhiều lần mỗi
+  /// từ. Giờ dựng một lần, dựng lại khi một trong ba danh sách đổi.
+  private let personalDictionaryCache = DefaultsDerivedCache<PersonalDictionary>(
+    .userAllowWords, .userDenyWords, .userKeepWords
+  ) {
+    PersonalDictionary(
+      allow: Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken }),
+      deny: Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken }),
+      keep: Set(Defaults[.userKeepWords].map { $0.normalizedDictionaryToken })
+    )
+  }
+
   init(updatePackageURL: URL? = nil) {
     let embeddedVN = InMemoryLexicon(
       version: EmbeddedLexiconData.version,
@@ -56,6 +78,10 @@ final class LexiconManager {
     }
 
     reload()
+  }
+
+  func personalDictionary() -> PersonalDictionary {
+    personalDictionaryCache.value
   }
 
   func reload() {
@@ -278,13 +304,11 @@ final class LexiconManager {
     if token.isEmpty { return false }
 
     if Defaults[.personalDictionaryEnabled] {
-      let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
-      if denied.contains(token) {
+      let personal = personalDictionary()
+      if personal.deny.contains(token) {
         return false
       }
-
-      let allowed = Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken })
-      if allowed.contains(token) {
+      if personal.allow.contains(token) {
         return true
       }
     }
@@ -302,11 +326,8 @@ final class LexiconManager {
     let token = word.normalizedDictionaryToken
     if token.isEmpty { return false }
 
-    if Defaults[.personalDictionaryEnabled] {
-      let userKeep = Set(Defaults[.userKeepWords].map { $0.normalizedDictionaryToken })
-      if userKeep.contains(token) {
-        return true
-      }
+    if Defaults[.personalDictionaryEnabled], personalDictionary().keep.contains(token) {
+      return true
     }
     return queue.sync { keepLexicon.contains(token) }
   }
@@ -342,9 +363,8 @@ final class LexiconManager {
   func isInstantRestoreEnglish(_ word: String) -> Bool {
     let token = word.normalizedDictionaryToken
     guard !token.isEmpty else { return false }
-    if Defaults[.personalDictionaryEnabled] {
-      let allowed = Set(Defaults[.userAllowWords].map { $0.normalizedDictionaryToken })
-      if allowed.contains(token) { return true }
+    if Defaults[.personalDictionaryEnabled], personalDictionary().allow.contains(token) {
+      return true
     }
     return EmbeddedLexiconData.englishWords.contains(token)
   }

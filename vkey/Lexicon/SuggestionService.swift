@@ -18,6 +18,10 @@ final class SuggestionService {
   // Invalidate theo version từ điển. Lock để an toàn nếu gọi từ nhiều thread.
   private let cacheLock = NSLock()
   private var cachedCandidates: [String] = []
+  /// `vietnameseFolded` của từng mục `cachedCandidates` (cùng chỉ số) — trước
+  /// đây gập dấu lại cho CẢ từ điển (~9k từ, mỗi từ hai `replacingOccurrences`
+  /// + `folding`) ở mỗi lần gợi ý.
+  private var cachedFolded: [String] = []
   private var cachedVnVersion: Int = Int.min
 
   init(lexiconManager: LexiconManager = .shared) {
@@ -25,15 +29,16 @@ final class SuggestionService {
   }
 
   /// Snapshot từ điển VN, cache lại và chỉ dựng lại khi version đổi.
-  private func candidateSnapshot() -> [String] {
+  private func candidateSnapshot() -> (words: [String], folded: [String]) {
     let version = lexiconManager.snapshotVersions().vn
     cacheLock.lock()
     defer { cacheLock.unlock() }
     if version != cachedVnVersion {
       cachedCandidates = lexiconManager.vietnameseWordsSnapshot()
+      cachedFolded = cachedCandidates.map(\.vietnameseFolded)
       cachedVnVersion = version
     }
-    return cachedCandidates
+    return (cachedCandidates, cachedFolded)
   }
 
   func suggest(word: String, locale: String = "vi_VN", limit: Int = 5) -> [SuggestionCandidate] {
@@ -43,9 +48,9 @@ final class SuggestionService {
     let queryFolded = query.vietnameseFolded
     guard !queryFolded.isEmpty else { return [] }
 
-    let candidates = candidateSnapshot()
-      .map { candidate -> SuggestionCandidate in
-        let foldedCandidate = candidate.vietnameseFolded
+    let snapshot = candidateSnapshot()
+    let candidates = zip(snapshot.words, snapshot.folded)
+      .map { candidate, foldedCandidate -> SuggestionCandidate in
         let distance = Self.levenshtein(queryFolded, foldedCandidate)
         let prefixBonus: Double = queryFolded.first == foldedCandidate.first ? 0.12 : 0
         let suffixBonus: Double = queryFolded.last == foldedCandidate.last ? 0.08 : 0

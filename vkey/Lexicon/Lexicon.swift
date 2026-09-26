@@ -58,6 +58,10 @@ enum SpellDecision: Equatable {
 
 // MARK: - String helpers used by lexicon code
 
+/// Dựng `Locale` không rẻ, mà `vietnameseFolded` chạy cho từng từ trong từ điển
+/// mỗi lần gợi ý chính tả — dùng chung một instance.
+private let vietnameseFoldingLocale = Locale(identifier: "vi_VN")
+
 /// `internal` (default) so it's visible to LexiconManager, SpellDecisionEngine,
 /// SuggestionService and any future module in the lexicon group. It was
 /// previously `private` to InputProcessor.swift, which is why so much
@@ -74,7 +78,7 @@ extension String {
       .replacingOccurrences(of: "Đ", with: "d")
     return prepared.folding(
       options: [.diacriticInsensitive, .caseInsensitive],
-      locale: Locale(identifier: "vi_VN")
+      locale: vietnameseFoldingLocale
     )
   }
 

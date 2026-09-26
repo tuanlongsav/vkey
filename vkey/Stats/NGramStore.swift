@@ -18,6 +18,7 @@
 
 import Defaults
 import Foundation
+import os
 import os.log
 
 private let ngramLog = OSLog(subsystem: "dev.longht.vkey", category: "NGramStore")
@@ -30,7 +31,34 @@ private struct NGramSnapshot: Codable {
 }
 
 final class NGramStore {
-  static let shared = NGramStore()
+  static let shared: NGramStore = {
+    let store = NGramStore()
+    NGramStore.sharedInstantiated.withLock { $0 = true }
+    return store
+  }()
+
+  /// `shared` đã được dựng chưa. Dựng nó là đọc + giải mã cả `ngrams.json`
+  /// (vài MB với người gõ nhiều) và giữ trong RAM suốt phiên — chỉ đáng khi
+  /// đoán từ đang bật (mặc định TẮT). Xem `warmUpIfNeeded()`.
+  private static let sharedInstantiated = OSAllocatedUnfairLock(initialState: false)
+  static var isInstantiated: Bool { sharedInstantiated.withLock { $0 } }
+
+  /// Dựng `shared` trên queue nền nếu sắp cần: đoán từ đang bật, hoặc Defaults
+  /// còn n-gram đời cũ (trước 1.7.x) cần chuyển sang file. Trước đây luôn dựng
+  /// trên main thread lúc launch, kể cả khi đoán từ tắt và không bao giờ đọc tới.
+  static func warmUpIfNeeded() {
+    guard Defaults[.wordPredictionEnabled] || hasLegacyDefaultsData else { return }
+    DispatchQueue.global(qos: .utility).async { _ = NGramStore.shared }
+  }
+
+  /// Đọc thẳng plist (không giải mã cả dict qua `Defaults[...]`) chỉ để biết
+  /// còn gì cần migrate không.
+  private static var hasLegacyDefaultsData: Bool {
+    let keys: [Defaults._AnyKey] = [.userBigrams, .userTrigrams]
+    return keys.contains { key in
+      !(key.suite.dictionary(forKey: key.name)?.isEmpty ?? true)
+    }
+  }
 
   // Concurrent queue + barrier writes — match LexiconManager pattern để
   // cho phép nhiều reader đồng thời từ topPrediction (main thread).
@@ -93,15 +121,13 @@ final class NGramStore {
   func learn(prev2: String?, prev1: String, current: String) {
     queue.async(flags: .barrier) { [weak self] in
       guard let self = self else { return }
-      var nexts = self.bigrams[prev1, default: [:]]
-      nexts[current, default: 0] += 1
-      self.bigrams[prev1] = nexts
+      // Sửa tại chỗ: chép dict con ra biến cục bộ rồi gán lại làm COW nhân bản
+      // cả dict con (tới 50 mục) ở mỗi từ học được.
+      self.bigrams[prev1, default: [:]][current, default: 0] += 1
 
       if let prev2 = prev2, !prev2.isEmpty {
         let key = "\(prev2)|\(prev1)"
-        var trinexts = self.trigrams[key, default: [:]]
-        trinexts[current, default: 0] += 1
-        self.trigrams[key] = trinexts
+        self.trigrams[key, default: [:]][current, default: 0] += 1
       }
       self.scheduleFlush()
     }

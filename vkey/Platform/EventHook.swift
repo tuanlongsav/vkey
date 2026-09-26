@@ -240,8 +240,25 @@ class EventHook {
 }
 
 // Callback function for the event tap.
+//
+// Bọc TOÀN BỘ xử lý trong `autoreleasepool`. Callback này chạy như một source
+// của main run loop, và mỗi phím sinh ra hàng chục object autorelease
+// (`frontmostApplication`, `NSRunningApplication`, NSString bắc cầu từ AX và
+// từ ~20 lần đọc UserDefaults…). Pool của AppKit chỉ được xả khi app lấy ra
+// một NSEvent — mà vkey là app menu bar, có khi cả giờ không nhận NSEvent nào
+// trong lúc người dùng gõ ở app khác — nên không có pool riêng thì các object
+// đó dồn lại theo số phím đã gõ. Không đổi hành vi: mọi nhánh trả
+// `passUnretained` của chính `event` (tap sở hữu) hoặc `nil`.
 func eventTapCallback(
   proxy: CGEventTapProxy, type: CGEventType, event: CGEvent, refcon: UnsafeMutableRawPointer?
+) -> Unmanaged<CGEvent>? {
+  autoreleasepool {
+    handleTapEvent(type: type, event: event, refcon: refcon)
+  }
+}
+
+private func handleTapEvent(
+  type: CGEventType, event: CGEvent, refcon: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
   guard let refcon else { return Unmanaged.passUnretained(event) }
   let eventHook = Unmanaged<EventHook>.fromOpaque(refcon).takeUnretainedValue()
@@ -483,7 +500,6 @@ func eventTapCallback(
     if Defaults[.smartSwitchEnabled],
        (type == .keyDown || type == .leftMouseDown || type == .rightMouseDown) {
       if let focusedBundleId = appState.currentFocusedBundleId {
-        let configs = Defaults[.appSmartSwitchConfigs]
         let desiredEnabled: Bool?
         if appState.activeRuleOverridesBundleId == focusedBundleId,
            let ruleState = appState.activeRuleOverrides.overrideState {
@@ -491,7 +507,7 @@ func eventTapCallback(
           case .disabled, .englishMode: desiredEnabled = false
           case .vietnameseMode:         desiredEnabled = true
           }
-        } else if let config = configs[focusedBundleId] {
+        } else if let config = appState.smartSwitchConfig(for: focusedBundleId) {
           switch config.state {
           case .disabled, .englishMode: desiredEnabled = false
           case .vietnameseMode:         desiredEnabled = true

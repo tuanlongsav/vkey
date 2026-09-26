@@ -56,7 +56,12 @@ class EventSimulator {
   /// the tap when the system is under load. Earlier versions ran `.batch` sync,
   /// which produced inconsistent semantics across strategies — the tap would
   /// occasionally be blocked long enough to trigger `tapDisabledByTimeout`.
-  private static let simulationQueue = DispatchQueue(label: "dev.longht.vkey.eventSimulator", qos: .userInteractive)
+  private static let simulationQueue = DispatchQueue(
+    label: "dev.longht.vkey.eventSimulator", qos: .userInteractive,
+    // Mỗi block gửi phím tạo CGEvent/NSString/AX object autorelease; mặc định
+    // pool chỉ xả khi worker rảnh hẳn — gõ liên tục thì dồn lại.
+    autoreleaseFrequency: .workItem
+  )
 
   /// v2.3.15: expose dispatch helper for callers (vd InputProcessor commit
   /// path) cần đặt CGEvent posts vào simulationQueue serial.

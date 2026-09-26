@@ -81,11 +81,16 @@ struct HUDBackdrop: NSViewRepresentable {
 
 final class HUDBackdropEffectView: NSVisualEffectView {
     var fixedCornerRadius: CGFloat?
+    /// `layout()` chạy ở mỗi lần SwiftUI cập nhật (`updateNSView` đặt
+    /// `needsLayout`) — chỉ vẽ mask mới khi bán kính thật sự đổi.
+    private var appliedMaskRadius: CGFloat?
 
     override func layout() {
         super.layout()
         let maxR = min(bounds.width, bounds.height) / 2
         let r = max(1, min(fixedCornerRadius ?? maxR, maxR))
+        guard r != appliedMaskRadius else { return }
+        appliedMaskRadius = r
         maskImage = .vkRoundedMask(cornerRadius: r)
     }
 }

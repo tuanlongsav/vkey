@@ -228,8 +228,7 @@ final class UsageStatistics {
   static func isCleanTopWord(_ word: String, category: StatCategory) -> Bool {
     let normalized = word.normalizedDictionaryToken
     guard normalized.count >= 2 else { return false }
-    let denied = Set(Defaults[.userDenyWords].map { $0.normalizedDictionaryToken })
-    if denied.contains(normalized) { return false }
+    if LexiconManager.shared.personalDictionary().deny.contains(normalized) { return false }
     switch category {
     case .vietnamese, .vietnamesePhrase:
       return LexiconManager.shared.isVietnameseWord(normalized)
@@ -897,8 +896,8 @@ final class UsageStatistics {
         .map { WordCount(word: $0.key, count: $0.value) }
       }
       // 1.7.4: top từ tiếng Việt / tiếng Anh = top 10% theo count, không
-      // cap cứng nữa (cũ là n=20). Trimmed bởi `trimDict` ở line ~695
-      // nên upper bound vẫn 500 unique tokens. Min 1 entry nếu có data
+      // cap cứng nữa (cũ là n=20). Trimmed bởi `trimDict` nên upper bound
+      // là 625 unique tokens (500 + biên 25%). Min 1 entry nếu có data
       // (Int(ceil(N*0.1)) đảm bảo ≥1 khi N≥1).
       func topPercent(_ counts: [String: Int], percent: Double) -> [WordCount] {
         let sorted = counts.sorted { lhs, rhs in
@@ -1154,9 +1153,7 @@ final class UsageStatistics {
       let suffix = words[i..<words.count].map { $0.lowercased() }.joined(separator: " ")
       let suffixWordCount = words.count - i
       guard suffixWordCount >= 1, suffixWordCount <= 3 else { continue }
-      var bucket = vnPhraseSuffixIndex[key, default: [:]]
-      bucket[suffix, default: 0] += 1
-      vnPhraseSuffixIndex[key] = bucket
+      vnPhraseSuffixIndex[key, default: [:]][suffix, default: 0] += 1
     }
   }
 
@@ -1196,8 +1193,11 @@ final class UsageStatistics {
   /// (hoặc user keep/allow). Loại chuỗi ngẫu nhiên / xen tiếng Anh.
   static func isMeaningfulVietnamesePhrase(_ words: [String]) -> Bool {
     guard words.count >= 2 else { return false }
-    let allowSet = Set(Defaults[.userAllowWords].map { $0.lowercased() })
-    let keepSet = Set(Defaults[.userKeepWords].map { $0.lowercased() })
+    // Gọi cho từng ứng viên đoán từ và từng cửa sổ 2–4 từ mỗi lần commit —
+    // dùng bản Set đã dựng sẵn thay vì dựng lại từ Defaults mỗi lần.
+    let personal = LexiconManager.shared.personalDictionary()
+    let allowSet = personal.allow
+    let keepSet = personal.keep
     for word in words {
       let lower = word.lowercased()
       guard lower.count >= 2 else { return false }
@@ -1224,8 +1224,13 @@ final class UsageStatistics {
     }
   }
 
+  /// Cắt về `max` mục count cao nhất — nhưng chỉ khi đã vượt `max` một
+  /// khoảng (25%). Cắt ngay khi vượt MỘT mục thì lúc map đã đầy (người gõ nhiều,
+  /// khoảng một giờ vào mỗi tuần) gần như mỗi từ commit đều sort cả map, dựng
+  /// dict mới, rồi kéo theo `rebuildPhraseSuffixIndex` (~1.500 cặp khoá/hậu tố
+  /// split + lowercase + join). Có biên thì mỗi lần cắt chừa chỗ cho ~max/4 mục.
   private func trimDict(_ dict: inout [String: Int], max: Int) {
-    guard dict.count > max else { return }
+    guard dict.count > max + max / 4 else { return }
     let keepers = dict.sorted { $0.value > $1.value }.prefix(max)
     dict = Dictionary(uniqueKeysWithValues: keepers.map { ($0.key, $0.value) })
   }

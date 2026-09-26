@@ -78,10 +78,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // v4.12: launcher (Raycast/Alfred/LaunchBar) theo-mode — gỡ 1 lần.
     AppState.migrateLaunchersKeepMode()
 
-    // 1.7.x: bootstrap NGramStore (singleton lazy init). Touch shared để
-    // chạy migration từ Defaults[.userBigrams]/[.userTrigrams] sang file
-    // store ngay khi launch — tránh delay tới lần commit từ đầu tiên.
-    _ = NGramStore.shared
+    // 1.7.x: bootstrap NGramStore (singleton lazy init) để chạy migration từ
+    // Defaults[.userBigrams]/[.userTrigrams] sang file store ngay khi launch —
+    // tránh delay tới lần commit từ đầu tiên. Chỉ khi thật sự cần (đoán từ bật
+    // hoặc còn dữ liệu cũ), và trên queue nền.
+    NGramStore.warmUpIfNeeded()
 
     // 1.9.0: set AX messaging timeout 100ms (default macOS 6000ms). Tránh
     // AX query block quá lâu khi target app không responsive — giảm risk
@@ -298,13 +299,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     closeOnboardingWindows()
   }
 
+  /// Cửa sổ onboarding / ủng hộ đang mở (weak — tự về nil khi cửa sổ giải
+  /// phóng). Trước đây mỗi lần bấm menu dựng thêm một cửa sổ + một cây SwiftUI
+  /// mới chồng lên cái cũ (onboarding không có nút đóng, ảnh hướng dẫn giải mã
+  /// ở độ phân giải gốc).
+  private weak var onboardingWindow: NSWindow?
+  private weak var donateWindow: NSWindow?
+
+  /// Đưa cửa sổ đang mở ra trước thay vì dựng thêm. Trả `false` nếu không có.
+  private func bringToFront(_ window: NSWindow?) -> Bool {
+    guard let window, window.isVisible else { return false }
+    NSApp.setActivationPolicy(.regular)
+    window.makeKeyAndOrderFront(nil)
+    NSApp.activate(ignoringOtherApps: true)
+    return true
+  }
+
   // Opens onboarding guide
   @objc func openOnboarding() {
+    if bringToFront(onboardingWindow) { return }
     NSApp.setActivationPolicy(.regular)
     let contentView = OnboardingView().environmentObject(appState)
     let windowController = OnboardingWindowController()
     windowController.contentViewController = NSHostingController(rootView: contentView)
     windowController.showWindow(nil)
+    onboardingWindow = windowController.window
     NSApp.activate(ignoringOtherApps: true)
   }
 
@@ -320,6 +339,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
 
   // Opens donate window
   @objc func openDonate() {
+    if bringToFront(donateWindow) { return }
     NSApp.setActivationPolicy(.regular)
     let contentView = DonateView()
     let window = NSWindow(
@@ -334,6 +354,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     
     let windowController = NSWindowController(window: window)
     windowController.showWindow(nil)
+    donateWindow = window
     NSApp.activate(ignoringOtherApps: true)
   }
 
@@ -413,8 +434,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // install). Bình thường scheduleFlush debounce 10s, nhưng terminate
     // race không thể đợi.
     UsageStatistics.shared.flushSynchronously()
-    // 1.7.x: cùng pattern cho n-gram store.
-    NGramStore.shared.flushNowSync()
+    // 1.7.x: cùng pattern cho n-gram store. Chưa dựng thì không có gì để ghi —
+    // đừng dựng nó (đọc cả file) chỉ để ghi lại y nguyên.
+    if NGramStore.isInstantiated {
+      NGramStore.shared.flushNowSync()
+    }
   }
 
   /// Shown after the trust polling loop has given up. The alert links the

@@ -10,6 +10,7 @@ import AppKit
 import Defaults
 import Foundation
 import os
+import UniformTypeIdentifiers
 
 enum ClipboardHistoryContentMode: String, CaseIterable, Codable, Defaults.Serializable {
   case textOnly
@@ -106,13 +107,17 @@ final class ClipboardHistoryService: NSObject {
   func captureCurrentPasteboard(_ pasteboard: NSPasteboard = .general) {
     guard Defaults[.clipboardHistoryEnabled] else { return }
     let mode = Defaults[.clipboardHistoryContentMode]
+    // Dựng snapshot TRƯỚC rồi mới đo. Trước đây đo trước bằng
+    // `estimatedCaptureBytes` — đọc MỌI loại dữ liệu từ pasteboard server chỉ
+    // để cộng byte — rồi `buildSnapshot` đọc lại lần hai. Đo trên bản chép thì
+    // mỗi loại chỉ qua IPC một lần, và nội dung vốn không được lưu (vd ảnh
+    // không kèm chữ ở chế độ chỉ văn bản) không còn bật HUD "quá lớn" oan.
+    guard let snapshot = Self.buildSnapshot(from: pasteboard, mode: mode) else { return }
     let maxBytes = Self.maxEntryBytesFromSettings()
-    let estimatedBytes = Self.estimatedCaptureBytes(from: pasteboard, mode: mode)
-    if estimatedBytes > maxBytes {
-      showOversizedWarning(actualBytes: estimatedBytes, maxBytes: maxBytes)
+    if snapshot.byteCount > maxBytes {
+      showOversizedWarning(actualBytes: snapshot.byteCount, maxBytes: maxBytes)
       return
     }
-    guard let snapshot = Self.buildSnapshot(from: pasteboard, mode: mode) else { return }
     if let latest = entries.first, latest.fingerprint == snapshot.fingerprint {
       return
     }
@@ -191,6 +196,9 @@ final class ClipboardHistoryService: NSObject {
     let preview: String
     let isFileEntry: Bool
     let fingerprint: String
+    /// Dung lượng tính vào giới hạn mỗi mục: payload đã chép + (chế độ có tệp)
+    /// kích thước trên đĩa của các tệp được tham chiếu — như `estimatedCaptureBytes`.
+    let byteCount: Int
   }
 
   static func buildSnapshot(
@@ -208,46 +216,32 @@ final class ClipboardHistoryService: NSObject {
 
     let text = pasteboard.string(forType: .string)?
       .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    let fileURLs = fileURLs(from: pasteboard)
+    let allowFiles = mode == .textAndFiles
+    // Chế độ chỉ văn bản không bao giờ dùng tới URL tệp — khỏi đọc.
+    let fileURLs = allowFiles ? fileURLs(from: pasteboard) : []
 
-    let snapshot: Snapshot?
-    switch mode {
-    case .textOnly:
-      guard !text.isEmpty else { return nil }
-      let items = snapshotItems(rawItems, allowFiles: false)
-      guard !items.isEmpty else { return nil }
-      snapshot = Snapshot(
-        items: items,
-        preview: previewText(text),
-        isFileEntry: false,
-        fingerprint: fingerprint(for: items)
-      )
-
-    case .textAndFiles:
-      if !text.isEmpty {
-        let items = snapshotItems(rawItems, allowFiles: true)
-        guard !items.isEmpty else { return nil }
-        snapshot = Snapshot(
-          items: items,
-          preview: previewText(text),
-          isFileEntry: false,
-          fingerprint: fingerprint(for: items)
-        )
-      } else {
-        guard !fileURLs.isEmpty else { return nil }
-        let items = snapshotItems(rawItems, allowFiles: true)
-        guard !items.isEmpty else { return nil }
-        snapshot = Snapshot(
-          items: items,
-          preview: previewFiles(fileURLs),
-          isFileEntry: true,
-          fingerprint: fingerprint(for: items)
-        )
-      }
+    let preview: String
+    let isFileEntry: Bool
+    if !text.isEmpty {
+      preview = previewText(text)
+      isFileEntry = false
+    } else if !fileURLs.isEmpty {
+      preview = previewFiles(fileURLs)
+      isFileEntry = true
+    } else {
+      return nil
     }
 
-    guard let snapshot else { return nil }
-    return snapshot
+    let items = snapshotItems(rawItems, allowFiles: allowFiles)
+    guard !items.isEmpty else { return nil }
+    let fileBytes = fileURLs.isEmpty ? 0 : filePayloadBytes(from: fileURLs)
+    return Snapshot(
+      items: items,
+      preview: preview,
+      isFileEntry: isFileEntry,
+      fingerprint: fingerprint(for: items),
+      byteCount: payloadBytes(of: items, allowFiles: true) + fileBytes
+    )
   }
 
   /// Các marker pasteboard báo hiệu nội dung KHÔNG được lưu vào history
@@ -265,14 +259,50 @@ final class ClipboardHistoryService: NSObject {
     }
   }
 
+  /// Các loại dữ liệu của `item` được chép vào lịch sử (chưa đọc payload nào).
+  ///
+  /// Khi item ĐÃ có chữ (plain text / RTF / HTML), bản ảnh / PDF / webarchive /
+  /// RTFD của nó là CÙNG nội dung được app nguồn dựng lại thành hình — thứ nặng
+  /// nhất trên pasteboard: Excel/Word/Numbers kèm TIFF + PDF của vùng chọn,
+  /// Safari kèm webarchive chứa luôn ảnh của trang. Đa số là dữ liệu HỨA
+  /// (promised): app nguồn chỉ dựng khi có người đọc, nên chính lời gọi
+  /// `data(forType:)` của vkey bắt Excel vẽ ra TIFF chục MB rồi vkey giữ nó
+  /// trong RAM suốt phiên. Bỏ chúng TRƯỚC khi đọc — dán lại vẫn giữ định dạng
+  /// qua RTF/HTML. Item không có chữ (vd tệp từ Finder) giữ nguyên như trước.
+  static func capturedTypes(
+    of item: NSPasteboardItem,
+    allowFiles: Bool
+  ) -> [NSPasteboard.PasteboardType] {
+    let types = item.types
+    let hasText = types.contains(where: isTextType)
+    return types.filter { type in
+      if !allowFiles, type == .fileURL || type.rawValue.contains("file-url") {
+        return false
+      }
+      return !(hasText && isRenditionType(type))
+    }
+  }
+
+  static func isTextType(_ type: NSPasteboard.PasteboardType) -> Bool {
+    if type == .string || type == .rtf || type == .html { return true }
+    return UTType(type.rawValue)?.conforms(to: .plainText) ?? false
+  }
+
+  /// Ảnh, PDF, audio/video, webarchive, RTFD — xem `capturedTypes(of:allowFiles:)`.
+  private static let renditionUTTypes: [UTType] = [
+    .image, .pdf, .audiovisualContent, .webArchive, .rtfd, .flatRTFD,
+  ]
+
+  static func isRenditionType(_ type: NSPasteboard.PasteboardType) -> Bool {
+    guard let uti = UTType(type.rawValue) else { return false }
+    return renditionUTTypes.contains { uti.conforms(to: $0) }
+  }
+
   static func snapshotItems(_ items: [NSPasteboardItem], allowFiles: Bool) -> [NSPasteboardItem] {
     items.compactMap { item in
       let copy = NSPasteboardItem()
       var wrote = false
-      for type in item.types {
-        if !allowFiles, type == .fileURL || type.rawValue.contains("file-url") {
-          continue
-        }
+      for type in capturedTypes(of: item, allowFiles: allowFiles) {
         if let data = item.data(forType: type) {
           copy.setData(data, forType: type)
           wrote = true
@@ -308,16 +338,18 @@ final class ClipboardHistoryService: NSObject {
   }
 
   /// Ước lượng byte trên pasteboard gốc — không tạo bản sao NSPasteboardItem.
+  /// Chỉ đếm những loại `snapshotItems` sẽ chép.
   static func pasteboardPayloadBytes(
     from pasteboard: NSPasteboard,
     allowFiles: Bool
   ) -> Int {
     guard let rawItems = pasteboard.pasteboardItems else { return 0 }
-    return rawItems.reduce(0) { total, item in
-      total + item.types.reduce(0) { sum, type in
-        if !allowFiles, type == .fileURL || type.rawValue.contains("file-url") {
-          return sum
-        }
+    return payloadBytes(of: rawItems, allowFiles: allowFiles)
+  }
+
+  static func payloadBytes(of items: [NSPasteboardItem], allowFiles: Bool) -> Int {
+    items.reduce(0) { total, item in
+      total + capturedTypes(of: item, allowFiles: allowFiles).reduce(0) { sum, type in
         if let data = item.data(forType: type) {
           return sum + data.count
         }

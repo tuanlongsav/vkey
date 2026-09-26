@@ -9,6 +9,7 @@ import AppKit
 import Defaults
 import Foundation
 import KeyboardShortcuts
+import os
 import SwiftUI
 
 extension Bundle {
@@ -743,3 +744,53 @@ struct WindowTitleRule: Codable, Hashable, Identifiable, Defaults.Serializable {
   var enabled: Bool = true
 }
 
+// MARK: - Cache giá trị suy ra từ Defaults
+
+/// Giá trị dựng từ một hay nhiều key Defaults, dựng lần đầu khi đọc rồi giữ lại
+/// cho tới khi một key nguồn đổi.
+///
+/// Có vì `Defaults[key]` KHÔNG rẻ với giá trị `Codable` (`[Macro]`,
+/// `[String: ThemeConfig]`, `[String: AppSmartSwitchConfig]`…): mỗi lần đọc là
+/// giải mã JSON lại từng phần tử. Mấy key đó từng bị đọc ở mỗi phím / mỗi từ /
+/// mỗi token màu.
+///
+/// Huỷ bằng KVO của UserDefaults, gọi ĐỒNG BỘ ngay trong lời gán
+/// `Defaults[key] = …` (kể cả `Defaults.reset`), nên lần đọc ngay sau đó đã
+/// thấy giá trị mới. `generation` chặn việc cất một bản dựng từ giá trị cũ khi
+/// key đổi giữa lúc đang dựng (KVO chạy trên thread của người ghi).
+final class DefaultsDerivedCache<Value: Sendable>: @unchecked Sendable {
+  private struct State {
+    var generation = 0
+    var value: Value?
+  }
+
+  private let state = OSAllocatedUnfairLock(initialState: State())
+  private let compute: () -> Value
+  private var observations: [Defaults.Observation] = []
+
+  init(_ keys: Defaults._AnyKey..., compute: @escaping () -> Value) {
+    self.compute = compute
+    observations = keys.map { key in
+      Defaults.observe(keys: key, options: []) { [weak self] in
+        self?.invalidate()
+      }
+    }
+  }
+
+  var value: Value {
+    let (generation, cached) = state.withLock { ($0.generation, $0.value) }
+    if let cached { return cached }
+    let fresh = compute()
+    state.withLock {
+      if $0.generation == generation { $0.value = fresh }
+    }
+    return fresh
+  }
+
+  func invalidate() {
+    state.withLock {
+      $0.generation += 1
+      $0.value = nil
+    }
+  }
+}

@@ -10,6 +10,7 @@ import Combine
 import Defaults
 import Foundation
 import KeyboardShortcuts
+import os
 import os.log
 
 private let appLog = OSLog(subsystem: "dev.longht.vkey", category: "AppState")
@@ -117,12 +118,25 @@ class AppState: ObservableObject, FileMonitorDelegate {
             inputProcessor.focusedFieldKind = currentFocusedFieldKind
         }
     }
-    private let focusRefreshQueue = DispatchQueue(label: "dev.longht.vkey.focusRefresh", qos: .userInteractive)
+    private let focusRefreshQueue = DispatchQueue(
+        label: "dev.longht.vkey.focusRefresh", qos: .userInteractive,
+        // Mỗi lần chụp AX tạo hàng chục object autorelease — xả theo từng block.
+        autoreleaseFrequency: .workItem
+    )
     /// v3.6: refresh trễ thứ hai (coalesced) — hộp thoại native (Save panel)
     /// xuất hiện SAU ⌘S/click một nhịp nên refresh ngay tại event còn thấy
     /// focus cũ; nhịp trễ ~0.5s bắt đúng field mới.
     private var pendingDelayedFocusRefresh: DispatchWorkItem?
+    private let immediateFocusRefreshQueued = OSAllocatedUnfairLock(initialState: false)
     private var wordPredictionSettingsObserver: Defaults.Observation?
+    /// Bản đã giải mã của `Defaults[.appSmartSwitchConfigs]`. Key đó là
+    /// `[String: Codable]`: MỖI lần đọc `Defaults[...]` là giải mã JSON lại TỪNG
+    /// cấu hình (kèm `Date`) — trước đây event tap làm vậy ở mọi keyDown/click
+    /// khi Smart Switch bật, chỉ để tra đúng một app.
+    private let smartSwitchConfigsCache =
+        DefaultsDerivedCache<[String: AppSmartSwitchConfig]>(.appSmartSwitchConfigs) {
+            Defaults[.appSmartSwitchConfigs]
+        }
 
     init() {
         bundleId = Bundle.main.bundleIdentifier ?? "dev.longht.vkey"
@@ -193,7 +207,15 @@ class AppState: ObservableObject, FileMonitorDelegate {
             options: []
         ) { [weak self] in
             self?.inputProcessor.refreshWordPredictionState()
+            // Bật đoán từ lúc đang chạy: nạp n-gram trên queue nền trước khi
+            // từ đầu tiên cần tới, thay vì giải mã cả file trên đường gõ phím.
+            NGramStore.warmUpIfNeeded()
         }
+    }
+
+    /// Cấu hình Smart Switch của `bundleId`, tra trên bản đã giải mã sẵn.
+    public func smartSwitchConfig(for bundleId: String) -> AppSmartSwitchConfig? {
+        smartSwitchConfigsCache.value[bundleId]
     }
 
     deinit {
@@ -306,8 +328,7 @@ class AppState: ObservableObject, FileMonitorDelegate {
 
             // 1.7.0: ưu tiên đọc từ appSmartSwitchConfigs (3-state).
             // Fallback smartSwitchApps để backward-compat user chưa migrate.
-            let configs = Defaults[.appSmartSwitchConfigs]
-            if Defaults[.smartSwitchEnabled], let config = configs[appName] {
+            if Defaults[.smartSwitchEnabled], let config = smartSwitchConfig(for: appName) {
                 if !smartSwitchActive {
                     enabledBeforeSmartSwitch = enabled
                 }
@@ -443,8 +464,20 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// không block event tap. NSWorkspace notification đã đủ cho cross-app
     /// switch; refresh này bắt sub-window focus changes trong cùng app.
     public func refreshFocusedBundleIdAsync() {
-        focusRefreshQueue.async { [weak self] in
-            self?.performFocusedElementRefresh()
+        // Gộp nhịp NGAY: đã có một nhịp đang chờ trên queue (chưa bắt đầu) thì
+        // nhịp đó sẽ đọc trạng thái mới nhất — khỏi xếp thêm. Trước đây giữ phím
+        // mũi tên (~30 lần/giây) xếp 30 lần chụp AX/giây (mỗi lần tới ~50
+        // message) + 30 lượt `main.async`. Cờ hạ NGAY TRƯỚC khi chụp, nên
+        // trigger đến giữa lúc đang chụp vẫn có nhịp riêng sau nó.
+        let alreadyQueued = immediateFocusRefreshQueued.withLock { queued -> Bool in
+            defer { queued = true }
+            return queued
+        }
+        if !alreadyQueued {
+            focusRefreshQueue.async { [weak self] in
+                self?.immediateFocusRefreshQueued.withLock { $0 = false }
+                self?.performFocusedElementRefresh()
+            }
         }
         // v3.6: nhịp refresh trễ — hộp thoại native (Save panel của Chrome)
         // mở SAU keystroke/click trigger nên nhịp đầu còn thấy focus cũ.
@@ -563,6 +596,12 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// Used by Smart Switch so transient launcher activations don't override
     /// the user's preference for the app underneath.
     public func setEnabledWithoutPersist(_ value: Bool) {
+        // Gán lại đúng giá trị cũ vẫn bắn `objectWillChange` (`@Published` không
+        // so sánh) → menu bar + Settings (nếu đang giữ) render lại toàn bộ, mà
+        // Smart Switch / rule tiêu đề áp lại chế độ ở mỗi lần đổi app. Không phát
+        // gì thêm: didSet ở đây không lưu `appModes`, không hiện HUD, và
+        // `EventHook.setEnabled` vốn đã bỏ qua khi không đổi.
+        guard enabled != value else { return }
         let wasSkippingHUD = skipHUDNotification
         skipHUDNotification = true
         skipPersistAppMode = true

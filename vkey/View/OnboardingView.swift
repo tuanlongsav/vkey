@@ -28,9 +28,9 @@ class OnboardingViewModel: ObservableObject {
     private var permissionTimer: Timer?
 
     init() {
-        // Check if permissions already granted
-        let eventHook = EventHook(inputProcessor: InputProcessor(method: Defaults[.typingMethod]))
-        if eventHook.isTrusted(prompt: false) {
+        // Check if permissions already granted. Hỏi thẳng TCC — trước đây dựng
+        // cả EventHook + InputProcessor chỉ để gọi `isTrusted(prompt: false)`.
+        if AXIsProcessTrusted() {
             permissionGranted = true
             currentStep = .removeIME
         }

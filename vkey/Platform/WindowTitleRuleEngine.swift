@@ -33,24 +33,55 @@ final class WindowTitleRuleEngine {
   private var cachedBundleId: String?
   private var cachedTitle: String?
   private var cachedResult: ResolvedRuleOverrides = .init()
+  private var cachedRules: CompiledRules?
+
+  /// Rule đang bật + regex tiêu đề đã biên dịch, dựng lại khi danh sách đổi.
+  /// Trước đây mỗi lần cache (bundleId, title) trượt là giải mã lại toàn bộ
+  /// `Defaults[.windowTitleRules]` và biên dịch lại `NSRegularExpression` của
+  /// từng rule. Bất biến sau khi dựng nên đọc được từ mọi thread.
+  private final class CompiledRules: @unchecked Sendable {
+    let entries: [(rule: WindowTitleRule, regex: NSRegularExpression?)]
+
+    init(_ rules: [WindowTitleRule]) {
+      entries = rules.filter { $0.enabled }.map { rule in
+        let regex = rule.titleRegex.isEmpty
+          ? nil
+          : try? NSRegularExpression(pattern: rule.titleRegex, options: [.caseInsensitive])
+        return (rule, regex)
+      }
+    }
+  }
+
+  private let compiledRules = DefaultsDerivedCache<CompiledRules>(.windowTitleRules) {
+    CompiledRules(Defaults[.windowTitleRules])
+  }
 
   private init() {}
 
   /// Đánh giá rules cho `bundleId` + current focused window title.
   /// Cache kết quả theo (bundleId, title) — invalidate khi state đổi.
   func evaluate(bundleId: String) -> ResolvedRuleOverrides {
+    let compiled = compiledRules.value
+    // Không có rule nào bật (mặc định) thì kết quả luôn rỗng — khỏi hỏi AX
+    // tiêu đề cửa sổ (frontmostApplication + 2 message AX) ở mỗi lần đổi app
+    // / refresh focus.
+    guard !compiled.entries.isEmpty else { return .init() }
     let title = focusedWindowTitle() ?? ""
-    if cachedBundleId == bundleId && cachedTitle == title {
+    // `cachedRules === compiled`: danh sách rule đổi thì kết quả cũ hết hiệu lực
+    // dù (bundleId, title) trùng.
+    if cachedRules === compiled && cachedBundleId == bundleId && cachedTitle == title {
       return cachedResult
     }
+    cachedRules = compiled
     cachedBundleId = bundleId
     cachedTitle = title
-    let resolved = computeOverrides(bundleId: bundleId, title: title)
+    let resolved = computeOverrides(bundleId: bundleId, title: title, rules: compiled.entries)
     cachedResult = resolved
     return resolved
   }
 
   func invalidateCache() {
+    cachedRules = nil
     cachedBundleId = nil
     cachedTitle = nil
     cachedResult = .init()
@@ -82,20 +113,23 @@ final class WindowTitleRuleEngine {
     return title
   }
 
-  private func computeOverrides(bundleId: String, title: String) -> ResolvedRuleOverrides {
-    let rules = Defaults[.windowTitleRules].filter { $0.enabled }
+  private func computeOverrides(
+    bundleId: String,
+    title: String,
+    rules: [(rule: WindowTitleRule, regex: NSRegularExpression?)]
+  ) -> ResolvedRuleOverrides {
     var result = ResolvedRuleOverrides()
 
-    for rule in rules {
+    for (rule, regex) in rules {
       // Match bundle ID nếu có prefix.
       if !rule.bundleIdPrefix.isEmpty {
         if !bundleId.lowercased().hasPrefix(rule.bundleIdPrefix.lowercased()) {
           continue
         }
       }
-      // Match title regex nếu có.
+      // Match title regex nếu có (regex sai cú pháp ⇒ `nil` ⇒ rule không khớp).
       if !rule.titleRegex.isEmpty {
-        guard matchesRegex(title: title, pattern: rule.titleRegex) else { continue }
+        guard let regex, Self.matches(regex, title: title) else { continue }
       }
       // Match → apply.
       if rule.disablePrediction { result.disablePrediction = true }
@@ -113,10 +147,7 @@ final class WindowTitleRuleEngine {
     return result
   }
 
-  private func matchesRegex(title: String, pattern: String) -> Bool {
-    guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
-      return false
-    }
+  private static func matches(_ regex: NSRegularExpression, title: String) -> Bool {
     let range = NSRange(title.startIndex..<title.endIndex, in: title)
     return regex.firstMatch(in: title, options: [], range: range) != nil
   }

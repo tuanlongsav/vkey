@@ -48,14 +48,24 @@ final class PredictionHUDWindow {
     )
     let panel = ensurePanel()
 
-    let controller = NSHostingController(rootView: view)
-    if #available(macOS 13.0, *) {
-      controller.sizingOptions = []
+    let controller: NSHostingController<PredictionHUDView>
+    if let existing = hostingController {
+      // Tái dùng controller, chỉ thay `rootView`: SwiftUI diff trên đồ thị sẵn
+      // có. Trước đây MỖI từ (Space sau mỗi từ khi bật đoán từ) dựng mới cả
+      // NSHostingController + cây view + NSVisualEffectView nền + các CALayer,
+      // rồi vứt bộ cũ.
+      existing.rootView = view
+      controller = existing
+    } else {
+      controller = NSHostingController(rootView: view)
+      if #available(macOS 13.0, *) {
+        controller.sizingOptions = []
+      }
+      controller.view.wantsLayer = true
+      controller.view.layer?.backgroundColor = NSColor.clear.cgColor
+      hostingController = controller
+      panel.contentViewController = controller
     }
-    controller.view.wantsLayer = true
-    controller.view.layer?.backgroundColor = NSColor.clear.cgColor
-    hostingController = controller
-    panel.contentViewController = controller
 
     // v2.4.0: window = content + đệm shadow mỗi phía.
     let margin = HUDMetrics.predictionShadowMargin

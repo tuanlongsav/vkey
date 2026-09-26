@@ -3170,6 +3170,53 @@ final class ClipboardHistoryTests: XCTestCase {
     let textOnly = ClipboardHistoryService.pasteboardPayloadBytes(from: pb, allowFiles: false)
     XCTAssertEqual(withFiles, textOnly)
   }
+
+  /// Excel/Word/Safari kèm TIFF/PDF/webarchive cho CÙNG vùng chọn đã có chữ —
+  /// lịch sử chỉ giữ chữ (plain/RTF/HTML), không giữ bản dựng thành hình.
+  func testSnapshotDropsRenditionsWhenItemHasText() {
+    let pb = NSPasteboard.general
+    pb.clearContents()
+    let item = NSPasteboardItem()
+    item.setString("bảng tính", forType: .string)
+    item.setString("<b>bảng tính</b>", forType: .html)
+    item.setData(Data(repeating: 0xAB, count: 64 * 1024), forType: .tiff)
+    item.setData(Data(repeating: 0xCD, count: 64 * 1024), forType: .pdf)
+    pb.writeObjects([item])
+
+    for mode in ClipboardHistoryContentMode.allCases {
+      let snap = ClipboardHistoryService.buildSnapshot(from: pb, mode: mode)
+      let types = Set(snap?.items.first?.types ?? [])
+      XCTAssertTrue(types.contains(.string), "\(mode)")
+      XCTAssertTrue(types.contains(.html), "\(mode)")
+      XCTAssertFalse(types.contains(.tiff), "\(mode)")
+      XCTAssertFalse(types.contains(.pdf), "\(mode)")
+      XCTAssertLessThan(snap?.byteCount ?? .max, 1024, "\(mode)")
+    }
+  }
+
+  /// Trước đây TIFF 2 MB đi kèm làm cả mục bị từ chối "quá lớn" dù chữ chỉ vài byte.
+  func testLargeRenditionNoLongerBlocksTextCapture() {
+    Defaults[.clipboardHistoryEnabled] = true
+    Defaults[.clipboardHistoryMaxEntryMegabytes] = 1
+    let pb = NSPasteboard.general
+    pb.clearContents()
+    let item = NSPasteboardItem()
+    item.setString("A1:Z999", forType: .string)
+    item.setData(Data(repeating: 0xAB, count: 2 * 1024 * 1024), forType: .tiff)
+    pb.writeObjects([item])
+    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
+    XCTAssertEqual(ClipboardHistoryService.shared.entries.count, 1)
+    XCTAssertEqual(ClipboardHistoryService.shared.entries.first?.preview, "A1:Z999")
+  }
+
+  func testRenditionKeptWhenItemHasNoText() {
+    let item = NSPasteboardItem()
+    item.setData(Data([0x01]), forType: .tiff)
+    item.setString("file:///tmp/a.png", forType: .fileURL)
+    let types = ClipboardHistoryService.capturedTypes(of: item, allowFiles: true)
+    XCTAssertTrue(types.contains(.tiff))
+    XCTAssertTrue(types.contains(.fileURL))
+  }
 }
 
 // MARK: - Clipboard history hotkey
@@ -8401,5 +8448,55 @@ final class HotPathAXBudgetF4Tests: XCTestCase {
 
     // `withAXTimeout` vẫn là SCOPE (mượn có thời hạn), không phải một lần ghi.
     XCTAssertEqual(Focused.withAXTimeout(Focused.hotPathAXTimeout) { 7 }, 7)
+  }
+}
+
+// MARK: - Cache giá trị suy ra từ Defaults (rà soát tài nguyên)
+
+final class DefaultsDerivedCacheTests: XCTestCase {
+
+  override func tearDown() {
+    Defaults.reset(.macros)
+    Defaults.reset(.userAllowWords)
+    Defaults.reset(.userDenyWords)
+    super.tearDown()
+  }
+
+  /// Dựng một lần, giữ cho tới khi key nguồn đổi — kể cả `Defaults.reset`.
+  func testRecomputesOnlyAfterSourceKeyChanges() {
+    Defaults[.macros] = [Macro(from: "a", to: "b")]
+    var computeCount = 0
+    let cache = DefaultsDerivedCache<Int>(.macros) {
+      computeCount += 1
+      return Defaults[.macros].count
+    }
+    XCTAssertEqual(cache.value, 1)
+    XCTAssertEqual(cache.value, 1)
+    XCTAssertEqual(computeCount, 1)
+
+    Defaults[.macros] = [Macro(from: "a", to: "b"), Macro(from: "c", to: "d")]
+    XCTAssertEqual(cache.value, 2)
+    XCTAssertEqual(computeCount, 2)
+
+    Defaults.reset(.macros)
+    XCTAssertEqual(cache.value, 0)
+    XCTAssertEqual(computeCount, 3)
+  }
+
+  /// Set từ điển cá nhân được cache trong LexiconManager — sửa danh sách phải
+  /// có hiệu lực ngay ở lần tra kế tiếp trên CÙNG instance.
+  func testPersonalDictionaryCacheFollowsDefaults() {
+    Defaults[.userAllowWords] = []
+    Defaults[.userDenyWords] = []
+    let manager = LexiconManager(
+      updatePackageURL: URL(fileURLWithPath: "/tmp/vkey-lexicon-personal-cache.json"))
+    XCTAssertFalse(manager.isVietnameseWord("abcxyz"))
+
+    Defaults[.userAllowWords] = ["abcxyz"]
+    XCTAssertTrue(manager.isVietnameseWord("abcxyz"))
+    XCTAssertTrue(manager.isInstantRestoreEnglish("abcxyz"))
+
+    Defaults[.userDenyWords] = ["abcxyz"]
+    XCTAssertFalse(manager.isVietnameseWord("abcxyz"))
   }
 }
