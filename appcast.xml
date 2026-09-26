@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.29 — "Hết phình RAM"</title>
+      <sparkle:version>42900</sparkle:version>
+      <sparkle:shortVersionString>4.29</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sat, 26 Sep 2026 23:13:59 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.29/vkey-4.29.dmg"
+        sparkle:edSignature="6R1Ap/bCxOZHFlBGqUgwkDSUVmFc7GvXReZQWhU29WL8w1rVtFqTWljY8w4gJmoUhKn5u/vVzcVpPGMLcqxICg=="
+        length="6587256"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.29 — Hết phình RAM</h2>
+        <p><b>Bản sửa lỗi bộ nhớ, nên cập nhật nếu bật Đoán từ.</b> v4.28 chạy liên tục 9 ngày lên ~551 MB vì mỗi lần hiện gợi ý lại dựng mới cả khung HUD; macOS giữ lại phần thừa của khung cũ. Cách gõ không đổi.</p>
+        <ul>
+          <li><b>HUD đoán từ / thông báo dùng lại một khung duy nhất</b> — hết phình bộ nhớ theo số từ đã gõ (đo trên máy thật: 435 MB sau ~28.000 lần hiện).</li>
+          <li><b>Lịch sử clipboard gọn hơn</b> — không giữ bản ảnh/PDF mà Excel/Word/Safari kèm theo đoạn chữ; dán lại vẫn giữ định dạng qua RTF/HTML.</li>
+          <li><b>Đường gõ phím nhẹ hơn</b> — không giải mã lại cài đặt (Smart Switch, macro, từ điển cá nhân, theme) ở mỗi phím; vá rò <code>FileMonitor</code>; n-gram chỉ nạp khi bật Đoán từ.</li>
+        </ul>
+        <p>432 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.28 — "Plume nhận đúng app khi gõ"</title>
       <sparkle:version>42800</sparkle:version>
       <sparkle:shortVersionString>4.28</sparkle:shortVersionString>
