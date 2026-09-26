@@ -107,9 +107,9 @@ final class ClipboardHistoryService: NSObject {
   func captureCurrentPasteboard(_ pasteboard: NSPasteboard = .general) {
     guard Defaults[.clipboardHistoryEnabled] else { return }
     let mode = Defaults[.clipboardHistoryContentMode]
-    // Dựng snapshot TRƯỚC rồi mới đo. Trước đây đo trước bằng
-    // `estimatedCaptureBytes` — đọc MỌI loại dữ liệu từ pasteboard server chỉ
-    // để cộng byte — rồi `buildSnapshot` đọc lại lần hai. Đo trên bản chép thì
+    // Dựng snapshot TRƯỚC rồi mới đo. Trước đây đo trước bằng một hàm ước
+    // lượng đọc MỌI loại dữ liệu từ pasteboard server chỉ để cộng byte, rồi
+    // `buildSnapshot` đọc lại lần hai. Đo trên bản chép thì
     // mỗi loại chỉ qua IPC một lần, và nội dung vốn không được lưu (vd ảnh
     // không kèm chữ ở chế độ chỉ văn bản) không còn bật HUD "quá lớn" oan.
     guard let snapshot = Self.buildSnapshot(from: pasteboard, mode: mode) else { return }
@@ -118,7 +118,9 @@ final class ClipboardHistoryService: NSObject {
       showOversizedWarning(actualBytes: snapshot.byteCount, maxBytes: maxBytes)
       return
     }
-    if let latest = entries.first, latest.fingerprint == snapshot.fingerprint {
+    // Băm SAU khi qua giới hạn — mục bị từ chối có thể tới 200 MB.
+    let fingerprint = Self.fingerprint(for: snapshot.items)
+    if let latest = entries.first, latest.fingerprint == fingerprint {
       return
     }
     let entry = Entry(
@@ -127,7 +129,7 @@ final class ClipboardHistoryService: NSObject {
       items: snapshot.items,
       preview: snapshot.preview,
       isFileEntry: snapshot.isFileEntry,
-      fingerprint: snapshot.fingerprint
+      fingerprint: fingerprint
     )
     entries.insert(entry, at: 0)
     let cap = max(3, min(50, Defaults[.clipboardHistoryCapacity]))
@@ -195,9 +197,8 @@ final class ClipboardHistoryService: NSObject {
     let items: [NSPasteboardItem]
     let preview: String
     let isFileEntry: Bool
-    let fingerprint: String
     /// Dung lượng tính vào giới hạn mỗi mục: payload đã chép + (chế độ có tệp)
-    /// kích thước trên đĩa của các tệp được tham chiếu — như `estimatedCaptureBytes`.
+    /// kích thước trên đĩa của các tệp được tham chiếu (hành vi 3.18).
     let byteCount: Int
   }
 
@@ -239,7 +240,6 @@ final class ClipboardHistoryService: NSObject {
       items: items,
       preview: preview,
       isFileEntry: isFileEntry,
-      fingerprint: fingerprint(for: items),
       byteCount: payloadBytes(of: items, allowFiles: true) + fileBytes
     )
   }
@@ -269,23 +269,26 @@ final class ClipboardHistoryService: NSObject {
   /// `data(forType:)` của vkey bắt Excel vẽ ra TIFF chục MB rồi vkey giữ nó
   /// trong RAM suốt phiên. Bỏ chúng TRƯỚC khi đọc — dán lại vẫn giữ định dạng
   /// qua RTF/HTML. Item không có chữ (vd tệp từ Finder) giữ nguyên như trước.
+  ///
+  /// Ngoại lệ: item mang `public.url` (vd "Sao chép ảnh" của trình duyệt kèm
+  /// URL dạng chữ) — ở đó chữ chỉ là địa chỉ, ảnh mới là nội dung → giữ nguyên.
   static func capturedTypes(
     of item: NSPasteboardItem,
     allowFiles: Bool
   ) -> [NSPasteboard.PasteboardType] {
     let types = item.types
-    let hasText = types.contains(where: isTextType)
+    let dropRenditions = types.contains { isTextType($0) } && !types.contains(.URL)
     return types.filter { type in
       if !allowFiles, type == .fileURL || type.rawValue.contains("file-url") {
         return false
       }
-      return !(hasText && isRenditionType(type))
+      return !(dropRenditions && isRenditionType(type))
     }
   }
 
   static func isTextType(_ type: NSPasteboard.PasteboardType) -> Bool {
     if type == .string || type == .rtf || type == .html { return true }
-    return UTType(type.rawValue)?.conforms(to: .plainText) ?? false
+    return resolvedUTType(type)?.conforms(to: .plainText) ?? false
   }
 
   /// Ảnh, PDF, audio/video, webarchive, RTFD — xem `capturedTypes(of:allowFiles:)`.
@@ -294,8 +297,39 @@ final class ClipboardHistoryService: NSObject {
   ]
 
   static func isRenditionType(_ type: NSPasteboard.PasteboardType) -> Bool {
-    guard let uti = UTType(type.rawValue) else { return false }
+    guard let uti = resolvedUTType(type) else { return false }
     return renditionUTTypes.contains { uti.conforms(to: $0) }
+  }
+
+  private static let legacyPasteboardTagClass = UTTagClass(rawValue: "com.apple.nspboard-type")
+  private static let osTypeTagClass = UTTagClass(rawValue: "com.apple.ostype")
+  private static let carbonFlavorPrefix = "CorePasteboardFlavorType 0x"
+
+  /// UTI của một loại pasteboard, kể cả những tên KHÔNG phải UTI mà app đời cũ
+  /// (Office là điển hình) vẫn ghi song song: tên pboard NeXT/Cocoa ("NeXT TIFF
+  /// v4.0 pasteboard type", "Apple PDF pasteboard type"…), dạng `dyn.*` mã hoá
+  /// chúng, và flavor Carbon ("CorePasteboardFlavorType 0x54494646" = 'TIFF').
+  /// Không nhận ra chúng thì bản TIFF/PDF đi kèm lọt qua bộ lọc bản dựng.
+  static func resolvedUTType(_ type: NSPasteboard.PasteboardType) -> UTType? {
+    let raw = type.rawValue
+    let direct = UTType(raw)
+    if let direct, direct.isDeclared { return direct }
+    if raw.hasPrefix(carbonFlavorPrefix),
+       let code = UInt32(raw.dropFirst(carbonFlavorPrefix.count), radix: 16) {
+      let bytes = [24, 16, 8, 0].map { UInt8(truncatingIfNeeded: code >> $0) }
+      if let osType = String(bytes: bytes, encoding: .macOSRoman),
+         let uti = UTType(tag: osType, tagClass: osTypeTagClass, conformingTo: nil),
+         uti.isDeclared {
+        return uti
+      }
+    }
+    // `dyn.*` giữ tên pboard gốc trong tags; tên thô thì tra thẳng.
+    let legacyName = direct?.tags[legacyPasteboardTagClass]?.first ?? raw
+    if let uti = UTType(tag: legacyName, tagClass: legacyPasteboardTagClass, conformingTo: nil),
+       uti.isDeclared {
+      return uti
+    }
+    return direct
   }
 
   static func snapshotItems(_ items: [NSPasteboardItem], allowFiles: Bool) -> [NSPasteboardItem] {
@@ -337,16 +371,7 @@ final class ClipboardHistoryService: NSObject {
     .joined(separator: "|")
   }
 
-  /// Ước lượng byte trên pasteboard gốc — không tạo bản sao NSPasteboardItem.
-  /// Chỉ đếm những loại `snapshotItems` sẽ chép.
-  static func pasteboardPayloadBytes(
-    from pasteboard: NSPasteboard,
-    allowFiles: Bool
-  ) -> Int {
-    guard let rawItems = pasteboard.pasteboardItems else { return 0 }
-    return payloadBytes(of: rawItems, allowFiles: allowFiles)
-  }
-
+  /// Tổng byte của những loại `capturedTypes` sẽ chép trong `items`.
   static func payloadBytes(of items: [NSPasteboardItem], allowFiles: Bool) -> Int {
     items.reduce(0) { total, item in
       total + capturedTypes(of: item, allowFiles: allowFiles).reduce(0) { sum, type in
@@ -399,21 +424,6 @@ final class ClipboardHistoryService: NSObject {
   static func maxEntryBytesFromSettings() -> Int {
     let mb = max(1, min(200, Defaults[.clipboardHistoryMaxEntryMegabytes]))
     return mb * 1024 * 1024
-  }
-
-  /// Ước lượng dung lượng trước khi snapshot — tệp dùng kích thước trên đĩa + payload pasteboard.
-  static func estimatedCaptureBytes(
-    from pasteboard: NSPasteboard,
-    mode: ClipboardHistoryContentMode
-  ) -> Int {
-    var total = pasteboardPayloadBytes(from: pasteboard, allowFiles: mode == .textAndFiles)
-    if mode == .textAndFiles {
-      let urls = fileURLs(from: pasteboard)
-      if !urls.isEmpty {
-        total += filePayloadBytes(from: urls)
-      }
-    }
-    return total
   }
 
   private func showOversizedWarning(actualBytes: Int, maxBytes: Int) {

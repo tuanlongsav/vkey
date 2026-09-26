@@ -756,8 +756,11 @@ struct WindowTitleRule: Codable, Hashable, Identifiable, Defaults.Serializable {
 ///
 /// Huỷ bằng KVO của UserDefaults, gọi ĐỒNG BỘ ngay trong lời gán
 /// `Defaults[key] = …` (kể cả `Defaults.reset`), nên lần đọc ngay sau đó đã
-/// thấy giá trị mới. `generation` chặn việc cất một bản dựng từ giá trị cũ khi
-/// key đổi giữa lúc đang dựng (KVO chạy trên thread của người ghi).
+/// thấy giá trị mới. Hai ngoại lệ: ghi bên trong `Defaults.withoutPropagation`
+/// (thư viện nuốt KVO — repo chưa dùng; dùng thì gọi `invalidate()` tay) và
+/// ghi từ tiến trình khác (`defaults write`), tới trễ một nhịp. `generation`
+/// chặn việc cất một bản dựng từ giá trị cũ khi key đổi giữa lúc đang dựng
+/// (KVO chạy trên thread của người ghi).
 final class DefaultsDerivedCache<Value: Sendable>: @unchecked Sendable {
   private struct State {
     var generation = 0

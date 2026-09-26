@@ -3136,14 +3136,14 @@ final class ClipboardHistoryTests: XCTestCase {
     let big = String(repeating: "x", count: 2 * 1024 * 1024)
     pb.setString(big, forType: .string)
     XCTAssertGreaterThan(
-      ClipboardHistoryService.estimatedCaptureBytes(from: pb, mode: .textOnly),
+      ClipboardHistoryService.buildSnapshot(from: pb, mode: .textOnly)?.byteCount ?? 0,
       ClipboardHistoryService.maxEntryBytesFromSettings()
     )
     ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
     XCTAssertTrue(ClipboardHistoryService.shared.entries.isEmpty)
   }
 
-  func testEstimatedBytesSumsPasteboardAndFilePayload() throws {
+  func testSnapshotBytesSumPasteboardAndFilePayload() throws {
     let tempDir = FileManager.default.temporaryDirectory
     let fileURL = tempDir.appendingPathComponent("vkey-clip-\(UUID().uuidString).txt")
     try String(repeating: "z", count: 4096).write(to: fileURL, atomically: true, encoding: .utf8)
@@ -3154,20 +3154,21 @@ final class ClipboardHistoryTests: XCTestCase {
     pb.setString("caption", forType: .string)
     pb.writeObjects([fileURL as NSURL])
 
-    let pasteBytes = ClipboardHistoryService.pasteboardPayloadBytes(from: pb, allowFiles: true)
+    let snap = try XCTUnwrap(ClipboardHistoryService.buildSnapshot(from: pb, mode: .textAndFiles))
+    let pasteBytes = ClipboardHistoryService.payloadBytes(of: snap.items, allowFiles: true)
     let fileBytes = ClipboardHistoryService.filePayloadBytes(from: [fileURL])
-    let estimated = ClipboardHistoryService.estimatedCaptureBytes(from: pb, mode: .textAndFiles)
     XCTAssertGreaterThan(pasteBytes, 0)
     XCTAssertGreaterThan(fileBytes, 0)
-    XCTAssertEqual(estimated, pasteBytes + fileBytes)
+    XCTAssertEqual(snap.byteCount, pasteBytes + fileBytes)
   }
 
-  func testPasteboardPayloadBytesSkipsFilesInTextOnlyMode() {
+  func testPayloadBytesSkipsFilesInTextOnlyMode() throws {
     let pb = NSPasteboard.general
     pb.clearContents()
     pb.setString("only text", forType: .string)
-    let withFiles = ClipboardHistoryService.pasteboardPayloadBytes(from: pb, allowFiles: true)
-    let textOnly = ClipboardHistoryService.pasteboardPayloadBytes(from: pb, allowFiles: false)
+    let items = try XCTUnwrap(pb.pasteboardItems)
+    let withFiles = ClipboardHistoryService.payloadBytes(of: items, allowFiles: true)
+    let textOnly = ClipboardHistoryService.payloadBytes(of: items, allowFiles: false)
     XCTAssertEqual(withFiles, textOnly)
   }
 
@@ -3207,6 +3208,31 @@ final class ClipboardHistoryTests: XCTestCase {
     ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
     XCTAssertEqual(ClipboardHistoryService.shared.entries.count, 1)
     XCTAssertEqual(ClipboardHistoryService.shared.entries.first?.preview, "A1:Z999")
+  }
+
+  /// Office/app đời cũ ghi kèm tên pboard NeXT/Carbon thay vì UTI — vẫn phải
+  /// nhận ra là ảnh/PDF.
+  func testLegacyPasteboardNamesResolveToRenditions() {
+    for raw in [
+      "NeXT TIFF v4.0 pasteboard type",
+      "Apple PDF pasteboard type",
+      "CorePasteboardFlavorType 0x54494646",
+    ] {
+      XCTAssertTrue(
+        ClipboardHistoryService.isRenditionType(NSPasteboard.PasteboardType(raw)), raw)
+    }
+    XCTAssertFalse(ClipboardHistoryService.isRenditionType(.string))
+    XCTAssertTrue(ClipboardHistoryService.isTextType(NSPasteboard.PasteboardType("NSStringPboardType")))
+  }
+
+  /// "Sao chép ảnh" của trình duyệt: chữ chỉ là URL, ảnh mới là nội dung.
+  func testRenditionKeptWhenItemCarriesURL() {
+    let item = NSPasteboardItem()
+    item.setString("https://example.com/a.png", forType: .string)
+    item.setString("https://example.com/a.png", forType: .URL)
+    item.setData(Data([0x01]), forType: .png)
+    let types = ClipboardHistoryService.capturedTypes(of: item, allowFiles: false)
+    XCTAssertTrue(types.contains(.png))
   }
 
   func testRenditionKeptWhenItemHasNoText() {
