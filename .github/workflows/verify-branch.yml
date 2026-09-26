@@ -1,0 +1,88 @@
+# TẠM THỜI — kiểm chứng nhánh sửa rò RAM trên macOS thật (môi trường sửa code
+# không có Xcode). Biên dịch + chạy test cho `main` (mốc so sánh) và nhánh, chạy
+# Tools/probe/hudleak ở mọi kiểu, và đính kèm bản build Debug của nhánh.
+# Xoá file này trước khi merge nếu không muốn giữ CI.
+name: Verify branch (macOS)
+
+on:
+  push:
+    branches: [claude/charming-archimedes-qjgqq5]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    name: build + test (${{ matrix.ref }})
+    runs-on: macos-15
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        ref: [main, claude/charming-archimedes-qjgqq5]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          git log --oneline -1
+
+      - name: Build app + tests
+        run: |
+          set -o pipefail
+          xcodebuild -project vkey.xcodeproj -scheme vkey -configuration Debug \
+            -destination 'platform=macOS' -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= \
+            CODE_SIGNING_REQUIRED=NO \
+            build-for-testing 2>&1 | tee "$RUNNER_TEMP/build.log" \
+            | grep -E "error:|\*\* .* (SUCCEEDED|FAILED) \*\*" || true
+          echo "--- cảnh báo trong các file nhánh đã sửa ---"
+          grep -E "warning:" "$RUNNER_TEMP/build.log" \
+            | grep -E "ClipboardHistoryService|EventHook|AppState|Setting\.swift|LexiconManager|Lexicon\.swift|SuggestionService|NGramStore|UsageStatistics|WindowTitleRuleEngine|PredictionHUDWindow|NoticeHUDWindow|HUDComponents|VKDesign|FileMonitor|EventSimulator|InputProcessor|AppDelegate|OnboardingView|vkeyTests\.swift" \
+            | sort -u | head -80 || true
+          grep -q "TEST BUILD SUCCEEDED" "$RUNNER_TEMP/build.log"
+
+      - name: Run tests
+        timeout-minutes: 30
+        run: |
+          set -o pipefail
+          xcodebuild -project vkey.xcodeproj -scheme vkey -configuration Debug \
+            -destination 'platform=macOS' -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= \
+            CODE_SIGNING_REQUIRED=NO \
+            test-without-building 2>&1 | tee "$RUNNER_TEMP/test.log" \
+            | grep -E "error:|' failed \(|Executed [0-9]+ test|\*\* TEST" || true
+          grep -q "\*\* TEST SUCCEEDED \*\*" "$RUNNER_TEMP/test.log"
+
+      - name: Package Debug app
+        if: always() && matrix.ref != 'main'
+        run: |
+          app="$RUNNER_TEMP/dd/Build/Products/Debug/vkey.app"
+          if [ -d "$app" ]; then
+            ditto -c -k --keepParent "$app" "$RUNNER_TEMP/vkey-debug.zip"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.ref != 'main'
+        with:
+          name: vkey-debug-app
+          path: ${{ runner.temp }}/vkey-debug.zip
+          if-no-files-found: ignore
+          retention-days: 7
+
+  hud-leak-probe:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build probe
+        run: swiftc -parse-as-library -O Tools/probe/hudleak.swift -o "$RUNNER_TEMP/hudleak"
+
+      - name: Measure (rebuild vs reuse)
+        run: |
+          for mode in rebuild reuse reuse-hide hosting blur; do
+            "$RUNNER_TEMP/hudleak" "$mode" 300 || echo "mode=$mode FAILED ($?)"
+          done
