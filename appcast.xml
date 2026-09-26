@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.30 — "Hết rò RAM khi gõ"</title>
+      <sparkle:version>43000</sparkle:version>
+      <sparkle:shortVersionString>4.30</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 27 Sep 2026 00:26:07 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.30/vkey-4.30.dmg"
+        sparkle:edSignature="RDHtEG7jlAXK+ZLx1LWi9vy50DiO5p/9eJnpE0jCcoCJLanLCag/o/kNh5v+A7XkrG7YQG2XiMcvzOa5bAi9CQ=="
+        length="6588025"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.30 — Hết rò RAM khi gõ</h2>
+        <p><b>Bản sửa lỗi bộ nhớ, nên cập nhật — áp dụng cho mọi người gõ tiếng Việt, không chỉ khi bật Đoán từ.</b> Mỗi lần vkey thay chữ (bỏ dấu, đổi nguyên âm) để lại 16 KB bộ nhớ không bao giờ trả lại; đây mới là phần chính của mức ~551 MB ở v4.28 sau 9 ngày. Cách gõ không đổi.</p>
+        <ul>
+          <li><b>Mọi lần gửi phím dùng chung một nguồn phím</b> — trước đây mỗi lần thay chữ tạo một nguồn mới, macOS giữ lại 16 KB cho mỗi nguồn tới khi thoát app. Đo trên máy thật: 20 lần thay chữ → +20 vùng bộ nhớ ở 4.29, bản mới đứng yên.</li>
+          <li><b>Đính chính 4.29</b> — 435 MB đo trên v4.28 đến từ lỗi này chứ không phải từ HUD đoán từ; 4.29 chỉ chặn phần nhỏ hơn của HUD.</li>
+        </ul>
+        <p>435 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.29 — "Hết phình RAM"</title>
       <sparkle:version>42900</sparkle:version>
       <sparkle:shortVersionString>4.29</sparkle:shortVersionString>
