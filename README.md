@@ -8,13 +8,20 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.29](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 432 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.30](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 435 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.30
+
+**Bản sửa lỗi bộ nhớ, nên cập nhật — áp dụng cho mọi người gõ tiếng Việt.** Mỗi lần vkey thay chữ (bỏ dấu, đổi nguyên âm) để lại 16 KB bộ nhớ không bao giờ trả lại; đây mới là phần chính của mức ~551 MB ở v4.28.
+
+- **Mọi lần gửi phím dùng chung một nguồn phím** — trước đây mỗi lần thay chữ tạo một nguồn mới, macOS giữ lại 16 KB cho mỗi nguồn tới khi thoát app. Đo trên máy thật: 20 lần thay chữ → +20 vùng bộ nhớ ở 4.29, bản mới đứng yên.
+- **Đính chính 4.29** — 435 MB đo trên v4.28 đến từ lỗi này chứ không phải từ HUD; 4.29 chỉ chặn phần nhỏ hơn của HUD.
 
 ## Mới ở v4.29
 
-**Bản sửa lỗi bộ nhớ, nên cập nhật nếu bật Đoán từ.** v4.28 chạy liên tục 9 ngày lên ~551 MB vì mỗi lần hiện gợi ý lại dựng mới cả khung HUD; macOS giữ lại phần thừa của khung cũ.
+**Bản sửa lỗi bộ nhớ, nên cập nhật nếu bật Đoán từ.** Mỗi lần hiện gợi ý, v4.28 dựng mới cả khung HUD; AppKit giữ lại dữ liệu theo dõi của khung cũ.
 
-- **HUD đoán từ dùng lại một khung duy nhất** — hết phình bộ nhớ theo số từ đã gõ (đo trên máy thật: 435 MB sau ~28.000 lần hiện).
+- **HUD đoán từ dùng lại một khung duy nhất** — hết rò dữ liệu KVO của AppKit theo số lần hiện gợi ý (phần lớn hơn của mức 435 MB là lỗi khác, sửa ở v4.30).
 - **Lịch sử clipboard gọn hơn** — không giữ bản ảnh/PDF mà Excel/Word/Safari kèm theo đoạn chữ; dán lại vẫn giữ định dạng.
 - **Đường gõ phím nhẹ hơn** — không giải mã lại cài đặt (Smart Switch, macro, từ điển cá nhân, theme) ở mỗi phím.
 
