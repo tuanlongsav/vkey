@@ -6,7 +6,7 @@ This file provides guidance to coding agents working in this repository.
 
 vkey is a macOS Vietnamese Input Method Editor (IME) - a native keyboard input system for typing Vietnamese with diacritical marks. It supports Telex and VNI input methods with app-specific input mode memory.
 
-**Current release**: read it, don't trust a number written here — `grep MARKETING_VERSION vkey.xcodeproj/project.pbxproj`, or the top entry of [CHANGELOG.md](CHANGELOG.md). Release process: [RELEASE.md](RELEASE.md).
+**Current release**: read it, don't trust a number written here — `grep MARKETING_VERSION vkey.xcodeproj/project.pbxproj`, or the top *versioned* entry of [CHANGELOG.md](CHANGELOG.md) (a `## [Chưa phát hành]` section above it holds merged-but-unreleased work). Release process: [RELEASE.md](RELEASE.md).
 
 **Target**: macOS 14+ Sonoma
 **Language**: Swift

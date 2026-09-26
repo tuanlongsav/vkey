@@ -69,6 +69,31 @@ class EventSimulator {
     simulationQueue.async(execute: block)
   }
 
+  /// Nguồn `.privateState` DÙNG CHUNG cho mọi phím vkey tự phát.
+  ///
+  /// ⚠️ ĐỪNG tạo `CGEventSource(stateID: .privateState)` mới cho mỗi lần gửi.
+  /// Mỗi source private được WindowServer cấp một state riêng kèm một trang
+  /// shared memory 16 KB, và SkyLight giữ trang đó trong `CGSEventSourceCache`
+  /// (`get_cache()`) tới khi vkey thoát — giải phóng source KHÔNG trả lại. Đo
+  /// trên máy thật (v4.29): 20 lần thay chữ → đúng +20 vùng `shared memory`;
+  /// đây là phần chính của footprint phình theo thời gian gõ (không phải HUD).
+  ///
+  /// Dùng chung an toàn: mọi event tạo từ source đều gán `flags` tường minh nên
+  /// trạng thái modifier của state private không lọt sang lần gửi sau; stateID
+  /// vẫn khác 1 nên bộ lọc self-event ở EventHook vẫn bỏ qua phím của vkey.
+  /// Gọi từ luồng event tap lẫn `simulationQueue` → giữ bằng khoá. Tạo hỏng
+  /// (nil) thì không ghim nil — lần sau thử lại.
+  static func privateEventSource() -> CGEventSource? {
+    privateSourceLock.lock()
+    defer { privateSourceLock.unlock() }
+    if let source = sharedPrivateSource { return source }
+    sharedPrivateSource = CGEventSource(stateID: .privateState)
+    return sharedPrivateSource
+  }
+
+  private static let privateSourceLock = NSLock()
+  nonisolated(unsafe) private static var sharedPrivateSource: CGEventSource?
+
   /// 2.0 (C4): adaptive flush delay (ms) áp dụng SAU mỗi batch inject —
   /// updated bởi `InputProcessor.changeActiveApp` từ Window Title Rule
   /// `flushDelayMs`. 0 = no delay. Range hợp lệ: 0..500ms.
@@ -856,7 +881,7 @@ class EventSimulator {
       // preserved because simulationQueue is serial and the system queues
       // pending events behind our outgoing post() calls.
       // 2.0 (C4): wrap với withAdaptiveFlush — counter + optional usleep.
-      let source = CGEventSource(stateID: .privateState)
+      let source = privateEventSource()
       simulationQueue.async {
         _ = withAdaptiveFlush {
           sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
@@ -871,7 +896,7 @@ class EventSimulator {
       )
 
     case .stepByStep:
-      guard let source = CGEventSource(stateID: .privateState) else {
+      guard let source = privateEventSource() else {
         return EventSendTelemetry(
           attemptedTransform: true,
           createdEvents: false,
@@ -908,7 +933,7 @@ class EventSimulator {
               return
             }
           }
-          if let source = CGEventSource(stateID: .privateState) {
+          if let source = privateEventSource() {
             sendSpotlightFallback(
               backspaceCount: backspaceCount, diffChars: diffChars, source: source)
           }
@@ -922,7 +947,7 @@ class EventSimulator {
       )
 
     case .hybrid(let backspaceDelay):
-      guard let source = CGEventSource(stateID: .privateState) else {
+      guard let source = privateEventSource() else {
         return EventSendTelemetry(
           attemptedTransform: true,
           createdEvents: false,

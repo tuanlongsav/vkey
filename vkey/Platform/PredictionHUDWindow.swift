@@ -58,10 +58,14 @@ final class PredictionHUDWindow {
       //
       // ⚠️ ĐỪNG quay lại dựng mới mỗi lần hiện. Đo trên máy thật (v4.28, 9 ngày,
       // footprint 551 MB): view cũ ĐƯỢC giải phóng (heap chỉ còn 2–3 view HUD),
-      // nhưng mỗi lần dựng để lại đúng 1 vùng shared memory 16 KB + 2
-      // `NSKeyValueDependencyContext` + 4 `NSKeyValueDependency` (của AppKit,
-      // không phải của vkey) — 27.808 vùng = 435 MB, ~3.100 lần/ngày. Rò nằm
-      // trong framework nên chỉ tránh được bằng cách không tạo lại view.
+      // nhưng mỗi lần dựng để lại 2 `NSKeyValueDependencyContext` + 4
+      // `NSKeyValueDependency` (của AppKit, không phải của vkey) — 56.065 +
+      // 112.290 object, ~3.100 lần/ngày. Rò nằm trong framework nên chỉ tránh
+      // được bằng cách không tạo lại view.
+      // 27.808 vùng shared memory 16 KB (435 MB) đo cùng lúc KHÔNG phải của HUD:
+      // đó là mỗi lần thay chữ tạo `CGEventSource(.privateState)` mới — xem
+      // `EventSimulator.privateEventSource()`. v4.29 chạy lại: ctx/dep đứng yên
+      // mà shm vẫn tăng đúng +1 mỗi lần thay chữ.
       existing.rootView = view
       controller = existing
     } else {

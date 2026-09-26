@@ -6,6 +6,9 @@
 // kiểu và in độ tăng của đúng ba con số đã đo trên máy thật (v4.28, 9 ngày,
 // 551 MB): vùng "shared memory" 16 KB, `NSKeyValueDependencyContext`,
 // `NSKeyValueDependency` — tỉ lệ 1 : 2 : 4 mỗi lần dựng lại.
+// Đính chính (v4.29): cột shared memory KHÔNG do HUD mà do mỗi lần thay chữ tạo
+// `CGEventSource(.privateState)` mới — xem Tools/probe/README.md. Probe này chỉ
+// còn ý nghĩa cho ctx/dep.
 //
 // Build:  swiftc -parse-as-library -O Tools/probe/hudleak.swift -o /tmp/hudleak
 // Chạy:   /tmp/hudleak <kiểu> [số lần, mặc định 300]

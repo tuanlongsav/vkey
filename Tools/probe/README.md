@@ -65,6 +65,11 @@ lại là dữ liệu nội bộ của AppKit kèm trang shared memory. Tỉ l�
 cả ba sinh ra từ cùng một sự kiện, khoảng 28.000 lần ≈ 3.100 lần/ngày — đúng cỡ
 số lần HUD đoán từ hiện (v4.28 dựng `NSHostingController` mới mỗi lần hiện).
 
+> ⚠️ **Đính chính (26/09/2026, đo trên v4.29):** kết luận "cả ba cùng một sự
+> kiện" **sai cho cột shared memory**. ctx/dep đúng là của HUD; còn 27.808 vùng
+> 16 KB là của **event source** — xem mục kế tiếp. Tỉ lệ 1 : 2 : 4 trùng hợp vì
+> cả số lần hiện HUD lẫn số lần thay chữ đều tỉ lệ với số từ đã gõ.
+
 **`hudleak` trên GitHub Actions** (macOS 15.7, Xcode 16.4, máy ảo), 300 lần mỗi kiểu:
 
 | Kiểu | shared memory | `…Context` | `NSKeyValueDependency` |
@@ -81,14 +86,51 @@ blur. Dùng lại khung thì không tăng, kể cả khi ẩn/hiện. Rò nằm 
 nên chỉ tránh được bằng cách **không dựng lại** — xem comment ở
 `PredictionHUDWindow.show`.
 
-⚠️ Trên máy ảo macOS 15.7, vùng shared memory **không** tăng theo; phần 16 KB
-mỗi lần chỉ thấy trên máy thật. Sau khi cài 4.29 phải đo lại trên máy thật
-(`vmmap --summary` + `heap`, sau vài giờ gõ có bật Đoán từ): cả ba số phải đứng yên.
+⚠️ Trên máy ảo macOS 15.7, vùng shared memory **không** tăng theo — vì nó vốn
+không đến từ HUD (xem mục kế tiếp). Thước đo rò HUD là ctx/dep, không phải shm.
 
 ```bash
 swiftc -parse-as-library -O Tools/probe/hudleak.swift -o /tmp/hudleak
 /tmp/hudleak rebuild 300     # rebuild | reuse | reuse-hide | hosting | blur
 ```
+
+---
+
+## Kết quả đã đo — shared memory 16 KB là event source, không phải HUD (v4.29)
+
+**Triệu chứng** — cài 4.29 (HUD đã dùng lại khung), đo 22 phút gõ trên máy thật:
+ctx/dep đứng yên (47/242), nhưng `shared memory` tăng 17 → 110.
+
+**Ai giữ vùng đó** — `leaks <pid> --outputGraph=x.memgraph` rồi
+`leaks --trace=<địa chỉ vùng> x.memgraph`: mọi vùng tăng thêm chỉ có một root,
+`SkyLight get_cache()::cache` → khối 768 B → nút 16 B → vùng 16 KB `r--/r--`.
+`get_cache()` nằm cạnh `server_create_event_source_state`,
+`CGSEventSourceShmemCreateFromMemoryEntry`,
+`CGSEventSourceCache::server_get_event_source_state_for_id` trong bảng symbol
+của SkyLight (tra bằng `lldb` → `image dump symtab SkyLight` trên một tiến trình
+AppKit bất kỳ) — tức là **cache trạng thái `CGEventSource`**.
+
+**Cơ chế** (tái hiện ngoài vkey, chỉ tạo rồi huỷ source, không post phím nào):
+
+| Tạo 50 lần | shm trước → sau | stateID khác nhau |
+|---|---|---|
+| `CGEventSource(stateID: .combinedSessionState)` | 1 → 1 | 1 |
+| `CGEventSource(stateID: .privateState)` | 1 → **52** | 50 |
+
+Mỗi source private có một state riêng kèm một trang 16 KB; SkyLight giữ trang
+đó tới khi tiến trình thoát, **kể cả khi source đã được giải phóng**.
+
+**Trong vkey** — mỗi lần thay chữ (batch / stepByStep / hybrid / fallback
+axDirect / Option+Backspace) tạo một `.privateState` mới. `keyprobe type` 20 lần
+`cas ` vào TextEdit: 4.29 → **+20** vùng; bản dùng chung một source
+(`EventSimulator.privateEventSource()`) → +2 (lần tạo source đầu tiên), rồi thêm
+5×`text ` (đường Option+Backspace) + `tieengs vieetj abc` → **+0**, chữ ra đúng,
+Option không kẹt.
+
+Khoá bằng ba test `PrivateEventSourceTests`: source phải là một object dùng lại
+và vẫn private (stateID ≠ 1); 40 lần lấy source không được thêm quá 4 vùng shm
+(đếm bằng `vmmap` trên chính tiến trình test); và cả cây `vkey/` chỉ có một chỗ
+viết `CGEventSource(stateID: .privateState)`.
 
 ---
 

@@ -8526,3 +8526,84 @@ final class DefaultsDerivedCacheTests: XCTestCase {
     XCTAssertFalse(manager.isVietnameseWord("abcxyz"))
   }
 }
+
+// MARK: - Nguồn phím .privateState dùng chung (rò 16 KB mỗi lần thay chữ)
+
+/// Mỗi `CGEventSource(stateID: .privateState)` mới được WindowServer cấp một
+/// state riêng kèm một trang shared memory 16 KB; SkyLight giữ trang đó trong
+/// `CGSEventSourceCache` tới khi tiến trình thoát, KỂ CẢ khi source đã được giải
+/// phóng. Đo trên máy thật (v4.29, 26/09/2026): 20 lần thay chữ → đúng +20 vùng
+/// `shared memory`. Tạo source mới cho mỗi lần gửi = rò không giới hạn.
+final class PrivateEventSourceTests: XCTestCase {
+  /// Số vùng `shared memory` của chính tiến trình test, đọc qua `vmmap`.
+  private func sharedMemoryRegionCount() -> Int? {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/vmmap")
+    process.arguments = ["--summary", "\(getpid())"]
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    process.standardError = FileHandle.nullDevice
+    guard (try? process.run()) != nil else { return nil }
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    guard process.terminationStatus == 0,
+          let text = String(data: data, encoding: .utf8),
+          let row = text.split(separator: "\n").first(where: { $0.hasPrefix("shared memory") }),
+          let last = row.split(separator: " ").last
+    else { return nil }
+    return Int(last)
+  }
+
+  func testPrivateEventSourceIsCreatedOnceAndReused() throws {
+    guard let first = EventSimulator.privateEventSource() else {
+      throw XCTSkip("CGEventSource(.privateState) trả nil trên máy này")
+    }
+    let second = try XCTUnwrap(EventSimulator.privateEventSource())
+    XCTAssertTrue(first === second,
+      "mỗi lần gửi phải dùng LẠI một source; source mới = một trang 16 KB SkyLight giữ mãi")
+    XCTAssertEqual(first.sourceStateID.rawValue, second.sourceStateID.rawValue)
+    // Bộ lọc self-event ở EventHook bỏ qua mọi event có stateID != 1 (hidSystemState).
+    XCTAssertNotEqual(first.sourceStateID.rawValue, CGEventSourceStateID.hidSystemState.rawValue,
+      "source dùng chung vẫn phải là private — stateID 1 thì vkey tự xử lý lại phím của chính nó")
+  }
+
+  func testRepeatedSendsDoNotMapNewSharedMemory() throws {
+    guard let before = sharedMemoryRegionCount() else {
+      throw XCTSkip("không chạy được vmmap để đếm shared memory")
+    }
+    for _ in 0..<40 { _ = EventSimulator.privateEventSource() }
+    guard let after = sharedMemoryRegionCount() else {
+      throw XCTSkip("không chạy được vmmap để đếm shared memory")
+    }
+    XCTAssertLessThan(after - before, 5,
+      "40 lần lấy nguồn phím làm tăng \(after - before) vùng shared memory — "
+        + "đang tạo `.privateState` mới mỗi lần (rò 16 KB/lần, xem CGSEventSourceCache)")
+  }
+
+  /// Lưới ở mức NGUỒN: mọi đường gửi phải lấy source qua `privateEventSource()`.
+  /// Một `CGEventSource(stateID: .privateState)` viết thẳng ở chỗ khác là mở lại
+  /// đúng lỗ rò này.
+  func testNoSendPathCreatesItsOwnPrivateSource() throws {
+    let appRoot = URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent()   // vkeyTests/
+      .deletingLastPathComponent()   // <repo>
+      .appendingPathComponent("vkey")
+    guard let walker = FileManager.default.enumerator(atPath: appRoot.path) else {
+      throw XCTSkip("không đọc được \(appRoot.path) — lưới bổ sung, bỏ qua")
+    }
+    var sites: [String] = []
+    for case let rel as String in walker where rel.hasSuffix(".swift") {
+      guard let text = try? String(contentsOf: appRoot.appendingPathComponent(rel), encoding: .utf8)
+      else { continue }
+      for (n, line) in text.components(separatedBy: "\n").enumerated() {
+        let t = line.trimmingCharacters(in: .whitespaces)
+        if t.hasPrefix("//") || t.hasPrefix("*") { continue }
+        if line.contains("CGEventSource(stateID: .privateState)") { sites.append("\(rel):\(n + 1)") }
+      }
+    }
+    XCTAssertEqual(sites.count, 1,
+      "chỉ `EventSimulator.privateEventSource()` được tạo nguồn `.privateState`. Thấy: \(sites)")
+    XCTAssertTrue(sites.first?.hasPrefix("Platform/EventSimulator.swift:") ?? false,
+      "…và chỗ đó phải nằm trong Platform/EventSimulator.swift. Thấy: \(sites)")
+  }
+}

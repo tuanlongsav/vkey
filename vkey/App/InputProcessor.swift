@@ -1855,7 +1855,7 @@ class InputProcessor {
       // - Display before space (có thể bị bug): "gooogle" hoặc "google".
       // - Option+Backspace: delete word "gooogle" hoặc "google" → "".
       // - sendString "google ": insert correct word + space → "google ". ✓
-      let source = CGEventSource(stateID: .privateState)
+      let source = EventSimulator.privateEventSource()
       // v4.15: cùng nguyên tắc — dạng gửi bám theo field. Path này chủ yếu cho
       // app NFD (Chromium/Claude/Notes) nên gửi nguyên; field NFC precompose.
       // Đây là đường phát DUY NHẤT không đi qua `EmitPlan.Replacement`, vì nó
