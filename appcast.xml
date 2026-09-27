@@ -6,6 +6,28 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.31 — "Hết nhân đôi chữ"</title>
+      <sparkle:version>43100</sparkle:version>
+      <sparkle:shortVersionString>4.31</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 28 Sep 2026 00:45:50 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.31/vkey-4.31.dmg"
+        sparkle:edSignature="OSn0iegrvhrTof2i6esDTGBg5SHFiKTm3M76+Y/OvI7i86I8ciJeeCOFtAC8+gkozQEAlgGMqIbEI9hXXYsKCg=="
+        length="6590523"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.31 — Hết nhân đôi chữ</h2>
+        <p><b>Bản sửa lỗi gõ, nên cập nhật nếu hay gõ tên riêng/thuật ngữ tiếng Anh hoặc gõ vào thanh địa chỉ Chrome.</b></p>
+        <ul>
+          <li><b>Space không còn gõ lại phím huỷ dấu</b> — gõ "photo" thấy "phôt", bấm thêm o để về "photo" thì Space giữ đúng "photonicat", không ra "photoonicat". Đúng cho mọi kiểu huỷ bằng gõ đúp aa/oo/ee/ww/dd.</li>
+          <li><b>Thanh địa chỉ Chrome không còn tự nhận gợi ý trang</b> — trước đây gõ "photonicat" khi Chrome đang gợi ý photonicat.com ra "phototonicaticat.com". Nay gợi ý vẫn bôi đen như khi gõ bình thường; Backspace chỉ xoá phần gợi ý.</li>
+        </ul>
+        <p>438 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.30 — "Hết rò RAM khi gõ"</title>
       <sparkle:version>43000</sparkle:version>
       <sparkle:shortVersionString>4.30</sparkle:shortVersionString>
