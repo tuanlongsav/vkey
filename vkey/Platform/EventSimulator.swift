@@ -711,29 +711,96 @@ class EventSimulator {
       return false
     }
 
-    // Đặt con trỏ ngay sau text vừa chèn.
-    var newSel = CFRange(location: start + (insertNFC as NSString).length, length: 0)
-    if let newRange = AXValueCreate(.cfRange, &newSel) {
-      AXUIElementSetAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, newRange)
+    // Đặt con trỏ ngay sau text vừa chèn — TRỪ KHI field đã tự để nó đúng chỗ.
+    // Omnibox Chrome nhận AXValue qua `SetUserText(update_popup: true)`,
+    // tự điền gợi ý trang và bôi đen phần đuôi. Đặt lại con trỏ lúc này là đổi
+    // selection = Chrome chấp nhận gợi ý, đuôi thành chữ thật và phím kế tiếp
+    // chèn vào giữa. Xem `axShouldPlaceCaret`.
+    let targetCaret = start + (insertNFC as NSString).length
+    let written = Self.axReadValueAndSelection(element)
+    if Self.axShouldPlaceCaret(
+      selectionAfterWrite: written.selection, targetCaret: targetCaret,
+      valueLength: ((written.value ?? newValue) as NSString).length)
+    {
+      var newSel = CFRange(location: targetCaret, length: 0)
+      if let newRange = AXValueCreate(.cfRange, &newSel) {
+        AXUIElementSetAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, newRange)
+      }
     }
 
     // v2.14 (theo PHTV): VERIFY khi có xoá — một số app trả success nhưng áp
     // async hoặc âm thầm bỏ. Không verify thì tưởng thành công trong khi field
     // không đổi → "vẫn lỗi" mà không có dấu vết.
     guard backspaceCount > 0 else { return true }
-    let wantNFC = newValue.precomposedStringWithCanonicalMapping
+    var got = written.value
     for attempt in 0..<2 {
-      var vRef: CFTypeRef?
-      if AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &vRef) == .success {
-        let gotNFC = ((vRef as? String) ?? "").precomposedStringWithCanonicalMapping
-        if gotNFC == wantNFC { return true }
-        // Spotlight có thể đã gắn lại suffix autocomplete mới sau khi ghi.
-        if selectionAtEnd && gotNFC.hasPrefix(wantNFC) { return true }
+      if attempt > 0 {
+        usleep(2000)
+        got = Self.axReadValueAndSelection(element).value
       }
-      if attempt == 0 { usleep(2000) }
+      if let got, Self.axWriteLanded(
+        oldValue: valueStr, wanted: newValue, got: got, hadSuffixSelection: selectionAtEnd)
+      {
+        return true
+      }
     }
     os_log("axDirect: verify FAILED (write not applied)", log: axLog, type: .default)
     return false
+  }
+
+  /// Đọc AXValue và AXSelectedTextRange của ô vừa ghi. Chạy trên
+  /// `simulationQueue`, cùng ngân sách AX với `axFocusedElement`.
+  private static func axReadValueAndSelection(
+    _ element: AXUIElement
+  ) -> (value: String?, selection: CFRange?) {
+    var valueRef: CFTypeRef?
+    let value = AXUIElementCopyAttributeValue(
+      element, kAXValueAttribute as CFString, &valueRef) == .success
+      ? (valueRef as? String) : nil
+    var rangeRef: CFTypeRef?
+    var selection: CFRange?
+    if AXUIElementCopyAttributeValue(
+         element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
+       let rv = rangeRef, CFGetTypeID(rv) == AXValueGetTypeID() {
+      var sel = CFRange()
+      if AXValueGetValue(rv as! AXValue, .cfRange, &sel) { selection = sel }
+    }
+    return (value, selection)
+  }
+
+  /// Có cần đặt lại con trỏ sau khi ghi AXValue không.
+  ///
+  /// Không, khi caret ĐÃ nằm ngay sau chữ vừa ghi — kể cả khi kèm một vùng bôi
+  /// đen kéo tới cuối ô, vì đó là gợi ý field vừa tự điền (omnibox Chrome,
+  /// Spotlight). Giữ vùng đó y như lúc gõ phím thật: phím kế tiếp thay nó, gợi ý
+  /// không bị chấp nhận. Mọi trường hợp khác (field đẩy caret về cuối khi sửa
+  /// giữa chuỗi, hoặc không đọc được selection) đặt lại như trước.
+  static func axShouldPlaceCaret(
+    selectionAfterWrite: CFRange?, targetCaret: Int, valueLength: Int
+  ) -> Bool {
+    guard let sel = selectionAfterWrite, sel.location == targetCaret else { return true }
+    let isSuggestionTail = sel.location + sel.length == valueLength
+    return !(sel.length == 0 || isSuggestionTail)
+  }
+
+  /// Lần ghi AXValue đã tới field chưa (so sau chuẩn hoá NFC).
+  ///
+  /// Tới rồi khi field khớp đúng chữ đã ghi, hoặc khi field ĐÃ ĐỔI so với trước
+  /// lúc ghi dù không khớp từng chữ — thường là omnibox vừa gắn thêm gợi ý trang.
+  /// Trước đây ca sau bị coi là thất bại: vòng thử lại ghi CHỒNG phép thay thế
+  /// lên chữ đã sửa (lặp chữ), hết lượt còn rơi xuống `sendSpotlightFallback`.
+  /// Chỉ khi field y nguyên mới là chưa tới, và chỉ khi đó thử lại mới an toàn.
+  ///
+  /// `hadSuffixSelection`: luật cũ của Spotlight — ô đang bôi đen đuôi gợi ý từ
+  /// TRƯỚC khi ghi, đọc lại mà vẫn bắt đầu bằng chữ đã ghi thì coi là tới.
+  static func axWriteLanded(
+    oldValue: String, wanted: String, got: String, hadSuffixSelection: Bool
+  ) -> Bool {
+    let gotNFC = got.precomposedStringWithCanonicalMapping
+    let wantNFC = wanted.precomposedStringWithCanonicalMapping
+    if gotNFC == wantNFC { return true }
+    if hadSuffixSelection && gotNFC.hasPrefix(wantNFC) { return true }
+    return gotNFC != oldValue.precomposedStringWithCanonicalMapping
   }
 
   /// Lùi từ caret `backspaceCount` "phím xoá" trong không gian UTF-16.

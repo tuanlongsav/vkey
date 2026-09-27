@@ -13,7 +13,16 @@
   Space giữ nguyên chữ đang hiện; phím thô là từ tiếng Anh đã biết thì vẫn khôi
   phục như cũ. Quét 239.273 từ: gõ-có-huỷ ra sai 8.633 → 0; đánh đổi 55 từ hiếm
   gõ thẳng không có trong từ điển (mongoose, veneer…) nay giữ chữ đang hiện.
-- +1 test.
+- **Thanh địa chỉ Chrome không còn tự nhận gợi ý trang** — ghi chữ qua
+  Accessibility làm Chrome tự điền gợi ý (phần đuôi bôi đen); vkey đặt lại con
+  trỏ ngay sau đó, mà đổi vùng chọn là Chrome chấp nhận gợi ý, nên gợi ý dính
+  thành chữ thật và phím sau chèn vào giữa: gõ "photonicat" ra
+  "phototonicaticat.com" (đã tái hiện trên Chrome 153). Nay giữ nguyên vùng gợi ý
+  như khi gõ phím thường; lần kiểm tra sau ghi thấy ô đã đổi thì không ghi lặp
+  nữa; Space khôi phục tiếng Anh trong ô này đi đường Accessibility thay vì
+  Option+Backspace (vốn chỉ xoá phần gợi ý rồi gõ thêm cả từ); Backspace khi đang
+  có gợi ý bôi đen chỉ xoá gợi ý, không bớt chữ trong bộ đệm.
+- +3 test.
 
 ## [4.30] - 2026-09-27 — "Hết rò RAM khi gõ"
 

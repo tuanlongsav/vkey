@@ -5051,6 +5051,49 @@ final class ZWJFOffTelexTests: XCTestCase {
 /// an toàn với app lưu NFD (ô = o + combining ◌̂) như Spotlight.
 final class AXDeleteStartTests: XCTestCase {
 
+  /// Omnibox Chrome. Ghi AXValue đi vào `SetUserText(text, update_popup:
+  /// true)` nên Chrome chạy lại gợi ý và tự điền phần đuôi, BÔI ĐEN. Đặt lại
+  /// con trỏ lúc đó là đổi selection, mà "Modifying the selection accepts any
+  /// inline autocompletion" (omnibox_edit_model.cc) → gợi ý trang dính thành chữ
+  /// thật, phím sau chèn vào giữa. Field đã tự để caret đúng chỗ thì đừng đụng.
+  func testCaretLeftAloneWhenFieldAlreadyPlacedIt() throws {
+    // Vừa ghi "photon", Chrome tự điền "icat.com" và bôi đen phần đó.
+    XCTAssertFalse(EventSimulator.axShouldPlaceCaret(
+      selectionAfterWrite: CFRange(location: 6, length: 8), targetCaret: 6, valueLength: 14))
+    // Không có gợi ý, caret đã ở ngay sau chữ vừa ghi.
+    XCTAssertFalse(EventSimulator.axShouldPlaceCaret(
+      selectionAfterWrite: CFRange(location: 6, length: 0), targetCaret: 6, valueLength: 6))
+    // Sửa giữa chuỗi: field đẩy caret về cuối → vẫn phải đặt lại như trước.
+    XCTAssertTrue(EventSimulator.axShouldPlaceCaret(
+      selectionAfterWrite: CFRange(location: 20, length: 0), targetCaret: 6, valueLength: 20))
+    // Bôi đen không nằm ở cuối thì không phải gợi ý tự điền.
+    XCTAssertTrue(EventSimulator.axShouldPlaceCaret(
+      selectionAfterWrite: CFRange(location: 6, length: 3), targetCaret: 6, valueLength: 14))
+    // Không đọc được selection → đặt như trước.
+    XCTAssertTrue(EventSimulator.axShouldPlaceCaret(
+      selectionAfterWrite: nil, targetCaret: 6, valueLength: 6))
+  }
+
+  /// Kiểm tra sau khi ghi. Field đã ĐỔI thì lần ghi đã tới nơi, dù không
+  /// khớp từng chữ (Chrome vừa gắn thêm gợi ý). Coi đó là thất bại thì vòng thử
+  /// lại ghi CHỒNG lên chữ đã sửa ("photon" + gợi ý → "phototon…") rồi còn rơi
+  /// xuống đường gửi phím giả.
+  func testWriteLandedWhenFieldChangedEvenIfNotExact() throws {
+    XCTAssertTrue(EventSimulator.axWriteLanded(
+      oldValue: "phôt", wanted: "photon", got: "photon", hadSuffixSelection: false))
+    XCTAssertTrue(EventSimulator.axWriteLanded(
+      oldValue: "phôt", wanted: "photon", got: "photonicat.com", hadSuffixSelection: false))
+    // So sánh sau chuẩn hoá: field trả NFD vẫn là khớp.
+    XCTAssertTrue(EventSimulator.axWriteLanded(
+      oldValue: "phot", wanted: "ph\u{00F4}t", got: "pho\u{0302}t", hadSuffixSelection: false))
+    // Field y nguyên → lần ghi chưa tới, thử lại mới an toàn.
+    XCTAssertFalse(EventSimulator.axWriteLanded(
+      oldValue: "phôt", wanted: "photon", got: "phôt", hadSuffixSelection: false))
+    // Luật cũ của Spotlight giữ nguyên: đuôi bôi đen sẵn, đọc lại còn đuôi.
+    XCTAssertTrue(EventSimulator.axWriteLanded(
+      oldValue: "safari", wanted: "sa", got: "safari", hadSuffixSelection: true))
+  }
+
   func testNFCSimple() throws {
     // "gõ" NFC: g(1) + õ(1) = length 2; xoá 1 → lùi về sau 'g'
     let s = "g\u{00F5}"

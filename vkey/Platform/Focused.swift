@@ -268,6 +268,27 @@ public struct Focused {
     }
     return false
   }
+
+  /// Ô đang focus có vùng bôi đen không (độ dài > 0). Dùng cho Backspace
+  /// trong ô có gợi ý tự điền (omnibox Chrome, Spotlight): phím xoá thật chỉ xoá
+  /// phần gợi ý, không xoá chữ đã gõ. Không đọc được thì trả false (giữ hành vi
+  /// cũ).
+  ///
+  /// F4: chạy trên TAP THREAD, chỉ khi bấm Backspace trong ô đi `.axDirect`,
+  /// nên dùng ngân sách đường nóng.
+  public static func focusedTextHasSelection() -> Bool {
+    guard let el = focusedElement(timeout: hotPathAXTimeout) else { return false }
+    AXUIElementSetMessagingTimeout(el, hotPathAXTimeout)
+    var rangeRef: CFTypeRef?
+    guard
+      AXUIElementCopyAttributeValue(
+        el, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
+      let rv = rangeRef, CFGetTypeID(rv) == AXValueGetTypeID()
+    else { return false }
+    var sel = CFRange()
+    guard AXValueGetValue(rv as! AXValue, .cfRange, &sel) else { return false }
+    return sel.length > 0
+  }
 }
 
 extension AXUIElement {

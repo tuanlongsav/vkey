@@ -1328,7 +1328,19 @@ class InputProcessor {
       // nên nó đo vô điều kiện, kể cả khi bộ đệm rỗng và `pop` sắp trả `(0, [])`;
       // vô hại vì `currentFieldKind()` chỉ đọc giá trị `AppState` đã đẩy sang,
       // không phải một round-trip AX, và không có gì được ghi nhớ.
-      let replacement = pop(plan: emitPlan())
+      let plan = emitPlan()
+      // Ô có gợi ý tự điền (omnibox Chrome, Spotlight) đang bôi đen phần
+      // đuôi gợi ý ⇒ Backspace thật CHỈ xoá phần đó, chữ đã gõ còn nguyên. Bớt
+      // một phím trong bộ đệm lúc này làm bộ đệm lệch màn hình, và lần thay chữ
+      // kế tiếp xoá nhầm ("phot" + Backspace + 's' → "phó" thay vì "phót"). Để
+      // phím đi thẳng, bộ đệm (và từ vừa commit) giữ nguyên. Bộ đệm còn chữ thì
+      // vùng bôi đen chỉ có thể là gợi ý: chuột, phím mũi tên và ⌘A đều đã xoá
+      // bộ đệm trước khi người gõ tự bôi đen được — mà khi bộ đệm rỗng thì để
+      // phím đi thẳng cũng chính là hành vi cũ.
+      if sendsViaAXDirect(plan), Focused.focusedTextHasSelection() {
+        return Unmanaged.passUnretained(event)
+      }
+      let replacement = pop(plan: plan)
       if !replacement.isEmpty {
         sendTypedReplacement(replacement)
         return nil
@@ -1652,16 +1664,7 @@ class InputProcessor {
     // đã gỡ) — nên hành vi chọn chiến lược không đổi.
     let appStrategy = EventSimulator.getStrategy(for: activeApp)
 
-    // axDirect (set qua bundle-id getStrategy) KHÔNG được downgrade — đa số
-    // transform dấu là bs=1+diff=1; downgrade về .batch sẽ gửi synthetic event
-    // vào Spotlight và loạn chữ trở lại.
-    if case .axDirect = appStrategy {
-      return .axDirect
-    }
-    // v3.9: browser-chrome field (thanh địa chỉ Chrome…) có inline autocomplete
-    // bôi đen → synthetic backspace lệch. Dùng axDirect (đọc value thật, xử lý
-    // suffix-selection như Spotlight). axDirect fail → tự fallback synthetic.
-    if plan.fieldIsBrowserChrome {
+    if sendsViaAXDirect(plan) {
       return .axDirect
     }
     // `.stepByStep` KHÔNG được miễn trừ ở đây — xem mục (c)/(d) trong docstring
@@ -1673,6 +1676,21 @@ class InputProcessor {
       return .batch
     }
     return appStrategy
+  }
+
+  /// Ô này thay chữ bằng `.axDirect`, trước mọi luật hạ cấp của
+  /// `effectiveTypingStrategy`. Cũng là tín hiệu "ô có gợi ý tự điền bôi đen"
+  /// cho Backspace và cho lần khôi phục khi Space.
+  ///
+  /// - axDirect theo bundle (Spotlight…) KHÔNG được downgrade — đa số transform
+  ///   dấu là bs=1+diff=1; downgrade về .batch sẽ gửi synthetic event vào
+  ///   Spotlight và loạn chữ trở lại.
+  /// - v3.9: browser-chrome field (thanh địa chỉ Chrome…) có inline autocomplete
+  ///   bôi đen → synthetic backspace lệch. Dùng axDirect (đọc value thật, xử lý
+  ///   suffix-selection như Spotlight). axDirect fail → tự fallback synthetic.
+  private func sendsViaAXDirect(_ plan: EmitPlan) -> Bool {
+    if case .axDirect = EventSimulator.getStrategy(for: activeApp) { return true }
+    return plan.fieldIsBrowserChrome
   }
 
   /// App cần giữ nhịp nghỉ của chiến lược gốc (thường `.stepByStep`) cả ở
@@ -1842,6 +1860,16 @@ class InputProcessor {
         endingChar: endingChar,
         includeEndingChar: swallowEndingChar
       )
+      let plan = emitPlan()
+      // Ô đi `.axDirect` (omnibox Chrome, Spotlight) thay bằng CHÍNH đường
+      // axDirect, không Option+Backspace. Ô này hay đang bôi đen gợi ý tự điền,
+      // và Option+Backspace khi có vùng bôi đen chỉ xoá vùng đó: chữ cũ còn
+      // nguyên rồi cả từ được gõ thêm vào sau ("tẽt" → "tẽttext "). axDirect đọc
+      // giá trị thật của ô nên không vướng lý do v2.3.15 bên dưới.
+      if sendsViaAXDirect(plan) {
+        sendTypedReplacement(plan.replacement(from: current, to: target))
+        return true
+      }
       // v2.3.15: Option+Backspace + sendString để wipe entire word + retype.
       // Lý do: trong các app có round-trip CGEvent issues (Chromium / Claude
       // desktop / thậm chí Notes với combining diacritic), display có thể
@@ -1862,7 +1890,7 @@ class InputProcessor {
       // xoá bằng Option+Backspace (xoá cả TỪ) chứ không đếm backspace — không có
       // số đếm nào để lệch với dạng phát. Vẫn lấy trục qua `emitPlan()` để chỉ
       // có MỘT chỗ đọc field trong cả file.
-      let typed = emitPlan().usesNFC
+      let typed = plan.usesNFC
         ? target.precomposedStringWithCanonicalMapping
         : target
       EventSimulator.simulationQueueAsync {
