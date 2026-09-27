@@ -2,6 +2,19 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [Chưa phát hành]
+
+### 🐛 Sửa lỗi gõ
+
+- **Space không còn gõ lại phím huỷ dấu** — gõ "photo" thấy "phôt", bấm thêm
+  `o` để huỷ mũ thì màn hình đúng "photonicat", nhưng Space lại "khôi phục tiếng
+  Anh" về chuỗi phím thô "photoonicat" (thừa chính phím huỷ). Nay màn hình đã là
+  chữ Latin trơn và chỉ thiếu phím lặp (`aa`/`oo`/`ee`/`ww`/`ddd`) liền kề thì
+  Space giữ nguyên chữ đang hiện; phím thô là từ tiếng Anh đã biết thì vẫn khôi
+  phục như cũ. Quét 239.273 từ: gõ-có-huỷ ra sai 8.633 → 0; đánh đổi 55 từ hiếm
+  gõ thẳng không có trong từ điển (mongoose, veneer…) nay giữ chữ đang hiện.
+- +1 test.
+
 ## [4.30] - 2026-09-27 — "Hết rò RAM khi gõ"
 
 **Bản sửa lỗi bộ nhớ, nên cập nhật — áp dụng cho mọi người gõ tiếng Việt, không

@@ -754,6 +754,69 @@ final class vkeyTests: XCTestCase {
       rawInput: "abc", transformed: "abc"))
   }
 
+  /// Gõ lặp phím để HUỶ mũ/móc/đ ("phôt" + o → "photo") thì màn hình đã
+  /// là chữ Latin trơn, đúng chữ người gõ muốn. Space KHÔNG được "khôi phục
+  /// tiếng Anh" về chuỗi phím thô — chuỗi đó còn chứa chính phím huỷ, nên
+  /// "photonicat" thành "photoonicat". Quét 237k từ /usr/share/dict/words: 8.576
+  /// từ dính (huỷ bằng aa 2.441, oo 2.149, ee 1.639, ww 1.535, dd 812), gần hết
+  /// là tên riêng/thuật ngữ ngoài từ điển EN — từ trong từ điển thì đã được nhánh
+  /// "transformed là từ EN" giữ lại. Huỷ dấu thanh (ss/ff/…) không dính vì luật
+  /// doubledTones đã keepRaw từ trước.
+  func testCommitKeepsPlainDisplayAfterTelexCancel() throws {
+    let oldZWJF = Defaults[.allowedZWJF]
+    defer { Defaults[.allowedZWJF] = oldZWJF }
+    Defaults[.allowedZWJF] = true
+
+    let cases: [(keys: String, shown: String)] = [
+      ("photoonicat", "photonicat"),  // oo huỷ ô của mũ gõ trễ (phot+o)
+      ("momoo", "momo"),
+      ("acaacia", "acacia"),          // aa huỷ â
+      ("deteector", "detector"),      // ee huỷ ê
+      ("cowwl", "cowl"),              // ww huỷ móc
+      ("cadddy", "caddy"),            // ddd huỷ đ
+      ("Photoonicat", "Photonicat"),  // viết hoa đầu câu
+    ]
+    for c in cases {
+      let ip = InputProcessor(method: .Telex)
+      ip.newWord()
+      for ch in c.keys { ip.push(char: ch) }
+      XCTAssertEqual(ip.transformed, c.shown, "màn hình trước Space khi gõ \(c.keys)")
+      let decision = SpellDecisionEngine.shared.evaluate(
+        rawInput: c.keys, transformed: ip.transformed,
+        needsRecovery: ip.wordBuffer.wordState.needsRecovery || ip.wordBuffer.stopProcessing)
+      XCTAssertEqual(decision, .keepRaw, "\(c.keys): Space phải giữ \"\(c.shown)\"")
+    }
+
+    // Màn hình CÒN dấu Việt thì vẫn khôi phục như cũ ("text" → "tẽt").
+    XCTAssertEqual(
+      SpellDecisionEngine.shared.evaluate(rawInput: "text", transformed: "tẽt", needsRecovery: true),
+      .restoreRawEnglish("text"))
+
+    // Phần chênh giữa phím thô và màn hình phải TOÀN là phím dấu Telex — chênh
+    // bằng chữ khác thì không phải dấu vết của phím huỷ.
+    XCTAssertTrue(SpellDecisionEngine.isTelexCancelResidue(
+      rawInput: "photoonicat", transformed: "photonicat"))
+    XCTAssertTrue(SpellDecisionEngine.isTelexCancelResidue(
+      rawInput: "gooogle", transformed: "google"))
+    XCTAssertFalse(SpellDecisionEngine.isTelexCancelResidue(
+      rawInput: "photonicat", transformed: "photonicat"))  // không chênh
+    XCTAssertFalse(SpellDecisionEngine.isTelexCancelResidue(
+      rawInput: "photonnicat", transformed: "photonicat")) // chênh 'n'
+    XCTAssertFalse(SpellDecisionEngine.isTelexCancelResidue(
+      rawInput: "text", transformed: "tẽt"))               // màn hình có dấu
+    XCTAssertFalse(SpellDecisionEngine.isTelexCancelResidue(
+      rawInput: "a11", transformed: "a1"))                 // VNI: không phải chữ
+    // Phím thanh bị nuốt khi gõ THẲNG một từ tiếng Anh — không phải phím huỷ,
+    // Space vẫn phải khôi phục ("Jesus" → màn hình "Jeu").
+    XCTAssertFalse(SpellDecisionEngine.isTelexCancelResidue(
+      rawInput: "Jesus", transformed: "Jeu"))
+    XCTAssertFalse(SpellDecisionEngine.isTelexCancelResidue(
+      rawInput: "asks", transformed: "ak"))
+    // Phím lặp chữ không đứng liền phím giống nó thì không phải phím huỷ.
+    XCTAssertFalse(SpellDecisionEngine.isTelexCancelResidue(
+      rawInput: "banana", transformed: "bnana"))
+  }
+
   /// v2.3.7 — Universal anywhere-DD: hoạt động ngay cả khi Free Mark Mode bật.
   /// Free Mark Mode bypass `needsRecovery` → `stopProcessing` không được set →
   /// existing anywhere-DD (gated bởi stopProcessing) không fire. Universal rule
