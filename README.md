@@ -8,7 +8,14 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.30](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 435 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.31](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 438 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.31
+
+**Bản sửa lỗi gõ, nên cập nhật nếu hay gõ tên riêng/thuật ngữ tiếng Anh hoặc gõ vào thanh địa chỉ Chrome.**
+
+- **Space không còn gõ lại phím huỷ dấu** — gõ "photo" thấy "phôt", bấm thêm `o` để về "photo" thì Space giữ đúng "photonicat", không ra "photoonicat". Đúng cho mọi kiểu huỷ bằng gõ đúp `aa`/`oo`/`ee`/`ww`/`dd`; thử trên 239 nghìn từ tiếng Anh: 8.633 từ trước đây ra sai, nay ra đúng hết.
+- **Thanh địa chỉ Chrome không còn tự nhận gợi ý trang** — trước đây gõ "photonicat" khi Chrome đang gợi ý photonicat.com ra "phototonicaticat.com". Nay gợi ý vẫn bôi đen như khi gõ bình thường; Backspace chỉ xoá phần gợi ý, không xoá nhầm chữ đã gõ.
 
 ## Mới ở v4.30
 
@@ -164,7 +171,7 @@ Nút **Sáng / Tối / Hệ thống** nằm trên thanh tiêu đề cửa sổ C
 
 | Phím | Tác dụng |
 |------|----------|
-| **Space** | Khôi phục từ tiếng Anh bị gõ nhầm (Space Restore) |
+| **Space** | Khôi phục từ tiếng Anh bị gõ nhầm (Space Restore); đã gõ đúp để huỷ dấu thì giữ nguyên chữ đang hiện |
 | **Esc** | Hoàn tác về phím thô, reset buffer |
 | **Tab** | Chấp nhận gợi ý HUD (1–3 từ, mặc định 2). Gợi ý sinh ra sau mỗi lần kết từ bằng Space và còn hiệu lực cả khi bạn đã gõ dở từ kế — lúc đó Tab kết từ đang gõ rồi mới chèn gợi ý. Enter / click / dời con trỏ sẽ huỷ gợi ý, Tab trả về hành vi gốc |
 | **ss/ff/rr/xx/jj** | Giữ phím đúp cho từ tiếng Anh (`staff`, `off`…) |
