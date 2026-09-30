@@ -265,6 +265,33 @@ struct WordBuffer {
   mutating func pop(engine: TypingMethod, usesNFC: Bool) -> (Int, [Character]) {
     lastTransformed = transformed
 
+    // Từ đang hiện đúng chuỗi phím thô của một từ không phải tiếng Việt
+    // (khoá English). Backspace phải bỏ đúng một ký tự đó, không replay Telex:
+    // replay biến "text" thành "tẽ", "pass" thành "pá". Snapshot một bước phía
+    // dưới dành cho lần vừa chệch khỏi âm tiết Việt hợp lệ ("hồ"+"z"→"hoofz").
+    if stoppedByEnglishWord, transformed == String(keys), !keys.isEmpty {
+      keys.removeLast()
+      transformed = String(keys)
+      lastValidSnapshot = nil
+      ddToggleStage = 0
+      if keys.isEmpty {
+        stopProcessing = false
+        stoppedByEnglishWord = false
+        wordState = .empty
+      } else {
+        stopProcessing = true
+        stoppedByEnglishWord = true
+        wordState = .empty
+        for k in keys { wordState = wordState.push(k) }
+      }
+      let (numBackspaces, diffChars) = EventSimulator.calcKeyStrokes(
+        from: lastTransformed, to: transformed, usesNFC: usesNFC)
+      if numBackspaces == 1 && diffChars.isEmpty {
+        return (0, [])
+      }
+      return (numBackspaces, diffChars)
+    }
+
     // Single-step rollback: if we are in recovery and it was caused by the LATEST keystroke
     if stopProcessing, let valid = lastValidSnapshot, keys.count == valid.keys.count + 1 {
       wordState = valid.wordState
@@ -935,6 +962,16 @@ class InputProcessor {
   // 2.0.2 (J1): xoá `activePredictionCandidates: [String]` — predict về top-1
   // only, không cần lưu danh sách candidates.
 
+  /// Shift do bàn phím thật báo qua `flagsChanged`.
+  ///
+  /// `nil` khi chưa có cờ (test gọi thẳng `handleEvent`, hoặc tap chưa bật) —
+  /// khi đó tin `maskShift` trên chính event. EventHook gán `true`/`false` từ
+  /// modifier thật. Chữ HOA tự tổng hợp (viết hoa đầu câu) làm macOS giữ Shift
+  /// trên phím kế tiếp dù ngón tay không giữ Shift: hai ký tự đầu thành chữ
+  /// hoa, và Backspace đi kèm Shift nên không xoá được chữ. Khi giá trị này
+  /// là `false`, bỏ `maskShift` trên phím chữ / Backspace trả về app.
+  public var hardwareShiftDown: Bool?
+
   // 2.0 (A5): auto-capitalize state machine.
   // - `sentenceJustEnded`: `. ! ?` vừa commit, chưa có space — chờ promote.
   // - `pendingCapitalize`: đầu câu thật (sau Enter, hoặc `. ! ?` rồi space).
@@ -1228,7 +1265,10 @@ class InputProcessor {
   public func handleEvent(event: CGEvent) -> Unmanaged<CGEvent>? {
     let flags = event.flags
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-    let isShift = flags.contains(.maskShift)
+    let eventShift = flags.contains(.maskShift)
+    // Shift kẹt sau chữ hoa tổng hợp: event mang maskShift nhưng bàn phím
+    // thật không giữ Shift. `nil` = chưa theo dõi → tin event (test).
+    let isShift = hardwareShiftDown.map { eventShift && $0 } ?? eventShift
     // Caps Lock chỉ đảo hoa/thường cho PHÍM CHỮ; số/keypad/dấu câu không đổi.
     // Shift + Caps Lock trên chữ cái = chữ thường (XOR, đúng hành vi macOS).
     let isCapsLock = keyLayout.isLetterKey(keyCode: keyCode) && flags.contains(.maskAlphaShift)
@@ -1259,6 +1299,21 @@ class InputProcessor {
       return handleTextChar(newChar, event: event)
     }
 
+    return passThrough(event)
+  }
+
+  /// Trả event về app. Nếu Shift chỉ dính trên event (bàn phím thật không giữ
+  /// Shift) thì gỡ cờ, để chữ thứ hai sau viết-hoa-đầu-câu không thành chữ hoa
+  /// và Backspace không thành Shift+Backspace (không xoá được).
+  private func passThrough(_ event: CGEvent) -> Unmanaged<CGEvent> {
+    if hardwareShiftDown == false,
+       event.flags.contains(.maskShift),
+       !event.flags.contains(.maskCommand),
+       !event.flags.contains(.maskControl),
+       !event.flags.contains(.maskAlternate)
+    {
+      event.flags.remove(.maskShift)
+    }
     return Unmanaged.passUnretained(event)
   }
 
@@ -1282,7 +1337,7 @@ class InputProcessor {
       if injectAcceptedPrediction(prediction) {
         return nil  // swallow Tab
       }
-      return Unmanaged.passUnretained(event)
+      return passThrough(event)
     }
 
     if InputProcessor.NewWordTaskKeys.contains(taskKey) {
@@ -1338,7 +1393,7 @@ class InputProcessor {
       // bộ đệm trước khi người gõ tự bôi đen được — mà khi bộ đệm rỗng thì để
       // phím đi thẳng cũng chính là hành vi cũ.
       if sendsViaAXDirect(plan), Focused.focusedTextHasSelection() {
-        return Unmanaged.passUnretained(event)
+        return passThrough(event)
       }
       let replacement = pop(plan: plan)
       if !replacement.isEmpty {
@@ -1349,7 +1404,7 @@ class InputProcessor {
       newWord()
       resetSentenceCapitalizeState()  // mũi tên/Home/End dời con trỏ → huỷ chờ viết hoa
     }
-    return Unmanaged.passUnretained(event)
+    return passThrough(event)
   }
 
   private func handleTextChar(_ incomingChar: Character, event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -1372,7 +1427,7 @@ class InputProcessor {
       newWord(storePrevious: true)
       // Dấu câu kết từ trả về app như event THẬT. (Đã thử hoãn nó qua
       // `passThroughOrDefer` — đã lùi, xem `effectiveTypingStrategy`.)
-      return Unmanaged.passUnretained(event)
+      return passThrough(event)
     }
 
     // 2.0 (A5): viết hoa chữ cái đầu sau Enter hoặc sau . ! ? kèm space.
@@ -1437,7 +1492,7 @@ class InputProcessor {
       // `simulationQueue` async) tách nhau — nguồn của race "push" → "pussh".
       // Cách chống race vẫn là hạ chiến lược xuống `.batch` cho diff nhỏ, xem
       // `effectiveTypingStrategy`; cơ chế hoãn phím đã thử và đã lùi.
-      return Unmanaged.passUnretained(event)
+      return passThrough(event)
     }
 
     sendTypedReplacement(replacement)

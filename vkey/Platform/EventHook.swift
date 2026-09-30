@@ -75,6 +75,7 @@ class EventHook {
   init(inputProcessor: InputProcessor) {
     self.keyLayout = KeyboardUS()
     self.inputProcessor = inputProcessor
+    inputProcessor.hardwareShiftDown = NSEvent.modifierFlags.contains(.shift)
   }
 
   @discardableResult
@@ -291,6 +292,12 @@ private func handleTapEvent(
   // Ignore keystrokes not from hardware (HID system state).
   if event.getIntegerValueField(.eventSourceStateID) != 1 {
     return Unmanaged.passUnretained(event)
+  }
+
+  // Shift thật: chỉ `flagsChanged` từ HID. Event chữ do vkey tự phát (stateID
+  // khác 1) đã bị bỏ phía trên, nên chữ hoa tổng hợp không tự bật cờ này.
+  if type == .flagsChanged {
+    eventHook.inputProcessor.hardwareShiftDown = event.flags.contains(.maskShift)
   }
 
   // IME Switcher button on keyboard

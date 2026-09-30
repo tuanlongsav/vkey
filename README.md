@@ -8,7 +8,15 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.31](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 438 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.32](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 441 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.32
+
+**Bản sửa lỗi gõ, nên cập nhật nếu chữ cái thứ hai ở đầu câu bị viết hoa, hoặc từ tiếng Anh bị xoá sai / thừa chữ.**
+
+- **Chỉ chữ đầu câu được viết hoa** — chữ thứ hai không còn bị viết hoa theo ("Việt" không thành "VIệt"), và Backspace hết bị kẹt Shift nên xoá được.
+- **Backspace trên từ tiếng Anh xoá đúng một ký tự** — "text" về "tex", "pass" về "pas", không bị đổi lại thành chữ có dấu.
+- **Hết chữ thừa khi gõ từ tiếng Anh** — Chrome, Electron và Claude Desktop không còn chèn thêm một chữ A khi vkey sửa chữ ("google" không thành "gooogle").
 
 ## Mới ở v4.31
 

@@ -2,6 +2,17 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.32] - 2026-09-30 — "Hết hoa hai chữ đầu"
+
+**Bản sửa lỗi gõ, nên cập nhật nếu chữ cái thứ hai ở đầu câu bị viết hoa, Backspace trên từ tiếng Anh xoá sai, hoặc từ tiếng Anh bị thừa một chữ.**
+
+### 🐛 Sửa lỗi gõ
+
+- **Chỉ chữ đầu câu được viết hoa** — sau khi vkey tự viết hoa chữ đầu, macOS còn giữ Shift trên phím kế tiếp dù người gõ không giữ Shift, nên hai ký tự đầu thành chữ hoa ("Việt" ra "VIệt"). Nay chỉ nhận Shift khi bàn phím thật đang giữ Shift, và gỡ cờ Shift kẹt trước khi trả phím về app. Backspace cũng hết đi kèm Shift nên xoá được trở lại.
+- **Backspace trên từ không phải tiếng Việt xoá đúng một ký tự** — từ đã khoá thô ("text", "pass", "horses") trước đây bị chạy lại Telex khi xoá, thành "tẽ" / "pá". Nay màn hình đang hiện đúng chuỗi phím thì Backspace chỉ bỏ một ký tự.
+- **Hết chữ thừa do mã phím A** — event Unicode vkey tự gửi dùng mã phím 0 (phím A). Chrome, Electron và Claude Desktop chèn cả chữ A lẫn chuỗi Unicode, nên từ tiếng Anh bị viết lại thừa một chữ ("google" → "gooogle"). Event đó giờ dùng mã phím không sinh chữ.
+- +3 test (441 test pass).
+
 ## [4.31] - 2026-09-28 — "Hết nhân đôi chữ"
 
 **Bản sửa lỗi gõ, nên cập nhật nếu hay gõ tên riêng/thuật ngữ tiếng Anh hoặc gõ

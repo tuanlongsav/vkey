@@ -130,6 +130,22 @@ class EventSimulator {
     static let forwardDelete: CGKeyCode = 0x75  // v2.12: xoá suggestion auto-select
     // 0x7B (leftArrow) đã gỡ cùng `sendShiftLeft`: đường Shift+Left bỏ từ
     // v2.3.10, hằng số chỉ còn nuôi hàm chết. Nếu cần lại thì thêm mới.
+
+    /// Mã phím cho event CHỈ mang chuỗi Unicode.
+    ///
+    /// `virtualKey: 0` là phím A. Chromium, Electron và Claude Desktop chèn CẢ
+    /// ký tự của mã phím lẫn chuỗi Unicode: chữ đầu một từ thành hai ký tự
+    /// (thường là "A" + chữ vừa viết hoa), từ không phải tiếng Việt bị Telex
+    /// viết lại thì thừa một chữ ("google" → "gooogle"). 0xFF không sinh ký tự.
+    static let unicodeOnly: CGKeyCode = 0xFF
+  }
+
+  /// Gắn chuỗi Unicode lên một event phím và xoá mã phím A mà constructor
+  /// vừa đặt (xem `KeyCode.unicodeOnly`).
+  static func applyUnicodePayload(_ event: CGEvent, units: [UniChar]) {
+    event.setIntegerValueField(.keyboardEventKeycode, value: Int64(KeyCode.unicodeOnly))
+    event.flags = .maskNonCoalesced
+    event.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)
   }
 
   /// Per-app sending strategy configuration.
@@ -433,17 +449,14 @@ class EventSimulator {
 
     guard
       let source = eventSource,
-      let downEvent = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
-      let upEvent = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
+      let downEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: true),
+      let upEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: false)
     else {
       return false
     }
 
-    downEvent.flags = .maskNonCoalesced
-    upEvent.flags = .maskNonCoalesced
-
-    downEvent.keyboardSetUnicodeString(stringLength: uniChars.count, unicodeString: uniChars)
-    upEvent.keyboardSetUnicodeString(stringLength: uniChars.count, unicodeString: uniChars)
+    applyUnicodePayload(downEvent, units: uniChars)
+    applyUnicodePayload(upEvent, units: uniChars)
 
     downEvent.post(tap: .cgSessionEventTap)
     upEvent.post(tap: .cgSessionEventTap)
@@ -472,15 +485,12 @@ class EventSimulator {
       guard !uniChars.isEmpty else { continue }
 
       if
-        let downEvent = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
-        let upEvent = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
+        let downEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: true),
+        let upEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: false)
       {
         createdAnyEvent = true
-        downEvent.flags = .maskNonCoalesced
-        upEvent.flags = .maskNonCoalesced
-
-        downEvent.keyboardSetUnicodeString(stringLength: uniChars.count, unicodeString: uniChars)
-        upEvent.keyboardSetUnicodeString(stringLength: uniChars.count, unicodeString: uniChars)
+        applyUnicodePayload(downEvent, units: uniChars)
+        applyUnicodePayload(upEvent, units: uniChars)
 
         downEvent.post(tap: .cgSessionEventTap)
         upEvent.post(tap: .cgSessionEventTap)
@@ -866,10 +876,10 @@ class EventSimulator {
     for ch in diffChars {
       let units = unicodeUnits(for: ch)
       guard !units.isEmpty else { continue }
-      let dn = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true)
-      let up = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
-      dn?.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)
-      up?.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)
+      let dn = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: true)
+      let up = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: false)
+      if let dn { applyUnicodePayload(dn, units: units) }
+      if let up { applyUnicodePayload(up, units: units) }
       postHID(dn)
       postHID(up)
       usleep(1000)

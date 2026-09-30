@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.32 — "Hết hoa hai chữ đầu"</title>
+      <sparkle:version>43200</sparkle:version>
+      <sparkle:shortVersionString>4.32</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 30 Sep 2026 18:03:06 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.32/vkey-4.32.dmg"
+        sparkle:edSignature="E5ReyIBnIvwRDRSdloOCgBeHTEMpGj6Y4mDzoIvoET2EJmpd/OQUhrabNJ/uzCuQcAdT+I75pjGrxfQBFfF/Dw=="
+        length="6590348"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.32 — Hết hoa hai chữ đầu</h2>
+        <p><b>Bản sửa lỗi gõ, nên cập nhật nếu chữ cái thứ hai ở đầu câu bị viết hoa, Backspace trên từ tiếng Anh xoá sai, hoặc từ tiếng Anh bị thừa một chữ.</b></p>
+        <ul>
+          <li><b>Chỉ chữ đầu câu được viết hoa</b> — sau khi vkey tự viết hoa chữ đầu, macOS còn giữ Shift trên phím kế tiếp dù người gõ không giữ Shift, nên hai ký tự đầu thành chữ hoa ("Việt" ra "VIệt"). Nay chỉ nhận Shift khi bàn phím thật đang giữ Shift.</li>
+          <li><b>Backspace trên từ không phải tiếng Việt xoá đúng một ký tự</b> — từ đã khoá thô ("text", "pass") trước đây bị chạy lại Telex khi xoá, thành "tẽ" / "pá". Nay màn hình đang hiện đúng chuỗi phím thì Backspace chỉ bỏ một ký tự.</li>
+          <li><b>Hết chữ thừa do mã phím A</b> — event Unicode vkey tự gửi dùng mã phím A. Chrome, Electron và Claude Desktop chèn cả chữ A lẫn chuỗi Unicode ("google" ra "gooogle"). Event đó giờ dùng mã phím không sinh chữ.</li>
+        </ul>
+        <p>441 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.31 — "Hết nhân đôi chữ"</title>
       <sparkle:version>43100</sparkle:version>
       <sparkle:shortVersionString>4.31</sparkle:shortVersionString>

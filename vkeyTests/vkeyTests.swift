@@ -5527,6 +5527,63 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertNotEqual(diffChars, ["W"])
   }
 
+  /// Shift kẹt sau chữ hoa tự tổng hợp không được viết hoa ký tự thứ hai,
+  /// và cờ Shift trên event trả về app phải bị gỡ (Backspace khi đó mới xoá được).
+  func testSpuriousShiftDoesNotCapitalizeSecondLetterOrStickToBackspace() throws {
+    Defaults[.autoCapitalizeEnabled] = true
+    defer { Defaults.reset(.autoCapitalizeEnabled) }
+
+    let processor = makeNotesProcessor()
+    processor.hardwareShiftDown = false
+    typeKey(processor, code: 36) // Enter
+
+    let first = typeLetter(processor, code: 9) // v
+    XCTAssertSwallowed(first)
+    XCTAssertEqual(processor.transformed, "V")
+
+    let secondEvent = CGEvent(keyboardEventSource: nil, virtualKey: 34, keyDown: true)! // i
+    secondEvent.flags = .maskShift
+    let second = processor.handleEvent(event: secondEvent)
+    XCTAssertPassThrough(second)
+    XCTAssertFalse(secondEvent.flags.contains(.maskShift),
+      "Shift kẹt phải được gỡ trước khi trả event về app")
+    XCTAssertEqual(processor.transformed, "Vi",
+      "Chỉ ký tự đầu câu được viết hoa")
+
+    let backspace = CGEvent(keyboardEventSource: nil, virtualKey: 51, keyDown: true)!
+    backspace.flags = .maskShift
+    let deleted = processor.handleEvent(event: backspace)
+    XCTAssertPassThrough(deleted, "Xoá một chữ Latin thô để app tự xử lý")
+    XCTAssertFalse(backspace.flags.contains(.maskShift),
+      "Backspace không được đi kèm Shift kẹt")
+    XCTAssertEqual(processor.transformed, "V")
+  }
+
+  /// Event Unicode không được mang mã phím A (0). App Chromium chèn cả 'a'/'A'
+  /// lẫn chuỗi Unicode → hai ký tự đầu, và từ tiếng Anh bị nhân đôi.
+  func testUnicodeInjectionDoesNotUseTheAKey() throws {
+    let event = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
+    let units = Array("V".utf16).map { UniChar($0) }
+    EventSimulator.applyUnicodePayload(event, units: units)
+    XCTAssertEqual(event.getIntegerValueField(.keyboardEventKeycode), 0xFF)
+    XCTAssertNotEqual(event.getIntegerValueField(.keyboardEventKeycode), 0)
+  }
+
+  /// Từ không phải tiếng Việt không được dài hơn số phím đã gõ ở bất kỳ bước nào.
+  func testNonVietnameseWordsNeverExceedKeyCount() throws {
+    let engine = Telex()
+    for word in ["google", "footer", "book", "tools", "scheme", "text", "look", "password"] {
+      var buffer = WordBuffer()
+      for (i, c) in word.enumerated() {
+        buffer.push(char: c, engine: engine)
+        XCTAssertLessThanOrEqual(
+          buffer.transformed.count, i + 1,
+          "'\(word)' sau '\(word.prefix(i + 1))' ra '\(buffer.transformed)'"
+        )
+      }
+    }
+  }
+
   /// Đối chứng P4: ca thường (engine không đụng ký tự đầu) phải cho ra ĐÚNG
   /// một ký tự như trước — công thức mới không được làm phình diff.
   func testAutoCapitalizeOrdinaryLetterStillEmitsSingleChar() throws {
