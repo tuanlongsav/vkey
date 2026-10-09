@@ -8,7 +8,15 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.32](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 441 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.33](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 446 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.33
+
+**Bản sửa lỗi gõ — CẦN cập nhật nếu đang dùng v4.32: bản đó không gõ được tiếng Việt.**
+
+- **Gõ lại được tiếng Việt, hết mất chữ** — v4.32 gửi chữ bằng một mã phím không hợp lệ nên app bỏ luôn cả event, trong khi lệnh xoá vẫn chạy: dấu không ra, chữ mất ở giữa/cuối, có lúc mất cả cụm — ở mọi app, kể cả TextEdit, Word, Claude Desktop và terminal.
+- **Shift+mũi tên chọn chữ lại được, Shift+Enter không còn thành Enter** — v4.32 gỡ cờ Shift khỏi mọi phím trả về app, nên khi vkey nhận nhầm là "Shift kẹt" thì mũi tên chỉ dời con trỏ và app chat gửi tin đang viết dở. Nay chỉ gỡ cho phím chữ và Backspace.
+- **Công cụ đo trong `Tools/probe` đo đúng chỗ** — robot gõ trước đây gửi phím vào điểm vkey không nhìn thấy, nên không phép đo nào bắt được hai lỗi trên.
 
 ## Mới ở v4.32
 
@@ -16,7 +24,7 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 
 - **Chỉ chữ đầu câu được viết hoa** — chữ thứ hai không còn bị viết hoa theo ("Việt" không thành "VIệt"), và Backspace hết bị kẹt Shift nên xoá được.
 - **Backspace trên từ tiếng Anh xoá đúng một ký tự** — "text" về "tex", "pass" về "pas", không bị đổi lại thành chữ có dấu.
-- **Hết chữ thừa khi gõ từ tiếng Anh** — Chrome, Electron và Claude Desktop không còn chèn thêm một chữ A khi vkey sửa chữ ("google" không thành "gooogle").
+- ~~Hết chữ thừa khi gõ từ tiếng Anh~~ — **đã gỡ ở v4.33**: cách sửa đó dùng một mã phím không hợp lệ, làm app bỏ mất chữ. Đo lại cho thấy mã phím cũ không hề chèn thêm chữ nào.
 
 ## Mới ở v4.31
 
