@@ -5559,14 +5559,26 @@ final class NFDvsNFCDiffingTests: XCTestCase {
     XCTAssertEqual(processor.transformed, "V")
   }
 
-  /// Event Unicode không được mang mã phím A (0). App Chromium chèn cả 'a'/'A'
-  /// lẫn chuỗi Unicode → hai ký tự đầu, và từ tiếng Anh bị nhân đôi.
-  func testUnicodeInjectionDoesNotUseTheAKey() throws {
-    let event = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
+  /// `applyUnicodePayload` phải đặt mã phím về đúng `KeyCode.unicodeOnly` bất
+  /// kể constructor dựng event bằng mã nào, và chuỗi Unicode phải gắn được.
+  ///
+  /// Bản v4.32 của test này khoá mã phím vào 0xFF theo giả thuyết "Chromium
+  /// chèn cả ký tự của mã phím". Phép đo 09/10/2026 bác bỏ giả thuyết đó và
+  /// cho thấy 0xFF làm app bỏ CẢ event (xem `UnicodeOnlyKeyCodeTests` và
+  /// `KeyCode.unicodeOnly`), nên test không khoá vào một con số nữa.
+  func testUnicodeInjectionNormalisesTheKeyCodeAndKeepsTheString() throws {
+    let event = CGEvent(keyboardEventSource: nil, virtualKey: 34, keyDown: true)!  // i
     let units = Array("V".utf16).map { UniChar($0) }
     EventSimulator.applyUnicodePayload(event, units: units)
-    XCTAssertEqual(event.getIntegerValueField(.keyboardEventKeycode), 0xFF)
-    XCTAssertNotEqual(event.getIntegerValueField(.keyboardEventKeycode), 0)
+    XCTAssertEqual(
+      event.getIntegerValueField(.keyboardEventKeycode),
+      Int64(EventSimulator.KeyCode.unicodeOnly),
+      "mọi đường gửi chữ phải dùng cùng một mã phím, không phải mã constructor")
+    var length = 0
+    var buffer = [UniChar](repeating: 0, count: 4)
+    event.keyboardGetUnicodeString(
+      maxStringLength: buffer.count, actualStringLength: &length, unicodeString: &buffer)
+    XCTAssertEqual(Array(buffer[0..<length]), units, "chuỗi Unicode phải còn nguyên trên event")
   }
 
   /// Từ không phải tiếng Việt không được dài hơn số phím đã gõ ở bất kỳ bước nào.
@@ -8768,5 +8780,120 @@ final class PrivateEventSourceTests: XCTestCase {
       "chỉ `EventSimulator.privateEventSource()` được tạo nguồn `.privateState`. Thấy: \(sites)")
     XCTAssertTrue(sites.first?.hasPrefix("Platform/EventSimulator.swift:") ?? false,
       "…và chỗ đó phải nằm trong Platform/EventSimulator.swift. Thấy: \(sites)")
+  }
+}
+
+// MARK: - Mã phím của event CHỈ mang chuỗi Unicode
+
+/// v4.32 đổi `KeyCode.unicodeOnly` từ 0 sang 0xFF để "không sinh ký tự", nhưng
+/// 0xFF không phải mã phím ảo hợp lệ: app bỏ im lặng CẢ event, nên mọi chữ vkey
+/// gửi biến mất. Backspace (0x33) vẫn hợp lệ nên vẫn xoá chữ cũ → dấu không ra,
+/// mất chữ giữa/cuối, mất cả cụm, ở MỌI app.
+///
+/// Đo 09/10/2026 bằng `Tools/probe/kcsweep.swift` (event `.privateState`, đúng
+/// loại vkey tự phát), gửi vào TextEdit (AppKit) và ô `<input>` trong Chrome
+/// (Blink, đọc lại bằng `Tools/probe/cdp.mjs`):
+///   - tới được cả hai: 0, 10, 90, 110
+///   - mất trắng: 64 (F17), 79 (F18), 80 (F19), 106 (F16), 126 (Up) — AppKit
+///     dịch thành phím chức năng, `characters` rỗng
+///   - mất trắng: 255 (0xFF) — ngoài dải 7 bit của virtual keycode
+///
+/// Hai test dưới chặn đúng hai nhóm đó mà không cần allowlist cứng.
+final class UnicodeOnlyKeyCodeTests: XCTestCase {
+  func testUnicodeOnlyKeyCodeFitsSevenBits() {
+    XCTAssertLessThanOrEqual(
+      EventSimulator.KeyCode.unicodeOnly, 0x7F,
+      "mã phím ảo chỉ 7 bit; mã lớn hơn (0xFF ở v4.32) làm app bỏ cả event → mất chữ")
+  }
+
+  func testUnicodeOnlyEventCarriesTheStringAndIsNotAFunctionKey() throws {
+    guard let source = EventSimulator.privateEventSource() else {
+      throw XCTSkip("CGEventSource(.privateState) trả nil trên máy này")
+    }
+    let event = try XCTUnwrap(
+      CGEvent(
+        keyboardEventSource: source, virtualKey: EventSimulator.KeyCode.unicodeOnly,
+        keyDown: true),
+      "không dựng được event với mã phím \(EventSimulator.KeyCode.unicodeOnly)")
+    EventSimulator.applyUnicodePayload(event, units: Array("ề".utf16).map { UniChar($0) })
+
+    let translated = try XCTUnwrap(
+      NSEvent(cgEvent: event), "AppKit không dịch được event chỉ mang Unicode")
+    XCTAssertEqual(
+      translated.characters, "ề",
+      "chuỗi Unicode phải đi qua được tầng AppKit; rỗng = app sẽ không chèn gì")
+    XCTAssertFalse(
+      translated.modifierFlags.contains(.function),
+      "mã phím chức năng (F16–F20, mũi tên) bị NSTextView nuốt, chữ không vào ô nhập")
+  }
+}
+
+// MARK: - Phạm vi gỡ cờ Shift kẹt
+
+/// Cờ `InputProcessor.hardwareShiftDown` theo dõi Shift THẬT bằng cách nghe
+/// `flagsChanged`, và `passThrough` gỡ `.maskShift` khỏi event trả về app khi
+/// cờ là `false`. Cờ đó có thể mắc SAI `false` trong lúc người gõ đang giữ
+/// Shift: dòng cập nhật nằm sau hai early-return của `handleTapEvent`, nên mọi
+/// `flagsChanged` xảy ra khi tap bị `.tapDisabledByTimeout`, khi tap bị tháo
+/// rồi gắn lại, hoặc khi quyền Trợ năng mất rồi được cấp lại, đều không tới.
+///
+/// Đo 09/10/2026 (`Tools/probe/shifttest.swift`, `Tools/probe/arrowtest.swift`
+/// — event đi qua `.cghidEventTap` nên vkey xử lý như phím thật):
+///   - Shift CÓ `flagsChanged`: "xin " + Shift+c + "hao" → "xin Chao" (đúng)
+///   - Shift chỉ dính trên event: → "xin chao" (cờ làm việc của nó)
+///   - "abc" + Shift+Left + "x": có `flagsChanged` → "abx" (chọn rồi ghi đè);
+///     không có → **"abxc"** — Shift bị gỡ nên mũi tên chỉ dời con trỏ.
+///
+/// Mất Shift+mũi tên (và Shift+Enter, trong app chat là xuống dòng chứ không
+/// phải gửi tin) nặng hơn hẳn lỗi mà cờ này đi vá — ký tự thứ hai bị viết hoa.
+/// Nên phạm vi gỡ thu về đúng hai phím mà v4.32 đo được: phím CHỮ và Backspace.
+final class StuckShiftScopeTests: XCTestCase {
+  private func letterProcessor() -> InputProcessor {
+    let processor = InputProcessor(method: .Telex)
+    processor.changeActiveApp("com.apple.Notes")
+    processor.hardwareShiftDown = false
+    return processor
+  }
+
+  func testStuckShiftIsKeptOnNavigationAndEnter() throws {
+    // 123–126 mũi tên, 115 Home, 119 End, 48 Tab, 36 Enter, 49 Space, 18 số 1
+    for code in [123, 124, 125, 126, 115, 119, 48, 36, 49, 18] as [CGKeyCode] {
+      let processor = letterProcessor()
+      let event = try XCTUnwrap(CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true))
+      event.flags = .maskShift
+      _ = processor.handleEvent(event: event)
+      XCTAssertTrue(
+        event.flags.contains(.maskShift),
+        "mã phím \(code): chỉ phím chữ và Backspace được gỡ Shift. Gỡ ở đây làm mất "
+          + "Shift+mũi tên (chọn chữ) và biến Shift+Enter thành Enter (app chat gửi tin dở)")
+    }
+  }
+
+  func testStuckShiftIsStillStrippedFromLettersAndBackspace() throws {
+    for code in [8, 34, 51] as [CGKeyCode] {  // c, i, Backspace
+      let processor = letterProcessor()
+      let event = try XCTUnwrap(CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true))
+      event.flags = .maskShift
+      _ = processor.handleEvent(event: event)
+      XCTAssertFalse(
+        event.flags.contains(.maskShift),
+        "mã phím \(code): đây là phạm vi v4.32 đo được — ký tự thứ hai không được "
+          + "viết hoa, và Backspace không được đi kèm Shift (Shift+Backspace không xoá)")
+    }
+  }
+
+  /// Cờ phải đồng bộ được lại từ trạng thái phần cứng, vì `flagsChanged` có thể
+  /// đã mất. `NSEvent.modifierFlags` KHÔNG dùng được: đo cùng ngày cho thấy nó
+  /// trễ một event (ở `flagsChanged` Shift-down nó còn báo `false`, ở
+  /// `flagsChanged` Shift-up nó còn báo `true`).
+  func testEventHookSyncsShiftFromHardwareState() throws {
+    let processor = InputProcessor(method: .Telex)
+    processor.hardwareShiftDown = true  // giá trị mắc sai
+    let hook = EventHook(inputProcessor: processor)
+    hook.syncHardwareShiftFromSystem()
+    XCTAssertEqual(
+      processor.hardwareShiftDown,
+      CGEventSource.flagsState(.hidSystemState).contains(.maskShift),
+      "đồng bộ lại phải lấy đúng trạng thái Shift của phần cứng")
   }
 }

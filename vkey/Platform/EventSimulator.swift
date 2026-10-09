@@ -125,7 +125,10 @@ class EventSimulator {
   /// Hardcoded macOS virtual key codes used by the simulator. US-layout
   /// positions; these are physical-key codes so they work even on QWERTZ /
   /// AZERTY / Dvorak keymaps.
-  private enum KeyCode {
+  // `internal` (không `private`) để test đọc được `unicodeOnly`: mã phím của
+  // event chỉ mang Unicode là chỗ đã làm vỡ đường gõ ở v4.32, xem
+  // `UnicodeOnlyKeyCodeTests`. `@testable import` chỉ mở tới `internal`.
+  enum KeyCode {
     static let delete: CGKeyCode = 0x33      // Backspace / Delete-Left
     static let forwardDelete: CGKeyCode = 0x75  // v2.12: xoá suggestion auto-select
     // 0x7B (leftArrow) đã gỡ cùng `sendShiftLeft`: đường Shift+Left bỏ từ
@@ -133,15 +136,28 @@ class EventSimulator {
 
     /// Mã phím cho event CHỈ mang chuỗi Unicode.
     ///
-    /// `virtualKey: 0` là phím A. Chromium, Electron và Claude Desktop chèn CẢ
-    /// ký tự của mã phím lẫn chuỗi Unicode: chữ đầu một từ thành hai ký tự
-    /// (thường là "A" + chữ vừa viết hoa), từ không phải tiếng Việt bị Telex
-    /// viết lại thì thừa một chữ ("google" → "gooogle"). 0xFF không sinh ký tự.
-    static let unicodeOnly: CGKeyCode = 0xFF
+    /// Phải là mã phím ảo HỢP LỆ, vì app chỉ nhận chuỗi Unicode kèm theo nếu
+    /// nó nhận cả event. v4.32 đặt 0xFF với lý do "không sinh ký tự" → app bỏ
+    /// im lặng cả event: chữ mới không bao giờ tới, mà backspace (0x33) vẫn
+    /// hợp lệ nên vẫn xoá chữ cũ. Hậu quả ở MỌI app: dấu không ra, mất chữ
+    /// giữa/cuối, mất cả cụm.
+    ///
+    /// Đo 09/10/2026 (`Tools/probe/kcsweep.swift`, event `.privateState` —
+    /// đúng loại vkey tự phát) vào TextEdit và ô `<input>` trong Chrome:
+    ///   - tới được cả hai: 0, 10, 90, 110
+    ///   - mất trắng: 64 (F17), 79 (F18), 80 (F19), 106 (F16), 126 (Up) —
+    ///     AppKit dịch thành phím chức năng, `characters` rỗng
+    ///   - mất trắng: 255 (0xFF) — ngoài dải 7 bit của virtual keycode
+    ///
+    /// Giữ 0 (phím A) như v4.31 trở về trước. Phép đo cùng ngày KHÔNG tái hiện
+    /// được "Chromium chèn thêm ký tự của mã phím": mã 0 gửi "google" vào ô
+    /// web ra đúng "google", gửi "Việt" ra đúng "Việt". Nếu lỗi thừa chữ quay
+    /// lại thì đo lại bằng probe trên, đừng đổi hằng số này theo suy diễn.
+    static let unicodeOnly: CGKeyCode = 0
   }
 
-  /// Gắn chuỗi Unicode lên một event phím và xoá mã phím A mà constructor
-  /// vừa đặt (xem `KeyCode.unicodeOnly`).
+  /// Gắn chuỗi Unicode lên một event phím, kèm mã phím và cờ chuẩn cho event
+  /// chỉ-mang-Unicode (xem `KeyCode.unicodeOnly`).
   static func applyUnicodePayload(_ event: CGEvent, units: [UniChar]) {
     event.setIntegerValueField(.keyboardEventKeycode, value: Int64(KeyCode.unicodeOnly))
     event.flags = .maskNonCoalesced

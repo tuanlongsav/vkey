@@ -2,6 +2,66 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [Chưa phát hành]
+
+**Bản sửa lỗi gõ, CẦN cập nhật nếu đang chạy v4.32: bản đó không gõ được tiếng
+Việt.**
+
+### 🐛 Sửa lỗi gõ
+
+- **Gõ lại được tiếng Việt, hết mất chữ** — v4.32 đổi mã phím của event mang
+  chuỗi Unicode từ `0` sang `0xFF` với lý do "mã này không sinh ký tự". Nhưng
+  `0xFF` không phải mã phím ảo hợp lệ (virtual keycode chỉ 7 bit): app bỏ im
+  lặng **cả** event, nên chuỗi chữ đi kèm không bao giờ tới. Backspace (`0x33`)
+  vẫn hợp lệ nên vẫn xoá chữ cũ — vkey xoá rồi không chèn lại được gì. Hậu quả
+  ở **mọi** app (native, Electron, terminal): dấu không ra, mất chữ giữa/cuối,
+  mất cả cụm. Mã phím trở về `0` như v4.31.
+  Đo A/B trên máy thật, cùng chuỗi phím `tieengs vieetj cas dd`: bản 4.32 ra
+  `t v c `, bản sửa ra `tiếng việt cá đ`.
+- **Giả thuyết của v4.32 không tái hiện được** — v4.32 ghi "Chromium, Electron
+  và Claude Desktop chèn cả ký tự của mã phím lẫn chuỗi Unicode (`google` →
+  `gooogle`)". Đo lại với mã `0` vào ô `<input>` Chrome: `google` ra đúng
+  `google`, `Việt` ra đúng `Việt`, không ký tự ký sinh nào. Chính triệu chứng
+  cũng không khớp: `gooogle` thừa chữ **o**, không phải chữ **a**. Nếu lỗi thừa
+  chữ còn gặp thì đo lại bằng probe, không đổi hằng số theo suy diễn.
+
+- **Shift+mũi tên chọn chữ lại được, Shift+Enter không còn thành Enter** —
+  v4.32 thêm cờ "Shift thật" (`hardwareShiftDown`) để chữ cái thứ hai đầu câu
+  không bị viết hoa, và khi cờ là `false` thì gỡ cờ Shift khỏi **mọi** phím trả
+  về app. Cờ đó nuôi bằng `flagsChanged`, mà `flagsChanged` có thể không tới:
+  dòng cập nhật nằm sau hai early-return của tap, nên Shift nhấn/thả trong lúc
+  hệ thống vô hiệu tap, lúc tap gắn lại, hoặc lúc quyền Trợ năng mất rồi được
+  cấp lại, đều mất. Cờ mắc `false` trong khi ngón tay đang giữ Shift thì:
+  Shift+mũi tên chỉ dời con trỏ thay vì chọn chữ, và Shift+Enter mất Shift nên
+  app chat gửi tin đang viết dở thay vì xuống dòng. Nay chỉ gỡ cho phím **chữ**
+  và **Backspace** — đúng phạm vi v4.32 đo được — và cờ được đọc lại từ trạng
+  thái phần cứng ở cả ba mốc tap có thể vừa bỏ lỡ `flagsChanged`.
+  Đo trên máy thật (`Tools/probe/arrowtest.swift`): "abc" + Shift+Left + "x"
+  ra `abxc` trước khi sửa, `abx` sau khi sửa; chữ hoa vẫn đúng cả hai ca
+  (Shift kẹt → `xin chao`, Shift thật → `xin Chao`).
+  ⚠️ Lỗi GỐC mà cờ này đi vá — chữ cái thứ hai bị viết hoa trên bàn phím thật —
+  **chưa tái hiện được**: với event tổng hợp, event HID sau chữ hoa tổng hợp
+  không mang Shift. Giữ cờ lại cho tới khi có phép đo trên bàn phím thật.
+
+### 🔬 Công cụ đo
+
+- **Robot gõ của repo đo vào chỗ vkey không thấy** — `keyprobe` post phím vào
+  `.cgSessionEventTap`, đúng điểm vkey đặt tap; event post vào một điểm được
+  chèn ngay **sau** các tap ở điểm đó, nên vkey chưa bao giờ thấy phím của
+  công cụ và mọi phép "gõ thử" đều xanh vô nghĩa. Đây là lý do v4.32 làm vỡ
+  đường gõ mà không công cụ nào kêu. Nay post vào `.cghidEventTap`: gõ
+  `cas cas cas` ra `cá cá cá`.
+- **Thêm `kcsweep` + `kcpost`** — đo mã phím ảo nào chuyển được event chỉ mang
+  Unicode tới app, trên AppKit và trên Blink (Chrome hồ sơ tạm, đọc bằng CDP).
+  Bảng kết quả trong `Tools/probe/README.md`: tới được 0, 10, 90, 110; mất
+  trắng 64/79/80/106/126 (phím chức năng) và 255 (ngoài 7 bit).
+- **Thêm `shifttest`, `arrowtest`, `evlog`** — dựng được hai ca Shift (kẹt /
+  thật) và đo thiệt hại khi cờ mắc sai. `evlog` là keylogger nên có hai chốt
+  cứng: chỉ ghi khi app đích đang frontmost, và tự thoát sau số giây truyền vào.
+- +5 test: 2 chặn mã phím xấu (`UnicodeOnlyKeyCodeTests`), 3 khoá phạm vi gỡ cờ
+  Shift (`StuckShiftScopeTests`); viết lại test khoá hằng số vào `0xFF` của
+  v4.32 thành test kiểm bất biến thật. 446 test pass.
+
 ## [4.32] - 2026-09-30 — "Hết hoa hai chữ đầu"
 
 **Bản sửa lỗi gõ, nên cập nhật nếu chữ cái thứ hai ở đầu câu bị viết hoa, Backspace trên từ tiếng Anh xoá sai, hoặc từ tiếng Anh bị thừa một chữ.**

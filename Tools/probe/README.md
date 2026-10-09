@@ -204,6 +204,94 @@ biết: hai dạng chuẩn hoá lại hiện cùng một dãy code point.
 
 ---
 
+## Kết quả đã đo — mã phím của event chỉ mang Unicode (v4.32 → v4.33)
+
+**Lỗi:** v4.32 "không gõ được tiếng Việt": dấu không ra, mất chữ giữa/cuối, mất
+cả cụm — ở **mọi** app (native, Electron, terminal). 441/441 test vẫn pass, vì
+test không chạm tầng gửi event thật.
+
+**Nguyên nhân:** v4.32 đổi `EventSimulator.KeyCode.unicodeOnly` từ `0` sang
+`0xFF` theo suy diễn "mã này không sinh ký tự". `0xFF` không phải mã phím ảo hợp
+lệ (virtual keycode chỉ 7 bit) → app bỏ im lặng **cả event**, nên chuỗi Unicode
+đi kèm không bao giờ tới. Backspace (`0x33`) vẫn hợp lệ nên vẫn xoá chữ cũ: vkey
+xoá rồi không chèn lại được gì.
+
+**Phép đo** (`kcsweep.swift` cho TextEdit/AppKit, `kcpost.swift` + `cdp.mjs` cho
+ô `<input>` trong Chrome; event `.privateState` — đúng loại vkey tự phát):
+
+| virtualKey | TextEdit (AppKit) | Chrome (Blink) | ghi chú |
+|---|---|---|---|
+| **0** (phím A) | chữ tới đúng | chữ tới đúng | mã dùng tới v4.31, đã trả lại ở v4.33 |
+| 10 (ISO §) | chữ tới đúng | chữ tới đúng | sinh "§" trên bàn phím ISO nếu app chèn ký tự của mã phím |
+| 90 (F20) | chữ tới đúng | chữ tới đúng | chưa đo rủi ro app bind F20 |
+| 110 (Menu) | chữ tới đúng | chữ tới đúng | chưa đo rủi ro app mở context menu |
+| 64, 79, 80, 106 (F17–F19, F16) | **mất trắng** | — | AppKit gắn cờ `.function`, `NSEvent.characters` rỗng |
+| 126 (Up) | **mất trắng** | — | cùng lý do |
+| **255 (0xFF)** | **mất trắng** | **mất trắng** | ngoài dải 7 bit |
+
+**Giả thuyết của v4.32 KHÔNG tái hiện được.** v4.32 ghi "Chromium, Electron và
+Claude Desktop chèn cả ký tự của mã phím lẫn chuỗi Unicode (`google` →
+`gooogle`)". Đo lại với mã `0` vào ô `<input>` Chrome: gửi `google` nhận đúng
+`google`, gửi `Việt` nhận đúng `Việt`, gửi `ề` nhận đúng `ề` — không ký tự ký
+sinh nào. Chú ý chính triệu chứng đã tự tố: `gooogle` thừa chữ **o**, không phải
+chữ **a** — mã phím A không giải thích được nó. Nếu lỗi thừa chữ còn gặp thì đo
+lại bằng hai probe trên, **đừng đổi hằng số theo suy diễn**.
+
+**Chốt lại:** hằng số đó là điểm thắt cổ chai của cả 5 đường gửi chữ. Trước khi
+đổi nó, chạy `kcsweep` trên app native **và** `kcpost` + `cdp.mjs` trên Blink.
+Hai test `UnicodeOnlyKeyCodeTests` chặn sẵn hai nhóm mã xấu đã biết (ngoài 7 bit,
+và phím chức năng), nhưng test không thay được phép đo trên app thật.
+
+---
+
+## Kết quả đã đo — cờ "Shift thật" và phạm vi gỡ cờ Shift (v4.32 → v4.33)
+
+**Cơ chế:** `InputProcessor.hardwareShiftDown` phân biệt Shift THẬT với "Shift
+chỉ dính trên event" bằng cách nghe `flagsChanged`; khi cờ là `false`,
+`passThrough` gỡ `.maskShift` khỏi event trả về app.
+
+**Phép đo** (`shifttest.swift` dựng hai ca, `evlog.swift` đọc chuỗi event,
+`arrowtest.swift` đo thiệt hại; tất cả post vào `.cghidEventTap`):
+
+| ca | chuỗi event vkey nhận | kết quả |
+|---|---|---|
+| Shift thật | `flagsChg kc=56 SHIFT` → `keyDown SHIFT` | `xin Chao` |
+| Shift kẹt | chỉ `keyDown SHIFT` | `xin chao` |
+
+Cơ chế chạy đúng như thiết kế. Nhưng hai ca này là **cùng một thứ** dưới mắt
+vkey khi `flagsChanged` bị mất — dòng cập nhật cờ nằm sau hai early-return của
+`handleTapEvent`, nên Shift nhấn/thả trong lúc hệ thống vô hiệu tap, lúc tap
+gắn lại, hoặc lúc quyền Trợ năng mất rồi được cấp lại, đều không tới.
+
+**Thiệt hại khi cờ mắc sai** — v4.32 gỡ cờ Shift trên MỌI phím:
+
+| phép đo | v4.32 | sau khi thu phạm vi |
+|---|---|---|
+| `"abc"` + Shift+Left + `"x"` | **`abxc`** (chỉ dời con trỏ) | `abx` (chọn rồi ghi đè) |
+| Shift+Enter trong app chat | mất Shift → **gửi tin dở** | giữ Shift → xuống dòng |
+| Shift kẹt trên phím chữ | `chao` | `chao` (không đổi) |
+| Shift thật trên phím chữ | `Chao` | `Chao` (không đổi) |
+
+**Hai nguồn sự thật đã thử và loại:**
+
+- `CGEventSource.flagsState(.hidSystemState)` báo `true` ở **cả hai** ca (event
+  đi qua HID tap cũng cập nhật trạng thái modifier của WindowServer), nên KHÔNG
+  phân biệt được Shift kẹt. Chỉ dùng được để **đồng bộ lại** cờ sau khi tap
+  gián đoạn — đó là cách đang dùng.
+- `NSEvent.modifierFlags` trễ một event: ở `flagsChanged` Shift-down nó còn báo
+  `false`, ở Shift-up nó còn báo `true`. Đừng dùng cho quyết định theo từng phím.
+
+**Còn treo — lỗi GỐC chưa tái hiện được.** v4.32 vá "chữ cái thứ hai đầu câu bị
+viết hoa" (`Việt` → `VIệt`). Với event tổng hợp thì không dựng lại được: `evlog`
+cho thấy event HID ngay sau chữ hoa tổng hợp **không** mang Shift, và gõ
+`ok. vieetj` ra đúng `ok. Việt`. Nghĩa là chẩn đoán "macOS giữ Shift trên phím
+kế tiếp" chưa được kiểm trên **bàn phím thật**. Ai muốn gỡ `hardwareShiftDown`:
+chạy `evlog` rồi gõ tay một câu bắt đầu bằng chữ thường sau dấu `.`, xem event
+thật có `SHIFT` hay không. Đừng gỡ theo suy diễn, và cũng đừng mở rộng phạm vi
+gỡ cờ theo suy diễn.
+
+---
+
 ## Còn phải đo
 
 - **T2 (thứ tự phím)** — `keyprobe order --text push --reps 50` vào từng app
@@ -211,5 +299,10 @@ biết: hai dạng chuẩn hoá lại hiện cùng một dãy code point.
   nhánh T2 — ghi số lại rồi bỏ qua.
 - **Ô chứa chữ không do vkey phát ra** (dán vào / app tự điền) — ca duy nhất mà
   bất biến v4.15 không phủ.
+- **Chữ cái thứ hai đầu câu có thật bị viết hoa trên BÀN PHÍM THẬT hay không** —
+  lỗi gốc mà `hardwareShiftDown` đi vá, chưa tái hiện được bằng event tổng hợp.
+  Phép đo: `/tmp/evlog com.apple.TextEdit 10`, rồi gõ TAY `ok. viet` vào
+  TextEdit, xem event HID sau chữ hoa tổng hợp có `SHIFT` không. Có → cờ đang
+  giữ đúng việc; không → cờ vá một thứ không tồn tại và nên gỡ.
 - **Zalo và Messenger thật**, không chỉ Blink nói chung. Cả hai là Electron nên
   dự kiến giống `contenteditable` ở trên, nhưng dự kiến không phải phép đo.

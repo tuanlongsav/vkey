@@ -1305,8 +1305,23 @@ class InputProcessor {
   /// Trả event về app. Nếu Shift chỉ dính trên event (bàn phím thật không giữ
   /// Shift) thì gỡ cờ, để chữ thứ hai sau viết-hoa-đầu-câu không thành chữ hoa
   /// và Backspace không thành Shift+Backspace (không xoá được).
+  ///
+  /// CHỈ phím CHỮ và Backspace — đúng phạm vi v4.32 đo được. `hardwareShiftDown`
+  /// nuôi bằng `flagsChanged`, mà `flagsChanged` có thể mất (tap bị hệ thống vô
+  /// hiệu, tap gắn lại, quyền Trợ năng mất rồi cấp lại — xem
+  /// `EventHook.syncHardwareShiftFromSystem`), nên cờ CÓ THỂ mắc `false` trong
+  /// khi ngón tay đang giữ Shift. Gỡ cờ trên mọi phím thì cái giá của lần mắc
+  /// đó nặng hơn hẳn lỗi đang vá — đo 09/10/2026 bằng
+  /// `Tools/probe/arrowtest.swift`: "abc" + Shift+Left + "x" ra "abxc" thay vì
+  /// "abx", tức mũi tên chỉ dời con trỏ và KHÔNG chọn được chữ nữa; Shift+Enter
+  /// mất Shift thì app chat gửi tin đang viết dở thay vì xuống dòng.
   private func passThrough(_ event: CGEvent) -> Unmanaged<CGEvent> {
-    if hardwareShiftDown == false,
+    let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+    let inScope =
+      keyLayout.isLetterKey(keyCode: keyCode)
+      || keyCode == Int64(EventSimulator.KeyCode.delete)
+    if inScope,
+       hardwareShiftDown == false,
        event.flags.contains(.maskShift),
        !event.flags.contains(.maskCommand),
        !event.flags.contains(.maskControl),

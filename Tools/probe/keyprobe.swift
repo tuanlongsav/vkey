@@ -4,12 +4,16 @@
 // T3 trục NFC/NFD lật giữa từ) đã bị vá hỏng hai lần, và cả hai lần đều vì
 // SỬA TRƯỚC KHI ĐO. Công cụ này làm phép đo rẻ đi tới mức không còn cớ bỏ qua.
 //
-// Chìa khoá làm nó chạy được: `CGEventSource(stateID: .hidSystemState)` cho
-// `eventSourceStateID == 1`, tức event tổng hợp từ đây ĐI QUA được bộ lọc
-// self-event của vkey (`EventHook.swift`: bỏ qua mọi event có stateID != 1).
-// Nghĩa là vkey xử lý phím do công cụ này bắn ra Y HỆT phím người gõ.
-// (`.privateState` cho một ID cấp động, `.combinedSessionState` cho 0 — cả hai
-// đều bị vkey bỏ qua, nên KHÔNG dùng được để đo.)
+// Hai điều kiện PHẢI đủ cả hai để vkey thật sự thấy phím của công cụ này:
+//   1. `CGEventSource(stateID: .hidSystemState)` cho `eventSourceStateID == 1`,
+//      tức event đi qua được bộ lọc self-event của vkey (`EventHook.swift`: bỏ
+//      qua mọi event có stateID != 1). `.privateState` cho một ID cấp động,
+//      `.combinedSessionState` cho 0 — cả hai đều bị vkey bỏ qua.
+//   2. `post(tap: .cghidEventTap)`. vkey đặt tap ở session tap, và event post
+//      vào một điểm được chèn ngay SAU các tap ở điểm đó: post vào session tap
+//      thì vkey không thấy gì, công cụ chỉ đo chính app đích. Thiếu điều kiện
+//      này thì mọi phép đo "gõ thử" đều xanh một cách vô nghĩa — đúng chỗ
+//      v4.32 lọt lưới (xem README, mục mã phím của event chỉ mang Unicode).
 //
 // Build:  swiftc -O Tools/probe/keyprobe.swift -o /tmp/keyprobe
 // Chạy:   /tmp/keyprobe help
@@ -97,8 +101,14 @@ func tap(_ code: CGKeyCode, shift: Bool = false, source: CGEventSource, delayMs:
     down.flags = .maskShift
     up.flags = .maskShift
   }
-  down.post(tap: .cgSessionEventTap)
-  up.post(tap: .cgSessionEventTap)
+  // `.cghidEventTap`, KHÔNG phải `.cgSessionEventTap`: vkey đặt tap của nó ở
+  // session tap (`EventHook.setupEventTap`), và event post VÀO một điểm thì
+  // được chèn ngay sau các tap ở điểm đó — post vào session tap nghĩa là vkey
+  // không bao giờ thấy phím, công cụ chỉ đo chính TextEdit. Đo 09/10/2026: gõ
+  // "tieengs vieetj" qua session tap ra "tieengs vieetj"; qua HID tap ra
+  // "tiếng việt". Đây là lý do v4.32 làm vỡ đường gõ mà robot gõ không kêu.
+  down.post(tap: .cghidEventTap)
+  up.post(tap: .cghidEventTap)
   usleep(delayMs * 1000)
 }
 

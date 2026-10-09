@@ -75,7 +75,25 @@ class EventHook {
   init(inputProcessor: InputProcessor) {
     self.keyLayout = KeyboardUS()
     self.inputProcessor = inputProcessor
-    inputProcessor.hardwareShiftDown = NSEvent.modifierFlags.contains(.shift)
+    syncHardwareShiftFromSystem()
+  }
+
+  /// Đọc lại trạng thái Shift của phần cứng vào `inputProcessor.hardwareShiftDown`.
+  ///
+  /// Cờ đó bình thường được nuôi bằng `flagsChanged` trong `handleTapEvent`,
+  /// nhưng dòng cập nhật nằm SAU hai early-return: `flagsChanged` xảy ra trong
+  /// lúc hệ thống vô hiệu tap, hoặc trong lúc mất quyền Trợ năng, không bao giờ
+  /// tới. Cờ mắc `false` trong khi ngón tay đang giữ Shift thì chữ hoa ra chữ
+  /// thường và `passThrough` gỡ cờ Shift khỏi phím trả về app. Gọi hàm này ở
+  /// mọi mốc mà tap có thể vừa bỏ lỡ một `flagsChanged`.
+  ///
+  /// `CGEventSource.flagsState` chứ KHÔNG phải `NSEvent.modifierFlags`: đo
+  /// 09/10/2026 (`Tools/probe/evlog.swift`) thấy `NSEvent.modifierFlags` trễ
+  /// một event — ở `flagsChanged` Shift-down nó còn báo `false`, ở Shift-up nó
+  /// còn báo `true`.
+  func syncHardwareShiftFromSystem() {
+    inputProcessor.hardwareShiftDown =
+      CGEventSource.flagsState(.hidSystemState).contains(.maskShift)
   }
 
   @discardableResult
@@ -225,6 +243,9 @@ class EventHook {
     self.runLoopSource = runLoopSource
     self.appState = appState
     self.trustedCache = true
+    // Tap vừa được gắn (lần đầu, hoặc gắn lại sau khi watchdog tháo vì mất
+    // quyền): mọi `flagsChanged` trước đó đã mất, kể cả Shift đang giữ.
+    syncHardwareShiftFromSystem()
   }
 
   /// Unregisters the event tap from the run loop. Uses the run-loop source
@@ -275,6 +296,9 @@ private func handleTapEvent(
     eventHook.trustedCache = stillTrusted
     if stillTrusted, let eventTap = eventHook.eventTap {
       CGEvent.tapEnable(tap: eventTap, enable: true)
+      // Mọi `flagsChanged` trong lúc tap bị vô hiệu đã mất: đọc lại Shift từ
+      // phần cứng, đừng tin giá trị cũ (xem `syncHardwareShiftFromSystem`).
+      eventHook.syncHardwareShiftFromSystem()
       eventHook.tapRecoveryCount += 1
       #if DEBUG
       print("[vkey] Event tap was disabled by system (\(type == .tapDisabledByTimeout ? "timeout" : "user input")), auto-recovered (count: \(eventHook.tapRecoveryCount))")
