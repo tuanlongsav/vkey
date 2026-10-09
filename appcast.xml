@@ -6,6 +6,29 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.33 — "Chữa lỗi của 4.32"</title>
+      <sparkle:version>43300</sparkle:version>
+      <sparkle:shortVersionString>4.33</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 09 Oct 2026 22:49:20 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.33/vkey-4.33.dmg"
+        sparkle:edSignature="eGZArPhsfZ2yN2dqfvt9ZyLbP1g99g0pKmscyVR9g/8bh1ofY61zAVie+EXaGNmB8zEhQU0CdiqwRmuv9WVuCA=="
+        length="6590597"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.33 — Chữa lỗi của 4.32</h2>
+        <p><b>Bản sửa lỗi gõ, CẦN cập nhật nếu đang chạy v4.32: bản đó không gõ được tiếng Việt.</b></p>
+        <ul>
+          <li><b>Gõ lại được tiếng Việt, hết mất chữ</b> — v4.32 gửi chữ bằng mã phím 0xFF, không phải mã phím ảo hợp lệ, nên app bỏ im lặng cả event trong khi lệnh xoá vẫn chạy: dấu không ra, chữ mất ở giữa/cuối, có lúc mất cả cụm — ở mọi app. Mã phím trở về 0 như v4.31. Đo A/B trên máy thật: cùng chuỗi phím "tieengs vieetj cas dd", bản 4.32 ra "t v c ", bản này ra "tiếng việt cá đ".</li>
+          <li><b>Shift+mũi tên chọn chữ lại được, Shift+Enter không còn thành Enter</b> — v4.32 gỡ cờ Shift khỏi mọi phím trả về app, nên khi vkey nhận nhầm là "Shift kẹt" thì mũi tên chỉ dời con trỏ và app chat gửi tin đang viết dở. Nay chỉ gỡ cho phím chữ và Backspace, và cờ được đọc lại từ phần cứng ở mọi mốc event tap có thể bị gián đoạn.</li>
+          <li><b>Mục "Hết chữ thừa do mã phím A" của v4.32 đã gỡ</b> — đo lại cho thấy mã phím cũ không chèn thêm ký tự nào: gửi "google" vào ô nhập Chrome ra đúng "google".</li>
+        </ul>
+        <p>446 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.32 — "Hết hoa hai chữ đầu"</title>
       <sparkle:version>43200</sparkle:version>
       <sparkle:shortVersionString>4.32</sparkle:shortVersionString>
