@@ -1,5 +1,5 @@
 {
-  "version": 11,
+  "version": 12,
   "vietnamese": [
     "acid",
     "ai",
@@ -18861,6 +18861,25 @@
         "before": 0,
         "after": 3039,
         "baseline_ref": "lexicon v10"
+      },
+      {
+        "at": "2026-08-11T09:09:29.717705+00:00",
+        "rule": "merge_en_vn_mapping.py --prune-collisions — bỏ key trùng chuỗi phím Telex của âm tiết VN (lớp phím biến nguyên âm)",
+        "before": 3039,
+        "after": 3029,
+        "removed": [
+          "broom",
+          "chow",
+          "coo",
+          "hoof",
+          "loom",
+          "mow",
+          "pawn",
+          "sow",
+          "vee",
+          "vow"
+        ],
+        "baseline_ref": "lexicon v11"
       }
     ]
   },
@@ -20122,9 +20141,6 @@
     "brook": [
       "lạch"
     ],
-    "broom": [
-      "chổi"
-    ],
     "broth": [
       "canh",
       "nước dùng"
@@ -20630,9 +20646,6 @@
     "chord": [
       "hợp âm"
     ],
-    "chow": [
-      "thức ăn"
-    ],
     "chromium": [
       "crôm"
     ],
@@ -21037,9 +21050,6 @@
     "convict": [
       "kết án",
       "bị cáo"
-    ],
-    "coo": [
-      "gù"
     ],
     "cooker": [
       "đồ dùng làm bếp"
@@ -23224,10 +23234,6 @@
     "honeymoon": [
       "tuần trăng mật"
     ],
-    "hoof": [
-      "guốc",
-      "móng"
-    ],
     "hooray": [
       "hoan hô",
       "vạn tuế"
@@ -24217,9 +24223,6 @@
     "longitude": [
       "kinh độ"
     ],
-    "loom": [
-      "khung cửi"
-    ],
     "lorraine": [
       "Lorraine"
     ],
@@ -24919,10 +24922,6 @@
     ],
     "mouthpiece": [
       "phát ngôn viên"
-    ],
-    "mow": [
-      "cắt",
-      "cắt cỏ"
     ],
     "mozambique": [
       "Mô-dăm-bích"
@@ -25656,10 +25655,6 @@
     "paw": [
       "chân",
       "cẳng"
-    ],
-    "pawn": [
-      "cầm đồ",
-      "tốt"
     ],
     "payer": [
       "người trả tiền"
@@ -27481,9 +27476,6 @@
     "souvenir": [
       "đồ lưu niệm"
     ],
-    "sow": [
-      "gieo"
-    ],
     "soy": [
       "đậu nành"
     ],
@@ -28660,10 +28652,6 @@
       "lọ hoa",
       "bình"
     ],
-    "vee": [
-      "vê",
-      "vờ"
-    ],
     "vegetation": [
       "cây cối",
       "cây cỏ"
@@ -28795,10 +28783,6 @@
     ],
     "voodoo": [
       "voodoo"
-    ],
-    "vow": [
-      "lời thề",
-      "lời nguyền"
     ],
     "vowel": [
       "nguyên âm",

@@ -2,6 +2,81 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [Chưa phát hành]
+
+Chỉ chạm `Tools/` và gói từ điển. **Không có thay đổi nào trong app** — cách gõ,
+giao diện, thiết lập đều y nguyên; không cần phát hành bản mới.
+
+### 🔒 Chuỗi phát hành
+
+- **`Tools/sparkle_sign_update.sh` từng giao khoá ký riêng cho một binary tuỳ
+  ý.** Nó tìm `sign_update` bằng `find … | head -1` trên toàn bộ `DerivedData` —
+  thư mục chứa sản phẩm build của *mọi* project trên máy và ghi được bởi bất kỳ
+  build phase nào chúng chạy. Máy này đang có chín kết quả, sáu trong số đó là
+  công cụ DSA đời Sparkle 1.x, và thứ tự `find` trả về không xác định. Nay:
+  đường dẫn truyền tường minh là quyết định cuối cùng (không executable thì
+  dừng hẳn, không đi tìm cái khác), còn tự dò thì chỉ nhìn đúng đường dẫn SPM
+  checkout Sparkle ra và từ chối đoán khi có nhiều bản khác nhau. Binary được
+  chọn nay in ra log.
+- **`Tools/validate_appcast.sh` báo appcast hợp lệ là hỏng.** Bước đọc version
+  chạy trần dưới `set -e`; item đầu thiếu `sparkle:shortVersionString` là
+  traceback rồi exit 1 — ngay sau khi vừa in "hợp lệ". Đúng kiểu nhầm lẫn mà
+  script này sinh ra để ngăn.
+- **`Tools/release_build.sh` kiểm version của cấu hình Debug** trong khi bản
+  archive là Release. `grep -m1 MARKETING_VERSION` trúng dòng đầu trong sáu
+  dòng của pbxproj. Nay hỏi thẳng `xcodebuild -showBuildSettings`.
+
+### 📚 Từ điển v12 — bỏ 10 cặp trùng cách gõ
+
+Bộ lọc va chạm cũ xét dạng không dấu và phím dấu cuối (`sfrxj`), nhưng bỏ sót
+**phím biến nguyên âm**: `w`, `aa`, `ee`, `oo`, `dd`. Vì mọi key trong
+`en_vn_mapping` được `SpellDecisionEngine` coi là từ tiếng Anh, mười từ lọt lưới
+khiến Space Restore khôi phục về phím thô đúng lúc người dùng vừa gõ xong một từ
+tiếng Việt: `mow` là cách gõ `mơ`, `sow` là `sơ`, `vow` là `vơ`, `coo` là `cô`,
+`hoof` là `hồ`, cùng `broom`, `chow`, `loom`, `pawn`, `vee`.
+
+Chỉ cắn khi bật "Dùng từ điển tham chiếu Anh – Việt". Gói từ điển đi độc lập với
+app; máy bạn tự nhận trong 24h.
+
+### 🧰 Công cụ
+
+- **`Tools/build_lexicon.py` xoá trắng `en_vn_mapping` rồi vẫn bump version.**
+  Nó dựng lại trường này từ seed + dump Kaikki thô và không bao giờ đọc nội dung
+  cũ — chạy nó lên gói hiện tại là thay 3.029 cặp đã lọc bằng dữ liệu chưa lọc,
+  đẩy thẳng cho mọi client. Nay giữ nguyên phần đã có, seed và Kaikki chỉ điền
+  chỗ trống, và tất cả đều đi qua bộ lọc va chạm cùng giới hạn độ dài của
+  `validated()`.
+- **`Tools/lexicon_common.py` (mới)** — một bản duy nhất của bộ lọc Telex, cách
+  ghi file, và các giới hạn phản chiếu phía Swift. Trước đây bốn script mỗi cái
+  giữ một bản sao, đồng bộ bằng comment nhờ người; bản lệch nguy hiểm nhất chính
+  là lỗi ngay trên.
+- **Ghi file atomic.** Cả bốn script đều ghi đè chính file đầu vào bằng
+  `write_text`, cắt file trước khi ghi — ngắt giữa chừng là mất
+  `lexicon-update.json`. Nay ghi ra file tạm rồi mới đổi tên.
+- **Không còn bump version cho một lần merge rỗng.** Hai script merge nuốt mọi
+  lỗi parse để bỏ qua dòng rác, nên một file sai định dạng cho ra 0 entry mà
+  không báo gì, rồi vẫn tăng `version` và ghi đè — mọi client tải về một bản y
+  hệt bản cũ. Nay dừng và báo lỗi.
+- **`Tools/build_lexicon.py` coi bản tải dở là bản đủ.** Ngắt giữa chừng khi tải
+  dump 2,5 GB để lại file cụt; lần chạy sau dùng lại nó, gzip dừng ở chỗ cụt mà
+  không lỗi, và từ điển thiếu một cách im lặng. Nay tải ra `.part`, kiểm kích
+  thước rồi mới đổi tên.
+- **`Tools/add_files_to_xcode.rb` kiểm nhầm chỗ.** Nó hỏi "group này có file tên
+  vậy chưa" thay vì "target có biên dịch file này chưa" — file đã có ở group
+  khác thì bị thêm lần nữa (lỗi "Multiple commands produce"), còn file nằm đúng
+  group nhưng ngoài target thì bị báo đã bỏ qua và **không bao giờ được biên
+  dịch**. Cùng file: nó crash ngay khi mở project nếu `LANG` chưa được set —
+  Ruby lấy encoding mặc định từ locale, thành US-ASCII, mà `project.pbxproj`
+  chứa UTF-8. Nay script tự ấn định UTF-8 thay vì phó mặc môi trường người gọi.
+- `_meta.version` là số schema, không phải counter. `build_underthesea_package.py`
+  tăng dần nó mỗi lần merge nên nó trôi mất (file đang ship ghi `1`, schema thật
+  là `5`). Counter mà client dùng vẫn là `version` ở top level.
+- Vặt: `--bump-version` là cờ không bao giờ tắt được (`store_true` + `default=True`),
+  nay đảo thành `--no-bump-version`; `_meta.sources` không còn nhân bản mỗi lần
+  chạy lại; attribution chỉ ghi cho nguồn thực sự dùng; bỏ `work_v`/`love_v`
+  khỏi seed (không phải từ tiếng Anh); `datetime.utcnow()` đã deprecated;
+  `capture_marketing.sh` không còn nuốt mã lỗi của bước xuất ảnh.
+
 ## [4.33] - 2026-10-09 — "Chữa lỗi của 4.32"
 
 **Bản sửa lỗi gõ, CẦN cập nhật nếu đang chạy v4.32: bản đó không gõ được tiếng

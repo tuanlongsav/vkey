@@ -43,11 +43,24 @@ import json
 import os
 import sys
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
+from lexicon_common import (
+    SCHEMA_VERSION,
+    add_source,
+    atomic_write_json,
+    build_blocklist,
+    clamp_mapping,
+    collides_with_vietnamese,
+)
+
 KAIKKI_URL = "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
+
+# Dump thật ~2,5 GB nén. Bất cứ thứ gì nhỏ hơn ngưỡng này là tải dở hoặc là
+# trang lỗi HTML — dùng nó thì từ điển thiếu mà không có dấu hiệu gì.
+MIN_KAIKKI_BYTES = 1_000_000_000
 
 # ---------------------------------------------------------------------------
 # Hand-curated seed
@@ -63,6 +76,13 @@ KAIKKI_URL = "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
 # spell engine doesn't disambiguate, so a long synonyms list won't help.
 # Every entry must come from public-domain / open knowledge — do NOT
 # transcribe definitions from commercial dictionaries.
+#
+# Entries here are NOT exempt from the Telex collision filter. About a sixth of
+# this list ("the", "of", "if", "do", "go", "see"…) happens to spell a
+# Vietnamese syllable in Telex, and every key in `en_vn_mapping` is read as an
+# English word by SpellDecisionEngine — so keeping them would fire Space Restore
+# right after the user typed "thế" / "ổ" / "ì". `build()` drops them and says
+# how many; do not add a bypass.
 
 SEED_EN_VN_MAPPING: dict[str, list[str]] = {
     # Function words & connectives
@@ -124,7 +144,6 @@ SEED_EN_VN_MAPPING: dict[str, list[str]] = {
     "give": ["cho", "đưa"],
     "take": ["lấy", "nhận"],
     "use": ["dùng", "sử dụng"],
-    "work_v": ["làm việc"],
     "read": ["đọc"],
     "write": ["viết"],
     "listen": ["nghe"],
@@ -133,7 +152,6 @@ SEED_EN_VN_MAPPING: dict[str, list[str]] = {
     "teach": ["dạy"],
     "buy": ["mua"],
     "sell": ["bán"],
-    "love_v": ["yêu"],
 
     # Adjectives
     "good": ["tốt"],
@@ -251,18 +269,48 @@ def extract_en_vn_pairs(stream: io.IOBase, limit: int | None = None) -> dict[str
 
 
 def download_kaikki(target: Path) -> Path:
-    """Stream-download the Kaikki dump if not already present."""
+    """
+    Stream-download the Kaikki dump if not already present.
+
+    Downloads to a `.part` file and only renames on success. The previous
+    version wrote straight to `target` and treated any existing file as
+    complete, so a Ctrl-C (or a dropped connection) 2 GB into a 2.5 GB download
+    left a truncated archive that every later run happily reused: gzip stops at
+    the truncation point without erroring, and you get a quietly short
+    dictionary with no indication anything went wrong.
+    """
     if target.exists():
+        size = target.stat().st_size
+        if size < MIN_KAIKKI_BYTES:
+            raise SystemExit(
+                f"[build_lexicon] cached dump looks truncated: {target} is "
+                f"{size:,} bytes, expected at least {MIN_KAIKKI_BYTES:,}.\n"
+                f"Delete it and re-run to download again."
+            )
         return target
+
     print(f"[build_lexicon] downloading {KAIKKI_URL} → {target} (large file, ~2.5GB)…",
           file=sys.stderr)
     target.parent.mkdir(parents=True, exist_ok=True)
-    with urllib.request.urlopen(KAIKKI_URL) as r, open(target, "wb") as f:
-        while True:
-            chunk = r.read(1 << 20)  # 1 MiB
-            if not chunk:
-                break
-            f.write(chunk)
+    part = target.with_name(target.name + ".part")
+    try:
+        with urllib.request.urlopen(KAIKKI_URL, timeout=120) as r, open(part, "wb") as f:
+            while True:
+                chunk = r.read(1 << 20)  # 1 MiB
+                if not chunk:
+                    break
+                f.write(chunk)
+        size = part.stat().st_size
+        if size < MIN_KAIKKI_BYTES:
+            raise SystemExit(
+                f"[build_lexicon] download ended at {size:,} bytes, expected at "
+                f"least {MIN_KAIKKI_BYTES:,} — server error page or dropped "
+                f"connection. Not caching it."
+            )
+        os.replace(part, target)
+    except BaseException:
+        part.unlink(missing_ok=True)
+        raise
     return target
 
 
@@ -287,7 +335,15 @@ def build(
     english_top = load_wordfreq_top(top_english)
     english: list[str] = sorted(set(english_top + list(previous.get("english") or [])))
 
-    en_vn: dict[str, list[str]] = dict(SEED_EN_VN_MAPPING)
+    # `en_vn_mapping` bắt đầu từ NỘI DUNG CŨ, không từ SEED. Trước đây dòng này
+    # là `dict(SEED_EN_VN_MAPPING)` và `previous["en_vn_mapping"]` không bao giờ
+    # được đọc — chạy script lên gói hiện tại là thay 3.000 cặp đã qua bộ lọc
+    # va chạm bằng ~110 seed cộng dump Kaikki thô, rồi vẫn bump version nên mọi
+    # client tải về. SEED và Kaikki từ đây chỉ ĐIỀN CHỖ TRỐNG.
+    en_vn: dict[str, list[str]] = dict(previous.get("en_vn_mapping") or {})
+    carried_over = len(en_vn)
+    for k, v in SEED_EN_VN_MAPPING.items():
+        en_vn.setdefault(k, v)
 
     if kaikki_path is None and kaikki_download:
         kaikki_path = Path.home() / ".cache" / "vkey" / "raw-wiktextract-data.jsonl.gz"
@@ -303,41 +359,68 @@ def build(
         print(f"[build_lexicon] +{len(extracted)} entries from Kaikki "
               f"(total en_vn_mapping = {len(en_vn)})",
               file=sys.stderr)
+    else:
+        extracted = {}
+
+    # Bộ lọc va chạm Telex + giới hạn của `validated()` phía Swift. Hai thứ này
+    # trước đây chỉ có trong merge_en_vn_mapping.py, nên đường build này sinh ra
+    # gói mà (a) làm Space Restore bắn nhầm giữa lúc gõ tiếng Việt, và (b) có
+    # thể vượt giới hạn 256 ký tự khiến client từ chối NGUYÊN gói, im lặng.
+    blocked, telex_forms = build_blocklist(vietnamese)
+    colliding = [k for k in en_vn if collides_with_vietnamese(k, blocked, telex_forms)]
+    for k in colliding:
+        del en_vn[k]
+    en_vn, over_limit = clamp_mapping(en_vn)
+    if colliding or over_limit:
+        print(f"[build_lexicon] bỏ {len(colliding)} key trùng cách gõ Telex của "
+              f"âm tiết VN, {over_limit} entry vượt giới hạn độ dài "
+              f"(còn {len(en_vn)})", file=sys.stderr)
+    print(f"[build_lexicon] en_vn_mapping: giữ {carried_over} cặp có sẵn, "
+          f"tổng {len(en_vn)}", file=sys.stderr)
 
     # Version PHẢI chỉ tăng: app so sánh `package.version > currentVersion` để
     # quyết định tải. Trước đây chỗ này ghi cứng 5, nên chạy script lên một file
     # đã ở version 10 sẽ hạ version → không client nào nhận cập nhật nữa.
     next_version = int(previous.get("version") or 0) + 1
 
+    # Mang nguyên `_meta` cũ sang rồi mới sửa từng trường: `cleanup` là nhật ký
+    # các đợt audit và `sources` là chuỗi attribution tích luỹ — dựng lại từ
+    # đầu là xoá dấu vết của những script khác đã chạy trước.
+    meta = dict(previous.get("_meta") or {})
+    # SCHEMA của gói, không phải counter tải về (cái đó là `version` top level).
+    # Trước đây build_underthesea_package.py tăng dần trường này mỗi lần merge,
+    # nên nó trôi khỏi số schema thật.
+    meta["version"] = SCHEMA_VERSION
+    meta["generated_at"] = datetime.now(timezone.utc).isoformat()
+    meta.setdefault("license_of_aggregate", "CC BY-SA 4.0 (data) + GPL-3.0 (code)")
+    meta.setdefault("cleanup", [])
+
+    # Attribution chỉ ghi cho nguồn THỰC SỰ dùng trong lần chạy này. Liệt kê cả
+    # ba vô điều kiện là khai sai license khi chạy không có --kaikki.
+    if vietnamese:
+        add_source(meta, {
+            "name": "common-vietnamese-syllables",
+            "url": "https://github.com/vietnameselanguage/syllable",
+            "license": "Open / public (per upstream project)",
+            "used_for": "vietnamese[]",
+        })
+    if extracted:
+        add_source(meta, {
+            "name": "English Wiktionary via Wiktextract / Kaikki.org",
+            "url": "https://kaikki.org/dictionary/rawdata.html",
+            "license": "CC BY-SA 4.0",
+            "used_for": "en_vn_mapping{}",
+        })
+    if english_top:
+        add_source(meta, {
+            "name": "wordfreq (Robyn Speer)",
+            "url": "https://github.com/rspeer/wordfreq",
+            "license": "MIT (data: CC BY-SA 4.0 for Wiktionary-derived portion)",
+            "used_for": "english[] frequency selection",
+        })
+
     package = {
-        "_meta": {
-            "version": 5,
-            "generated_at": datetime.utcnow().strftime("%Y-%m-%d"),
-            "sources": [
-                {
-                    "name": "common-vietnamese-syllables",
-                    "url": "https://github.com/vietnameselanguage/syllable",
-                    "license": "Open / public (per upstream project)",
-                    "used_for": "vietnamese[]",
-                },
-                {
-                    "name": "English Wiktionary via Wiktextract / Kaikki.org",
-                    "url": "https://kaikki.org/dictionary/rawdata.html",
-                    "license": "CC BY-SA 4.0",
-                    "used_for": "en_vn_mapping{}",
-                },
-                {
-                    "name": "wordfreq (Robyn Speer)",
-                    "url": "https://github.com/rspeer/wordfreq",
-                    "license": "MIT (data: CC BY-SA 4.0 for Wiktionary-derived portion)",
-                    "used_for": "english[] frequency selection",
-                },
-            ],
-            "license_of_aggregate": "CC BY-SA 4.0 (data) + GPL-3.0 (code)",
-            # Nhật ký các đợt audit (Tools/audit_lexicon.py ghi vào đây). Phải
-            # mang sang, nếu không mỗi lần rebuild là mất dấu vết đã lọc những gì.
-            "cleanup": (previous.get("_meta") or {}).get("cleanup") or [],
-        },
+        "_meta": meta,
         "version": next_version,
         "vietnamese": vietnamese,
         "english": english,
@@ -345,9 +428,7 @@ def build(
         "en_vn_mapping": en_vn,
     }
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(package, f, ensure_ascii=False, indent=2, sort_keys=False)
+    atomic_write_json(output_path, package)
     print(f"[build_lexicon] wrote {output_path} — "
           f"english={len(english)}, en_vn_mapping={len(en_vn)}, "
           f"version {previous.get('version')} → {next_version}",

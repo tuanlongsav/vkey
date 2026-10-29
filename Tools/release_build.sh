@@ -123,10 +123,21 @@ if [[ -n "$CERT_END" ]]; then
   fi
 fi
 
-PBX_VERSION="$(grep -m1 'MARKETING_VERSION' vkey.xcodeproj/project.pbxproj \
-  | sed 's/.*= *\([0-9.]*\);.*/\1/')"
+# Ask xcodebuild what the Release configuration actually resolves to, rather
+# than grepping the pbxproj. `grep -m1 MARKETING_VERSION` returned the FIRST of
+# six matches in that file, which is the *Debug* config of the app target — the
+# archive below builds Release. They agree today, so the check passed for the
+# wrong reason; bump one and not the other and this guard either blocks a good
+# release or waves through a mis-versioned one. Costs ~5s before a build that
+# takes minutes.
+PBX_VERSION="$(xcodebuild -project vkey.xcodeproj -scheme vkey \
+  -configuration Release -showBuildSettings 2>/dev/null \
+  | awk '$1 == "MARKETING_VERSION" { print $3; exit }')"
+[[ -n "$PBX_VERSION" ]] \
+  || die "could not read MARKETING_VERSION from the Release build settings.
+       Check: xcodebuild -project vkey.xcodeproj -scheme vkey -configuration Release -showBuildSettings"
 [[ "$PBX_VERSION" == "$VERSION" ]] \
-  || die "MARKETING_VERSION in pbxproj is $PBX_VERSION, expected $VERSION.
+  || die "Release MARKETING_VERSION is $PBX_VERSION, expected $VERSION.
        Bump the version first (RELEASE.md step 2)."
 
 if [[ "$SKIP_NOTARIZE" -eq 0 ]]; then

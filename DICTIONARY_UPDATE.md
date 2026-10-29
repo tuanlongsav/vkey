@@ -114,6 +114,7 @@ Khi merge data từ nguồn ngoài (vd undertheseanlp/dictionary), DÙNG các sc
 
 | Script | Mục đích |
 |--------|---------|
+| [`Tools/lexicon_common.py`](Tools/lexicon_common.py) | Luật và I/O dùng chung: bộ lọc va chạm Telex, ghi file atomic, dedup `_meta.sources`, các giới hạn phản chiếu `validated()` phía Swift. Không chạy trực tiếp |
 | [`Tools/merge_en_vn_mapping.py`](Tools/merge_en_vn_mapping.py) | Thêm `en_vn_mapping` (English → tiếng Việt) từ dump Kaikki. Chỉ ghi đúng một trường, giữ nguyên phần còn lại của gói |
 | [`Tools/build_underthesea_package.py`](Tools/build_underthesea_package.py) | Merge thô single-token từ undertheseanlp JSONL vào lexicon-update.json |
 | [`Tools/audit_lexicon.py`](Tools/audit_lexicon.py) | Loại noise — single-char + ASCII-only no-VN-marker entries (chống false-positive English) |
@@ -128,6 +129,34 @@ python3 Tools/merge_underthesea_deep.py \
 # Sau khi merge, optional cleanup:
 python3 Tools/audit_lexicon.py
 ```
+
+### Bất biến: key `en_vn_mapping` không được trùng cách gõ Telex
+
+Mọi key trong `en_vn_mapping` được `SpellDecisionEngine` coi là **từ tiếng Anh**
+([SpellDecisionEngine.swift](vkey/Input/SpellDecisionEngine.swift), nhánh
+`lookupEnglish`). Nên một key vô tình trùng chuỗi phím Telex của một âm tiết
+tiếng Việt sẽ khiến Space Restore khôi phục về phím thô **ngay lúc người dùng
+vừa gõ xong một từ tiếng Việt** — `mow` là cách gõ "mơ", `coo` là "cô", `hoof`
+là "hồ".
+
+`lexicon_common.collides_with_vietnamese` chặn ba lớp: dạng không dấu, phím dấu
+cuối (`sfrxj`), và chuỗi phím đầy đủ kể cả phím biến nguyên âm (`w`, `aa`, `ee`,
+`oo`, `dd`). Mọi script ghi vào trường này đều phải đi qua nó.
+
+Kiểm và vá:
+
+```bash
+python3 Tools/merge_en_vn_mapping.py --verify lexicon-update.json
+```
+
+Nếu báo có key trùng — thường là do bộ lọc vừa siết lại, còn dữ liệu thì đã ship
+từ trước — vá tại chỗ mà không cần tải lại dump 2,5 GB:
+
+```bash
+python3 Tools/merge_en_vn_mapping.py --prune-collisions lexicon-update.json --dry-run
+```
+
+Bỏ `--dry-run` để ghi thật (tự bump `version` và ghi vào `_meta.cleanup`).
 
 ## Schema (tham khảo)
 

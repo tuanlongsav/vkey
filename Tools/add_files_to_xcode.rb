@@ -17,6 +17,14 @@
 
 require 'xcodeproj'
 
+# project.pbxproj carries UTF-8 (Vietnamese group and file names). Ruby picks
+# its default external encoding from the locale, so with LANG unset — a bare
+# shell, cron, most CI runners — it reads as US-ASCII and xcodeproj dies with
+# "invalid byte sequence in US-ASCII" before doing anything. Don't make the
+# caller's environment decide this.
+Encoding.default_external = Encoding::UTF_8
+Encoding.default_internal = Encoding::UTF_8
+
 PROJECT_PATH = File.expand_path('../vkey.xcodeproj', __dir__)
 TARGET_NAME = 'vkey'
 
@@ -46,14 +54,25 @@ ARGV.each do |arg|
     group = main_group.new_group(group_name, group_name)
   end
 
-  # Skip if already registered.
-  basename = File.basename(path)
-  if group.files.any? { |f| f.display_name == basename }
+  # "Already registered" has to mean "the target compiles this file", not "some
+  # group holds a reference with this name". The old check looked only at
+  # `group.files`, which gets both cases wrong: a file already referenced from a
+  # DIFFERENT group was added a second time (duplicate reference → "Multiple
+  # commands produce" at build time), and a file sitting in the right group but
+  # never wired into the target was reported as skipped and silently never
+  # compiled. Compare resolved paths so a rename of the group can't fool it.
+  in_target = target.source_build_phase.files_references.any? do |ref|
+    ref.real_path.to_s == abs_path
+  end
+  if in_target
     skipped += 1
     next
   end
 
-  file_ref = group.new_reference(abs_path)
+  # The file may still have a reference somewhere without being in the target —
+  # reuse it rather than creating a second one pointing at the same path.
+  file_ref = project.files.find { |f| f.real_path.to_s == abs_path }
+  file_ref ||= group.new_reference(abs_path)
   target.add_file_references([file_ref])
   added += 1
   puts "added: #{path}"

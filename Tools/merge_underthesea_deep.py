@@ -34,20 +34,18 @@ import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
-
-# ── Phonotactic rules learned từ baseline 7,184 curated syllables ──
-
-VN_DIACRITIC_CHARS = set(
-    "àáảãạăắằẳẵặâấầẩẫậ"
-    "èéẻẽẹêếềểễệ"
-    "ìíỉĩị"
-    "òóỏõọôốồổỗộơớờởỡợ"
-    "ùúủũụưứừửữự"
-    "ỳýỷỹỵ"
-    "đ"
+from lexicon_common import (
+    TIER_C_ASCII_LOANWORDS as TIER_C_WHITELIST,
+    VN_DIACRITIC_CHARS,
+    VN_INITIAL_CLUSTERS,
+    add_source,
+    atomic_write_json,
 )
 
-VN_INITIAL_CLUSTERS = {"ng", "ngh", "nh", "kh", "ph", "th", "tr", "ch", "gh", "gi", "qu"}
+# ── Phonotactic rules learned từ baseline 7,184 curated syllables ──
+# (VN_DIACRITIC_CHARS, VN_INITIAL_CLUSTERS và TIER_C_WHITELIST nằm ở
+# Tools/lexicon_common.py — dùng chung với audit_lexicon.py, vốn phải áp đúng
+# cùng một tập thì entry mới không bị script này nhận rồi script kia drop.)
 
 # Valid syllable initial consonants (single + clusters)
 VALID_INITIALS = {
@@ -57,17 +55,6 @@ VALID_INITIALS = {
 
 # Valid syllable final consonants
 VALID_FINALS = {"", "c", "ch", "m", "n", "ng", "nh", "p", "t"}
-
-# Curated whitelist cho Tier C — loanwords phổ biến trong VN
-TIER_C_WHITELIST = {
-    # Chemistry / units
-    "acid", "axit", "kali", "oxy", "ion", "clo", "nitrat", "kalium",
-    "celsius", "fahrenheit",
-    # Science / tech
-    "alpha", "beta", "logic", "euclid", "radio", "video", "internet",
-    "diesel", "cassette", "apacthai",
-}
-
 
 def strip_diacritics(s: str) -> str:
     """Remove tone marks, preserve đ → d."""
@@ -125,8 +112,11 @@ def extract_tokens(jsonl_path: Path) -> dict[str, int]:
                 obj = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            # `":" in text` một mình đã loại hết dòng `Bản mẫu:…`, nên việc kiểm
+            # riêng chuỗi đó là code chết. Giữ lại một điều kiện, nói rõ ý: bỏ
+            # mọi dòng có dấu hai chấm (template Wiktionary, namespace prefix).
             text = (obj.get("text") or "").strip()
-            if not text or "bản mẫu:" in text.lower() or ":" in text:
+            if not text or ":" in text:
                 continue
             for tok in text.lower().split():
                 tok = unicodedata.normalize("NFC", tok)
@@ -180,15 +170,12 @@ def merge_meta(pkg: dict, stats: dict) -> dict:
     })
     meta["cleanup"] = cleanup_log
 
-    sources = list(meta.get("sources") or [])
-    if not any(s.get("name") == "undertheseanlp/dictionary (deep)" for s in sources):
-        sources.append({
-            "name": "undertheseanlp/dictionary (deep)",
-            "url": "https://github.com/undertheseanlp/dictionary",
-            "license": "GPL-3.0",
-            "used_for": "vietnamese[] supplemental — phrase-token extraction with phonotactic filter",
-        })
-    meta["sources"] = sources
+    add_source(meta, {
+        "name": "undertheseanlp/dictionary (deep)",
+        "url": "https://github.com/undertheseanlp/dictionary",
+        "license": "GPL-3.0",
+        "used_for": "vietnamese[] supplemental — phrase-token extraction with phonotactic filter",
+    })
     pkg["_meta"] = meta
     return pkg
 
@@ -214,6 +201,17 @@ def main(argv: list[str]) -> int:
 
     tokens = extract_tokens(args.underthesea)
     print(f"extracted {len(tokens)} unique tokens from undertheseanlp")
+
+    # Không trích được gì thì DỪNG, đừng ghi. `extract_tokens` nuốt mọi
+    # JSONDecodeError để bỏ qua dòng rác, nên một file sai định dạng (upstream
+    # đổi schema, trỏ nhầm file) cho ra 0 token mà không có lỗi nào. Đi tiếp thì
+    # script vẫn bump `version` và ghi đè file — đẩy một bản cập nhật rỗng cho
+    # mọi client, vì họ chỉ so version chứ không so nội dung.
+    if not tokens:
+        print(f"error: 0 token trích được từ {args.underthesea} — "
+              f"sai định dạng? (mong đợi JSON Lines, mỗi dòng có trường 'text'). "
+              f"Dừng, không ghi.", file=sys.stderr)
+        return 1
 
     tier_a, tier_b, tier_c, raw_stats = classify(tokens, current_vn)
     a_f, b_f, c_f = apply_filters(tier_a, tier_b, tier_c)
@@ -254,10 +252,7 @@ def main(argv: list[str]) -> int:
         "total_added": len(additions),
     })
 
-    args.out_path.write_text(
-        json.dumps(pkg, ensure_ascii=False, indent=2, sort_keys=False) + "\n",
-        encoding="utf-8",
-    )
+    atomic_write_json(args.out_path, pkg)
     print()
     print(f"new package version: {pkg['version']}")
     print(f"wrote: {args.out_path}")
