@@ -237,7 +237,7 @@ struct VKMenuPanel: View {
       // Cài đặt
       VKMenuRow("gearshape", "Cài đặt", action: {
         NSApp.setActivationPolicy(.regular)
-        try? openSettings()
+        openSettings()
         NSApp.activate(ignoringOtherApps: true)
         vkCloseMenuBarPanel()
       }) {

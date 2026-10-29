@@ -223,6 +223,13 @@ final class UsageStatistics {
     try? mutableURL.setResourceValues(values)
   }
 
+  /// `weekId` đúng dạng ISO do `WeekBucket.currentWeekId()` sinh ra
+  /// ("2026-W21": 4 chữ số năm, "-W", 2 chữ số tuần) — an toàn để làm tên file.
+  static func isValidWeekId(_ weekId: String) -> Bool {
+    // `\z` chứ không `$`: `$` của ICU còn khớp trước một ký tự xuống dòng cuối.
+    weekId.range(of: #"^[0-9]{4}-W[0-9]{2}\z"#, options: .regularExpression) != nil
+  }
+
   /// Lọc từ "sạch" để hiển thị trong bảng Top words. Dùng chung cho
   /// `StatisticsView` và `VKStatsTab` (trước đây trùng lặp ở cả hai).
   static func isCleanTopWord(_ word: String, category: StatCategory) -> Bool {
@@ -455,6 +462,14 @@ final class UsageStatistics {
       let currentId = WeekBucket.currentWeekId()
       for export in buckets {
         let bucket = WeekBucket(from: export)
+        // `weekId` đến từ file sao lưu người dùng chọn và được ghép thẳng vào
+        // đường dẫn bên dưới — chỉ nhận đúng dạng ISO "2026-W21", nếu không
+        // "../../…" ghi được file .json ra ngoài thư mục thống kê.
+        guard Self.isValidWeekId(bucket.weekId) else {
+          os_log("UsageStatistics.restoreFromBackup: bỏ qua weekId không hợp lệ %{public}@",
+                 log: log, type: .error, bucket.weekId)
+          continue
+        }
         if bucket.weekId == currentId {
           counters = bucket
           rebuildPhraseSuffixIndex()

@@ -150,7 +150,11 @@ class EventHook {
       return 0
     }
 
-    if type == .keyDown && modifierArmedMask != 0 {
+    // Click chuột trong lúc giữ tổ hợp (⇧⌥-click mở rộng vùng chọn…) cũng là
+    // DÙNG modifier, không phải bấm-thả tổ hợp trơn — không được bật phím tắt.
+    let usesHeldModifiers =
+      type == .keyDown || type == .leftMouseDown || type == .rightMouseDown
+    if usesHeldModifiers && modifierArmedMask != 0 {
       modifierKeyUsedDuringArm = true
     }
 

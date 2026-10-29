@@ -10,23 +10,6 @@ import CoreGraphics
 import Defaults
 import Foundation
 
-// MARK: - Spellcheck & Lexicon Core
-//
-// Type definitions for `Lexicon`, `InMemoryLexicon`, `SpellDecision`,
-// `SuggestionCandidate`, and the `String` extension live in
-// `Lexicon/Lexicon.swift` (extracted in 1.5.0). InputProcessor.swift retains
-// the wiring (LexiconManager, SpellDecisionEngine, WordBuffer, etc.) until
-// follow-up 1.5.x patches finish the file split.
-
-
-// LexiconManager, SuggestionService moved to vkey/Lexicon/ in 1.5.0.
-
-
-// SpellDecisionEngine moved to vkey/Input/SpellDecisionEngine.swift in 1.5.0.
-
-// `String.normalizedDictionaryToken`, `.vietnameseFolded`, `.isASCIIAlphabeticWord`
-// moved to `Lexicon/Lexicon.swift` in 1.5.0.
-
 // MARK: - EmitPlan
 
 /// TRỌN kế hoạch phát của MỘT lần thay thế: trục chuẩn hoá + đường gửi, dựng từ
@@ -1344,15 +1327,17 @@ class InputProcessor {
     //   User có thể gõ "viet" + Tab → "việt Nam" (commit + insert prediction).
     // - Nếu không có activePrediction hợp lệ → fall-through cho Tab pass-through
     //   (legitimate form navigation / tab indent).
+    // - Nhận gợi ý KHÔNG thành (từ đang gõ được giữ nguyên, không có gì để thay)
+    //   cũng rơi xuống nhánh Tab thường bên dưới để bộ đệm từ được xoá. Trước
+    //   đây trả thẳng Tab về app với bộ đệm còn nguyên: Tab chèn ký tự / chuyển
+    //   ô, rồi phím kế tiếp diff trên từ CŨ và backspace ăn vào ô mới.
     if taskKey == .Tab,
        isWordPredictionActive(),
        activePredictionAcceptsTab,
-       let prediction = activePrediction
+       let prediction = activePrediction,
+       injectAcceptedPrediction(prediction)
     {
-      if injectAcceptedPrediction(prediction) {
-        return nil  // swallow Tab
-      }
-      return passThrough(event)
+      return nil  // swallow Tab
     }
 
     if InputProcessor.NewWordTaskKeys.contains(taskKey) {
@@ -1964,7 +1949,7 @@ class InputProcessor {
         ? target.precomposedStringWithCanonicalMapping
         : target
       EventSimulator.simulationQueueAsync {
-        _ = EventSimulator.withAdaptiveFlush {
+        EventSimulator.withAdaptiveFlush {
           EventSimulator.sendOptionBackspace(source: source)
           usleep(10_000)  // 10ms delay — đủ cho app process word deletion
           EventSimulator.sendString(typed, source: source)

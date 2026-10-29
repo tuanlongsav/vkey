@@ -136,6 +136,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       self?.showAccessibilityHelpAlert()
     }
 
+    // Chụp phiên bản lần chạy trước TRƯỚC khi `setupTrustedSession()` ghi đè
+    // nó bằng phiên bản đang chạy (`storeTrustedAppVersion`). Đọc sau thì
+    // `handleVersionChange` luôn thấy "không đổi" và lời mời sao lưu khi lên
+    // phiên bản mới không bao giờ hiện với người đã cấp quyền Trợ năng.
+    let versionBeforeLaunch = Defaults[.currentVersion]
+
     checkTrustStatus()
 
     if isTrusted {
@@ -154,27 +160,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // permanently denies Accessibility). After the cap, an NSAlert nudges
     // them to System Settings → Privacy & Security → Accessibility.
     if !isTrusted {
-      trustCheckRetries = 0
-      trustCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) {
-        [weak self] timer in
-        guard let self else {
-          timer.invalidate()
-          return
-        }
-        self.checkTrustStatus()
-        if self.isTrusted {
-          timer.invalidate()
-          self.trustCheckTimer = nil
-          self.setupTrustedSession()
-          return
-        }
-        self.trustCheckRetries += 1
-        if self.trustCheckRetries >= self.maxTrustCheckRetries {
-          timer.invalidate()
-          self.trustCheckTimer = nil
-          self.showAccessibilityHelpAlert()
-        }
-      }
+      restartTrustCheckLoop()
     }
     
     // Sparkle prefs + post-update HUD + throttled background check
@@ -190,7 +176,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
 
     // 1.5.0: prompt for a personal-data backup the first launch after a
     // version upgrade (gated by Defaults[.autoBackupOnUpgrade]).
-    UserDataMigration.handleVersionChange()
+    UserDataMigration.handleVersionChange(previousVersion: versionBeforeLaunch)
   }
 
   /// 1.7.2+: Gate auto-learn Smart Switch chạy 1 lần/NGÀY (đổi từ 1 lần/tuần).
@@ -241,7 +227,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       isTrusted = true
       appState.storeTrustedAppVersion()
       appState.eventHook.setupEventTap(give: appState)
-      appState.load()
       appState.setEnabled(set: true)
       appState.registerSwitchFileMonitor()
       startRevocationWatchdog()

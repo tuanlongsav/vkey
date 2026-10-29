@@ -258,10 +258,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
         }
     }
 
-    public func load() {
-        // Load something later
-    }
-
     public func isNewAppVersion() -> Bool {
         let storedVersion = Defaults[.currentVersion]
         return storedVersion != "0.1" && Bundle.main.appVersionLong != storedVersion

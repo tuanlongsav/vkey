@@ -807,14 +807,20 @@ enum UserDataMigration {
   ///
   /// Returns true if the version stamp was updated (i.e. the user has
   /// accepted the upgrade).
+  ///
+  /// - Parameter previousVersion: phiên bản của lần chạy trước, phải chụp
+  ///   TRƯỚC `AppState.storeTrustedAppVersion()` — hàm đó ghi chung key
+  ///   `currentVersion` ngay khi có quyền Trợ năng, sớm hơn lời gọi này.
   @discardableResult
-  static func handleVersionChange() -> Bool {
+  static func handleVersionChange(
+    previousVersion: String = Defaults[.currentVersion]
+  ) -> Bool {
     // Dọn rác Defaults keys đã xoá ở 1.5.3 trở đi. Idempotent — gọi nhiều
     // lần không sao. Chạy mọi launch để bao quát cả user mới upgrade.
     UserDefaults.standard.removeObject(forKey: "dictionary-update-channel")
     UserDefaults.standard.removeObject(forKey: "dictionary-github-update-enabled")
 
-    let persisted = Defaults[.currentVersion]
+    let persisted = previousVersion
     let running = Bundle.main.appVersionLong
     guard persisted != "0.1", persisted != running else {
       // First launch ever (persisted == "0.1") OR no change — just stamp.

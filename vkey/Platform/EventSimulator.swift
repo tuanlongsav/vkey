@@ -278,10 +278,6 @@ class EventSimulator {
       ?? .hybrid(backspaceDelayMicroseconds: 800)
   }
 
-  static func getAppName(for bundleId: String) -> String {
-    appStrategies.first(where: { bundleId.hasPrefix($0.bundlePrefix) })?.name ?? "Unknown App"
-  }
-
   static func calcKeyStrokes(from: String, to: String) -> (Int, [Character]) {
     let fromChars = Array(from)
     let toChars = Array(to)
@@ -976,7 +972,7 @@ class EventSimulator {
       // 2.0 (C4): wrap với withAdaptiveFlush — counter + optional usleep.
       let source = privateEventSource()
       simulationQueue.async {
-        _ = withAdaptiveFlush {
+        withAdaptiveFlush {
           sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
           sendString(String(diffChars), source: source)
         }
@@ -999,7 +995,7 @@ class EventSimulator {
       }
       // Dispatch to background queue to avoid blocking the event tap
       simulationQueue.async {
-        _ = withAdaptiveFlush {
+        withAdaptiveFlush {
           sendBackspace(backspaceCount, source: source, delayMicroseconds: 2000)
           usleep(3000)
           sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
@@ -1015,7 +1011,7 @@ class EventSimulator {
 
     case .axDirect:
       simulationQueue.async {
-        _ = withAdaptiveFlush {
+        withAdaptiveFlush {
           // Spotlight có thể đang bận search → AX call fail thoáng qua; retry
           // 3 lần (5ms/lần, theo gonhanh) rồi mới fallback synthetic.
           for attempt in 0..<3 {
@@ -1050,7 +1046,7 @@ class EventSimulator {
       }
       // Dispatch to background queue to avoid blocking the event tap
       simulationQueue.async {
-        _ = withAdaptiveFlush {
+        withAdaptiveFlush {
           sendBackspace(backspaceCount, source: source, delayMicroseconds: backspaceDelay)
           sendString(String(diffChars), source: source)
         }

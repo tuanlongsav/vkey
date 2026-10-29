@@ -29,8 +29,11 @@ final class PredictionEngine {
     let p1 = prev1.lowercased()
     guard !p1.isEmpty else { return nil }
 
-    let keepSet = Set(Defaults[.userKeepWords].map { $0.lowercased() })
-    let allowSet = Set(Defaults[.userAllowWords].map { $0.lowercased() })
+    // Bản Set đã dựng sẵn (dựng lại khi danh sách đổi) — hàm này chạy ở mỗi
+    // Space trên luồng event tap, đừng giải mã Defaults + dựng Set mỗi lần.
+    let personal = LexiconManager.shared.personalDictionary()
+    let keepSet = personal.keep
+    let allowSet = personal.allow
 
     var scored: [(phrase: String, score: Int)] = []
 

@@ -4,8 +4,32 @@
 
 ## [Chưa phát hành]
 
-Chỉ chạm `Tools/` và gói từ điển. **Không có thay đổi nào trong app** — cách gõ,
-giao diện, thiết lập đều y nguyên; không cần phát hành bản mới.
+Phần app (mục đầu) chỉ tới người dùng ở bản phát hành kế tiếp. Phần `Tools/` và
+gói từ điển không cần phát hành app: gói từ điển đi độc lập.
+
+### 🐛 Sửa lỗi trong app
+
+- **Tab khi đang có gợi ý làm hỏng chữ ở ô kế tiếp.** HUD còn gợi ý từ lần Space
+  trước, người dùng gõ tiếp một từ không cần sửa ("việt") rồi bấm Tab để sang ô
+  khác: không có gì để thay nên Tab đi thẳng về app, nhưng bộ đệm từ KHÔNG được
+  xoá. Phím gõ tiếp theo diff trên từ cũ — "việt" + `s` là 2 backspace + "ết" —
+  và xoá vào ô mới. Nay Tab nhận gợi ý không thành thì kết thúc từ như Tab thường.
+- **Lời mời sao lưu khi lên phiên bản mới không bao giờ hiện** với người đã cấp
+  quyền Trợ năng (tức gần như mọi lần cập nhật). `setupTrustedSession()` ghi số
+  phiên bản mới vào cùng key trước khi `handleVersionChange()` kịp so sánh. Nay
+  chụp phiên bản lần chạy trước ngay đầu lúc khởi động.
+- **⇧⌥-click (hay ⌃⇧-click) đổi Việt/Anh ngoài ý muốn** khi tổ hợp đó là phím tắt
+  chỉ-modifier: click không được tính là "đã dùng modifier", nên thả phím vẫn bật
+  phím tắt. Nay click huỷ như một phím thường.
+- **Nhập sao lưu ghi được file ra ngoài thư mục thống kê.** Tên tuần trong file
+  sao lưu được ghép thẳng vào đường dẫn; nay chỉ nhận đúng dạng `2026-W21`.
+- Dọn: gỡ trình đọc appcast tự viết (Sparkle tự đọc feed; chỉ test còn gọi),
+  `EventSimulator.getAppName`, `AppState.load()` rỗng, vòng chờ quyền Trợ năng
+  bị chép hai lần; đoán từ dùng lại bộ từ cá nhân đã dựng sẵn thay vì giải mã
+  Defaults mỗi lần Space; bớt cảnh báo biên dịch.
+- Test: 5 test khôi phục "ARM"/"USA" chỉ xanh trên máy đã tải gói từ điển về
+  (hai từ đó không có trong danh sách nhúng sẵn). Nay test tự nạp dữ liệu cần,
+  không phụ thuộc máy. **446 test pass.**
 
 ### 🔒 Chuỗi phát hành
 

@@ -2967,6 +2967,24 @@ final class WordPredictionTabAcceptanceTests: XCTestCase {
     XCTAssertTrue(tabResult != nil, "Tab after a caret/mouse boundary must not accept stale text")
   }
 
+  /// Gợi ý còn hiện từ Space trước, người dùng gõ tiếp một từ tiếng Việt giữ
+  /// nguyên rồi bấm Tab (chuyển ô). Không có gì để thay nên Tab đi thẳng về
+  /// app — nhưng bộ đệm từ PHẢI được xoá, nếu không phím kế tiếp diff trên từ
+  /// cũ và backspace ăn vào ô mới.
+  func testTabThatCannotAcceptPredictionStillEndsTheWord() {
+    let processor = makeNotesProcessor()
+
+    typeKeys([40, 34, 45, 4, 1], into: processor) // kinhs -> kính
+    _ = typeKey(49, into: processor) // Space creates a prediction from "kính".
+    typeKeys([9, 34, 14, 14, 38, 17], into: processor) // vieejt -> việt
+    XCTAssertEqual(processor.transformed, "việt")
+
+    let tabResult = typeKey(48, into: processor)
+    XCTAssertTrue(tabResult != nil, "Nothing to replace — Tab must reach the app")
+    XCTAssertEqual(processor.transformed, "", "Tab ends the word even when no prediction was accepted")
+    XCTAssertTrue(processor.keys.isEmpty)
+  }
+
   private func makeNotesProcessor() -> InputProcessor {
     let processor = InputProcessor(method: .Telex)
     processor.changeActiveApp("com.apple.Notes")
@@ -3931,6 +3949,36 @@ final class TiengVietValidatorTests: XCTestCase {
       hook.handleModifierOnlyHotkey(type: .flagsChanged, currentMods: 0, modifierTarget: target)
     )
   }
+
+  /// ⇧⌥-click / ⌃⇧-click là dùng modifier cho chuột, không phải bấm-thả trơn.
+  func testModifierOnlyHotkeyDoesNotToggleAfterInterveningClick() throws {
+    let control = UInt64(NSEvent.ModifierFlags.control.rawValue)
+    let shift = UInt64(NSEvent.ModifierFlags.shift.rawValue)
+    let target = control | shift
+
+    for click in [CGEventType.leftMouseDown, .rightMouseDown] {
+      let hook = EventHook(inputProcessor: InputProcessor(method: .Telex))
+      XCTAssertFalse(
+        hook.handleModifierOnlyHotkey(type: .flagsChanged, currentMods: target, modifierTarget: target)
+      )
+      XCTAssertFalse(
+        hook.handleModifierOnlyHotkey(type: click, currentMods: target, modifierTarget: target)
+      )
+      XCTAssertFalse(
+        hook.handleModifierOnlyHotkey(type: .flagsChanged, currentMods: 0, modifierTarget: target),
+        "click \(click.rawValue) while holding the combo must not fire the hotkey"
+      )
+    }
+  }
+
+  func testOnlyIsoWeekIdsAreAcceptedAsStatsFileNames() {
+    XCTAssertTrue(UsageStatistics.isValidWeekId("2026-W21"))
+    XCTAssertTrue(UsageStatistics.isValidWeekId("2026-W01"))
+    XCTAssertFalse(UsageStatistics.isValidWeekId(""))
+    XCTAssertFalse(UsageStatistics.isValidWeekId("../../../Library/x"))
+    XCTAssertFalse(UsageStatistics.isValidWeekId("2026-W21/../../x"))
+    XCTAssertFalse(UsageStatistics.isValidWeekId("2026-W21\n"))
+  }
 }
 
 // MARK: - vkey 1.5.0 Phase 1 — Engine regression suite
@@ -4142,67 +4190,6 @@ final class EngineV150Tests: XCTestCase {
     // "tuowi" should produce "tươi" (uoi vowel group is in NguyenAmUO → uo
     // prefix gets double-horn, i untouched). Regression guard for 1.5.
     XCTAssertEqual(telex("tuowi"), "tươi")
-  }
-}
-
-// MARK: - vkey 1.5.0 Phase 2 — Platform regression suite
-
-/// Phase 2 added an XMLParser-based appcast parser to replace fragile regex,
-/// plus a few platform contracts (run-loop source ownership, file-monitor
-/// non-UTF8 fallback). Only the appcast parser is testable without an event
-/// tap / root permission — the other contracts are exercised by smoke runs.
-final class AppcastParserTests: XCTestCase {
-
-  private let sampleAppcast = #"""
-  <?xml version="1.0" encoding="UTF-8"?>
-  <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
-    <channel>
-      <title>vkey</title>
-      <item>
-        <title>Version 1.5.0</title>
-        <sparkle:version>15000</sparkle:version>
-        <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
-        <enclosure
-          url="https://example.com/vkey-1.5.0.dmg"
-          sparkle:edSignature="abc"
-          length="12345"
-          type="application/octet-stream" />
-      </item>
-      <item>
-        <title>Version 1.4.6</title>
-        <sparkle:version>14600</sparkle:version>
-        <sparkle:shortVersionString>1.4.6</sparkle:shortVersionString>
-        <enclosure url="https://example.com/vkey-1.4.6.dmg" length="1" type="x" />
-      </item>
-    </channel>
-  </rss>
-  """#
-
-  func test_parsesTopItemOnly() throws {
-    let data = sampleAppcast.data(using: .utf8)!
-    let summary = AppcastParser.parseTopItem(data: data)
-    XCTAssertEqual(summary?.versionCode, "15000")
-    XCTAssertEqual(summary?.shortVersion, "1.5.0")
-    XCTAssertEqual(summary?.enclosureURL, "https://example.com/vkey-1.5.0.dmg")
-  }
-
-  func test_returnsNilOnGarbage() {
-    let garbage = Data("not actually xml at all".utf8)
-    XCTAssertNil(AppcastParser.parseTopItem(data: garbage))
-  }
-
-  func test_emptyItemIsTolerated() throws {
-    let xml = #"""
-    <?xml version="1.0"?>
-    <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
-      <channel><item></item></channel>
-    </rss>
-    """#
-    let summary = AppcastParser.parseTopItem(data: Data(xml.utf8))
-    XCTAssertNotNil(summary)
-    XCTAssertNil(summary?.versionCode)
-    XCTAssertNil(summary?.shortVersion)
-    XCTAssertNil(summary?.enclosureURL)
   }
 }
 
@@ -4995,7 +4982,7 @@ final class ZWJFOffTelexTests: XCTestCase {
   }
 
   func testClassicTelexW_whenZWJFOff() throws {
-    try withZWJF(false) {
+    withZWJF(false) {
       XCTAssertEqual(telex("w"), "ư", "w đứng không phải ra ư khi ZWJF tắt")
       XCTAssertEqual(telex("W"), "Ư")
       XCTAssertEqual(telex("tw"), "tư", "tw phải ra tư — prefix 'tw' không được khoá raw")
@@ -5007,7 +4994,7 @@ final class ZWJFOffTelexTests: XCTestCase {
 
   // Regression: ZWJF BẬT (mặc định) → w giữ nguyên cho loanword.
   func testWStaysRawForLoanwords_whenZWJFOn() throws {
-    try withZWJF(true) {
+    withZWJF(true) {
       XCTAssertEqual(telex("web"), "web")
       XCTAssertEqual(telex("w"), "w")
     }
@@ -5026,7 +5013,7 @@ final class ZWJFOffTelexTests: XCTestCase {
   /// không được nối phím thô. "ww" (đúng những phím đã gõ) là kết quả tốt nhất
   /// đạt được mà không đụng InputProcessor.
   func testDoubleWCancelsWithoutGhostU_whenZWJFOff() throws {
-    try withZWJF(false) {
+    withZWJF(false) {
       XCTAssertEqual(telex("ww"), "ww", "w thứ hai huỷ, không để lại 'u' tự sinh")
       XCTAssertEqual(telex("www"), "www", "gõ 'www.' phải ra 'www', không phải 'uww'")
       XCTAssertEqual(telex("tww"), "tww", "sau phụ âm cũng vậy — không phải 'tuw'")
@@ -5862,18 +5849,31 @@ final class CommitReplacementPreviousWordStateTests: XCTestCase {
 
   private var savedSpell = true
   private var savedRestore = true
+  private var savedEnVn = true
 
   override func setUp() {
     super.setUp()
     savedSpell = Defaults[.spellCheckEnabled]
     savedRestore = Defaults[.englishAutoRestoreEnabled]
+    savedEnVn = Defaults[.useEnVnReference]
     Defaults[.spellCheckEnabled] = true
     Defaults[.englishAutoRestoreEnabled] = true
+    // "arm"/"usa" KHÔNG nằm trong danh sách EN nhúng sẵn — chỉ có trong gói từ
+    // điển tải về ~/Library/Application Support/vkey/lexicon. Máy chưa tải gói
+    // (cài mới) thì "ẢM"/"ÚA" là từ Việt hợp lệ và không có gì để khôi phục,
+    // nên test đỏ theo máy chứ không theo code. Nạp thẳng hai từ vào bảng
+    // tham chiếu Anh-Việt (đường `useEnVnReference` của nhánh viết tắt).
+    Defaults[.useEnVnReference] = true
+    EnVnReference.shared.load(en2vn: ["arm": ["cánh tay"], "usa": ["Hoa Kỳ"]], vn2en: nil)
   }
 
   override func tearDown() {
     Defaults[.spellCheckEnabled] = savedSpell
     Defaults[.englishAutoRestoreEnabled] = savedRestore
+    Defaults[.useEnVnReference] = savedEnVn
+    // Trả bảng tham chiếu về đúng nội dung gói từ điển của máy (reload chạy
+    // đồng bộ khi đang test).
+    LexiconManager.shared.reload()
     super.tearDown()
   }
 
