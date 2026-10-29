@@ -58,7 +58,7 @@ PY
     if [[ -n "$VERSION" ]]; then
       echo "   Top item version: v$VERSION"
     else
-      echo "   ⚠️  Item đầu không có sparkle:shortVersionString — Sparkle sẽ bỏ qua item này."
+      echo "   ⚠️  Item đầu không có sparkle:shortVersionString — Sparkle sẽ hiện số build (sparkle:version) thay cho số phiên bản."
     fi
   fi
   exit 0

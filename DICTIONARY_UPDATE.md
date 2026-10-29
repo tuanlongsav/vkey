@@ -137,7 +137,8 @@ Mọi key trong `en_vn_mapping` được `SpellDecisionEngine` coi là **từ ti
 `lookupEnglish`). Nên một key vô tình trùng chuỗi phím Telex của một âm tiết
 tiếng Việt sẽ khiến Space Restore khôi phục về phím thô **ngay lúc người dùng
 vừa gõ xong một từ tiếng Việt** — `mow` là cách gõ "mơ", `coo` là "cô", `hoof`
-là "hồ".
+là "hồ". Hiện chỉ lộ ra với chính sách khôi phục "Ưu tiên EN" ("Ưu tiên VI" và
+"Cân bằng" giữ chữ có dấu), nhưng bất biến này giữ cho mọi chính sách.
 
 `lexicon_common.collides_with_vietnamese` chặn ba lớp: dạng không dấu, phím dấu
 cuối (`sfrxj`), và chuỗi phím đầy đủ kể cả phím biến nguyên âm (`w`, `aa`, `ee`,

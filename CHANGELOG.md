@@ -35,8 +35,10 @@ khiến Space Restore khôi phục về phím thô đúng lúc người dùng v�
 tiếng Việt: `mow` là cách gõ `mơ`, `sow` là `sơ`, `vow` là `vơ`, `coo` là `cô`,
 `hoof` là `hồ`, cùng `broom`, `chow`, `loom`, `pawn`, `vee`.
 
-Chỉ cắn khi bật "Dùng từ điển tham chiếu Anh – Việt". Gói từ điển đi độc lập với
-app; máy bạn tự nhận trong 24h.
+Chỉ cắn khi "Chính sách khôi phục" là **Ưu tiên EN**: "Ưu tiên VI" (mặc định)
+và "Cân bằng" đều giữ chữ đã có dấu tiếng Việt. "Dùng từ điển tham chiếu Anh –
+Việt" mặc định đã bật nên không phải điều kiện. Gói từ điển đi độc lập với app;
+máy bạn tự nhận trong 24h.
 
 ### 🧰 Công cụ
 
