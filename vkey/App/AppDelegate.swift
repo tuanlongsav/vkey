@@ -267,6 +267,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
           "Event tap was silently disabled, watchdog re-enabled it (count: %{public}d)",
           log: delegateLog, type: .error, self.appState.eventHook.tapRecoveryCount)
       }
+      // Ổ khoá kẹt khi không còn phím phần cứng nào tới tap (Screen Sharing,
+      // hoặc đơn giản là chưa gõ gì sau khi ô mật khẩu đóng).
+      if self.appState.eventHook.reconcileSecureInput(
+        systemFlag: CGSIsSecureEventInputSet(),
+        lockShown: self.appState.secureInputActive)
+      {
+        self.appState.secureInputActive = false
+      }
     }
     timer.tolerance = 0.5
     // .common để watchdog vẫn chạy khi user đang giữ menu mở hoặc kéo cửa sổ —

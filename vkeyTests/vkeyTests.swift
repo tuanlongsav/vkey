@@ -3911,6 +3911,24 @@ final class TiengVietValidatorTests: XCTestCase {
     )
   }
 
+  /// Ổ khoá kẹt qua Screen Sharing: phím từ ScreensharingAgent có stateID ≠ 1
+  /// nên callback tap bỏ trước khi kịp kiểm lại secure input. Watchdog phải
+  /// tự gỡ khi cờ hệ thống đã tắt — và KHÔNG được gỡ khi cờ còn bật.
+  func testStaleSecureInputIsClearedOnlyWhenSystemFlagIsOff() throws {
+    let hook = EventHook(inputProcessor: InputProcessor(method: .Telex))
+    hook.secureInputOwnerPID = 1131
+
+    XCTAssertFalse(hook.reconcileSecureInput(systemFlag: true, lockShown: true))
+    XCTAssertEqual(hook.secureInputOwnerPID, 1131)
+
+    XCTAssertFalse(hook.reconcileSecureInput(systemFlag: false, lockShown: false))
+    XCTAssertNil(hook.secureInputOwnerPID)
+
+    hook.secureInputOwnerPID = 1131
+    XCTAssertTrue(hook.reconcileSecureInput(systemFlag: false, lockShown: true))
+    XCTAssertNil(hook.secureInputOwnerPID)
+  }
+
   func testModifierOnlyHotkeyDoesNotToggleWhenExtraModifierIsAdded() throws {
     let control = UInt64(NSEvent.ModifierFlags.control.rawValue)
     let shift = UInt64(NSEvent.ModifierFlags.shift.rawValue)

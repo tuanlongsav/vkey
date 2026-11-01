@@ -9,6 +9,12 @@ gói từ điển không cần phát hành app: gói từ điển đi độc l�
 
 ### 🐛 Sửa lỗi trong app
 
+- **Ổ khoá kẹt trên menu bar khi điều khiển máy qua Screen Sharing.** Phím và
+  chuột từ ScreensharingAgent không mang `eventSourceStateID` của bàn phím thật
+  (1), nên tap bỏ chúng trước khi kiểm lại secure input. Ổ khoá bật lúc có ô
+  mật khẩu không bao giờ tắt được, kể cả khi ô đã đóng. Nay watchdog 2 giây tự
+  gỡ khi cờ secure input của hệ thống đã tắt.
+
 - **Tab khi đang có gợi ý làm hỏng chữ ở ô kế tiếp.** HUD còn gợi ý từ lần Space
   trước, người dùng gõ tiếp một từ không cần sửa ("việt") rồi bấm Tab để sang ô
   khác: không có gì để thay nên Tab đi thẳng về app, nhưng bộ đệm từ KHÔNG được

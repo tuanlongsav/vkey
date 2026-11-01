@@ -72,6 +72,19 @@ class EventHook {
   /// vkey resumes normal typing in other apps. `nil` while secure input is off.
   var secureInputOwnerPID: pid_t?
 
+  /// Trạng thái secure input chỉ được đánh giá lại trong callback tap, SAU bộ
+  /// lọc "chỉ phím phần cứng" (stateID == 1). Qua Screen Sharing mọi phím/chuột
+  /// đến từ ScreensharingAgent với stateID khác 1 nên bị bỏ trước khi tới đó:
+  /// ổ khoá bật lúc có ô mật khẩu sẽ kẹt mãi sau khi ô đã đóng. Watchdog gọi hàm
+  /// này định kỳ để gỡ khi cờ hệ thống đã tắt. Chỉ GỠ, không bao giờ BẬT — việc
+  /// bật vẫn thuộc về callback (cần xét chủ sở hữu theo app đang trước).
+  /// Trả `true` khi ổ khoá đang hiện phải được tắt.
+  func reconcileSecureInput(systemFlag: Bool, lockShown: Bool) -> Bool {
+    guard !systemFlag else { return false }
+    secureInputOwnerPID = nil
+    return lockShown
+  }
+
   init(inputProcessor: InputProcessor) {
     self.keyLayout = KeyboardUS()
     self.inputProcessor = inputProcessor
