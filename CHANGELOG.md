@@ -9,6 +9,12 @@ gói từ điển không cần phát hành app: gói từ điển đi độc l�
 
 ### 🐛 Sửa lỗi trong app
 
+- **Không gõ được tiếng Việt khi điều khiển máy qua Screen Sharing.** Tap chỉ
+  nhận phím có `eventSourceStateID == 1` (bàn phím thật). Phím từ máy khác đến
+  qua ScreensharingAgent với state riêng nên bị bỏ hết: vkey không bỏ dấu, cú
+  bấm chuột không kết thúc từ. Nay phím từ ScreensharingAgent (nhận diện bằng
+  đường dẫn file chạy dưới `/System/`) được xử lý như phím thật, kể cả Shift.
+  Phím vkey tự phát và phím tổng hợp của app khác vẫn bị bỏ như trước.
 - **Ổ khoá kẹt trên menu bar khi điều khiển máy qua Screen Sharing.** Phím và
   chuột từ ScreensharingAgent không mang `eventSourceStateID` của bàn phím thật
   (1), nên tap bỏ chúng trước khi kiểm lại secure input. Ổ khoá bật lúc có ô

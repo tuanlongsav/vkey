@@ -3911,6 +3911,31 @@ final class TiengVietValidatorTests: XCTestCase {
     )
   }
 
+  /// Gõ qua Screen Sharing: phím từ ScreensharingAgent (stateID riêng, khác 1)
+  /// phải được xử lý như phím thật; phím vkey tự phát và phím tổng hợp của app
+  /// khác vẫn bị bỏ. Số liệu lấy từ lần đo thật trên Mac Studio 2026-11-01.
+  func testScreenSharingKeysCountAsUserInputButSyntheticOnesDoNot() throws {
+    let agent =
+      "/System/Library/CoreServices/RemoteManagement/ScreensharingAgent.bundle/Contents/MacOS/ScreensharingAgent"
+    let paths: [pid_t: String] = [
+      56629: agent,
+      700: "/Applications/Keyboard Maestro.app/Contents/MacOS/Keyboard Maestro Engine",
+      800: "/tmp/ScreensharingAgent.bundle/Contents/MacOS/ScreensharingAgent",
+    ]
+    let own = getpid()
+    func check(_ stateID: Int64, _ pid: pid_t) -> Bool {
+      EventHook.isUserInputSource(stateID: stateID, sourcePID: pid, ownPID: own) { paths[$0] }
+    }
+
+    XCTAssertTrue(check(1, 0), "bàn phím thật (HID)")
+    XCTAssertTrue(check(2007905771, 56629), "Screen Sharing")
+    XCTAssertFalse(check(0, own), "vkey tự phát (combinedSessionState)")
+    XCTAssertFalse(check(123456, own), "vkey tự phát (privateState)")
+    XCTAssertFalse(check(123456, 700), "app khác tự phát phím")
+    XCTAssertFalse(check(123456, 800), "giả dạng ngoài /System")
+    XCTAssertFalse(check(123456, 999), "pid không còn tồn tại")
+  }
+
   /// Ổ khoá kẹt qua Screen Sharing: phím từ ScreensharingAgent có stateID ≠ 1
   /// nên callback tap bỏ trước khi kịp kiểm lại secure input. Watchdog phải
   /// tự gỡ khi cờ hệ thống đã tắt — và KHÔNG được gỡ khi cờ còn bật.

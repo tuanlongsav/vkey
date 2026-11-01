@@ -85,6 +85,51 @@ class EventHook {
     return lockShown
   }
 
+  /// Đường dẫn file chạy của tiến trình nhận phím Screen Sharing trên máy được
+  /// điều khiển. Phải nằm dưới `/System/` (SIP bảo vệ) để app khác không giả
+  /// dạng được bằng cách đặt tên trùng.
+  static let screenSharingAgentPath =
+    "/System/Library/CoreServices/RemoteManagement/ScreensharingAgent.bundle/Contents/MacOS/ScreensharingAgent"
+
+  /// Phím/chuột có phải do NGƯỜI DÙNG gõ không — bàn phím thật (HID, stateID 1)
+  /// hoặc gõ từ máy khác qua Screen Sharing. Mọi event tổng hợp khác (của chính
+  /// vkey, của app tự động hoá) vẫn bị bỏ như trước.
+  ///
+  /// Đo 2026-11-01 trên Mac Studio: phím qua Screen Sharing đến từ
+  /// ScreensharingAgent, `eventSourceStateID` là một state riêng (2007905771),
+  /// mang mã phím US bình thường, Shift gửi qua `flagsChanged` riêng. Bộ lọc
+  /// cũ (`stateID != 1` → bỏ) làm vkey không bao giờ gõ được tiếng Việt và ổ
+  /// khoá secure input kẹt mãi khi điều khiển máy từ xa.
+  static func isUserInputSource(
+    stateID: Int64, sourcePID: pid_t, ownPID: pid_t,
+    pathForPID: (pid_t) -> String?
+  ) -> Bool {
+    if stateID == 1 { return true }
+    guard sourcePID > 0, sourcePID != ownPID else { return false }
+    return pathForPID(sourcePID) == screenSharingAgentPath
+  }
+
+  static func executablePath(of pid: pid_t) -> String? {
+    var buf = [CChar](repeating: 0, count: Int(MAXPATHLEN) * 4)
+    guard proc_pidpath(pid, &buf, UInt32(buf.count)) > 0 else { return nil }
+    return String(cString: buf)
+  }
+
+  /// Đệm kết quả theo pid nguồn: `proc_pidpath` là syscall, không nên gọi trên
+  /// đường nóng cho mỗi phím. Chỉ chạy trên main run loop (cùng callback tap).
+  private var sourcePIDCache: (pid: pid_t, isScreenSharing: Bool)?
+
+  func isUserInput(_ event: CGEvent) -> Bool {
+    let stateID = event.getIntegerValueField(.eventSourceStateID)
+    if stateID == 1 { return true }
+    let pid = pid_t(truncatingIfNeeded: event.getIntegerValueField(.eventSourceUnixProcessID))
+    if let cached = sourcePIDCache, cached.pid == pid { return cached.isScreenSharing }
+    let result = Self.isUserInputSource(
+      stateID: stateID, sourcePID: pid, ownPID: getpid(), pathForPID: Self.executablePath(of:))
+    sourcePIDCache = (pid, result)
+    return result
+  }
+
   init(inputProcessor: InputProcessor) {
     self.keyLayout = KeyboardUS()
     self.inputProcessor = inputProcessor
@@ -330,13 +375,15 @@ private func handleTapEvent(
     return Unmanaged.passUnretained(event)
   }
 
-  // Ignore keystrokes not from hardware (HID system state).
-  if event.getIntegerValueField(.eventSourceStateID) != 1 {
+  // Chỉ xử lý phím người dùng gõ: bàn phím thật (HID) hoặc Screen Sharing.
+  // Event vkey tự phát và event tổng hợp của app khác đi thẳng.
+  if !eventHook.isUserInput(event) {
     return Unmanaged.passUnretained(event)
   }
 
-  // Shift thật: chỉ `flagsChanged` từ HID. Event chữ do vkey tự phát (stateID
-  // khác 1) đã bị bỏ phía trên, nên chữ hoa tổng hợp không tự bật cờ này.
+  // Shift thật: chỉ `flagsChanged` người dùng gõ (HID hoặc Screen Sharing — nơi
+  // Shift đến bằng `flagsChanged` riêng). Event chữ do vkey tự phát đã bị bỏ
+  // phía trên, nên chữ hoa tổng hợp không tự bật cờ này.
   if type == .flagsChanged {
     eventHook.inputProcessor.hardwareShiftDown = event.flags.contains(.maskShift)
   }
