@@ -8,7 +8,16 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.35](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 440 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.36](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 448 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.36
+
+**Dành cho ai điều khiển một máy Mac khác qua Screen Sharing mà cả hai máy đều cài vkey. Nên cập nhật ở cả hai máy.**
+
+- **Phím tắt ⇧⌥ chỉ đổi chế độ ở máy được điều khiển** — trước đây nó đổi luôn cả máy đang ngồi, nên lá cờ bên này lật vô cớ và rời cửa sổ điều khiển thì chế độ đã bị đổi ngoài ý muốn.
+- **Biểu tượng menu bar thành hình màn hình khi vkey đứng ngoài** — lúc đó chế độ V/E là của máy kia; nhìn lá cờ trong cửa sổ điều khiển.
+- **Chữ hoa gõ từ xa không còn thành chữ thường** sau khi vkey ở máy được điều khiển bị macOS ngắt một nhịp.
+- **Gõ từ xa nhẹ hơn** — vkey ở máy đang ngồi không còn hỏi Accessibility ở mỗi phím cho cửa sổ điều khiển.
 
 ## Mới ở v4.35
 
@@ -186,7 +195,7 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 | Hàng cuối panel | ☕ Ủng hộ tác giả · ℹ️ Thông tin dự án · 🔄 **Kiểm tra cập nhật** (cập nhật thủ công) · số phiên bản |
 | Thoát | **Thoát** (⌘Q) |
 
-**Icon menu bar:** 🇻🇳 gõ VN · 🇺🇸 gõ EN · 🔒 đang ở ô password · ⚠️ Secure Input đang bật dù không ở ô password, vkey có thể không nhận được phím (mở menu để xem app nào giữ) · ⚙️ chưa cấp quyền
+**Icon menu bar:** 🇻🇳 gõ VN · 🇺🇸 gõ EN · 🖥 đang đứng ngoài trong app điều khiển máy từ xa (bộ gõ ở máy kia lo) · 🔒 đang ở ô password · ⚠️ Secure Input đang bật dù không ở ô password, vkey có thể không nhận được phím (mở menu để xem app nào giữ) · ⚙️ chưa cấp quyền
 
 ### Cài đặt — 6 tab
 
