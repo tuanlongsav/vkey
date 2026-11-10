@@ -6,6 +6,31 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.34 — "Gõ được qua Screen Sharing"</title>
+      <sparkle:version>43400</sparkle:version>
+      <sparkle:shortVersionString>4.34</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 10 Nov 2026 10:31:04 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.34/vkey-4.34.dmg"
+        sparkle:edSignature="FG3t1ECQWYpd5xz4CLVUzcVemTbsThxbJmPFaPSgv/19HCwhgyFLHNicBTc20fY8NhZO4fisvSHFj2RYcPL1Cg=="
+        length="6597396"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.34 — Gõ được qua Screen Sharing</h2>
+        <p><b>Bản sửa lỗi gõ. Nên cập nhật nếu hay điều khiển máy qua Screen Sharing, dùng Smart Switch, hoặc từng thấy vkey đang bật mà không ra dấu.</b></p>
+        <ul>
+          <li><b>Gõ được tiếng Việt khi điều khiển máy qua Screen Sharing</b> — trước đây phím từ máy khác bị bỏ hết nên không ra dấu, và ổ khoá trên menu bar kẹt mãi sau khi ô mật khẩu đã đóng.</li>
+          <li><b>Smart Switch giữ đúng chế độ</b> — không còn rơi về chế độ cũ khi gõ tên file trong hộp thoại Lưu; đổi Việt/Anh bằng phím tắt không còn bị hoàn tác ngay ở phím kế tiếp (giữ tới khi đổi app).</li>
+          <li><b>Hết xoá nhầm chữ sau khi macOS tạm ngắt vkey</b> — bật lại event tap là bắt đầu từ mới thay vì sửa tiếp trên từ đã lệch. Tab khi còn gợi ý cũng không còn làm hỏng chữ ở ô kế tiếp.</li>
+          <li><b>Menu nêu tên app đang giữ Secure Input</b> — một ô mật khẩu bỏ quên ở cửa sổ khác có thể làm bộ gõ không nhận được phím; menu nay nói rõ app nào và cách gỡ.</li>
+          <li>Lời mời sao lưu khi lên phiên bản mới hiện lại được; ⇧⌥-click không còn đổi Việt/Anh ngoài ý muốn; nhập sao lưu không còn ghi được file ra ngoài thư mục thống kê.</li>
+        </ul>
+        <p>Chưa đo trên máy thật ở bản này: Screen Sharing khi cả hai máy cùng bật vkey. 457 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.33 — "Chữa lỗi của 4.32"</title>
       <sparkle:version>43300</sparkle:version>
       <sparkle:shortVersionString>4.33</sparkle:shortVersionString>
