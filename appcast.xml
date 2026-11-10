@@ -6,6 +6,31 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.35 — "Gọn lại"</title>
+      <sparkle:version>43500</sparkle:version>
+      <sparkle:shortVersionString>4.35</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 10 Nov 2026 15:56:59 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.35/vkey-4.35.dmg"
+        sparkle:edSignature="oMpU4r5AS6qLvwm5zwq+kUrLXD2I7Etjmc6ah9Cg5324ztaWnD36qcf8B/A+eXuOVWymCF3HOhGqSFgFhMf7CQ=="
+        length="6283503"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.35 — Gọn lại</h2>
+        <p><b>Bản này GỠ bốn tính năng: Lịch sử Clipboard, Đoán từ, Quy tắc theo tiêu đề cửa sổ và Text Tools. Cài đặt đã lưu của chúng bị xoá khi cập nhật.</b></p>
+        <ul>
+          <li><b>Không còn mất tiếng Việt khi không ở ô mật khẩu</b> — vkey chỉ đứng ngoài (ổ khoá) khi con trỏ đúng là ở ô mật khẩu. Trước đây một app giữ kẹt Secure Input làm mọi ô nhập trong app đó mất dấu. Khi Secure Input bật ngoài ý muốn, biểu tượng thành tam giác cảnh báo và menu nêu tên app đang giữ.</li>
+          <li><b>Tự đứng ngoài trong app điều khiển máy từ xa</b> — Screen Sharing, iPhone Mirroring, AnyDesk, RustDesk, TeamViewer, Windows App: phím đi thẳng để bộ gõ ở máy kia làm việc. Muốn gõ dấu từ máy này thì đặt app đó là Tiếng Việt trong Smart Switch.</li>
+          <li><b>Chọn cách gửi phím theo từng app</b> — Nhanh / Có nhịp nghỉ / Từng phím, ở tab Smart Switch, để tự chữa một app rớt hoặc lặp chữ.</li>
+          <li><b>Smart Switch "Tự học" không còn tự ghi cấu hình</b> — chỉ đề xuất để bạn duyệt. Dòng đã bị ghi tự động trước đây có nhãn "Tự động học".</li>
+          <li><b>Hướng dẫn cấp quyền đúng cho macOS 27</b> — mục này nay tên "Device Control and Data Access".</li>
+        </ul>
+        <p>Chưa thử trên hai máy thật: việc đứng ngoài trong app điều khiển máy từ xa. 440 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.34 — "Gõ được qua Screen Sharing"</title>
       <sparkle:version>43400</sparkle:version>
       <sparkle:shortVersionString>4.34</sparkle:shortVersionString>
