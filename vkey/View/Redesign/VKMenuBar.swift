@@ -289,15 +289,16 @@ struct VKMenuPanel: View {
     )
   }
 
-  /// Một tiến trình khác app đang gõ giữ secure input: macOS không chuyển phím
-  /// cho bộ gõ ở BẤT KỲ app nào (theo `CarbonEventsCore.h`, phím chỉ tới app có
-  /// focus bàn phím), nên nói rõ ở đây ai giữ và cách gỡ.
+  /// Secure input đang bật mà người dùng không ở ô mật khẩu: vkey không đứng
+  /// ngoài, nhưng macOS có thể không chuyển phím cho bộ gõ (theo
+  /// `CarbonEventsCore.h`, phím chỉ tới app có focus bàn phím), nên nói rõ ở đây
+  /// ai giữ và cách gỡ.
   private func secureInputNotice(_ holder: String) -> some View {
     HStack(alignment: .top, spacing: 8) {
       Image(systemName: VKMenuBarLabel.secureInputWarningSymbol + ".fill")
         .font(.system(size: 12))
         .foregroundStyle(.yellow)
-      Text("\(holder) đang giữ Secure Input nên vkey không nhận được phím. Mở \(holder) và bấm ra ngoài ô mật khẩu, hoặc thoát nó. Nếu không được, khoá màn hình rồi mở khoá lại.")
+      Text("\(holder) đang giữ Secure Input dù bạn không ở ô mật khẩu, nên macOS có thể không chuyển phím cho vkey (gõ không ra dấu). Mở \(holder) và bấm ra ngoài ô mật khẩu, hoặc thoát nó. Nếu không được, khoá màn hình rồi mở khoá lại.")
         .font(.system(size: 11))
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
@@ -537,8 +538,9 @@ struct VKMenuBarLabel: View {
       Image(systemName: "lock.square")
         .symbolRenderingMode(.hierarchical)
     } else if appState.secureInputHolderName != nil {
-      // Tiến trình khác đang giữ Secure Input: lúc này vkey không gõ được ở đâu
-      // cả, nên biểu tượng phải khác hẳn lá cờ "đang bật". Chi tiết trong menu.
+      // Secure Input đang bật mà không ở ô mật khẩu: vkey có thể không nhận
+      // được phím, nên biểu tượng phải khác hẳn lá cờ "đang bật". Chi tiết
+      // trong menu.
       Image(systemName: Self.secureInputWarningSymbol)
         .symbolRenderingMode(.hierarchical)
     } else {

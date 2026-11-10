@@ -42,6 +42,15 @@ Swift còn 18.742 (trước khi cộng phần sửa lỗi bên dưới).
 
 ### 🐛 Sửa lỗi
 
+- **Mất tiếng Việt dù không ở ô mật khẩu.** vkey đứng ngoài (hiện ổ khoá 🔒) mỗi
+  khi app đang trước là tiến trình giữ secure input, không cần biết con trỏ đang
+  ở ô nào. Một app giữ kẹt secure input sau khi ô mật khẩu đã đóng — Chrome hay
+  bị — là đủ để mọi ô nhập trong app đó mất tiếng Việt. Nay vkey chỉ đứng ngoài
+  khi ô đang focus đúng là ô mật khẩu; ô chữ thường thì gõ bình thường. Hai ngoại
+  lệ giữ cách xử lý cũ: terminal (lời nhắc mật khẩu của `sudo` trông như ô chữ
+  thường) và khi không xác định được ô đang focus. Khi secure input bật mà bạn
+  không ở ô mật khẩu, biểu tượng menu bar là ⚠️ và menu nêu tên app đang giữ.
+  Đánh đổi: ô mật khẩu tự vẽ mà khai là ô chữ chuẩn (hiếm) không còn được nhận ra.
 - **Hướng dẫn cấp quyền chỉ sai chỗ trên macOS 27.** Mục "Accessibility / Trợ
   năng" nay tên "Device Control and Data Access / Điều khiển thiết bị và truy cập
   dữ liệu"; tên cũ còn trong thanh bên nhưng là mục khác. Onboarding, màn hình
@@ -64,7 +73,7 @@ Swift còn 18.742 (trước khi cộng phần sửa lỗi bên dưới).
   của người dùng khi chạy).
 - "Độ đậm thông báo" dời sang tab Chung, cạnh công tắc thông báo VI/EN mà nó
   điều khiển.
-- **433 test pass** (gỡ 43 test của tính năng đã bỏ, thêm 19).
+- **440 test pass**.
 
 ## [4.34] - 2026-11-10 — "Gõ được qua Screen Sharing"
 

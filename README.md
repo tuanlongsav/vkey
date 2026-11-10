@@ -176,7 +176,7 @@ Click cờ 🇻🇳/🇺🇸 trên menu bar.
 | Hàng cuối panel | ☕ Ủng hộ tác giả · ℹ️ Thông tin dự án · 🔄 **Kiểm tra cập nhật** (cập nhật thủ công) · số phiên bản |
 | Thoát | **Thoát** (⌘Q) |
 
-**Icon menu bar:** 🇻🇳 gõ VN · 🇺🇸 gõ EN · 🔒 ô password · ⚠️ một app khác đang giữ Secure Input nên vkey không nhận được phím (mở menu để xem app nào) · ⚙️ chưa cấp quyền
+**Icon menu bar:** 🇻🇳 gõ VN · 🇺🇸 gõ EN · 🔒 đang ở ô password · ⚠️ Secure Input đang bật dù không ở ô password, vkey có thể không nhận được phím (mở menu để xem app nào giữ) · ⚙️ chưa cấp quyền
 
 ### Cài đặt — 6 tab
 

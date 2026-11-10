@@ -8409,62 +8409,6 @@ final class TypingLossReviewTests: XCTestCase {
 
   // MARK: Secure input
 
-  /// Số liệu từ lần đo 2026-11-10: Chrome (pid 3788) giữ secure input ở nền
-  /// trong khi Claude (pid 34995) đang trước.
-  func testSecureInputHeldByBackgroundAppDoesNotLockTheFrontApp() throws {
-    let verdict = EventHook.resolveSecureInput(
-      systemFlag: true, knownOwner: nil, backgroundHolder: 3788, frontmostPID: 34995,
-      frontFieldIsSecure: false)
-    XCTAssertFalse(verdict.isSecure, "ô mật khẩu không ở app đang gõ")
-    XCTAssertEqual(verdict.owner, 3788, "chủ là app nền, không phải app đang trước")
-
-    // Quay lại chính app giữ ô mật khẩu → đứng ngoài.
-    let back = EventHook.resolveSecureInput(
-      systemFlag: true, knownOwner: 3788, backgroundHolder: nil, frontmostPID: 3788,
-      frontFieldIsSecure: false)
-    XCTAssertTrue(back.isSecure)
-    XCTAssertEqual(back.owner, 3788)
-  }
-
-  func testSecureInputFallsBackToFrontAppWhenOwnerIsUnknown() throws {
-    var askedHolder = 0
-    var askedField = 0
-    func holder() -> pid_t? { askedHolder += 1; return nil }
-    func field(_ value: Bool) -> Bool { askedField += 1; return value }
-
-    // Không biết ai giữ (Terminal `sudo`, agent hệ thống…): app đang trước là chủ.
-    let first = EventHook.resolveSecureInput(
-      systemFlag: true, knownOwner: nil, backgroundHolder: holder(), frontmostPID: 500,
-      frontFieldIsSecure: field(false))
-    XCTAssertTrue(first.isSecure)
-    XCTAssertEqual(first.owner, 500)
-    XCTAssertEqual(askedHolder, 1)
-    XCTAssertEqual(askedField, 0, "chủ đã là app đang trước thì không cần hỏi AX")
-
-    // Đã có chủ: không đọc lại IORegistry ở mỗi event.
-    let later = EventHook.resolveSecureInput(
-      systemFlag: true, knownOwner: 500, backgroundHolder: holder(), frontmostPID: 600,
-      frontFieldIsSecure: field(false))
-    XCTAssertFalse(later.isSecure, "sang app khác, ô đang focus không phải ô mật khẩu")
-    XCTAssertEqual(later.owner, 500)
-    XCTAssertEqual(askedHolder, 1)
-
-    // App đang trước tự mở ô mật khẩu → quyền chủ chuyển sang nó.
-    let moved = EventHook.resolveSecureInput(
-      systemFlag: true, knownOwner: 500, backgroundHolder: holder(), frontmostPID: 600,
-      frontFieldIsSecure: field(true))
-    XCTAssertTrue(moved.isSecure)
-    XCTAssertEqual(moved.owner, 600)
-
-    // Cờ hệ thống tắt → không đứng ngoài, quên chủ, không hỏi gì thêm.
-    let off = EventHook.resolveSecureInput(
-      systemFlag: false, knownOwner: 600, backgroundHolder: holder(), frontmostPID: 600,
-      frontFieldIsSecure: field(true))
-    XCTAssertFalse(off.isSecure)
-    XCTAssertNil(off.owner)
-    XCTAssertEqual(askedHolder, 1)
-  }
-
   /// Chỉ coi là "app nền giữ" khi CHẮC: app thường, không phải app đang trước
   /// hay tiến trình phụ của nó. Mọi ca mơ hồ phải rơi về cách hiểu an toàn (app
   /// đang trước giữ) để vkey không bỏ dấu vào ô mật khẩu.
@@ -8557,36 +8501,6 @@ final class SlimDownTests: XCTestCase {
   }
 
   // MARK: Secure Input
-
-  func testSecureInputWarningCoversNonAppHoldersButNotRealPasswordEntry() throws {
-    func warn(
-      owner: pid_t?, front: pid_t? = 500, locked: Bool = false, fieldIsSecure: Bool = false
-    ) -> Bool {
-      EventHook.shouldWarnAboutSecureInputHolder(
-        ownerPID: owner, frontmostPID: front, ownPID: 77, screenLocked: locked,
-        frontFieldIsSecure: fieldIsSecure)
-    }
-    XCTAssertTrue(warn(owner: 3788), "app nền (Chrome) giữ trong khi đang gõ ở app khác")
-    XCTAssertTrue(warn(owner: 142), "loginwindow giữ sau khi ngủ dậy — không phải app thường")
-    XCTAssertFalse(warn(owner: nil), "không ai giữ")
-    XCTAssertFalse(warn(owner: 500), "chính app đang gõ giữ: ổ khoá thường lo")
-    XCTAssertFalse(warn(owner: 77), "vkey không tự cảnh báo về mình")
-    XCTAssertFalse(warn(owner: 3788, locked: true), "màn hình khoá")
-    XCTAssertFalse(warn(owner: 3788, fieldIsSecure: true), "đang nhập mật khẩu thật")
-  }
-
-  /// Không hỏi AX khi các điều kiện rẻ đã loại ca này.
-  func testSecureInputWarningDoesNotQueryAXWhenNothingToWarnAbout() throws {
-    var asked = 0
-    func field() -> Bool { asked += 1; return false }
-    _ = EventHook.shouldWarnAboutSecureInputHolder(
-      ownerPID: nil, frontmostPID: 500, ownPID: 77, screenLocked: false, frontFieldIsSecure: field())
-    _ = EventHook.shouldWarnAboutSecureInputHolder(
-      ownerPID: 500, frontmostPID: 500, ownPID: 77, screenLocked: false, frontFieldIsSecure: field())
-    _ = EventHook.shouldWarnAboutSecureInputHolder(
-      ownerPID: 3788, frontmostPID: 500, ownPID: 77, screenLocked: true, frontFieldIsSecure: field())
-    XCTAssertEqual(asked, 0)
-  }
 
   /// Cờ hệ thống tắt thì không có gì để báo, và bộ đếm nhịp về 0.
   func testSecureInputWarningIsSilentWhenTheSystemFlagIsOff() throws {
@@ -8814,5 +8728,153 @@ final class RemoteDesktopAndSendingModeTests: XCTestCase {
     XCTAssertNil(old.appSendingModes)
     UserDataMigration.importExport(old, replaceLists: true)
     XCTAssertEqual(Defaults[.appSendingModes], ["com.kept.app": .paced], "tệp không có mục này thì không đụng")
+  }
+}
+
+// MARK: - Chỉ khoá tiếng Việt khi đang ở ô mật khẩu (4.35)
+
+/// Cờ secure input của hệ thống bật không có nghĩa người dùng đang nhập mật
+/// khẩu: một tiến trình có thể giữ kẹt. vkey chỉ đứng ngoài khi ô đang focus
+/// đúng là ô mật khẩu, hoặc khi không có bằng chứng rằng nó là ô chữ thường.
+final class SecureInputLockScopeTests: XCTestCase {
+  private let chrome: pid_t = 3788
+  private let claude: pid_t = 34995
+
+  private func verdict(
+    flag: Bool = true, known: pid_t? = nil, background: pid_t? = nil, front: pid_t?,
+    field: Focused.SecureFieldState, terminal: Bool = false
+  ) -> (isSecure: Bool, owner: pid_t?) {
+    EventHook.resolveSecureInput(
+      systemFlag: flag, knownOwner: known, backgroundHolder: background, frontmostPID: front,
+      frontField: field, frontmostHidesPasswordPrompts: terminal)
+  }
+
+  /// Lỗi cần sửa: Chrome giữ kẹt secure input, người dùng gõ ở một ô chữ thường
+  /// NGAY TRONG Chrome. Trước đây khoá vì Chrome vừa là chủ vừa là app đang trước.
+  func testStuckHolderInFrontDoesNotLockAPlainTextField() throws {
+    let v = verdict(known: chrome, front: chrome, field: .plainText)
+    XCTAssertFalse(v.isSecure, "không ở ô mật khẩu thì không khoá tiếng Việt")
+    XCTAssertEqual(v.owner, chrome)
+
+    // Cùng ca, chưa từng ghi chủ (mốc cờ vừa bật): vẫn không khoá.
+    XCTAssertFalse(verdict(front: chrome, field: .plainText).isSecure)
+  }
+
+  func testRealPasswordFieldAlwaysLocks() throws {
+    XCTAssertTrue(verdict(known: chrome, front: chrome, field: .secure).isSecure)
+    // Chủ là app khác, nhưng app đang trước tự mở ô mật khẩu: quyền chủ chuyển sang nó.
+    let moved = verdict(known: chrome, front: claude, field: .secure)
+    XCTAssertTrue(moved.isSecure)
+    XCTAssertEqual(moved.owner, claude)
+  }
+
+  /// Số liệu đo 2026-11-10: Chrome (nền) giữ, đang gõ ở Claude.
+  func testBackgroundHolderNeverLocksTheFrontApp() throws {
+    for field in [Focused.SecureFieldState.plainText, .unknown] {
+      let v = verdict(background: chrome, front: claude, field: field)
+      XCTAssertFalse(v.isSecure, "\(field)")
+      XCTAssertEqual(v.owner, chrome)
+    }
+  }
+
+  /// Không có bằng chứng rằng đây là ô chữ thường (AX không trả lời, giao diện
+  /// tự vẽ) và app đang trước là chủ: giữ cách xử lý an toàn cũ — đứng ngoài.
+  func testUnknownFieldInTheOwningAppStillLocks() throws {
+    XCTAssertTrue(verdict(known: chrome, front: chrome, field: .unknown).isSecure)
+    XCTAssertTrue(verdict(front: chrome, field: .unknown).isSecure, "chưa biết chủ: coi app đang trước là chủ")
+  }
+
+  /// Terminal: lời nhắc mật khẩu của `sudo` là một vùng chữ thường với AX, nên
+  /// "ô chữ thường" không phải bằng chứng là không nhập mật khẩu.
+  func testTerminalOwningSecureInputStaysLocked() throws {
+    XCTAssertTrue(verdict(known: 900, front: 900, field: .plainText, terminal: true).isSecure)
+    // Nhưng terminal KHÔNG phải chủ (app nền giữ) thì gõ bình thường.
+    XCTAssertFalse(verdict(known: chrome, front: 900, field: .plainText, terminal: true).isSecure)
+  }
+
+  func testSystemFlagOffNeverLocksAndForgetsTheOwner() throws {
+    var asked = 0
+    func field() -> Focused.SecureFieldState { asked += 1; return .secure }
+    let v = EventHook.resolveSecureInput(
+      systemFlag: false, knownOwner: chrome, backgroundHolder: chrome, frontmostPID: chrome,
+      frontField: field(), frontmostHidesPasswordPrompts: true)
+    XCTAssertFalse(v.isSecure)
+    XCTAssertNil(v.owner)
+    XCTAssertEqual(asked, 0, "cờ tắt thì không hỏi AX")
+  }
+
+  /// Đã có chủ thì không đọc lại IORegistry ở mỗi event.
+  func testKnownOwnerIsNotLookedUpAgain() throws {
+    var lookups = 0
+    func holder() -> pid_t? { lookups += 1; return chrome }
+    _ = EventHook.resolveSecureInput(
+      systemFlag: true, knownOwner: chrome, backgroundHolder: holder(), frontmostPID: claude,
+      frontField: .plainText, frontmostHidesPasswordPrompts: false)
+    XCTAssertEqual(lookups, 0)
+    _ = EventHook.resolveSecureInput(
+      systemFlag: true, knownOwner: nil, backgroundHolder: holder(), frontmostPID: claude,
+      frontField: .plainText, frontmostHidesPasswordPrompts: false)
+    XCTAssertEqual(lookups, 1)
+  }
+
+  // MARK: Phân loại ô đang focus
+
+  func testSecureFieldClassification() throws {
+    let secure = kAXSecureTextFieldSubrole as String
+    XCTAssertEqual(Focused.classifySecureField(subrole: secure, role: "AXTextField"), .secure)
+    XCTAssertEqual(Focused.classifySecureField(subrole: secure, role: nil), .secure)
+    for role in ["AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"] {
+      XCTAssertEqual(Focused.classifySecureField(subrole: nil, role: role), .plainText, role)
+    }
+    XCTAssertEqual(
+      Focused.classifySecureField(subrole: "AXSearchField", role: "AXTextField"), .plainText)
+    XCTAssertEqual(
+      Focused.classifySecureField(subrole: nil, role: nil), .unknown, "AX không trả lời")
+    XCTAssertEqual(
+      Focused.classifySecureField(subrole: nil, role: "AXGroup"), .unknown,
+      "giao diện tự vẽ: có thể là ô mật khẩu không khai subrole")
+    XCTAssertEqual(Focused.classifySecureField(subrole: nil, role: "AXWindow"), .unknown)
+  }
+
+  /// Danh sách terminal ở đây phải khớp nhóm terminal trong bảng chiến lược gửi.
+  func testTerminalListMatchesTheSendingStrategyTable() throws {
+    for prefix in EventSimulator.terminalBundlePrefixes {
+      guard case .stepByStep = EventSimulator.builtInStrategy(for: prefix) else {
+        return XCTFail("\(prefix) không phải .stepByStep trong appStrategies")
+      }
+      XCTAssertTrue(EventSimulator.isTerminalApp(prefix))
+    }
+    XCTAssertTrue(EventSimulator.isTerminalApp("dev.warp.Warp-Stable"))
+    XCTAssertFalse(EventSimulator.isTerminalApp("com.google.Chrome"))
+    XCTAssertFalse(EventSimulator.isTerminalApp("com.vng.zalo"), "stepByStep nhưng không phải terminal")
+    XCTAssertFalse(EventSimulator.isTerminalApp(nil))
+  }
+
+  // MARK: Cảnh báo
+
+  /// Báo mỗi khi secure input bật mà vkey KHÔNG đang đứng ngoài cho một lần
+  /// nhập mật khẩu — kể cả khi kẻ giữ chính là app đang trước.
+  func testWarningWheneverSecureInputIsOnWithoutPasswordEntry() throws {
+    func warn(owner: pid_t?, locked: Bool = false, standingAside: Bool = false) -> Bool {
+      EventHook.shouldWarnAboutSecureInputHolder(
+        ownerPID: owner, ownPID: 77, screenLocked: locked,
+        standingAsideForPasswordEntry: standingAside)
+    }
+    XCTAssertTrue(warn(owner: chrome), "app nền giữ, hoặc app đang trước giữ kẹt ở ô chữ thường")
+    XCTAssertTrue(warn(owner: 142), "loginwindow sau khi ngủ dậy")
+    XCTAssertFalse(warn(owner: chrome, standingAside: true), "đang nhập mật khẩu thật: ổ khoá lo")
+    XCTAssertFalse(warn(owner: chrome, locked: true), "màn hình khoá")
+    XCTAssertFalse(warn(owner: nil), "không ai giữ")
+    XCTAssertFalse(warn(owner: 77), "vkey không cảnh báo về chính mình")
+  }
+
+  func testWarningDoesNotQueryAXWhenThereIsNoHolder() throws {
+    var asked = 0
+    func aside() -> Bool { asked += 1; return false }
+    _ = EventHook.shouldWarnAboutSecureInputHolder(
+      ownerPID: nil, ownPID: 77, screenLocked: false, standingAsideForPasswordEntry: aside())
+    _ = EventHook.shouldWarnAboutSecureInputHolder(
+      ownerPID: 3788, ownPID: 77, screenLocked: true, standingAsideForPasswordEntry: aside())
+    XCTAssertEqual(asked, 0)
   }
 }

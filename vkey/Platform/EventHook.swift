@@ -154,20 +154,18 @@ class EventHook {
     return owner
   }
 
-  /// Có nên CẢNH BÁO rằng Secure Input đang bị một tiến trình khác app đang gõ
-  /// giữ không. Rộng hơn `isBackgroundSecureInputHolder` (vốn quyết định vkey
-  /// có đứng ngoài hay không, nên phải dè dặt): ở đây chủ không cần là app
-  /// thường — `loginwindow` giữ secure input sau khi máy ngủ dậy cũng là ca cần
-  /// báo. Không báo khi ô đang focus đúng là ô mật khẩu (người dùng đang nhập
-  /// mật khẩu, mọi thứ bình thường) và khi màn hình đang khoá.
+  /// Có nên CẢNH BÁO rằng Secure Input đang bật mà vkey KHÔNG đang đứng ngoài
+  /// cho một lần nhập mật khẩu thật — tức có tiến trình giữ secure input ngoài ý
+  /// muốn (ô mật khẩu bỏ quên ở cửa sổ khác, `loginwindow` sau khi ngủ dậy, hay
+  /// chính app đang trước giữ kẹt dù con trỏ ở ô chữ thường). Lúc đó macOS có
+  /// thể không chuyển phím cho vkey, nên phải nói cho người dùng biết ai giữ.
+  /// Không báo khi màn hình đang khoá.
   static func shouldWarnAboutSecureInputHolder(
-    ownerPID: pid_t?, frontmostPID: pid_t?, ownPID: pid_t,
-    screenLocked: Bool, frontFieldIsSecure: @autoclosure () -> Bool
+    ownerPID: pid_t?, ownPID: pid_t, screenLocked: Bool,
+    standingAsideForPasswordEntry: @autoclosure () -> Bool
   ) -> Bool {
-    guard let ownerPID, ownerPID > 0, ownerPID != ownPID, ownerPID != frontmostPID,
-      !screenLocked
-    else { return false }
-    return !frontFieldIsSecure()
+    guard let ownerPID, ownerPID > 0, ownerPID != ownPID, !screenLocked else { return false }
+    return !standingAsideForPasswordEntry()
   }
 
   /// Màn hình đang khoá (theo WindowServer).
@@ -179,10 +177,9 @@ class EventHook {
   /// Số nhịp watchdog liên tiếp thấy một tiến trình khác giữ secure input.
   private var secureInputWarningTicks = 0
 
-  /// Gọi từ watchdog 2 giây. Trả tên tiến trình đang giữ Secure Input mà KHÔNG
-  /// phải app đang gõ — tức lúc vkey không nhận được phím nào ở bất kỳ app nào
-  /// — để biểu tượng menu bar và menu báo cho người dùng; `nil` nếu không có gì
-  /// để báo.
+  /// Gọi từ watchdog 2 giây. Trả tên tiến trình đang giữ Secure Input trong lúc
+  /// người dùng KHÔNG đứng ở ô mật khẩu (xem `shouldWarnAboutSecureInputHolder`)
+  /// để biểu tượng menu bar và menu báo; `nil` nếu không có gì để báo.
   ///
   /// Chỉ báo khi thấy ở HAI nhịp liên tiếp: một ô mật khẩu vừa mở, AX chưa kịp
   /// trả subrole, là ca thoáng qua không đáng nháy biểu tượng.
@@ -200,8 +197,15 @@ class EventHook {
     }
     guard let pid = Self.systemSecureInputOwnerPID(),
       Self.shouldWarnAboutSecureInputHolder(
-        ownerPID: pid, frontmostPID: frontmost?.processIdentifier, ownPID: ownPID,
-        screenLocked: Self.isScreenLocked(), frontFieldIsSecure: Focused.isSecureField())
+        ownerPID: pid, ownPID: ownPID, screenLocked: Self.isScreenLocked(),
+        // Cùng phép quyết định với callback tap, với chủ THẬT từ IORegistry.
+        standingAsideForPasswordEntry: Self.resolveSecureInput(
+          systemFlag: true, knownOwner: pid, backgroundHolder: nil,
+          frontmostPID: frontmost?.processIdentifier,
+          frontField: Focused.secureFieldState(),
+          frontmostHidesPasswordPrompts: EventSimulator.isTerminalApp(
+            frontmost?.bundleIdentifier)
+        ).isSecure)
     else {
       secureInputWarningTicks = 0
       return nil
@@ -222,29 +226,46 @@ class EventHook {
   /// Quyết định "vkey có phải đứng ngoài vì secure input không" cho MỘT event.
   ///
   /// `CGSIsSecureEventInputSet` là cờ toàn hệ thống: nó bật chừng nào còn BẤT KỲ
-  /// app nào (kể cả app nền) giữ một ô mật khẩu. Nên đứng ngoài chỉ khi chủ là
-  /// app đang trước, hoặc ô đang focus của app đang trước tự nó là ô mật khẩu
-  /// (khi đó quyền chủ chuyển sang app đang trước).
+  /// tiến trình nào giữ secure input, kể cả app nền và kể cả khi tiến trình đó
+  /// giữ kẹt sau khi ô mật khẩu đã đóng. Cờ đó vì vậy KHÔNG có nghĩa "người dùng
+  /// đang nhập mật khẩu". vkey chỉ đứng ngoài (khoá tiếng Việt) khi:
+  ///
+  ///   1. ô đang focus đúng là ô mật khẩu (`.secure`); hoặc
+  ///   2. app đang trước là chủ secure input VÀ không có bằng chứng rằng con trỏ
+  ///      đang ở một ô chữ thường — tức AX không trả lời / phần tử tự vẽ
+  ///      (`.unknown`), hoặc app là terminal, nơi lời nhắc mật khẩu của `sudo`
+  ///      trông y như ô chữ thường.
+  ///
+  /// Trước 4.35, vế 2 không xét ô đang focus: app đang trước mà là chủ thì khoá
+  /// luôn. Chrome giữ kẹt secure input sau khi rời ô mật khẩu là đủ để mọi ô
+  /// nhập trong Chrome mất tiếng Việt, và ổ khoá hiện lên dù không có ô mật khẩu
+  /// nào trên màn hình.
+  ///
+  /// ⚠️ Cái giá đã cân: một ô mật khẩu TỰ VẼ khai role là ô chữ chuẩn mà không
+  /// khai subrole secure (hiếm; Qt/Java đời cũ) sẽ không còn được coi là ô mật
+  /// khẩu. Danh sách role hẹp ở `Focused.plainTextRoles` là để thu nhỏ ca này.
   ///
   /// - Parameter backgroundHolder: chủ là app nền nếu xác định được (xem
-  ///   `backgroundSecureInputHolderApp`). Chỉ được hỏi ở mốc cờ vừa bật, khi
-  ///   chưa có `knownOwner`. Trước đây mốc đó luôn gán chủ = app đang trước, nên
-  ///   khi Chrome nền giữ ô mật khẩu thì ổ khoá hiện ở app đang gõ, và tắt đi
-  ///   đúng lúc quay lại Chrome.
+  ///   `backgroundSecureInputHolderApp`). Chỉ được hỏi khi chưa có `knownOwner`.
+  /// - Parameter frontmostHidesPasswordPrompts: app đang trước là terminal.
   /// - Returns: `owner` là giá trị mới của `secureInputOwnerPID`.
   static func resolveSecureInput(
     systemFlag: Bool, knownOwner: pid_t?,
     backgroundHolder: @autoclosure () -> pid_t?,
     frontmostPID: pid_t?,
-    frontFieldIsSecure: @autoclosure () -> Bool
+    frontField: @autoclosure () -> Focused.SecureFieldState,
+    frontmostHidesPasswordPrompts: Bool
   ) -> (isSecure: Bool, owner: pid_t?) {
     guard systemFlag else { return (false, nil) }
+    let field = frontField()
+    // Đang đứng ở ô mật khẩu — quyền chủ thuộc về app đang trước.
+    if field == .secure { return (true, frontmostPID) }
     let owner = knownOwner ?? backgroundHolder() ?? frontmostPID
-    if owner == frontmostPID { return (true, owner) }
-    // Front app has its own password field focused — ownership moves to it.
-    if frontFieldIsSecure() { return (true, frontmostPID) }
-    // Secure input belongs to a background app; keep typing here.
-    return (false, owner)
+    // Secure input thuộc về một tiến trình khác; ở đây không có ô mật khẩu.
+    guard owner == frontmostPID else { return (false, owner) }
+    // App đang trước giữ secure input nhưng con trỏ ở một ô chữ thường.
+    if field == .plainText, !frontmostHidesPasswordPrompts { return (false, owner) }
+    return (true, owner)
   }
 
   /// App ĐIỀU KHIỂN MÁY TỪ XA: chúng chuyển phím vật lý sang máy kia qua mạng.
@@ -679,15 +700,17 @@ private func handleTapEvent(
   let frontmostPID = frontmostApp?.processIdentifier
   let frontmostBundle = frontmostApp?.bundleIdentifier
 
-  // Ở mốc cờ vừa bật (chưa có chủ) hỏi WindowServer xem có phải một app NỀN
-  // đang giữ không; không xác định được thì coi app đang trước là chủ như cũ.
+  // Chỉ đứng ngoài khi đang ở ô mật khẩu thật (xem `resolveSecureInput`). Ở mốc
+  // cờ vừa bật (chưa có chủ) hỏi WindowServer xem có phải một app NỀN đang giữ
+  // không; không xác định được thì coi app đang trước là chủ như cũ.
   let secureVerdict = EventHook.resolveSecureInput(
     systemFlag: rawSecureInput,
     knownOwner: eventHook.secureInputOwnerPID,
     backgroundHolder: EventHook.backgroundSecureInputHolderApp(frontmost: frontmostApp)?
       .processIdentifier,
     frontmostPID: frontmostPID,
-    frontFieldIsSecure: Focused.isSecureField())
+    frontField: Focused.secureFieldState(),
+    frontmostHidesPasswordPrompts: EventSimulator.isTerminalApp(frontmostBundle))
   eventHook.secureInputOwnerPID = secureVerdict.owner
   let isSecureInput = secureVerdict.isSecure
 

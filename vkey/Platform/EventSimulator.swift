@@ -253,6 +253,22 @@ class EventSimulator {
     AppSendingConfig(bundlePrefix: "com.apple.systemuiserver", strategy: .axDirect, name: "SystemUIServer"),
   ]
 
+  /// App terminal. Ô nhập của chúng là một vùng chữ thường, nên lời nhắc mật
+  /// khẩu (`sudo`, `ssh`) KHÔNG lộ qua AX dưới dạng ô mật khẩu — `EventHook` vì
+  /// thế vẫn đứng ngoài khi một terminal đang trước và giữ secure input. Cùng
+  /// các app với nhóm terminal trong `appStrategies` (test giữ hai chỗ khớp nhau).
+  static let terminalBundlePrefixes: [String] = [
+    "com.apple.Terminal", "com.googlecode.iterm2", "net.kovidgoyal.kitty",
+    "com.mitchellh.ghostty", "dev.warp.Warp", "co.zeit.hyper", "org.tabby",
+    "org.alacritty", "io.alacritty", "com.github.wez.wezterm", "com.raphaelamorim.rio",
+    "com.termius",
+  ]
+
+  static func isTerminalApp(_ bundleId: String?) -> Bool {
+    guard let bundleId else { return false }
+    return terminalBundlePrefixes.contains { bundleId.hasPrefix($0) }
+  }
+
   /// Bản đã giải mã của `Defaults[.appSendingModes]` — tra ở mỗi lần thay chữ,
   /// nên không đọc thẳng Defaults (giải mã lại cả dictionary mỗi lần).
   private static let userSendingModes =

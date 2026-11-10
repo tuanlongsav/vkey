@@ -261,12 +261,45 @@ public struct Focused {
   /// F4: chạy trên TAP THREAD (`EventHook`), mỗi event trong lúc secure input
   /// đang bật — nên đi bằng ngân sách đường nóng.
   public static func isSecureField() -> Bool {
-    guard let focusedElement = focusedElement(timeout: hotPathAXTimeout) else { return false }
-    AXUIElementSetMessagingTimeout(focusedElement, hotPathAXTimeout)
-    if let subrole: String = focusedElement.getAttribute(property: kAXSubroleAttribute) {
-      return subrole == (kAXSecureTextFieldSubrole as String)
-    }
-    return false
+    secureFieldState() == .secure
+  }
+
+  /// Ô đang focus là gì, xét riêng cho câu hỏi "đây có phải chỗ nhập mật khẩu".
+  public enum SecureFieldState {
+    /// AX báo đây là ô mật khẩu (`AXSecureTextField`).
+    case secure
+    /// AX trả lời được và đây là một ô nhập chữ THƯỜNG — bằng chứng dương rằng
+    /// người dùng không đứng ở ô mật khẩu.
+    case plainText
+    /// Không biết: AX không trả lời (timeout, app treo) hoặc phần tử không phải
+    /// ô nhập chữ chuẩn (giao diện tự vẽ, có thể là ô mật khẩu không lộ subrole).
+    case unknown
+  }
+
+  /// Role của ô nhập chữ chuẩn. Phần tử ngoài danh sách này bị coi là `unknown`
+  /// chứ không phải `plainText`: một ô mật khẩu tự vẽ thường lộ ra dưới role
+  /// chung chung (`AXGroup`, `AXUnknown`), và "không biết" phải rơi về phía an
+  /// toàn là không bỏ dấu.
+  static let plainTextRoles: Set<String> = [
+    "AXTextField", "AXTextArea", "AXComboBox", "AXSearchField",
+  ]
+
+  /// Lõi thuần của `secureFieldState()`.
+  static func classifySecureField(subrole: String?, role: String?) -> SecureFieldState {
+    if subrole == (kAXSecureTextFieldSubrole as String) { return .secure }
+    guard let role else { return .unknown }
+    return plainTextRoles.contains(role) ? .plainText : .unknown
+  }
+
+  /// F4: chạy trên TAP THREAD mỗi event trong lúc secure input đang bật (và ở
+  /// nhịp watchdog 2 giây) — ngân sách đường nóng, tối đa hai message AX.
+  public static func secureFieldState() -> SecureFieldState {
+    guard let element = focusedElement(timeout: hotPathAXTimeout) else { return .unknown }
+    AXUIElementSetMessagingTimeout(element, hotPathAXTimeout)
+    let subrole: String? = element.getAttribute(property: kAXSubroleAttribute)
+    if subrole == (kAXSecureTextFieldSubrole as String) { return .secure }
+    return classifySecureField(
+      subrole: subrole, role: element.getAttribute(property: kAXRoleAttribute))
   }
 
   /// Ô đang focus có vùng bôi đen không (độ dài > 0). Dùng cho Backspace
