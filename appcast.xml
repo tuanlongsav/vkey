@@ -6,6 +6,30 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.36 — "Screen Sharing tự lo"</title>
+      <sparkle:version>43600</sparkle:version>
+      <sparkle:shortVersionString>4.36</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 10 Nov 2026 16:15:06 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.36/vkey-4.36.dmg"
+        sparkle:edSignature="ocjfP4HgMdafQC9ZqqzMTDLZwI5R9ljRoTZSc2SpmlGyifeAntplgnsedUWAhsOsVKreyEU3hq7ebKMHUOXTAg=="
+        length="6283402"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.36 — Screen Sharing tự lo</h2>
+        <p><b>Dành cho ai điều khiển một máy Mac khác qua Screen Sharing mà cả hai máy đều cài vkey. Nên cập nhật ở cả hai máy.</b></p>
+        <ul>
+          <li><b>Phím tắt ⇧⌥ chỉ đổi chế độ ở máy được điều khiển</b> — trước đây nó đổi luôn cả máy đang ngồi, nên lá cờ bên này lật vô cớ và rời cửa sổ điều khiển thì chế độ đã bị đổi ngoài ý muốn.</li>
+          <li><b>Biểu tượng menu bar thành hình màn hình khi vkey đứng ngoài</b> — lúc đó chế độ V/E là của máy kia; nhìn lá cờ trong cửa sổ điều khiển.</li>
+          <li><b>Chữ hoa gõ từ xa không còn thành chữ thường</b> sau khi vkey ở máy được điều khiển bị macOS ngắt một nhịp.</li>
+          <li><b>Gõ từ xa nhẹ hơn</b> — vkey ở máy đang ngồi không còn hỏi Accessibility ở mỗi phím cho cửa sổ điều khiển.</li>
+        </ul>
+        <p>Chưa thử trên hai máy thật. 448 test pass.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.35 — "Gọn lại"</title>
       <sparkle:version>43500</sparkle:version>
       <sparkle:shortVersionString>4.35</sparkle:shortVersionString>
