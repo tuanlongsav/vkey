@@ -8,7 +8,17 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.34](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 457 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.35](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 440 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.35
+
+**Bản gọn lại — đọc trước khi cập nhật nếu bạn đang dùng Lịch sử Clipboard, Đoán từ, Quy tắc theo tiêu đề cửa sổ hoặc Text Tools: bốn tính năng này đã được gỡ.**
+
+- **Không còn mất tiếng Việt khi không ở ô mật khẩu** — vkey chỉ đứng ngoài (🔒) khi con trỏ đúng là ở ô mật khẩu. Trước đây một app giữ kẹt Secure Input (Chrome hay bị) làm mọi ô nhập trong app đó mất dấu. Khi Secure Input bật ngoài ý muốn, biểu tượng thành ⚠️ và menu nêu tên app đang giữ.
+- **Tự đứng ngoài trong app điều khiển máy từ xa** — Screen Sharing, iPhone Mirroring, AnyDesk, RustDesk, TeamViewer, Windows App: phím đi thẳng để bộ gõ ở máy kia làm việc, hết cảnh hai bộ gõ cùng sửa một chuỗi phím. Muốn gõ dấu từ máy này thì đặt app đó là Tiếng Việt trong Smart Switch.
+- **Chọn cách gửi phím theo từng app** — Nhanh / Có nhịp nghỉ / Từng phím, ở tab Smart Switch, để tự chữa một app rớt hoặc lặp chữ.
+- **Gỡ bốn tính năng không phải việc của bộ gõ** — Lịch sử Clipboard, Đoán từ, Quy tắc theo tiêu đề cửa sổ, Text Tools; Smart Switch "Tự học" chỉ còn đề xuất chứ không tự ghi. Mã nguồn bớt khoảng 3.800 dòng.
+- **Hướng dẫn cấp quyền đúng cho macOS 27** — mục này nay tên "Device Control and Data Access".
 
 ## Mới ở v4.34
 
