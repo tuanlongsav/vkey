@@ -2,6 +2,7 @@ import ApplicationServices
 import Cocoa
 import Defaults
 import Foundation
+import IOKit
 import KeyboardShortcuts
 import os.log
 
@@ -85,6 +86,168 @@ class EventHook {
     return lockShown
   }
 
+  /// PID của tiến trình đang giữ secure input, theo WindowServer; `nil` khi
+  /// không ai giữ hoặc không đọc được.
+  ///
+  /// Đọc `IOConsoleUsers[].kCGSSessionSecureInputPID` ở gốc IORegistry — cùng
+  /// nguồn với `ioreg -l | grep SecureInput`. KHÔNG dùng
+  /// `CGSessionCopyCurrentDictionary()` dù nó có đúng khoá đó: đo 2026-11-10 trên
+  /// MacBook, lúc Chrome (app nền) giữ secure input thì IORegistry báo đúng pid
+  /// Chrome và về rỗng ngay khi Chrome nhả, còn dictionary của session báo pid
+  /// của app ĐANG TRƯỚC (Claude, rồi Zalo) — tức không cho biết ai giữ.
+  static func systemSecureInputOwnerPID() -> pid_t? {
+    let root = IORegistryGetRootEntry(kIOMainPortDefault)
+    guard root != 0 else { return nil }
+    defer { IOObjectRelease(root) }
+    guard
+      let users = IORegistryEntryCreateCFProperty(
+        root, "IOConsoleUsers" as CFString, kCFAllocatorDefault, 0)?
+        .takeRetainedValue() as? [[String: Any]]
+    else { return nil }
+    let uid = Int(getuid())
+    // Nhiều phiên đăng nhập (fast user switching): ưu tiên phiên của chính mình.
+    let mine = users.filter { ($0["kCGSSessionUserIDKey"] as? NSNumber)?.intValue == uid }
+    for user in mine.isEmpty ? users : mine {
+      if let pid = (user["kCGSSessionSecureInputPID"] as? NSNumber)?.int32Value, pid > 0 {
+        return pid
+      }
+    }
+    return nil
+  }
+
+  /// Chủ secure input có CHẮC CHẮN là một app nền không.
+  ///
+  /// Chỉ `true` khi chủ là app thường (có Dock), không phải app đang trước,
+  /// không phải tiến trình phụ của app đang trước, không phải vkey. Mọi ca khác
+  /// — agent hệ thống (SecurityAgent hiện hộp mật khẩu), tiến trình phụ, không
+  /// tra được — trả `false` để phía gọi giữ cách hiểu cũ là "app đang trước
+  /// giữ": thà đứng ngoài nhầm còn hơn bỏ dấu vào một ô mật khẩu.
+  static func isBackgroundSecureInputHolder(
+    ownerPID: pid_t?, ownerBundle: String?, ownerIsRegularApp: Bool,
+    frontmostPID: pid_t?, frontmostBundle: String?, ownPID: pid_t
+  ) -> Bool {
+    guard let ownerPID, ownerPID > 0, ownerPID != ownPID, ownerPID != frontmostPID,
+      ownerIsRegularApp
+    else { return false }
+    if let ownerBundle, let frontmostBundle, !frontmostBundle.isEmpty,
+      ownerBundle == frontmostBundle || ownerBundle.hasPrefix(frontmostBundle + ".")
+    {
+      return false
+    }
+    return true
+  }
+
+  /// App nền đang giữ secure input (xem `isBackgroundSecureInputHolder`), hoặc
+  /// `nil`. Một lần đọc IORegistry + một lần tra `NSRunningApplication`: chỉ gọi
+  /// ở mốc secure input vừa bật (callback) và ở nhịp watchdog 2 giây.
+  static func backgroundSecureInputHolderApp(
+    frontmost: NSRunningApplication?
+  ) -> NSRunningApplication? {
+    guard let pid = systemSecureInputOwnerPID(),
+      let owner = NSRunningApplication(processIdentifier: pid),
+      isBackgroundSecureInputHolder(
+        ownerPID: pid, ownerBundle: owner.bundleIdentifier,
+        ownerIsRegularApp: owner.activationPolicy == .regular,
+        frontmostPID: frontmost?.processIdentifier,
+        frontmostBundle: frontmost?.bundleIdentifier, ownPID: getpid())
+    else { return nil }
+    return owner
+  }
+
+  /// Gọi từ watchdog khi cờ secure input đang bật: ghi lại chủ là app nền (sửa
+  /// phép đoán "app đang trước" nếu callback đã đoán nhầm) và trả tên app để
+  /// menu hiển thị. `nil` khi chủ không phải app nền.
+  func refreshBackgroundSecureInputHolder() -> String? {
+    guard
+      let app = Self.backgroundSecureInputHolderApp(
+        frontmost: NSWorkspace.shared.frontmostApplication)
+    else { return nil }
+    secureInputOwnerPID = app.processIdentifier
+    return app.localizedName ?? app.bundleIdentifier ?? "pid \(app.processIdentifier)"
+  }
+
+  /// Quyết định "vkey có phải đứng ngoài vì secure input không" cho MỘT event.
+  ///
+  /// `CGSIsSecureEventInputSet` là cờ toàn hệ thống: nó bật chừng nào còn BẤT KỲ
+  /// app nào (kể cả app nền) giữ một ô mật khẩu. Nên đứng ngoài chỉ khi chủ là
+  /// app đang trước, hoặc ô đang focus của app đang trước tự nó là ô mật khẩu
+  /// (khi đó quyền chủ chuyển sang app đang trước).
+  ///
+  /// - Parameter backgroundHolder: chủ là app nền nếu xác định được (xem
+  ///   `backgroundSecureInputHolderApp`). Chỉ được hỏi ở mốc cờ vừa bật, khi
+  ///   chưa có `knownOwner`. Trước đây mốc đó luôn gán chủ = app đang trước, nên
+  ///   khi Chrome nền giữ ô mật khẩu thì ổ khoá hiện ở app đang gõ, và tắt đi
+  ///   đúng lúc quay lại Chrome.
+  /// - Returns: `owner` là giá trị mới của `secureInputOwnerPID`.
+  static func resolveSecureInput(
+    systemFlag: Bool, knownOwner: pid_t?,
+    backgroundHolder: @autoclosure () -> pid_t?,
+    frontmostPID: pid_t?,
+    frontFieldIsSecure: @autoclosure () -> Bool
+  ) -> (isSecure: Bool, owner: pid_t?) {
+    guard systemFlag else { return (false, nil) }
+    let owner = knownOwner ?? backgroundHolder() ?? frontmostPID
+    if owner == frontmostPID { return (true, owner) }
+    // Front app has its own password field focused — ownership moves to it.
+    if frontFieldIsSecure() { return (true, frontmostPID) }
+    // Secure input belongs to a background app; keep typing here.
+    return (false, owner)
+  }
+
+  /// Chế độ mà Smart Switch muốn áp cho `bundleId`: `true` = tiếng Việt,
+  /// `false` = tiếng Anh/tắt, `nil` = app không có cấu hình.
+  ///
+  /// Thứ tự: rule tiêu đề cửa sổ của đúng app đó → cấu hình 3 trạng thái →
+  /// danh sách "tắt VN" đời cũ.
+  static func smartSwitchDesiredEnabled(
+    bundleId: String,
+    ruleBundleId: String?, ruleState: AppSmartSwitchState?,
+    config: AppSmartSwitchConfig?,
+    isLegacyEnglishApp: @autoclosure () -> Bool
+  ) -> Bool? {
+    func enabled(for state: AppSmartSwitchState) -> Bool {
+      switch state {
+      case .disabled, .englishMode: return false
+      case .vietnameseMode: return true
+      }
+    }
+    if ruleBundleId == bundleId, let ruleState { return enabled(for: ruleState) }
+    if let config { return enabled(for: config.state) }
+    if isLegacyEnglishApp() { return false }
+    return nil
+  }
+
+  /// keyDown đến qua Screen Sharing mang CHỮ ĐÃ SOẠN SẴN chứ không phải một
+  /// phím thô.
+  ///
+  /// Khi máy ĐIỀU KHIỂN cũng chạy bộ gõ, nó gửi sang backspace + event chỉ mang
+  /// chuỗi Unicode ("ê", "ệt", hoặc cả từ "text "). Đọc event đó theo mã phím
+  /// (vkey gắn mã 0 = phím A cho event Unicode) thì máy này tưởng người dùng gõ
+  /// `a`, đẩy vào bộ đệm trong khi app nhận "ê" — bộ đệm lệch màn hình và lần
+  /// thay chữ kế tiếp xoá nhầm. Phím thô thì chỉ mang tối đa MỘT ký tự ASCII.
+  ///
+  /// ⚠️ CHƯA ĐO trên hai máy thật (cần MacBook + Mac Studio cùng bật vkey):
+  /// chưa biết Screen Sharing có giữ nguyên chuỗi Unicode của event gốc không.
+  /// Ca còn hở kể cả khi có: event Unicode mang đúng một ký tự ASCII (chữ hoa
+  /// đầu câu do bộ gõ đầu kia phát) trông y như phím thô.
+  static func isPrecomposedRemoteText(_ payload: String) -> Bool {
+    if payload.utf16.count > 1 { return true }
+    // U+F700…U+F8FF: mã riêng AppKit gắn cho phím chức năng (mũi tên, Home,
+    // F1…) — đó là phím thô, phải tới `handleEvent` như thường.
+    return payload.unicodeScalars.contains {
+      !$0.isASCII && !(0xF700...0xF8FF).contains($0.value)
+    }
+  }
+
+  /// Chuỗi Unicode gắn trên một event phím ("" nếu không có).
+  static func unicodePayload(of event: CGEvent) -> String {
+    var length = 0
+    var units = [UniChar](repeating: 0, count: 32)
+    event.keyboardGetUnicodeString(
+      maxStringLength: units.count, actualStringLength: &length, unicodeString: &units)
+    return length > 0 ? String(utf16CodeUnits: units, count: min(length, units.count)) : ""
+  }
+
   /// Đường dẫn file chạy của tiến trình nhận phím Screen Sharing trên máy được
   /// điều khiển. Phải nằm dưới `/System/` (SIP bảo vệ) để app khác không giả
   /// dạng được bằng cách đặt tên trùng.
@@ -118,14 +281,20 @@ class EventHook {
   /// Đệm kết quả theo pid nguồn: `proc_pidpath` là syscall, không nên gọi trên
   /// đường nóng cho mỗi phím. Chỉ chạy trên main run loop (cùng callback tap).
   private var sourcePIDCache: (pid: pid_t, isScreenSharing: Bool)?
+  private let ownPID = getpid()
 
   func isUserInput(_ event: CGEvent) -> Bool {
     let stateID = event.getIntegerValueField(.eventSourceStateID)
     if stateID == 1 { return true }
     let pid = pid_t(truncatingIfNeeded: event.getIntegerValueField(.eventSourceUnixProcessID))
+    // Event vkey tự phát: trả lời ngay, KHÔNG ghi vào đệm. Đệm chỉ có một ô, mà
+    // gõ tiếng Việt qua Screen Sharing thì phím của agent và backspace/chữ thay
+    // của vkey đi xen kẽ qua cùng tap — để event của chính mình chiếm ô thì
+    // phím nào của agent cũng trượt đệm và gọi lại `proc_pidpath`.
+    guard pid > 0, pid != ownPID else { return false }
     if let cached = sourcePIDCache, cached.pid == pid { return cached.isScreenSharing }
     let result = Self.isUserInputSource(
-      stateID: stateID, sourcePID: pid, ownPID: getpid(), pathForPID: Self.executablePath(of:))
+      stateID: stateID, sourcePID: pid, ownPID: ownPID, pathForPID: Self.executablePath(of:))
     sourcePIDCache = (pid, result)
     return result
   }
@@ -152,6 +321,29 @@ class EventHook {
   func syncHardwareShiftFromSystem() {
     inputProcessor.hardwareShiftDown =
       CGEventSource.flagsState(.hidSystemState).contains(.maskShift)
+  }
+
+  /// Bật lại tap sau khi hệ thống vô hiệu nó, rồi đưa trạng thái gõ về chỗ an
+  /// toàn. Dùng chung cho handler `tapDisabledBy*` trong callback và watchdog ở
+  /// `AppDelegate` — trước đây hai nơi tự bật riêng và watchdog quên đồng bộ Shift.
+  func recoverTap() {
+    guard let eventTap else { return }
+    CGEvent.tapEnable(tap: eventTap, enable: true)
+    resyncAfterTapGap()
+    tapRecoveryCount += 1
+  }
+
+  /// Trong lúc tap tắt, phím đi THẲNG vào app mà vkey không thấy: bộ đệm từ
+  /// không còn khớp màn hình, và mọi `flagsChanged` đã mất.
+  ///
+  /// Giữ bộ đệm cũ thì phím đầu tiên sau khi tap sống lại sẽ diff trên chữ đã
+  /// lệch: bộ đệm "vie", lọt qua "et" (màn hình "vieet"), gõ `j` → backspace
+  /// đếm theo "vie" ăn vào hai chữ vừa lọt. Bắt đầu từ mới thì cùng lắm từ dở
+  /// đó không ra dấu, không xoá nhầm chữ nào.
+  func resyncAfterTapGap() {
+    inputProcessor.newWord()
+    inputProcessor.resetSentenceCapitalizeState()
+    syncHardwareShiftFromSystem()
   }
 
   @discardableResult
@@ -356,12 +548,11 @@ private func handleTapEvent(
     // mọi event sau passthrough, watchdog ở AppDelegate sẽ tháo tap.
     let stillTrusted = AXIsProcessTrusted()
     eventHook.trustedCache = stillTrusted
-    if stillTrusted, let eventTap = eventHook.eventTap {
-      CGEvent.tapEnable(tap: eventTap, enable: true)
-      // Mọi `flagsChanged` trong lúc tap bị vô hiệu đã mất: đọc lại Shift từ
-      // phần cứng, đừng tin giá trị cũ (xem `syncHardwareShiftFromSystem`).
-      eventHook.syncHardwareShiftFromSystem()
-      eventHook.tapRecoveryCount += 1
+    if stillTrusted, eventHook.eventTap != nil {
+      // Bật lại + bỏ từ đang gõ dở + đọc lại Shift từ phần cứng: phím và
+      // `flagsChanged` trong lúc tap bị vô hiệu đều đã đi qua mà vkey không
+      // thấy (xem `resyncAfterTapGap`).
+      eventHook.recoverTap()
       #if DEBUG
       print("[vkey] Event tap was disabled by system (\(type == .tapDisabledByTimeout ? "timeout" : "user input")), auto-recovered (count: \(eventHook.tapRecoveryCount))")
       #endif
@@ -415,29 +606,21 @@ private func handleTapEvent(
   // This keeps Terminal `sudo` working (owner == Terminal, exposes no secure
   // subrole) while following the active app everywhere else.
   let rawSecureInput = CGSIsSecureEventInputSet()
-  let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+  let frontmostApp = NSWorkspace.shared.frontmostApplication
+  let frontmostPID = frontmostApp?.processIdentifier
+  let frontmostBundle = frontmostApp?.bundleIdentifier
 
-  let isSecureInput: Bool
-  if rawSecureInput {
-    if eventHook.secureInputOwnerPID == nil {
-      // First event after secure input turned on (or it was already on at
-      // launch): the frontmost app is the owner.
-      eventHook.secureInputOwnerPID = frontmostPID
-    }
-    if eventHook.secureInputOwnerPID == frontmostPID {
-      isSecureInput = true
-    } else if Focused.isSecureField() {
-      // Front app has its own password field focused — ownership moves to it.
-      eventHook.secureInputOwnerPID = frontmostPID
-      isSecureInput = true
-    } else {
-      // Secure input belongs to a background app; keep typing here.
-      isSecureInput = false
-    }
-  } else {
-    eventHook.secureInputOwnerPID = nil
-    isSecureInput = false
-  }
+  // Ở mốc cờ vừa bật (chưa có chủ) hỏi WindowServer xem có phải một app NỀN
+  // đang giữ không; không xác định được thì coi app đang trước là chủ như cũ.
+  let secureVerdict = EventHook.resolveSecureInput(
+    systemFlag: rawSecureInput,
+    knownOwner: eventHook.secureInputOwnerPID,
+    backgroundHolder: EventHook.backgroundSecureInputHolderApp(frontmost: frontmostApp)?
+      .processIdentifier,
+    frontmostPID: frontmostPID,
+    frontFieldIsSecure: Focused.isSecureField())
+  eventHook.secureInputOwnerPID = secureVerdict.owner
+  let isSecureInput = secureVerdict.isSecure
 
   if let appState = eventHook.appState, appState.secureInputActive != isSecureInput {
     if isSecureInput {
@@ -500,7 +683,7 @@ private func handleTapEvent(
     if firedMask != 0 {
       if firedMask == toggleTarget, let appState = eventHook.appState {
         DispatchQueue.main.async {
-          appState.setEnabled(set: !appState.enabled)
+          appState.setEnabledByUser(!appState.enabled)
         }
       } else if firedMask == textToolsTarget {
         DispatchQueue.main.async {
@@ -553,7 +736,7 @@ private func handleTapEvent(
         }
       }
 
-      let frontmost = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+      let frontmost = frontmostBundle
       // Ưu tiên AX focused element (đúng nonactivating Plume / WKWebView host).
       // Overlay Spotlight thắng khi Smart Switch bật (event-target trả app nền
       // trên macOS 26). Event-target chỉ khi AX hụt.
@@ -594,24 +777,28 @@ private func handleTapEvent(
 
     if Defaults[.smartSwitchEnabled],
        (type == .keyDown || type == .leftMouseDown || type == .rightMouseDown) {
-      if let focusedBundleId = appState.currentFocusedBundleId {
-        let desiredEnabled: Bool?
-        if appState.activeRuleOverridesBundleId == focusedBundleId,
-           let ruleState = appState.activeRuleOverrides.overrideState {
-          switch ruleState {
-          case .disabled, .englishMode: desiredEnabled = false
-          case .vietnameseMode:         desiredEnabled = true
-          }
-        } else if let config = appState.smartSwitchConfig(for: focusedBundleId) {
-          switch config.state {
-          case .disabled, .englishMode: desiredEnabled = false
-          case .vietnameseMode:         desiredEnabled = true
-          }
-        } else if Defaults[.smartSwitchApps].contains(focusedBundleId) {
-          desiredEnabled = false
-        } else {
-          desiredEnabled = nil
-        }
+      // Tra cấu hình theo app ĐÃ QUY CHUẨN, không theo bundle thô AX trả về.
+      // `currentFocusedBundleId` giữ nguyên id của tiến trình phụ khi `resolved`
+      // ở khối trên trùng `activeApp` (`noteFocusedBundleId` không chạy), nên
+      // trong hộp thoại Lưu (`com.apple.appkit.xpc.openAndSavePanelService`) hay
+      // tiến trình phụ của app, tra thô ra "app không có cấu hình" → Smart
+      // Switch tự gỡ và trả chế độ cũ giữa lúc đang gõ; AX nhảy cha/phụ từng
+      // phím thì chế độ lật từng phím, mỗi lần lật `setEnabled` xoá từ đang gõ.
+      // Cùng lớp lỗi "Haf Nooij" mà `canonicalAppBundle` (v4.22) vá cho `activeApp`.
+      //
+      // Bỏ qua app mà người dùng vừa tự đổi V/E (`manualModeBundleId`): ép lại
+      // cấu hình ở mỗi phím làm phím tắt đổi chế độ mất tác dụng ngay phím kế.
+      if let rawFocusedBundleId = appState.currentFocusedBundleId,
+         case let focusedBundleId = InputProcessor.canonicalAppBundle(
+           focused: rawFocusedBundleId, frontmost: frontmostBundle),
+         appState.manualModeBundleId != focusedBundleId
+      {
+        let desiredEnabled = EventHook.smartSwitchDesiredEnabled(
+          bundleId: focusedBundleId,
+          ruleBundleId: appState.activeRuleOverridesBundleId,
+          ruleState: appState.activeRuleOverrides.overrideState,
+          config: appState.smartSwitchConfig(for: focusedBundleId),
+          isLegacyEnglishApp: Defaults[.smartSwitchApps].contains(focusedBundleId))
 
         if let desired = desiredEnabled {
           if !appState.smartSwitchActive {
@@ -634,11 +821,18 @@ private func handleTapEvent(
 
   // Không chạy Telex/VNI khi user đang gõ trong chính vkey (Settings, macro…).
   // Clipboard / modifier-only / focus vẫn xử lý phía trên.
-  let skipVietnameseIME =
-    NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-    == Bundle.main.bundleIdentifier
+  let skipVietnameseIME = frontmostBundle == Bundle.main.bundleIdentifier
 
   if type == .keyDown && eventHook.processing && !skipVietnameseIME {
+    // Phím qua Screen Sharing mà mang chữ đã soạn sẵn (bộ gõ ở máy điều khiển
+    // cũng đang bật): không đọc theo mã phím — kết thúc từ và để chữ đi thẳng.
+    // Phím phần cứng (stateID 1) không bao giờ vào nhánh này.
+    if event.getIntegerValueField(.eventSourceStateID) != 1,
+       EventHook.isPrecomposedRemoteText(EventHook.unicodePayload(of: event))
+    {
+      input.newWord()
+      return Unmanaged.passUnretained(event)
+    }
     // AX snapshot đã chạy ở khối Focus Tracking phía trên (v4.28) — trước khi
     // chọn activeApp — nên không chụp lại ở đây (tránh 2× ~50 message AX/phím).
     return input.handleEvent(event: event)

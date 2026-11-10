@@ -292,8 +292,44 @@ gỡ cờ theo suy diễn.
 
 ---
 
+## Kết quả đã đo — ai đang giữ secure input (2026-11-10)
+
+**Câu hỏi:** khi cờ `CGSIsSecureEventInputSet()` bật, đọc ở đâu ra tiến trình
+đang giữ? Có hai nơi mang cùng khoá `kCGSSessionSecureInputPID`.
+
+Đo trên MacBook, macOS 27 (Darwin 27.2), bằng một CLI chỉ đọc (không cần quyền
+Trợ năng), lúc Chrome bỏ quên một ô mật khẩu ở nền:
+
+| Thời điểm | App đang trước | Cờ | IORegistry `IOConsoleUsers` | `CGSessionCopyCurrentDictionary()` |
+|---|---|---|---|---|
+| Chrome nền giữ | Claude | bật | **3788 = Chrome** | 34995 = Claude |
+| vài giây sau | Zalo | bật | **3788 = Chrome** | 75132 = Zalo |
+| sau khi Chrome được đưa lên trước | Chrome → Claude | tắt | rỗng | `nil` |
+
+⇒ **IORegistry cho biết đúng ai giữ** và về rỗng ngay khi tiến trình đó nhả.
+Dictionary của session thì chạy theo app ĐANG TRƯỚC — không dùng để tìm thủ
+phạm được. `EventHook.systemSecureInputOwnerPID()` đọc IORegistry vì thế.
+
+Một process khác gọi `EnableSecureEventInput()` trong lúc Chrome đang giữ không
+làm đổi giá trị nào trong hai nơi trên.
+
+---
+
 ## Còn phải đo
 
+- **keyDown có tới event tap không khi một app NỀN giữ secure input.** Chưa đo
+  được: probe cần quyền Giám sát đầu vào mà tiến trình chạy probe hôm 2026-11-10
+  không có. Phép đo: cấp quyền cho `/tmp/evlog`, để Chrome giữ một ô mật khẩu ở
+  nền (kiểm bằng `ioreg -l -w 0 | grep SecureInput`), chạy
+  `/tmp/evlog com.apple.TextEdit 10` và gõ vào TextEdit. Có keyDown → nhánh
+  "app nền giữ thì gõ tiếp" của `resolveSecureInput` đang làm đúng việc; không
+  có → vkey không thể gõ ở BẤT KỲ app nào lúc đó, và dòng cảnh báo trong menu
+  là thứ duy nhất người dùng có.
+- **Screen Sharing với bộ gõ ở cả hai đầu.** MacBook gõ `vieetj` vào cửa sổ
+  Screen Sharing, trên Mac Studio ghi bằng `evlog` (sửa chốt bundle cho app
+  đang nhận phím): event đến mang mã phím gì, chuỗi Unicode gì.
+  `EventHook.isPrecomposedRemoteText` giả định chuỗi Unicode của event gốc được
+  giữ nguyên qua đường truyền — chưa có số nào đỡ cho giả định đó.
 - **T2 (thứ tự phím)** — `keyprobe order --text push --reps 50` vào từng app
   `.stepByStep`. Ngưỡng quyết định: **dưới 0,5% ở nhịp 80cps thì KHÔNG đáng làm**
   nhánh T2 — ghi số lại rồi bỏ qua.

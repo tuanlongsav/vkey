@@ -9,6 +9,34 @@ gói từ điển không cần phát hành app: gói từ điển đi độc l�
 
 ### 🐛 Sửa lỗi trong app
 
+- **Chữ bị xoá nhầm sau khi macOS tạm tắt event tap.** Trong lúc tap tắt, phím
+  đi thẳng vào app mà vkey không thấy, nhưng bộ đệm từ vẫn giữ từ cũ. Phím đầu
+  tiên sau khi tap sống lại diff trên từ đã lệch và backspace ăn vào chữ vừa
+  lọt qua. Nay bật lại tap (cả trong callback lẫn watchdog) là bắt đầu từ mới
+  và đọc lại Shift — watchdog trước đây bỏ sót bước đọc Shift.
+- **Smart Switch rơi chế độ trong hộp thoại Lưu và tiến trình phụ của app.**
+  Khối Smart Switch tra cấu hình bằng bundle thô mà AX trả về
+  (`com.apple.appkit.xpc.openAndSavePanelService`, tiến trình phụ) nên coi như
+  app không có cấu hình, tự gỡ và trả chế độ cũ giữa lúc gõ; AX nhảy qua lại
+  thì chế độ lật từng phím và từ bị cắt đôi. Nay tra theo app đã quy chuẩn
+  (`canonicalAppBundle`), như `activeApp` từ v4.22.
+- **Đổi V/E bằng phím tắt bị Smart Switch hoàn tác ngay ở phím kế tiếp.** Trong
+  app có cấu hình Smart Switch (kể cả do "Tự động học" ghi), cấu hình được ép
+  lại ở mỗi phím. Nay lựa chọn thủ công (phím tắt, tổ hợp modifier, menu) được
+  giữ cho tới khi đổi sang app khác.
+- **Secure input do app NỀN giữ: gán nhầm chủ và không báo gì.** Lúc cờ secure
+  input vừa bật, vkey đoán chủ là app đang trước — Chrome bỏ quên ô mật khẩu ở
+  nền thì ổ khoá hiện ở app đang gõ, và tắt đi đúng lúc quay lại Chrome. Nay
+  hỏi WindowServer (IORegistry `IOConsoleUsers`) xem ai giữ; nếu là một app
+  nền thì không khoá app đang gõ, và menu nêu tên app đó kèm cách gỡ. Không
+  chắc ai giữ thì vẫn coi app đang trước là chủ như cũ.
+- **Hai máy cùng bật vkey qua Screen Sharing.** Máy được điều khiển đọc event
+  theo mã phím, nên chữ đã soạn sẵn từ bộ gõ của máy điều khiển (event chỉ mang
+  Unicode, mã phím 0) bị hiểu thành phím `a`. Nay event qua Screen Sharing mang
+  chữ không phải một ký tự ASCII thì kết thúc từ và đi thẳng. **Chưa đo trên
+  hai máy thật.** Đệm nhận diện nguồn phím cũng không còn bị event của chính
+  vkey chiếm chỗ.
+
 - **Không gõ được tiếng Việt khi điều khiển máy qua Screen Sharing.** Tap chỉ
   nhận phím có `eventSourceStateID == 1` (bàn phím thật). Phím từ máy khác đến
   qua ScreensharingAgent với state riêng nên bị bỏ hết: vkey không bỏ dấu, cú

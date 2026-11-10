@@ -8940,3 +8940,214 @@ final class StuckShiftScopeTests: XCTestCase {
       "đồng bộ lại phải lấy đúng trạng thái Shift của phần cứng")
   }
 }
+
+// MARK: - Rà soát "mất gõ tiếng Việt" (2026-11-10)
+
+/// Các đường làm vkey thôi bỏ dấu hoặc xoá nhầm chữ mà không liên quan engine:
+/// tap bị hệ thống tắt, Smart Switch tra nhầm app, secure input do app nền giữ,
+/// và hai bộ gõ cùng biến đổi một chuỗi phím qua Screen Sharing.
+final class TypingLossReviewTests: XCTestCase {
+
+  // MARK: Tap bị tắt rồi bật lại
+
+  /// Trong lúc tap tắt, phím đi thẳng vào app nên bộ đệm không còn khớp màn
+  /// hình. Bật lại tap phải bắt đầu từ mới, không diff tiếp trên từ cũ.
+  func testTapRecoveryStartsANewWord() throws {
+    let processor = InputProcessor(method: .Telex)
+    for ch in "vie" { processor.push(char: ch) }
+    XCTAssertEqual(processor.transformed, "vie")
+    processor.hardwareShiftDown = !CGEventSource.flagsState(.hidSystemState).contains(.maskShift)
+
+    let hook = EventHook(inputProcessor: processor)
+    hook.resyncAfterTapGap()
+
+    XCTAssertTrue(processor.keys.isEmpty, "từ dở trước lúc tap tắt phải bị bỏ")
+    XCTAssertEqual(processor.transformed, "")
+    XCTAssertNil(processor.previousWordState, "Backspace sau đó không được dựng lại từ cũ")
+    XCTAssertEqual(
+      processor.hardwareShiftDown,
+      CGEventSource.flagsState(.hidSystemState).contains(.maskShift),
+      "Shift phải được đọc lại — watchdog trước đây bỏ sót bước này")
+
+    // Phím gõ tiếp là phím đầu của một từ mới: không backspace nào được phát.
+    processor.push(char: "j")
+    let (backspaces, _) = EventSimulator.calcKeyStrokes(
+      from: processor.lastTransformed, to: processor.transformed, usesNFC: true)
+    XCTAssertEqual(backspaces, 0, "không được xoá vào chữ đã lọt qua lúc tap tắt")
+  }
+
+  /// `recoverTap()` không có tap để bật thì không làm gì (và không đếm nhầm).
+  func testRecoverTapWithoutTapIsNoOp() throws {
+    let processor = InputProcessor(method: .Telex)
+    for ch in "vie" { processor.push(char: ch) }
+    let hook = EventHook(inputProcessor: processor)
+    hook.recoverTap()
+    XCTAssertEqual(hook.tapRecoveryCount, 0)
+    XCTAssertEqual(processor.transformed, "vie")
+  }
+
+  // MARK: Smart Switch
+
+  private func config(_ state: AppSmartSwitchState) -> AppSmartSwitchConfig {
+    AppSmartSwitchConfig(state: state, source: .autoLearn)
+  }
+
+  func testSmartSwitchDesiredModeFollowsRuleThenConfigThenLegacyList() throws {
+    func desired(
+      rule: (String, AppSmartSwitchState)? = nil, config: AppSmartSwitchConfig? = nil,
+      legacy: Bool = false
+    ) -> Bool? {
+      EventHook.smartSwitchDesiredEnabled(
+        bundleId: "com.google.Chrome", ruleBundleId: rule?.0, ruleState: rule?.1,
+        config: config, isLegacyEnglishApp: legacy)
+    }
+
+    XCTAssertNil(desired(), "app không có cấu hình")
+    XCTAssertEqual(desired(config: config(.vietnameseMode)), true)
+    XCTAssertEqual(desired(config: config(.englishMode)), false)
+    XCTAssertEqual(desired(config: config(.disabled)), false)
+    XCTAssertEqual(desired(legacy: true), false, "danh sách 'tắt VN' đời cũ")
+    XCTAssertEqual(
+      desired(rule: ("com.google.Chrome", .englishMode), config: config(.vietnameseMode)), false,
+      "rule tiêu đề của đúng app thắng cấu hình")
+    XCTAssertEqual(
+      desired(rule: ("com.apple.Safari", .englishMode), config: config(.vietnameseMode)), true,
+      "rule của app khác không được áp")
+    XCTAssertEqual(desired(config: config(.vietnameseMode), legacy: true), true)
+  }
+
+  /// Hộp thoại Lưu chạy ở tiến trình ngoài; AX trả bundle của nó chứ không phải
+  /// app cha. Tra cấu hình bằng bundle thô ra "không có cấu hình" → Smart Switch
+  /// tự gỡ giữa lúc gõ tên file. Phải tra bằng app đã quy chuẩn.
+  func testSmartSwitchLooksUpTheCanonicalAppNotTheHelperProcess() throws {
+    let configs = ["com.google.Chrome": config(.vietnameseMode)]
+    func desired(focused: String) -> Bool? {
+      let app = InputProcessor.canonicalAppBundle(focused: focused, frontmost: "com.google.Chrome")
+      return EventHook.smartSwitchDesiredEnabled(
+        bundleId: app, ruleBundleId: nil, ruleState: nil, config: configs[app],
+        isLegacyEnglishApp: false)
+    }
+
+    XCTAssertEqual(desired(focused: "com.google.Chrome"), true)
+    XCTAssertEqual(desired(focused: "com.apple.appkit.xpc.openAndSavePanelService"), true)
+    XCTAssertEqual(desired(focused: "com.google.Chrome.helper"), true)
+    XCTAssertNil(desired(focused: "com.apple.Spotlight"), "overlay là app khác thật")
+  }
+
+  // MARK: Secure input
+
+  /// Số liệu từ lần đo 2026-11-10: Chrome (pid 3788) giữ secure input ở nền
+  /// trong khi Claude (pid 34995) đang trước.
+  func testSecureInputHeldByBackgroundAppDoesNotLockTheFrontApp() throws {
+    let verdict = EventHook.resolveSecureInput(
+      systemFlag: true, knownOwner: nil, backgroundHolder: 3788, frontmostPID: 34995,
+      frontFieldIsSecure: false)
+    XCTAssertFalse(verdict.isSecure, "ô mật khẩu không ở app đang gõ")
+    XCTAssertEqual(verdict.owner, 3788, "chủ là app nền, không phải app đang trước")
+
+    // Quay lại chính app giữ ô mật khẩu → đứng ngoài.
+    let back = EventHook.resolveSecureInput(
+      systemFlag: true, knownOwner: 3788, backgroundHolder: nil, frontmostPID: 3788,
+      frontFieldIsSecure: false)
+    XCTAssertTrue(back.isSecure)
+    XCTAssertEqual(back.owner, 3788)
+  }
+
+  func testSecureInputFallsBackToFrontAppWhenOwnerIsUnknown() throws {
+    var askedHolder = 0
+    var askedField = 0
+    func holder() -> pid_t? { askedHolder += 1; return nil }
+    func field(_ value: Bool) -> Bool { askedField += 1; return value }
+
+    // Không biết ai giữ (Terminal `sudo`, agent hệ thống…): app đang trước là chủ.
+    let first = EventHook.resolveSecureInput(
+      systemFlag: true, knownOwner: nil, backgroundHolder: holder(), frontmostPID: 500,
+      frontFieldIsSecure: field(false))
+    XCTAssertTrue(first.isSecure)
+    XCTAssertEqual(first.owner, 500)
+    XCTAssertEqual(askedHolder, 1)
+    XCTAssertEqual(askedField, 0, "chủ đã là app đang trước thì không cần hỏi AX")
+
+    // Đã có chủ: không đọc lại IORegistry ở mỗi event.
+    let later = EventHook.resolveSecureInput(
+      systemFlag: true, knownOwner: 500, backgroundHolder: holder(), frontmostPID: 600,
+      frontFieldIsSecure: field(false))
+    XCTAssertFalse(later.isSecure, "sang app khác, ô đang focus không phải ô mật khẩu")
+    XCTAssertEqual(later.owner, 500)
+    XCTAssertEqual(askedHolder, 1)
+
+    // App đang trước tự mở ô mật khẩu → quyền chủ chuyển sang nó.
+    let moved = EventHook.resolveSecureInput(
+      systemFlag: true, knownOwner: 500, backgroundHolder: holder(), frontmostPID: 600,
+      frontFieldIsSecure: field(true))
+    XCTAssertTrue(moved.isSecure)
+    XCTAssertEqual(moved.owner, 600)
+
+    // Cờ hệ thống tắt → không đứng ngoài, quên chủ, không hỏi gì thêm.
+    let off = EventHook.resolveSecureInput(
+      systemFlag: false, knownOwner: 600, backgroundHolder: holder(), frontmostPID: 600,
+      frontFieldIsSecure: field(true))
+    XCTAssertFalse(off.isSecure)
+    XCTAssertNil(off.owner)
+    XCTAssertEqual(askedHolder, 1)
+  }
+
+  /// Chỉ coi là "app nền giữ" khi CHẮC: app thường, không phải app đang trước
+  /// hay tiến trình phụ của nó. Mọi ca mơ hồ phải rơi về cách hiểu an toàn (app
+  /// đang trước giữ) để vkey không bỏ dấu vào ô mật khẩu.
+  func testBackgroundSecureInputHolderIsOnlyAClearlyDifferentRegularApp() throws {
+    func isBackground(
+      owner: pid_t?, bundle: String? = "com.google.Chrome", regular: Bool = true,
+      front: pid_t? = 34995, frontBundle: String? = "com.anthropic.claudefordesktop"
+    ) -> Bool {
+      EventHook.isBackgroundSecureInputHolder(
+        ownerPID: owner, ownerBundle: bundle, ownerIsRegularApp: regular,
+        frontmostPID: front, frontmostBundle: frontBundle, ownPID: 77)
+    }
+
+    XCTAssertTrue(isBackground(owner: 3788), "Chrome nền, Claude đang trước")
+    XCTAssertFalse(isBackground(owner: nil), "không đọc được chủ")
+    XCTAssertFalse(isBackground(owner: 34995), "chủ chính là app đang trước")
+    XCTAssertFalse(isBackground(owner: 77), "vkey không bao giờ là thủ phạm")
+    XCTAssertFalse(
+      isBackground(owner: 3788, bundle: nil, regular: false),
+      "agent hệ thống (SecurityAgent) hiện hộp mật khẩu trên app đang trước")
+    XCTAssertFalse(
+      isBackground(
+        owner: 3788, bundle: "com.apple.Safari.SandboxBroker", front: 900,
+        frontBundle: "com.apple.Safari"),
+      "tiến trình phụ của app đang trước")
+  }
+
+  // MARK: Screen Sharing — bộ gõ ở cả hai đầu
+
+  func testPrecomposedRemoteTextIsNotReadAsARawKey() throws {
+    // Chữ do bộ gõ ở máy điều khiển soạn sẵn.
+    XCTAssertTrue(EventHook.isPrecomposedRemoteText("ê"))
+    XCTAssertTrue(EventHook.isPrecomposedRemoteText("ệt"))
+    XCTAssertTrue(EventHook.isPrecomposedRemoteText("đ"))
+    XCTAssertTrue(EventHook.isPrecomposedRemoteText("e\u{0302}"), "dạng NFD")
+    XCTAssertTrue(EventHook.isPrecomposedRemoteText("text "), "khôi phục từ tiếng Anh")
+
+    // Phím thô: tối đa một ký tự ASCII, hoặc mã phím chức năng của AppKit.
+    XCTAssertFalse(EventHook.isPrecomposedRemoteText(""))
+    XCTAssertFalse(EventHook.isPrecomposedRemoteText("a"))
+    XCTAssertFalse(EventHook.isPrecomposedRemoteText("A"))
+    XCTAssertFalse(EventHook.isPrecomposedRemoteText(" "))
+    XCTAssertFalse(EventHook.isPrecomposedRemoteText("\u{7F}"), "Backspace")
+    XCTAssertFalse(EventHook.isPrecomposedRemoteText("\r"), "Enter")
+    XCTAssertFalse(EventHook.isPrecomposedRemoteText("\u{F702}"), "mũi tên trái")
+    XCTAssertFalse(EventHook.isPrecomposedRemoteText("\u{F729}"), "Home")
+  }
+
+  /// Event chỉ-mang-Unicode do vkey tự dựng (mã phím 0 = phím A) phải đọc lại
+  /// được đúng chuỗi đã gắn — đó là thứ máy được điều khiển dựa vào.
+  func testUnicodePayloadRoundTripsThroughAnEvent() throws {
+    let event = try XCTUnwrap(
+      CGEvent(keyboardEventSource: nil, virtualKey: EventSimulator.KeyCode.unicodeOnly, keyDown: true))
+    EventSimulator.applyUnicodePayload(event, units: Array("ệt".utf16))
+    let payload = EventHook.unicodePayload(of: event)
+    XCTAssertEqual(payload, "ệt")
+    XCTAssertTrue(EventHook.isPrecomposedRemoteText(payload))
+  }
+}

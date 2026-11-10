@@ -218,6 +218,10 @@ struct VKMenuPanel: View {
 
       statusHeader
 
+      if let holder = appState.secureInputHolderName {
+        secureInputNotice(holder)
+      }
+
       VKMenuSep()
 
       // Kiểu gõ
@@ -290,8 +294,24 @@ struct VKMenuPanel: View {
       subtitle: appState.enabled
         ? "\(appState.typingMethod.rawValue) · \(newStyleTonePlacement ? "Kiểu mới" : "Kiểu cũ")"
         : "Bộ gõ tạm tắt",
-      action: { appState.enabled.toggle() }
+      action: { appState.setEnabledByUser(!appState.enabled) }
     )
+  }
+
+  /// Một app NỀN đang giữ secure input: ổ khoá không hiện (ô mật khẩu không ở
+  /// app đang gõ), nên nói rõ ở đây ai giữ và cách gỡ.
+  private func secureInputNotice(_ holder: String) -> some View {
+    HStack(alignment: .top, spacing: 8) {
+      Image(systemName: "exclamationmark.triangle.fill")
+        .font(.system(size: 12))
+        .foregroundStyle(.yellow)
+      Text("\(holder) đang giữ Secure Input. Nếu không gõ được tiếng Việt, mở \(holder) và bấm ra ngoài ô mật khẩu, hoặc thoát app đó.")
+        .font(.system(size: 11))
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+    .padding(.horizontal, 10)
+    .padding(.vertical, 6)
   }
 
   private struct StatusHeaderRow: View {

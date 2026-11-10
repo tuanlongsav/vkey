@@ -74,6 +74,18 @@ class AppState: ObservableObject, FileMonitorDelegate {
     }
     @Published public var secureInputActive = false
 
+    /// Tên app NỀN đang giữ secure input, hoặc `nil`. Watchdog 2 giây ở
+    /// `AppDelegate` cập nhật; menu bar dùng để nói cho người dùng biết vì sao
+    /// có thể không gõ được tiếng Việt dù vkey vẫn hiện đang bật — trường hợp
+    /// này ổ khoá (`secureInputActive`) cố ý KHÔNG hiện vì ô mật khẩu không nằm
+    /// ở app đang gõ.
+    @Published public var secureInputHolderName: String?
+
+    /// App mà người dùng vừa TỰ đổi V/E (phím tắt, tổ hợp modifier, menu).
+    /// Smart Switch không ép lại cấu hình cho app này tới khi đổi sang app khác
+    /// — nếu không thì thao tác đổi chế độ bị hoàn tác ngay ở phím kế tiếp.
+    public private(set) var manualModeBundleId: String?
+
     public var inputProcessor: InputProcessor
     public var eventHook: EventHook
     @Published public var appModes: [String: Bool] = [:]
@@ -161,7 +173,7 @@ class AppState: ObservableObject, FileMonitorDelegate {
         TiengViet.updatePhuAmDauTrie()
 
         KeyboardShortcuts.onKeyUp(for: .toggleInputMode) { [self] in
-            self.setEnabled(set: !self.enabled)
+            self.setEnabledByUser(!self.enabled)
         }
 
         // 2.0.1: Floating Toolbar handler đã bị xoá cùng với tính năng.
@@ -275,6 +287,15 @@ class AppState: ObservableObject, FileMonitorDelegate {
         enabled = state
     }
 
+    /// Đổi V/E do NGƯỜI DÙNG chủ động (phím tắt, tổ hợp modifier, menu, Cài
+    /// đặt). Khác `setEnabled(set:)` ở chỗ ghi nhớ app đang gõ để Smart Switch
+    /// tôn trọng lựa chọn này cho tới khi đổi app (xem `manualModeBundleId`).
+    public func setEnabledByUser(_ state: Bool) {
+        let app = inputProcessor.activeApp
+        manualModeBundleId = app.isEmpty ? nil : app
+        enabled = state
+    }
+
     func registerSwitchFileMonitor() {
         let uid = getuid()
         let tmpPath = URL(fileURLWithPath: "/tmp/vkey_switch_\(uid)")
@@ -309,6 +330,10 @@ class AppState: ObservableObject, FileMonitorDelegate {
             let appName = activeApp.bundleIdentifier,
             appName != bundleId
         {
+            // Đổi app thật: lựa chọn V/E thủ công của app trước hết hiệu lực,
+            // Smart Switch áp lại cấu hình như thường.
+            manualModeBundleId = nil
+
             // 1.7.x: cập nhật cached focused bundle ID — push-based,
             // tránh AX query đồng bộ trong EventHook callback.
             currentFocusedBundleId = appName

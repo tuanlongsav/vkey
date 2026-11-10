@@ -261,19 +261,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
         // Tap bị macOS tắt ngầm — bật lại. An toàn với ca mất quyền vì
         // `suspendAfterRevocation` đã set `eventTap = nil`, nên nhánh này
         // không chạy khi chưa có tap.
-        CGEvent.tapEnable(tap: tap, enable: true)
-        self.appState.eventHook.tapRecoveryCount += 1
+        // `recoverTap` còn bỏ từ đang gõ dở và đọc lại Shift: suốt lúc tap tắt
+        // phím đi thẳng vào app, bộ đệm không còn khớp màn hình.
+        self.appState.eventHook.recoverTap()
         os_log(
           "Event tap was silently disabled, watchdog re-enabled it (count: %{public}d)",
           log: delegateLog, type: .error, self.appState.eventHook.tapRecoveryCount)
       }
       // Ổ khoá kẹt khi không còn phím phần cứng nào tới tap (Screen Sharing,
       // hoặc đơn giản là chưa gõ gì sau khi ô mật khẩu đóng).
+      let secureInputOn = CGSIsSecureEventInputSet()
       if self.appState.eventHook.reconcileSecureInput(
-        systemFlag: CGSIsSecureEventInputSet(),
+        systemFlag: secureInputOn,
         lockShown: self.appState.secureInputActive)
       {
         self.appState.secureInputActive = false
+      }
+      // Một app NỀN đang giữ secure input (ô mật khẩu bỏ quên ở cửa sổ khác):
+      // ổ khoá không hiện vì ô đó không ở app đang gõ, nên menu phải nêu tên
+      // thủ phạm. Chỉ đọc IORegistry khi cờ đang bật; chỉ gán khi giá trị đổi
+      // để `@Published` không dựng lại menu mỗi 2 giây.
+      let holder = secureInputOn && trusted
+        ? self.appState.eventHook.refreshBackgroundSecureInputHolder() : nil
+      if self.appState.secureInputHolderName != holder {
+        self.appState.secureInputHolderName = holder
       }
     }
     timer.tolerance = 0.5
