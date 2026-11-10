@@ -8878,3 +8878,101 @@ final class SecureInputLockScopeTests: XCTestCase {
     XCTAssertEqual(asked, 0)
   }
 }
+
+// MARK: - Screen Sharing khi cả hai máy đều có vkey (sau 4.35)
+
+/// Máy điều khiển phải trong suốt hoàn toàn; máy được điều khiển phải đọc đúng
+/// Shift của người gõ từ xa.
+final class ScreenSharingBothEndsTests: XCTestCase {
+
+  private func makeHook() -> (EventHook, InputProcessor) {
+    let processor = InputProcessor(method: .Telex)
+    return (EventHook(inputProcessor: processor), processor)
+  }
+
+  // MARK: Máy điều khiển
+
+  func testEnteringAViewerDropsTheWordAndReportsStandAside() throws {
+    let (hook, processor) = makeHook()
+    for ch in "vie" { processor.push(char: ch) }
+
+    XCTAssertFalse(hook.updateRemoteDesktopStandAside(frontmostBundle: "com.google.Chrome"))
+    XCTAssertEqual(processor.transformed, "vie", "app thường: không đụng bộ đệm")
+
+    XCTAssertTrue(hook.updateRemoteDesktopStandAside(frontmostBundle: "com.apple.ScreenSharing"))
+    XCTAssertTrue(hook.lastStandsAsideForRemoteDesktop)
+    XCTAssertEqual(processor.transformed, "", "từ dở thuộc về app trước, không mang sang máy kia")
+  }
+
+  /// Ở lại trong cửa sổ điều khiển thì không làm lại việc của mốc vào/ra — nếu
+  /// không mỗi phím lại xoá bộ đệm và reset tổ hợp modifier.
+  func testStayingInTheViewerDoesNotRepeatTheTransition() throws {
+    let (hook, _) = makeHook()
+    XCTAssertTrue(hook.updateRemoteDesktopStandAside(frontmostBundle: "com.apple.ScreenSharing"))
+    hook.modifierArmedMask = 42
+    XCTAssertTrue(hook.updateRemoteDesktopStandAside(frontmostBundle: "com.apple.ScreenSharing"))
+    XCTAssertEqual(hook.modifierArmedMask, 42)
+  }
+
+  /// Tổ hợp ⇧⌥ đang giữ dở lúc vào/ra cửa sổ điều khiển không được tính cho bên
+  /// nào: nó thuộc về máy kia lúc ở trong, và về máy này lúc ở ngoài.
+  func testAHalfPressedHotkeyIsForgottenAcrossTheBoundary() throws {
+    let (hook, _) = makeHook()
+    let shiftOption =
+      UInt64(NSEvent.ModifierFlags.shift.rawValue) | UInt64(NSEvent.ModifierFlags.option.rawValue)
+    XCTAssertFalse(
+      hook.handleModifierOnlyHotkey(
+        type: .flagsChanged, currentMods: shiftOption, modifierTarget: shiftOption))
+    XCTAssertEqual(hook.modifierArmedMask, shiftOption, "đang giữ ⇧⌥ ở app thường")
+
+    hook.updateRemoteDesktopStandAside(frontmostBundle: "com.apple.ScreenSharing")
+    XCTAssertEqual(hook.modifierArmedMask, 0)
+    XCTAssertFalse(
+      hook.handleModifierOnlyHotkey(
+        type: .flagsChanged, currentMods: 0, modifierTarget: shiftOption),
+      "thả phím sau khi đã vào cửa sổ điều khiển không được đổi V/E của máy này")
+  }
+
+  func testLeavingTheViewerRestoresNormalHandling() throws {
+    let (hook, _) = makeHook()
+    hook.updateRemoteDesktopStandAside(frontmostBundle: "com.apple.ScreenSharing")
+    XCTAssertFalse(hook.updateRemoteDesktopStandAside(frontmostBundle: "com.apple.TextEdit"))
+    XCTAssertFalse(hook.lastStandsAsideForRemoteDesktop)
+    XCTAssertFalse(hook.updateRemoteDesktopStandAside(frontmostBundle: nil))
+  }
+
+  func testRemoteDesktopSymbolExists() throws {
+    XCTAssertNotNil(
+      NSImage(systemSymbolName: VKMenuBarLabel.remoteDesktopSymbol, accessibilityDescription: nil))
+  }
+
+  // MARK: Máy được điều khiển
+
+  /// Shift của người gõ từ xa không nằm trong trạng thái HID của máy này. Sau
+  /// một lần tap gián đoạn, đọc HID sẽ luôn ra "không giữ Shift" và làm chữ hoa
+  /// thành chữ thường — nên trả cờ về "chưa theo dõi".
+  func testShiftResyncDoesNotTrustLocalHardwareDuringRemoteTyping() throws {
+    XCTAssertNil(EventHook.resyncedShiftState(lastInputWasRemote: true, hidShiftDown: false))
+    XCTAssertNil(EventHook.resyncedShiftState(lastInputWasRemote: true, hidShiftDown: true))
+    XCTAssertEqual(EventHook.resyncedShiftState(lastInputWasRemote: false, hidShiftDown: true), true)
+    XCTAssertEqual(EventHook.resyncedShiftState(lastInputWasRemote: false, hidShiftDown: false), false)
+  }
+
+  /// Hook mới tạo chưa thấy phím từ xa nào: vẫn đọc HID như trước.
+  func testFreshHookTreatsInputAsLocal() throws {
+    let (hook, _) = makeHook()
+    XCTAssertFalse(hook.lastUserInputWasRemote)
+  }
+
+  /// "Chưa theo dõi" nghĩa là tin cờ Shift trên chính event: chữ hoa gõ từ xa
+  /// vẫn ra chữ hoa.
+  func testUntrackedShiftKeepsRemoteCapitals() throws {
+    let processor = InputProcessor(method: .Telex)
+    processor.hardwareShiftDown = nil
+    let event = try XCTUnwrap(CGEvent(keyboardEventSource: nil, virtualKey: 9, keyDown: true))  // v
+    event.flags = .maskShift
+    _ = processor.handleEvent(event: event)
+    XCTAssertEqual(processor.transformed, "V")
+    XCTAssertTrue(event.flags.contains(.maskShift), "không gỡ Shift khỏi phím trả về app")
+  }
+}

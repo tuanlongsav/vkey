@@ -281,7 +281,7 @@ struct VKMenuPanel: View {
     StatusHeaderRow(
       isVietnamese: appState.enabled,
       subtitle: appState.remoteDesktopStandAside
-        ? "Đứng ngoài · app điều khiển từ xa"
+        ? "Đứng ngoài · máy kia lo việc gõ"
         : appState.enabled
           ? "\(appState.typingMethod.rawValue) · \(newStyleTonePlacement ? "Kiểu mới" : "Kiểu cũ")"
           : "Bộ gõ tạm tắt",
@@ -530,12 +530,22 @@ struct VKMenuBarLabel: View {
   /// macOS 14 nên không dùng symbol mới hơn (symbol thiếu thì hiện ô trống).
   static let secureInputWarningSymbol = "exclamationmark.triangle"
 
+  /// Biểu tượng khi vkey đứng ngoài cho app điều khiển máy từ xa. Cũng có từ
+  /// macOS 11.
+  static let remoteDesktopSymbol = "display"
+
   var body: some View {
     if !appDelegate.isTrusted {
       Image(systemName: "gear.badge.questionmark")
         .symbolRenderingMode(.hierarchical)
     } else if appState.secureInputActive {
       Image(systemName: "lock.square")
+        .symbolRenderingMode(.hierarchical)
+    } else if appState.remoteDesktopStandAside {
+      // Cửa sổ điều khiển máy từ xa đang ở trước: vkey bên này đứng ngoài, lá
+      // cờ của máy NÀY không nói gì về chữ đang gõ — chế độ V/E là của bộ gõ ở
+      // máy kia (nhìn lá cờ trong cửa sổ điều khiển).
+      Image(systemName: Self.remoteDesktopSymbol)
         .symbolRenderingMode(.hierarchical)
     } else if appState.secureInputHolderName != nil {
       // Secure Input đang bật mà không ở ô mật khẩu: vkey có thể không nhận

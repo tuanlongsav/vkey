@@ -329,7 +329,11 @@ làm đổi giá trị nào trong hai nơi trên.
   KHIỂN tự đứng ngoài trong cửa sổ Screen Sharing
   (`EventHook.remoteDesktopViewerBundles`), nên ca này chỉ còn xảy ra khi người
   dùng đặt Screen Sharing là "Tiếng Việt" trong Smart Switch, hoặc máy điều
-  khiển chạy bộ gõ khác. Phép đo vẫn cần: MacBook gõ `vieetj` vào cửa sổ
+  khiển chạy bộ gõ khác. Sau 4.35 máy điều khiển còn bỏ qua phím tắt đổi V/E
+  trong cửa sổ đó, và máy được điều khiển không đọc Shift từ HID khi phím gần
+  nhất đến từ xa — cả hai chưa thử trên máy thật: giữ Shift gõ `VIET` ngay sau
+  khi vkey ở máy được điều khiển khởi động lại, xem có ra chữ hoa không. Phép đo
+  vẫn cần: MacBook gõ `vieetj` vào cửa sổ
   Screen Sharing, trên Mac Studio ghi bằng `evlog` (sửa chốt bundle cho app
   đang nhận phím): event đến mang mã phím gì, chuỗi Unicode gì.
   `EventHook.isPrecomposedRemoteText` giả định chuỗi Unicode của event gốc được

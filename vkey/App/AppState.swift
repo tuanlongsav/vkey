@@ -284,6 +284,10 @@ class AppState: ObservableObject {
             // Smart Switch áp lại cấu hình như thường.
             manualModeBundleId = nil
 
+            // Vào/ra app điều khiển máy từ xa: cập nhật ngay, không chờ phím
+            // hay cú click đầu tiên, để biểu tượng menu bar đổi cùng lúc.
+            eventHook.updateRemoteDesktopStandAside(frontmostBundle: appName)
+
             // 1.7.x: cập nhật cached focused bundle ID — push-based,
             // tránh AX query đồng bộ trong EventHook callback.
             currentFocusedBundleId = appName

@@ -2,6 +2,31 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [Chưa phát hành]
+
+### 🖥 Screen Sharing khi cả hai máy đều có vkey
+
+Mục tiêu: ngồi ở máy A điều khiển máy B, không phải chỉnh gì ở máy A — chế độ
+V/E, phím tắt và việc bỏ dấu đều do vkey ở máy B lo.
+
+- **Phím tắt đổi V/E không còn đổi nhầm máy đang ngồi.** Trong cửa sổ điều khiển,
+  ⇧⌥ đi sang máy kia và vkey ở đó đổi chế độ; nhưng vkey ở máy này cũng thấy tổ
+  hợp đó và lật luôn chế độ của mình. Lá cờ bên này đổi trong khi chữ gõ ra
+  không liên quan gì tới nó, và rời cửa sổ điều khiển thì chế độ bên này đã bị
+  đổi ngoài ý muốn. Nay vkey ở máy điều khiển bỏ qua hoàn toàn phím tắt này khi
+  đang đứng ngoài; tổ hợp đang giữ dở lúc vào/ra cửa sổ cũng không tính cho bên
+  nào.
+- **Biểu tượng menu bar riêng khi đứng ngoài** (hình màn hình) thay cho lá cờ, vì
+  lúc đó chế độ V/E là của máy kia — nhìn lá cờ trong cửa sổ điều khiển. Biểu
+  tượng đổi ngay khi đổi app, không chờ phím hay cú click đầu tiên.
+- **Máy điều khiển không còn chụp Accessibility mỗi phím** cho cửa sổ điều khiển:
+  phím đi thẳng, không cộng thêm độ trễ của máy này vào độ trễ của mạng.
+- **Chữ hoa gõ từ xa không thành chữ thường sau khi event tap gián đoạn.** Máy
+  được điều khiển đọc lại Shift từ bàn phím thật của chính nó — nơi không ai
+  chạm — nên luôn thấy "không giữ Shift". Nay khi phím gần nhất đến qua Screen
+  Sharing thì tin cờ Shift trên chính event.
+- **Chưa thử trên hai máy thật.** 448 test pass.
+
 ## [4.35] - 2026-11-10 — "Gọn lại"
 
 Đợt gọn lại sau 4.34: gỡ bốn tính năng không phải việc của bộ gõ, dọn mã chết,

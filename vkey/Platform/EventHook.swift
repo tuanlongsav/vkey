@@ -291,9 +291,36 @@ class EventHook {
     "com.citrix.receiver.icaviewer.mac",
   ]
 
-  /// Kết quả `standsAsideForRemoteDesktop(frontmostBundle:userState:)` ở event
-  /// gần nhất. Chỉ callback tap đọc/ghi.
-  var lastStandsAsideForRemoteDesktop = false
+  /// Kết quả `standsAsideForRemoteDesktop(frontmostBundle:userState:)` gần nhất.
+  /// Chỉ đọc/ghi trên main thread (callback tap và `AppState`).
+  private(set) var lastStandsAsideForRemoteDesktop = false
+
+  /// Tính lại "đang đứng ngoài cho app điều khiển máy từ xa" theo app đang
+  /// trước, xử lý mốc vào/ra, và trả kết quả.
+  ///
+  /// Gọi từ callback tap ở mỗi event VÀ từ `AppState` khi macOS báo đổi app —
+  /// chỉ dựa vào event thì biểu tượng menu bar đứng ở trạng thái cũ cho tới
+  /// phím/cú click đầu tiên sau khi đổi app.
+  @discardableResult
+  func updateRemoteDesktopStandAside(frontmostBundle: String?) -> Bool {
+    let standsAside = Self.standsAsideForRemoteDesktop(
+      frontmostBundle: frontmostBundle,
+      userState: frontmostBundle.flatMap { appState?.smartSwitchConfig(for: $0)?.state })
+    guard lastStandsAsideForRemoteDesktop != standsAside else { return standsAside }
+    // Vừa vào/ra app điều khiển từ xa: từ đang gõ dở thuộc về ngữ cảnh cũ, và
+    // tổ hợp modifier đang giữ dở không được tính cho bên nào. So với bản sao
+    // ở đây (đổi đồng bộ), không so với giá trị `@Published` (đổi trễ một nhịp)
+    // — nếu không phím kế tiếp lại xoá bộ đệm.
+    lastStandsAsideForRemoteDesktop = standsAside
+    inputProcessor.newWord()
+    inputProcessor.resetSentenceCapitalizeState()
+    modifierArmedMask = 0
+    modifierKeyUsedDuringArm = false
+    if let appState {
+      DispatchQueue.main.async { appState.remoteDesktopStandAside = standsAside }
+    }
+    return standsAside
+  }
 
   /// vkey có đứng ngoài vì app đang trước là app điều khiển máy từ xa không.
   /// Người dùng đảo lại bằng cách đặt app đó là "Tiếng Việt" trong Smart Switch
@@ -373,20 +400,34 @@ class EventHook {
   private var sourcePIDCache: (pid: pid_t, isScreenSharing: Bool)?
   private let ownPID = getpid()
 
+  /// Phím/chuột người dùng gần nhất đến qua Screen Sharing (máy này đang ĐƯỢC
+  /// điều khiển) chứ không từ bàn phím thật. Callback tap ghi; dùng để biết
+  /// trạng thái bàn phím phần cứng của máy này có còn nói lên điều gì không
+  /// (xem `syncHardwareShiftFromSystem`).
+  private(set) var lastUserInputWasRemote = false
+
   func isUserInput(_ event: CGEvent) -> Bool {
+    guard let remote = userInputOrigin(of: event) else { return false }
+    lastUserInputWasRemote = remote
+    return true
+  }
+
+  /// Nguồn của một event do NGƯỜI DÙNG gõ: `false` = bàn phím thật, `true` =
+  /// Screen Sharing; `nil` = không phải người dùng (vkey hay app khác tự phát).
+  private func userInputOrigin(of event: CGEvent) -> Bool? {
     let stateID = event.getIntegerValueField(.eventSourceStateID)
-    if stateID == 1 { return true }
+    if stateID == 1 { return false }
     let pid = pid_t(truncatingIfNeeded: event.getIntegerValueField(.eventSourceUnixProcessID))
     // Event vkey tự phát: trả lời ngay, KHÔNG ghi vào đệm. Đệm chỉ có một ô, mà
     // gõ tiếng Việt qua Screen Sharing thì phím của agent và backspace/chữ thay
     // của vkey đi xen kẽ qua cùng tap — để event của chính mình chiếm ô thì
     // phím nào của agent cũng trượt đệm và gọi lại `proc_pidpath`.
-    guard pid > 0, pid != ownPID else { return false }
-    if let cached = sourcePIDCache, cached.pid == pid { return cached.isScreenSharing }
+    guard pid > 0, pid != ownPID else { return nil }
+    if let cached = sourcePIDCache, cached.pid == pid { return cached.isScreenSharing ? true : nil }
     let result = Self.isUserInputSource(
       stateID: stateID, sourcePID: pid, ownPID: ownPID, pathForPID: Self.executablePath(of:))
     sourcePIDCache = (pid, result)
-    return result
+    return result ? true : nil
   }
 
   init(inputProcessor: InputProcessor) {
@@ -408,9 +449,20 @@ class EventHook {
   /// 09/10/2026 (`Tools/probe/evlog.swift`) thấy `NSEvent.modifierFlags` trễ
   /// một event — ở `flagsChanged` Shift-down nó còn báo `false`, ở Shift-up nó
   /// còn báo `true`.
+  ///
+  /// Khi máy này đang được điều khiển qua Screen Sharing, Shift của người gõ
+  /// KHÔNG nằm trong trạng thái HID của máy này (bàn phím thật không ai chạm).
+  /// Đọc HID lúc đó luôn ra `false`, và nếu người gõ đang giữ Shift thì chữ hoa
+  /// thành chữ thường cho tới `flagsChanged` kế tiếp. Trường hợp đó trả cờ về
+  /// "chưa theo dõi" (`nil` = tin `maskShift` trên chính event).
   func syncHardwareShiftFromSystem() {
-    inputProcessor.hardwareShiftDown =
-      CGEventSource.flagsState(.hidSystemState).contains(.maskShift)
+    inputProcessor.hardwareShiftDown = Self.resyncedShiftState(
+      lastInputWasRemote: lastUserInputWasRemote,
+      hidShiftDown: CGEventSource.flagsState(.hidSystemState).contains(.maskShift))
+  }
+
+  static func resyncedShiftState(lastInputWasRemote: Bool, hidShiftDown: Bool) -> Bool? {
+    lastInputWasRemote ? nil : hidShiftDown
   }
 
   /// Bật lại tap sau khi hệ thống vô hiệu nó, rồi đưa trạng thái gõ về chỗ an
@@ -733,6 +785,20 @@ private func handleTapEvent(
     return Unmanaged.passUnretained(event)
   }
 
+  // ── Đứng ngoài trong app điều khiển máy từ xa ─────────────────────────────
+  // Khi cửa sổ Screen Sharing / AnyDesk… đang ở trước, vkey của máy NÀY phải
+  // trong suốt hoàn toàn: mọi phím đi thẳng sang máy kia, nơi bộ gõ của máy đó
+  // lo việc bỏ dấu. Trả về sớm, TRƯỚC khối phím tắt và khối theo dõi focus:
+  //   • Phím tắt đổi V/E (⇧⌥) cũng đi sang máy kia, nên phải để vkey ở ĐÓ đổi
+  //     chế độ. Xử lý ở đây nữa là đổi luôn chế độ của máy này — lá cờ bên này
+  //     lật trong khi chữ gõ ra không liên quan gì tới nó, và rời cửa sổ điều
+  //     khiển thì chế độ bên này đã bị đổi ngoài ý muốn.
+  //   • Không chụp AX mỗi phím cho một cửa sổ mà vkey không gõ vào: gõ từ xa
+  //     vốn đã trễ theo mạng, không cộng thêm độ trễ của máy này.
+  if eventHook.updateRemoteDesktopStandAside(frontmostBundle: frontmostBundle) {
+    return Unmanaged.passUnretained(event)
+  }
+
   // ── Modifier-only hotkey detection ────────────────────────────────────────
   // The user can configure a pure-modifier combo (e.g. ⇧⌥) for the Vi/En
   // toggle. Carbon's RegisterEventHotKey can't bind to modifiers alone, so we
@@ -866,23 +932,10 @@ private func handleTapEvent(
     }
   }
 
-  // Không chạy Telex/VNI khi user đang gõ trong chính vkey (Settings, macro…)
-  // hoặc trong app điều khiển máy từ xa (xem `remoteDesktopViewerBundles`).
-  // Modifier-only / focus vẫn xử lý phía trên.
-  let standsAside = EventHook.standsAsideForRemoteDesktop(
-    frontmostBundle: frontmostBundle,
-    userState: frontmostBundle.flatMap { eventHook.appState?.smartSwitchConfig(for: $0)?.state })
-  if eventHook.lastStandsAsideForRemoteDesktop != standsAside {
-    // Vừa vào/ra app điều khiển từ xa: từ đang gõ dở thuộc về ngữ cảnh cũ. So
-    // với bản sao trong `EventHook` (đổi đồng bộ), không so với giá trị
-    // `@Published` (đổi trễ một nhịp) — nếu không phím kế tiếp lại xoá bộ đệm.
-    eventHook.lastStandsAsideForRemoteDesktop = standsAside
-    input.newWord()
-    if let appState = eventHook.appState {
-      DispatchQueue.main.async { appState.remoteDesktopStandAside = standsAside }
-    }
-  }
-  let skipVietnameseIME = frontmostBundle == Bundle.main.bundleIdentifier || standsAside
+  // Không chạy Telex/VNI khi user đang gõ trong chính vkey (Settings, macro…).
+  // Modifier-only / focus vẫn xử lý phía trên. (App điều khiển máy từ xa đã
+  // được trả về sớm ở khối "đứng ngoài".)
+  let skipVietnameseIME = frontmostBundle == Bundle.main.bundleIdentifier
 
   if type == .keyDown && eventHook.processing && !skipVietnameseIME {
     // Phím qua Screen Sharing mà mang chữ đã soạn sẵn (bộ gõ ở máy điều khiển
