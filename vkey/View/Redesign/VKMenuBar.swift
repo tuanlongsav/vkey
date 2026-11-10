@@ -280,9 +280,11 @@ struct VKMenuPanel: View {
   private var statusHeader: some View {
     StatusHeaderRow(
       isVietnamese: appState.enabled,
-      subtitle: appState.enabled
-        ? "\(appState.typingMethod.rawValue) · \(newStyleTonePlacement ? "Kiểu mới" : "Kiểu cũ")"
-        : "Bộ gõ tạm tắt",
+      subtitle: appState.remoteDesktopStandAside
+        ? "Đứng ngoài · app điều khiển từ xa"
+        : appState.enabled
+          ? "\(appState.typingMethod.rawValue) · \(newStyleTonePlacement ? "Kiểu mới" : "Kiểu cũ")"
+          : "Bộ gõ tạm tắt",
       action: { appState.setEnabledByUser(!appState.enabled) }
     )
   }

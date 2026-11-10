@@ -9,6 +9,7 @@ import SwiftUI
 struct VKSmartTab: View {
   @Default(.smartSwitchEnabled) private var smartSwitch
   @Default(.appSmartSwitchConfigs) private var configs
+  @Default(.appSendingModes) private var sendingModes
   @State private var newBundleId = ""
   @State private var showingRunningApps = false
   @State private var showingAutoLearn = false
@@ -83,6 +84,10 @@ struct VKSmartTab: View {
           VKGroupHint("Lấy Bundle ID bằng Terminal: osascript -e 'id of app \"Tên App\"'")
         }
       }
+
+      sendingModeSection
+
+      VKGroupHint("Trong app điều khiển máy từ xa (Screen Sharing, iPhone Mirroring, AnyDesk, RustDesk, TeamViewer, Windows App…) vkey tự đứng ngoài để bộ gõ ở máy kia làm việc. Muốn vkey gõ ở đó, thêm app vào danh sách ứng dụng và chọn Tiếng Việt.")
     }
     .sheet(isPresented: $showingRunningApps) {
       SmartSwitchRunningAppsSheet()
@@ -134,6 +139,84 @@ struct VKSmartTab: View {
       }
       .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
       Button { configs.removeValue(forKey: bundleId) } label: {
+        Image(systemName: "trash").font(.system(size: 13)).foregroundStyle(VK.Color.danger)
+      }.buttonStyle(.plain)
+    }
+    .padding(.horizontal, VK.Space.s4).padding(.vertical, 10)
+  }
+
+  // MARK: Cách gửi phím theo ứng dụng
+
+  /// App thường đang chạy mà chưa có lựa chọn cách gửi phím, xếp theo tên.
+  private var addableSendingApps: [(bundleId: String, name: String)] {
+    NSWorkspace.shared.runningApplications
+      .filter { $0.activationPolicy == .regular }
+      .compactMap { app -> (bundleId: String, name: String)? in
+        guard let id = app.bundleIdentifier, id != Bundle.main.bundleIdentifier,
+              sendingModes[id] == nil
+        else { return nil }
+        return (id, app.localizedName ?? id)
+      }
+      .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+  }
+
+  @ViewBuilder
+  private var sendingModeSection: some View {
+    VKSection("Cách gửi phím theo ứng dụng") {
+      VKRowGroup {
+        if sendingModes.isEmpty {
+          HStack {
+            Text("Mọi app đang dùng cách gửi tự động.")
+              .font(.vk(.small)).foregroundStyle(VK.Color.fgMuted)
+            Spacer()
+          }
+          .padding(.horizontal, VK.Space.s4).padding(.vertical, 12)
+        } else {
+          ForEach(sendingModes.keys.sorted(), id: \.self) { bundleId in
+            sendingModeRow(bundleId: bundleId, mode: sendingModes[bundleId] ?? .paced)
+          }
+        }
+      }
+      Menu {
+        ForEach(addableSendingApps, id: \.bundleId) { app in
+          Button(app.name) { sendingModes[app.bundleId] = .paced }
+        }
+      } label: {
+        Label("Thêm ứng dụng đang chạy", systemImage: "plus")
+          .font(.system(size: 12.5, weight: .medium))
+      }
+      .menuStyle(.borderlessButton)
+      .fixedSize()
+      .disabled(addableSendingApps.isEmpty)
+      VKGroupHint("Chỉ cần khi một app bị rớt hoặc lặp chữ lúc bỏ dấu. \"Có nhịp nghỉ\" và \"Từng phím\" chậm hơn; nếu gõ nhanh mà chữ bị đảo thứ tự thì xoá dòng đó để về tự động.")
+    }
+  }
+
+  @ViewBuilder
+  private func sendingModeRow(bundleId: String, mode: AppSendingMode) -> some View {
+    let app = NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == bundleId }
+    let name = app?.localizedName ?? bundleId.components(separatedBy: ".").last ?? bundleId
+    HStack(spacing: VK.Space.s3) {
+      VStack(alignment: .leading, spacing: 2) {
+        Text(name).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(VK.Color.fg1)
+        Text(bundleId).font(.system(size: 12, design: .monospaced)).foregroundStyle(VK.Color.fgMuted)
+          .lineLimit(1).truncationMode(.middle)
+      }
+      Spacer(minLength: VK.Space.s2)
+      Menu {
+        ForEach(AppSendingMode.allCases, id: \.self) { option in
+          Button(option.label) { sendingModes[bundleId] = option }
+        }
+        Divider()
+        Button("Tự động (xoá)") { sendingModes.removeValue(forKey: bundleId) }
+      } label: {
+        Text(mode.label)
+          .font(.system(size: 12, weight: .medium))
+          .padding(.horizontal, 8).frame(height: 24)
+          .background(Capsule().fill(VK.Color.bgSunken))
+      }
+      .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+      Button { sendingModes.removeValue(forKey: bundleId) } label: {
         Image(systemName: "trash").font(.system(size: 13)).foregroundStyle(VK.Color.danger)
       }.buttonStyle(.plain)
     }

@@ -119,6 +119,30 @@ enum AppSmartSwitchSource: String, CaseIterable, Codable, Defaults.Serializable 
   }
 }
 
+/// Cách gửi phím do NGƯỜI DÙNG chọn cho một app, đè lên bảng dựng sẵn
+/// `EventSimulator.appStrategies`. Không có mục "tự động": app không nằm trong
+/// `Defaults[.appSendingModes]` là tự động.
+///
+/// Có để người dùng tự chữa một app rớt/lặp chữ mà không chờ bản mới — cách Gõ
+/// Nhanh, Caffee và ibus-bamboo đều làm. Thay cho ô "độ trễ" của quy tắc theo
+/// tiêu đề cửa sổ (đã gỡ ở 4.35).
+enum AppSendingMode: String, CaseIterable, Codable, Defaults.Serializable {
+  /// Backspace và chữ thay đi liền nhau, không nghỉ. Nhanh nhất.
+  case fast
+  /// Nghỉ một nhịp giữa các backspace rồi mới gửi chữ thay.
+  case paced
+  /// Từng backspace, từng ký tự một, có nghỉ. Chậm nhất, tương thích nhất.
+  case stepByStep
+
+  var label: String {
+    switch self {
+    case .fast: return "Nhanh"
+    case .paced: return "Có nhịp nghỉ"
+    case .stepByStep: return "Từng phím"
+    }
+  }
+}
+
 /// Cấu hình Smart Switch per-app — replace `smartSwitchApps: [String]` từ 1.7.0.
 /// User setting (source=.user) LUÔN override auto-learn (source=.autoLearn).
 struct AppSmartSwitchConfig: Codable, Hashable, Defaults.Serializable {
@@ -511,6 +535,10 @@ extension Defaults.Keys {
     "app-smart-switch-configs",
     default: [:]
   )
+
+  /// Cách gửi phím người dùng chọn theo bundle ID. App không có trong đây dùng
+  /// bảng dựng sẵn (`EventSimulator.appStrategies`).
+  static let appSendingModes = Key<[String: AppSendingMode]>("app-sending-modes", default: [:])
 
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value

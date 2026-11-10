@@ -1545,7 +1545,9 @@ class InputProcessor {
     // `.stepByStep` KHÔNG được miễn trừ ở đây — xem mục (c)/(d) trong docstring
     // — TRỪ Plume: xem `keepsCushionOnSmallDiffs`.
     if backspaceCount <= 1 && diffCharCount <= 1 {
-      if InputProcessor.keepsCushionOnSmallDiffs(bundleId: activeApp) {
+      if InputProcessor.keepsCushionOnSmallDiffs(
+        bundleId: activeApp, userMode: EventSimulator.userSendingMode(for: activeApp))
+      {
         return appStrategy
       }
       return .batch
@@ -1574,7 +1576,17 @@ class InputProcessor {
   /// đã mũ/móc (`vê`→`về`, `dơ`→`dở`, `đê`→`để`) và cả `fi`→`fĩ` thành mất chữ
   /// đứng trước ("ề"/"ở"/"ể"/"fx"). Miễn trừ hẹp hơn P5 (không mở lại cho cả
   /// bảng stepByStep kiểu Telegram/Spotlight) để tránh race "push"→"pussh".
-  static func keepsCushionOnSmallDiffs(bundleId: String) -> Bool {
+  ///
+  /// App mà NGƯỜI DÙNG tự chọn "Có nhịp nghỉ" / "Từng phím" cũng giữ nhịp nghỉ ở
+  /// transform 1 ký tự: họ chọn vì app đó rớt chữ, mà transform 1 ký tự là nhóm
+  /// phím phổ biến nhất (dd→đ, aa→â, phím dấu ngay sau nguyên âm) — hạ nó về
+  /// `.batch` thì lựa chọn gần như không có tác dụng. Cái giá là race
+  /// "push"→"pussh" có thể trở lại ở app đó khi gõ nhanh; đó là đánh đổi người
+  /// dùng tự bật cho một app, và gỡ bằng cách đổi lại "Tự động".
+  static func keepsCushionOnSmallDiffs(
+    bundleId: String, userMode: AppSendingMode? = nil
+  ) -> Bool {
+    if let userMode { return userMode != .fast }
     let id = bundleId.lowercased()
     return id.hasPrefix("com.htl.plume")
       || id.hasPrefix("com.facebook.archon")

@@ -91,6 +91,7 @@ struct UserDataExport: Codable {
   // 1.7.6+: full settings backup — bổ sung 9 fields trước đây bị bỏ sót.
   let hudOpacityPercent: Int?
   let appSmartSwitchConfigs: [String: AppSmartSwitchConfig]?  // 1.7.0+ per-app 3-state
+  let appSendingModes: [String: String]?  // 4.35+ cách gửi phím theo app (raw value)
   let autoCapitalizeEnabled: Bool?
   let nonLatinIMEAutoDisable: Bool?
   let freeMarkModeEnabled: Bool?
@@ -121,7 +122,7 @@ struct UserDataExport: Codable {
     case macros, macroEnabled, macrosSeeded, defaultMacrosVersion
     case appTheme, uiTheme, appearanceMode, themeConfigs
     case autoPersonalDictFeedback
-    case hudOpacityPercent, appSmartSwitchConfigs
+    case hudOpacityPercent, appSmartSwitchConfigs, appSendingModes
     case autoCapitalizeEnabled, nonLatinIMEAutoDisable
     case freeMarkModeEnabled
     case statisticsEnabled, autoBackupOnUpgrade
@@ -149,6 +150,7 @@ struct UserDataExport: Codable {
     autoPersonalDictFeedback: Bool?,
     hudOpacityPercent: Int? = nil,
     appSmartSwitchConfigs: [String: AppSmartSwitchConfig]? = nil,
+    appSendingModes: [String: String]? = nil,
     autoCapitalizeEnabled: Bool? = nil,
     nonLatinIMEAutoDisable: Bool? = nil,
     freeMarkModeEnabled: Bool? = nil,
@@ -190,6 +192,7 @@ struct UserDataExport: Codable {
     self.autoPersonalDictFeedback = autoPersonalDictFeedback
     self.hudOpacityPercent = hudOpacityPercent
     self.appSmartSwitchConfigs = appSmartSwitchConfigs
+    self.appSendingModes = appSendingModes
     self.autoCapitalizeEnabled = autoCapitalizeEnabled
     self.nonLatinIMEAutoDisable = nonLatinIMEAutoDisable
     self.freeMarkModeEnabled = freeMarkModeEnabled
@@ -236,6 +239,7 @@ struct UserDataExport: Codable {
     self.hudOpacityPercent = try c.decodeIfPresent(Int.self, forKey: .hudOpacityPercent)
     self.appSmartSwitchConfigs = try c.decodeIfPresent([String: AppSmartSwitchConfig].self,
                                                       forKey: .appSmartSwitchConfigs)
+    self.appSendingModes = try c.decodeIfPresent([String: String].self, forKey: .appSendingModes)
     self.autoCapitalizeEnabled = try c.decodeIfPresent(Bool.self, forKey: .autoCapitalizeEnabled)
     self.nonLatinIMEAutoDisable = try c.decodeIfPresent(Bool.self, forKey: .nonLatinIMEAutoDisable)
     self.freeMarkModeEnabled = try c.decodeIfPresent(Bool.self, forKey: .freeMarkModeEnabled)
@@ -335,6 +339,7 @@ enum UserDataMigration {
       // 1.7.6+: full settings backup
       hudOpacityPercent: Defaults[.hudOpacityPercent],
       appSmartSwitchConfigs: Defaults[.appSmartSwitchConfigs],
+      appSendingModes: Defaults[.appSendingModes].mapValues(\.rawValue),
       autoCapitalizeEnabled: Defaults[.autoCapitalizeEnabled],
       nonLatinIMEAutoDisable: Defaults[.nonLatinIMEAutoDisable],
       freeMarkModeEnabled: Defaults[.freeMarkModeEnabled],
@@ -588,6 +593,18 @@ enum UserDataMigration {
           Defaults[.appSmartSwitchConfigs] = current
           changes.append("Smart Switch theo app: +\(changed) (gộp, file ưu tiên)")
         }
+      }
+    }
+
+    // 4.35+: cách gửi phím theo app. Giá trị lạ (bản mới hơn ghi) bị bỏ qua.
+    if let raw = export.appSendingModes {
+      let imported = raw.compactMapValues(AppSendingMode.init(rawValue:))
+      let merged = replaceLists
+        ? imported
+        : Defaults[.appSendingModes].merging(imported) { _, fromFile in fromFile }
+      if Defaults[.appSendingModes] != merged {
+        Defaults[.appSendingModes] = merged
+        changes.append("Cách gửi phím theo app: \(imported.count)\(replaceLists ? " (ghi đè)" : " (gộp, file ưu tiên)")")
       }
     }
 

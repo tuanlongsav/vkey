@@ -325,7 +325,11 @@ làm đổi giá trị nào trong hai nơi trên.
   "app nền giữ thì gõ tiếp" của `resolveSecureInput` đang làm đúng việc; không
   có → vkey không thể gõ ở BẤT KỲ app nào lúc đó, và dòng cảnh báo trong menu
   là thứ duy nhất người dùng có.
-- **Screen Sharing với bộ gõ ở cả hai đầu.** MacBook gõ `vieetj` vào cửa sổ
+- **Screen Sharing với bộ gõ ở cả hai đầu.** Từ bản sau 4.34, vkey ở máy ĐIỀU
+  KHIỂN tự đứng ngoài trong cửa sổ Screen Sharing
+  (`EventHook.remoteDesktopViewerBundles`), nên ca này chỉ còn xảy ra khi người
+  dùng đặt Screen Sharing là "Tiếng Việt" trong Smart Switch, hoặc máy điều
+  khiển chạy bộ gõ khác. Phép đo vẫn cần: MacBook gõ `vieetj` vào cửa sổ
   Screen Sharing, trên Mac Studio ghi bằng `evlog` (sửa chốt bundle cho app
   đang nhận phím): event đến mang mã phím gì, chuỗi Unicode gì.
   `EventHook.isPrecomposedRemoteText` giả định chuỗi Unicode của event gốc được

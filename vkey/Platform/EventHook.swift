@@ -247,6 +247,45 @@ class EventHook {
     return (false, owner)
   }
 
+  /// App ĐIỀU KHIỂN MÁY TỪ XA: chúng chuyển phím vật lý sang máy kia qua mạng.
+  /// Backspace + event Unicode do vkey tự phát đi qua đó thành chữ rác ở đầu bên
+  /// kia, và nếu máy kia cũng có bộ gõ thì hai bộ gõ cùng biến đổi một chuỗi
+  /// phím (phần còn thiếu của lỗi "hai máy cùng bật vkey" ở 4.34). Để phím thô
+  /// đi thẳng; việc bỏ dấu thuộc về bộ gõ ở máy được điều khiển.
+  ///
+  /// Nguồn: `com.apple.ScreenSharing`, `com.apple.ScreenContinuity` (iPhone
+  /// Mirroring) và `com.philandro.anydesk` kiểm bằng `mdfind` trên máy
+  /// 2026-11-10; RustDesk, TeamViewer theo `RustBridge.swift` của Gõ Nhanh;
+  /// Windows App, RealVNC, Citrix theo `ClientPolicy.swift` của VietTelex.
+  /// Máy ảo (Parallels, VMware, UTM) CỐ Ý không có ở đây: gõ tiếng Việt vào máy
+  /// ảo bằng bộ gõ của máy chủ là cách dùng phổ biến.
+  static let remoteDesktopViewerBundles: Set<String> = [
+    "com.apple.ScreenSharing",
+    "com.apple.ScreenContinuity",
+    "com.philandro.anydesk",
+    "com.carriez.rustdesk",
+    "com.teamviewer.TeamViewer",
+    "com.microsoft.rdc.macos",
+    "com.realvnc.vncviewer",
+    "com.citrix.receiver.icaviewer.mac",
+  ]
+
+  /// Kết quả `standsAsideForRemoteDesktop(frontmostBundle:userState:)` ở event
+  /// gần nhất. Chỉ callback tap đọc/ghi.
+  var lastStandsAsideForRemoteDesktop = false
+
+  /// vkey có đứng ngoài vì app đang trước là app điều khiển máy từ xa không.
+  /// Người dùng đảo lại bằng cách đặt app đó là "Tiếng Việt" trong Smart Switch
+  /// (máy kia không có bộ gõ, muốn gõ dấu từ máy này).
+  static func standsAsideForRemoteDesktop(
+    frontmostBundle: String?, userState: @autoclosure () -> AppSmartSwitchState?
+  ) -> Bool {
+    guard let frontmostBundle, remoteDesktopViewerBundles.contains(frontmostBundle) else {
+      return false
+    }
+    return userState() != .vietnameseMode
+  }
+
   /// keyDown đến qua Screen Sharing mang CHỮ ĐÃ SOẠN SẴN chứ không phải một
   /// phím thô.
   ///
@@ -804,9 +843,23 @@ private func handleTapEvent(
     }
   }
 
-  // Không chạy Telex/VNI khi user đang gõ trong chính vkey (Settings, macro…).
+  // Không chạy Telex/VNI khi user đang gõ trong chính vkey (Settings, macro…)
+  // hoặc trong app điều khiển máy từ xa (xem `remoteDesktopViewerBundles`).
   // Modifier-only / focus vẫn xử lý phía trên.
-  let skipVietnameseIME = frontmostBundle == Bundle.main.bundleIdentifier
+  let standsAside = EventHook.standsAsideForRemoteDesktop(
+    frontmostBundle: frontmostBundle,
+    userState: frontmostBundle.flatMap { eventHook.appState?.smartSwitchConfig(for: $0)?.state })
+  if eventHook.lastStandsAsideForRemoteDesktop != standsAside {
+    // Vừa vào/ra app điều khiển từ xa: từ đang gõ dở thuộc về ngữ cảnh cũ. So
+    // với bản sao trong `EventHook` (đổi đồng bộ), không so với giá trị
+    // `@Published` (đổi trễ một nhịp) — nếu không phím kế tiếp lại xoá bộ đệm.
+    eventHook.lastStandsAsideForRemoteDesktop = standsAside
+    input.newWord()
+    if let appState = eventHook.appState {
+      DispatchQueue.main.async { appState.remoteDesktopStandAside = standsAside }
+    }
+  }
+  let skipVietnameseIME = frontmostBundle == Bundle.main.bundleIdentifier || standsAside
 
   if type == .keyDown && eventHook.processing && !skipVietnameseIME {
     // Phím qua Screen Sharing mà mang chữ đã soạn sẵn (bộ gõ ở máy điều khiển

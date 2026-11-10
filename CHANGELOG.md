@@ -8,6 +8,24 @@
 sửa mấy lỗi tìm thấy khi đối chiếu với 12 bộ gõ tiếng Việt khác. Từ 22.929 dòng
 Swift còn 18.742 (trước khi cộng phần sửa lỗi bên dưới).
 
+### ✨ Thêm
+
+- **vkey tự đứng ngoài trong app điều khiển máy từ xa**: Screen Sharing, iPhone
+  Mirroring, AnyDesk, RustDesk, TeamViewer, Windows App, RealVNC, Citrix. Các app
+  này chuyển phím vật lý sang máy kia; backspace và chữ do vkey tự phát đi qua
+  đó thành chữ rác, và nếu máy kia cũng có bộ gõ thì hai bộ gõ cùng biến đổi một
+  chuỗi phím. Đây là phần còn thiếu của lỗi "hai máy cùng bật vkey" ở 4.34. Muốn
+  vkey gõ dấu từ máy này (máy kia không có bộ gõ) thì đặt app đó là Tiếng Việt
+  trong Smart Switch. Menu ghi "Đứng ngoài · app điều khiển từ xa" khi đang áp
+  dụng. Máy ảo (Parallels, VMware, UTM) cố ý không nằm trong danh sách.
+  **Chưa thử trên hai máy thật.**
+- **Chọn cách gửi phím theo từng app** (tab Smart Switch): Nhanh / Có nhịp nghỉ /
+  Từng phím, đè lên bảng dựng sẵn; app không chọn gì là tự động. Dùng khi một
+  app rớt hoặc lặp chữ lúc bỏ dấu, không phải chờ bản mới. "Có nhịp nghỉ" và
+  "Từng phím" giữ nhịp nghỉ cả ở thay đổi một ký tự, nên gõ rất nhanh có thể bị
+  đảo thứ tự chữ ở app đó; xoá dòng để về tự động. Spotlight và ô menu bar vẫn
+  đi đường ghi AX bất kể lựa chọn. Lựa chọn được sao lưu/khôi phục cùng cài đặt.
+
 ### 🗑 Gỡ
 
 - **Lịch sử Clipboard**, **Đoán từ và HUD gợi ý**, **Quy tắc theo tiêu đề cửa
@@ -46,7 +64,7 @@ Swift còn 18.742 (trước khi cộng phần sửa lỗi bên dưới).
   của người dùng khi chạy).
 - "Độ đậm thông báo" dời sang tab Chung, cạnh công tắc thông báo VI/EN mà nó
   điều khiển.
-- **427 test pass** (gỡ 43 test của tính năng đã bỏ, thêm 13).
+- **433 test pass** (gỡ 43 test của tính năng đã bỏ, thêm 19).
 
 ## [4.34] - 2026-11-10 — "Gõ được qua Screen Sharing"
 

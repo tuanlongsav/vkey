@@ -8692,3 +8692,127 @@ final class SlimDownTests: XCTestCase {
     XCTAssertNil(processor.previousWordState, "Backspace ở ô mới không dựng lại từ của ô cũ")
   }
 }
+
+// MARK: - Đợt 2 sau 4.34: điều khiển máy từ xa, cách gửi phím theo app
+
+final class RemoteDesktopAndSendingModeTests: XCTestCase {
+
+  // MARK: Đứng ngoài trong app điều khiển máy từ xa
+
+  func testStandsAsideInRemoteDesktopViewersUnlessUserAsksForVietnamese() throws {
+    func aside(_ bundle: String?, _ state: AppSmartSwitchState? = nil) -> Bool {
+      EventHook.standsAsideForRemoteDesktop(frontmostBundle: bundle, userState: state)
+    }
+    XCTAssertTrue(aside("com.apple.ScreenSharing"))
+    XCTAssertTrue(aside("com.apple.ScreenContinuity"), "iPhone Mirroring")
+    XCTAssertTrue(aside("com.philandro.anydesk"))
+    XCTAssertTrue(aside("com.carriez.rustdesk"))
+    XCTAssertTrue(aside("com.apple.ScreenSharing", .englishMode), "EN/Tắt: vẫn đứng ngoài")
+    XCTAssertTrue(aside("com.apple.ScreenSharing", .disabled))
+    XCTAssertFalse(
+      aside("com.apple.ScreenSharing", .vietnameseMode),
+      "người dùng muốn gõ dấu từ máy này (máy kia không có bộ gõ)")
+
+    XCTAssertFalse(aside("com.google.Chrome"))
+    XCTAssertFalse(aside("com.parallels.desktop.console"), "máy ảo cố ý không nằm trong danh sách")
+    XCTAssertFalse(aside("com.apple.ScreenSharingAgent"), "khớp chính xác, không theo tiền tố")
+    XCTAssertFalse(aside(nil))
+  }
+
+  /// Không tra cấu hình Smart Switch cho app thường — hàm này chạy ở mỗi event.
+  func testStandAsideCheckDoesNotLookUpConfigForOrdinaryApps() throws {
+    var lookups = 0
+    func state() -> AppSmartSwitchState? { lookups += 1; return nil }
+    _ = EventHook.standsAsideForRemoteDesktop(frontmostBundle: "com.google.Chrome", userState: state())
+    _ = EventHook.standsAsideForRemoteDesktop(frontmostBundle: nil, userState: state())
+    XCTAssertEqual(lookups, 0)
+    _ = EventHook.standsAsideForRemoteDesktop(frontmostBundle: "com.apple.ScreenSharing", userState: state())
+    XCTAssertEqual(lookups, 1)
+  }
+
+  // MARK: Cách gửi phím theo app
+
+  private func name(_ strategy: SendingStrategy) -> String {
+    switch strategy {
+    case .batch: return "batch"
+    case .stepByStep: return "stepByStep"
+    case .hybrid(let delay): return "hybrid(\(delay))"
+    case .axDirect: return "axDirect"
+    }
+  }
+
+  func testUserSendingModeOverridesTheBuiltInTable() throws {
+    func resolved(_ bundle: String, _ mode: AppSendingMode?) -> String {
+      name(EventSimulator.resolveStrategy(for: bundle, userMode: mode))
+    }
+    // Không chọn gì: bảng dựng sẵn.
+    XCTAssertEqual(resolved("com.example.unknown", nil), "hybrid(800)")
+    XCTAssertEqual(resolved("com.vng.zalo", nil), "stepByStep")
+    XCTAssertEqual(resolved("com.microsoft.Word", nil), "hybrid(1000)")
+
+    // Người dùng chọn: thắng bảng, cả hai chiều.
+    XCTAssertEqual(resolved("com.example.unknown", .stepByStep), "stepByStep")
+    XCTAssertEqual(resolved("com.example.unknown", .paced), "hybrid(2000)")
+    XCTAssertEqual(resolved("com.vng.zalo", .fast), "batch")
+
+    // Spotlight đi AX: lựa chọn của người dùng không được kéo nó về event.
+    XCTAssertEqual(resolved("com.apple.Spotlight", nil), "axDirect")
+    XCTAssertEqual(resolved("com.apple.Spotlight", .stepByStep), "axDirect")
+  }
+
+  /// "Có nhịp nghỉ" / "Từng phím" do người dùng chọn phải giữ nhịp nghỉ cả ở
+  /// transform 1 ký tự — nhóm phím phổ biến nhất; nếu không lựa chọn gần như
+  /// vô tác dụng. "Nhanh" và app không chọn gì giữ hành vi cũ.
+  func testUserChosenPacingKeepsItsCushionOnSmallDiffs() throws {
+    func keeps(_ bundle: String, _ mode: AppSendingMode?) -> Bool {
+      InputProcessor.keepsCushionOnSmallDiffs(bundleId: bundle, userMode: mode)
+    }
+    XCTAssertFalse(keeps("com.example.app", nil))
+    XCTAssertTrue(keeps("com.htl.plume", nil), "ngoại lệ dựng sẵn giữ nguyên")
+    XCTAssertTrue(keeps("com.example.app", .paced))
+    XCTAssertTrue(keeps("com.example.app", .stepByStep))
+    XCTAssertFalse(keeps("com.example.app", .fast))
+    XCTAssertFalse(keeps("com.htl.plume", .fast), "người dùng chọn Nhanh thì theo người dùng")
+  }
+
+  func testSendingModesSurviveABackupRoundTripAndIgnoreUnknownValues() throws {
+    Defaults[.appSendingModes] = ["com.example.app": .stepByStep]
+    defer { Defaults.reset(.appSendingModes) }
+
+    let export = UserDataMigration.currentExport(includeStatistics: false)
+    XCTAssertEqual(export.appSendingModes, ["com.example.app": "stepByStep"])
+    let data = try JSONEncoder().encode(export)
+    let decoded = try JSONDecoder().decode(UserDataExport.self, from: data)
+    XCTAssertEqual(decoded.appSendingModes, ["com.example.app": "stepByStep"])
+
+    // Tệp mang một giá trị lạ (bản mới hơn ghi): bỏ qua mục đó, giữ mục hợp lệ.
+    Defaults[.appSendingModes] = ["com.kept.app": .fast]
+    let object = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+    var patched = object
+    patched["appSendingModes"] = ["com.example.app": "paced", "com.other.app": "warp-speed"]
+    let imported = try JSONDecoder().decode(
+      UserDataExport.self, from: JSONSerialization.data(withJSONObject: patched))
+    UserDataMigration.importExport(imported, replaceLists: false)
+    XCTAssertEqual(
+      Defaults[.appSendingModes], ["com.kept.app": .fast, "com.example.app": .paced],
+      "gộp: giữ mục đang có, nhận mục hợp lệ từ tệp, bỏ giá trị lạ")
+  }
+
+  func testOldBackupWithoutSendingModesStillImports() throws {
+    Defaults[.appSendingModes] = ["com.kept.app": .paced]
+    defer { Defaults.reset(.appSendingModes) }
+    let data = try JSONEncoder().encode(UserDataMigration.currentExport(includeStatistics: false))
+    var object = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+    object.removeValue(forKey: "appSendingModes")
+    // Mục của tính năng đã gỡ trong tệp từ 4.34 trở về trước phải bị bỏ qua êm.
+    object["clipboardHistoryEnabled"] = true
+    object["wordPredictionEnabled"] = true
+    object["windowTitleRules"] = [["name": "Docs"]]
+    object["modifierOnlyTextToolsHotkey"] = 123
+    let old = try JSONDecoder().decode(
+      UserDataExport.self, from: JSONSerialization.data(withJSONObject: object))
+    XCTAssertNil(old.appSendingModes)
+    UserDataMigration.importExport(old, replaceLists: true)
+    XCTAssertEqual(Defaults[.appSendingModes], ["com.kept.app": .paced], "tệp không có mục này thì không đụng")
+  }
+}

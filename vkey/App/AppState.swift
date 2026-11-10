@@ -71,6 +71,11 @@ class AppState: ObservableObject {
     /// ở app đang gõ.
     @Published public var secureInputHolderName: String?
 
+    /// vkey đang đứng ngoài vì app đang trước là app điều khiển máy từ xa (xem
+    /// `EventHook.remoteDesktopViewerBundles`). Callback tap cập nhật; menu dùng
+    /// để nói vì sao lá cờ còn V mà không ra dấu.
+    @Published public var remoteDesktopStandAside = false
+
     /// App mà người dùng vừa TỰ đổi V/E (phím tắt, tổ hợp modifier, menu).
     /// Smart Switch không ép lại cấu hình cho app này tới khi đổi sang app khác
     /// — nếu không thì thao tác đổi chế độ bị hoàn tác ngay ở phím kế tiếp.

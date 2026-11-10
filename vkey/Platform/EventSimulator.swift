@@ -31,6 +31,18 @@ enum SendingStrategy {
   case axDirect
 }
 
+extension AppSendingMode {
+  /// Chiến lược gửi tương ứng. `.paced` nghỉ lâu hơn mặc định (hybrid 800µs)
+  /// để lựa chọn này khác hẳn "tự động" với app chưa có trong bảng.
+  var strategy: SendingStrategy {
+    switch self {
+    case .fast: return .batch
+    case .paced: return .hybrid(backspaceDelayMicroseconds: 2000)
+    case .stepByStep: return .stepByStep
+    }
+  }
+}
+
 /// Configuration for per-app event sending strategies.
 struct AppSendingConfig {
   /// Bundle ID prefix to match.
@@ -241,8 +253,33 @@ class EventSimulator {
     AppSendingConfig(bundlePrefix: "com.apple.systemuiserver", strategy: .axDirect, name: "SystemUIServer"),
   ]
 
+  /// Bản đã giải mã của `Defaults[.appSendingModes]` — tra ở mỗi lần thay chữ,
+  /// nên không đọc thẳng Defaults (giải mã lại cả dictionary mỗi lần).
+  private static let userSendingModes =
+    DefaultsDerivedCache<[String: AppSendingMode]>(.appSendingModes) {
+      Defaults[.appSendingModes]
+    }
+
+  /// Cách gửi phím người dùng tự chọn cho `bundleId`, nếu có.
+  static func userSendingMode(for bundleId: String) -> AppSendingMode? {
+    userSendingModes.value[bundleId]
+  }
+
   static func getStrategy(for bundleId: String) -> SendingStrategy {
-    // Per-app override first; otherwise fall back to a conservative hybrid default
+    resolveStrategy(for: bundleId, userMode: userSendingMode(for: bundleId))
+  }
+
+  /// Lựa chọn của người dùng thắng bảng dựng sẵn — TRỪ app đi `.axDirect`
+  /// (Spotlight, ô menu bar): ở đó mọi cách gửi bằng event đều loạn chữ, đổi
+  /// sang event là làm hỏng chắc chắn.
+  static func resolveStrategy(for bundleId: String, userMode: AppSendingMode?) -> SendingStrategy {
+    let builtIn = builtInStrategy(for: bundleId)
+    if case .axDirect = builtIn { return builtIn }
+    return userMode?.strategy ?? builtIn
+  }
+
+  static func builtInStrategy(for bundleId: String) -> SendingStrategy {
+    // Per-app table first; otherwise fall back to a conservative hybrid default
     // (light backspace delay) which works for native AppKit apps AND most Electron
     // / web apps that need a beat between backspace and the replacement string.
     // Pure .batch is faster but fails silently on apps like Claude, Notion, Slack.
