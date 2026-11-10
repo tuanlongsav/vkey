@@ -644,16 +644,21 @@ enum UserDataMigration {
 
   /// Xoá giá trị đã lưu của `obsoleteDefaultsKeys` và kho n-gram của tính năng
   /// đoán từ. Idempotent, chạy mỗi lần khởi động.
+  ///
+  /// - Parameter applicationSupport: gốc Application Support; tham số để test
+  ///   trỏ vào thư mục tạm thay vì dữ liệu thật của người dùng.
   static func removeObsoleteStoredValues(
-    defaults: UserDefaults = .standard, fileManager: FileManager = .default
+    defaults: UserDefaults = .standard,
+    applicationSupport: URL? = FileManager.default.urls(
+      for: .applicationSupportDirectory, in: .userDomainMask).first
   ) {
     for key in obsoleteDefaultsKeys where defaults.object(forKey: key) != nil {
       defaults.removeObject(forKey: key)
     }
-    if let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
-      let ngramDir = support.appendingPathComponent("vkey/ngram", isDirectory: true)
-      if fileManager.fileExists(atPath: ngramDir.path) {
-        try? fileManager.removeItem(at: ngramDir)
+    if let applicationSupport {
+      let ngramDir = applicationSupport.appendingPathComponent("vkey/ngram", isDirectory: true)
+      if FileManager.default.fileExists(atPath: ngramDir.path) {
+        try? FileManager.default.removeItem(at: ngramDir)
       }
     }
   }

@@ -565,26 +565,31 @@ final class UsageStatistics {
     queue.sync {
       var out: [String: AppSmartSwitchState] = [:]
       for bundleId in Set(counters.appLanguageVnCounts.keys).union(counters.appLanguageEnCounts.keys) {
-        let vn = counters.appLanguageVnCounts[bundleId] ?? 0
-        let en = counters.appLanguageEnCounts[bundleId] ?? 0
-        let total = vn + en
-        guard total > 0 else { continue }
-        let days = counters.appLanguageDays[bundleId]?.count ?? 0
-        let avgPerDay = days > 0 ? Double(total) / Double(days) : 0
-        // Gate: ≥5 ngày dataset spread, ≥5 commit/ngày avg
-        // v1.7.2: lower threshold ≥1 day, ≥5 commit/day (was ≥5 days, ≥5/day).
-        // Combined với daily check (thay weekly) cho auto-learn phản hồi nhanh hơn.
-        guard days >= 1, avgPerDay >= 5 else { continue }
-        let ratio = Double(vn) / Double(total)
-        if ratio >= 0.75 {
-          out[bundleId] = .vietnameseMode
-        } else if ratio <= 0.25 {
-          out[bundleId] = .englishMode
+        if let state = Self.smartSwitchSuggestion(
+          vn: counters.appLanguageVnCounts[bundleId] ?? 0,
+          en: counters.appLanguageEnCounts[bundleId] ?? 0,
+          days: counters.appLanguageDays[bundleId]?.count ?? 0)
+        {
+          out[bundleId] = state
         }
-        // else: ambiguous, không auto-set
       }
       return out
     }
+  }
+
+  /// Chế độ đề xuất cho một app từ số từ Việt / Anh đã commit ở đó, hoặc `nil`
+  /// nếu chưa đủ dữ liệu hay tỉ lệ lưng chừng.
+  ///
+  /// Ngưỡng (v1.7.2): có dữ liệu từ ≥ 1 ngày, trung bình ≥ 5 từ/ngày, và ≥ 75%
+  /// về một phía. Ngưỡng thấp là có chủ ý cho một bảng ĐỀ XUẤT; nó từng là vấn
+  /// đề khi kết quả được tự ghi thành cấu hình mỗi ngày (đã gỡ ở 4.35).
+  static func smartSwitchSuggestion(vn: Int, en: Int, days: Int) -> AppSmartSwitchState? {
+    let total = vn + en
+    guard total > 0, days >= 1, Double(total) / Double(days) >= 5 else { return nil }
+    let ratio = Double(vn) / Double(total)
+    if ratio >= 0.75 { return .vietnameseMode }
+    if ratio <= 0.25 { return .englishMode }
+    return nil
   }
 
   /// Promote frequently-confirmed words into the user's personal dictionary.

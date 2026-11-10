@@ -55,17 +55,17 @@ Keyboard Event → EventHook (CGEvent tap) → InputProcessor
 - `EventHook.swift` - Global CGEvent tap for keyboard interception (requires Accessibility permission). `setEnabled` only resets the word buffer on a real state change
 - `EventSimulator.swift` - Simulates backspace and text input to replace typed text; per-app sending strategy incl. `axDirect` for Chromium omnibox
 - `Focused.swift` - Accessibility API: focused element, `FieldKind` (webContent / nativePanel / windowField)
-- Also: HUD windows (Toggle/Prediction/Notice), clipboard history, window-title rules, input-source monitor
+- Also: HUD windows (Toggle/Notice), input-source monitor
 
 **KeyLayout/** - Keyboard mapping
 - `KeyboardUS.swift` - US keyboard layout key code to character mapping
 - `Keys.swift` - TaskKey enum for special keys (Enter, Tab, Space, arrows)
 
-**Input/** - `PredictionEngine.swift` (next-word prediction), `SpellDecisionEngine.swift` (keep Vietnamese vs restore English)
+**Input/** - `SpellDecisionEngine.swift` (keep Vietnamese vs restore English)
 **Lexicon/** - embedded word lists + the GitHub `lexicon-update.json` fetch path
-**Stats/** - usage statistics and n-gram store (local only, no telemetry)
+**Stats/** - usage statistics (local only, no telemetry)
 **View/** - SwiftUI. `View/Redesign/VK*` is the live design system; older top-level views are legacy
-**Marketing/** - `--export-marketing` screenshot exporter (dev tool, ships in the binary)
+**Marketing/** - `--export-marketing` screenshot exporter (dev tool, Debug builds only)
 
 ### Dependencies (Swift Packages)
 - **Defaults** - UserDefaults wrapper

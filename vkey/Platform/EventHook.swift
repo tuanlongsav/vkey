@@ -154,16 +154,69 @@ class EventHook {
     return owner
   }
 
-  /// Gọi từ watchdog khi cờ secure input đang bật: ghi lại chủ là app nền (sửa
-  /// phép đoán "app đang trước" nếu callback đã đoán nhầm) và trả tên app để
-  /// menu hiển thị. `nil` khi chủ không phải app nền.
-  func refreshBackgroundSecureInputHolder() -> String? {
-    guard
-      let app = Self.backgroundSecureInputHolderApp(
-        frontmost: NSWorkspace.shared.frontmostApplication)
-    else { return nil }
-    secureInputOwnerPID = app.processIdentifier
-    return app.localizedName ?? app.bundleIdentifier ?? "pid \(app.processIdentifier)"
+  /// Có nên CẢNH BÁO rằng Secure Input đang bị một tiến trình khác app đang gõ
+  /// giữ không. Rộng hơn `isBackgroundSecureInputHolder` (vốn quyết định vkey
+  /// có đứng ngoài hay không, nên phải dè dặt): ở đây chủ không cần là app
+  /// thường — `loginwindow` giữ secure input sau khi máy ngủ dậy cũng là ca cần
+  /// báo. Không báo khi ô đang focus đúng là ô mật khẩu (người dùng đang nhập
+  /// mật khẩu, mọi thứ bình thường) và khi màn hình đang khoá.
+  static func shouldWarnAboutSecureInputHolder(
+    ownerPID: pid_t?, frontmostPID: pid_t?, ownPID: pid_t,
+    screenLocked: Bool, frontFieldIsSecure: @autoclosure () -> Bool
+  ) -> Bool {
+    guard let ownerPID, ownerPID > 0, ownerPID != ownPID, ownerPID != frontmostPID,
+      !screenLocked
+    else { return false }
+    return !frontFieldIsSecure()
+  }
+
+  /// Màn hình đang khoá (theo WindowServer).
+  static func isScreenLocked() -> Bool {
+    guard let session = CGSessionCopyCurrentDictionary() as? [String: Any] else { return false }
+    return (session["CGSSessionScreenIsLocked"] as? Bool) ?? false
+  }
+
+  /// Số nhịp watchdog liên tiếp thấy một tiến trình khác giữ secure input.
+  private var secureInputWarningTicks = 0
+
+  /// Gọi từ watchdog 2 giây. Trả tên tiến trình đang giữ Secure Input mà KHÔNG
+  /// phải app đang gõ — tức lúc vkey không nhận được phím nào ở bất kỳ app nào
+  /// — để biểu tượng menu bar và menu báo cho người dùng; `nil` nếu không có gì
+  /// để báo.
+  ///
+  /// Chỉ báo khi thấy ở HAI nhịp liên tiếp: một ô mật khẩu vừa mở, AX chưa kịp
+  /// trả subrole, là ca thoáng qua không đáng nháy biểu tượng.
+  ///
+  /// Kèm việc cũ: chủ là một app nền thì ghi lại vào `secureInputOwnerPID`, sửa
+  /// phép đoán "app đang trước" nếu callback đã đoán nhầm.
+  func secureInputWarningHolder(systemFlag: Bool) -> String? {
+    guard systemFlag else {
+      secureInputWarningTicks = 0
+      return nil
+    }
+    let frontmost = NSWorkspace.shared.frontmostApplication
+    if let app = Self.backgroundSecureInputHolderApp(frontmost: frontmost) {
+      secureInputOwnerPID = app.processIdentifier
+    }
+    guard let pid = Self.systemSecureInputOwnerPID(),
+      Self.shouldWarnAboutSecureInputHolder(
+        ownerPID: pid, frontmostPID: frontmost?.processIdentifier, ownPID: ownPID,
+        screenLocked: Self.isScreenLocked(), frontFieldIsSecure: Focused.isSecureField())
+    else {
+      secureInputWarningTicks = 0
+      return nil
+    }
+    secureInputWarningTicks += 1
+    guard secureInputWarningTicks >= 2 else { return nil }
+    if let app = NSRunningApplication(processIdentifier: pid),
+      let name = app.localizedName ?? app.bundleIdentifier
+    {
+      return name
+    }
+    if let path = Self.executablePath(of: pid) {
+      return (path as NSString).lastPathComponent
+    }
+    return "pid \(pid)"
   }
 
   /// Quyết định "vkey có phải đứng ngoài vì secure input không" cho MỘT event.

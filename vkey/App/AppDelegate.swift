@@ -255,12 +255,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       {
         self.appState.secureInputActive = false
       }
-      // Một app NỀN đang giữ secure input (ô mật khẩu bỏ quên ở cửa sổ khác):
-      // ổ khoá không hiện vì ô đó không ở app đang gõ, nên menu phải nêu tên
-      // thủ phạm. Chỉ đọc IORegistry khi cờ đang bật; chỉ gán khi giá trị đổi
-      // để `@Published` không dựng lại menu mỗi 2 giây.
-      let holder = secureInputOn && trusted
-        ? self.appState.eventHook.refreshBackgroundSecureInputHolder() : nil
+      // Một tiến trình KHÁC app đang gõ giữ secure input (ô mật khẩu bỏ quên ở
+      // cửa sổ khác, `loginwindow` sau khi ngủ dậy): ổ khoá không hiện vì ô đó
+      // không ở app đang gõ, nên biểu tượng và menu phải nêu tên thủ phạm. Chỉ
+      // đọc IORegistry khi cờ đang bật; chỉ gán khi giá trị đổi để `@Published`
+      // không dựng lại menu mỗi 2 giây.
+      let holder = trusted
+        ? self.appState.eventHook.secureInputWarningHolder(systemFlag: secureInputOn) : nil
       if self.appState.secureInputHolderName != holder {
         self.appState.secureInputHolderName = holder
       }
@@ -440,12 +441,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       NSApp.activate(ignoringOtherApps: true)
 
       let alert = NSAlert()
-      alert.messageText = "vkey cần quyền Trợ năng (Accessibility)"
+      alert.messageText = "vkey cần quyền \(AccessibilityPermissionPane.displayName)"
       alert.informativeText = """
-      vkey cần được cấp quyền Accessibility để có thể chuyển ký tự bạn gõ \
-      thành tiếng Việt. Vui lòng mở:
+      vkey cần được cấp quyền này để có thể chuyển ký tự bạn gõ thành tiếng \
+      Việt. Vui lòng mở:
 
-      System Settings → Privacy & Security → Accessibility
+      \(AccessibilityPermissionPane.settingsPath)
 
       rồi bật toggle cho vkey. Sau đó nhấn "Thử lại" để vkey tiếp tục.
       """

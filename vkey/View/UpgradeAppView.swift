@@ -29,7 +29,7 @@ struct UpgradeAppView: View {
         VStack(alignment: .leading, spacing: 2) {
           Text("Cập nhật vkey thành công!")
             .font(.system(size: 18, weight: .bold))
-          Text("Cần cấp lại quyền Accessibility")
+          Text("Cần cấp lại quyền \(AccessibilityPermissionPane.names().vi)")
             .font(.system(size: 13))
             .foregroundColor(.secondary)
         }
@@ -50,7 +50,7 @@ struct UpgradeAppView: View {
       // Instructions
       VStack(alignment: .leading, spacing: 12) {
         UpgradeInstructionStep(
-          number: 1, text: "Bấm nút bên dưới để mở Trợ năng (Accessibility) trong Cài đặt Hệ thống",
+          number: 1, text: "Bấm nút bên dưới để mở \(AccessibilityPermissionPane.displayName) trong Cài đặt Hệ thống",
           isCompleted: hasRequestedPermission)
         UpgradeInstructionStep(
           number: 2, text: "Chọn 'vkey' và ấn nút '-' ở dưới danh sách để xoá bỏ quyền cũ",
@@ -92,7 +92,7 @@ struct UpgradeAppView: View {
           }) {
             HStack {
               ThemedSymbol(name: "gear")
-              Text("Mở Cài đặt Accessibility")
+              Text("Mở Cài đặt \(AccessibilityPermissionPane.names().vi)")
             }
             .frame(width: 240)
           }

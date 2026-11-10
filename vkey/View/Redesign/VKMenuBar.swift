@@ -287,14 +287,15 @@ struct VKMenuPanel: View {
     )
   }
 
-  /// Một app NỀN đang giữ secure input: ổ khoá không hiện (ô mật khẩu không ở
-  /// app đang gõ), nên nói rõ ở đây ai giữ và cách gỡ.
+  /// Một tiến trình khác app đang gõ giữ secure input: macOS không chuyển phím
+  /// cho bộ gõ ở BẤT KỲ app nào (theo `CarbonEventsCore.h`, phím chỉ tới app có
+  /// focus bàn phím), nên nói rõ ở đây ai giữ và cách gỡ.
   private func secureInputNotice(_ holder: String) -> some View {
     HStack(alignment: .top, spacing: 8) {
-      Image(systemName: "exclamationmark.triangle.fill")
+      Image(systemName: VKMenuBarLabel.secureInputWarningSymbol + ".fill")
         .font(.system(size: 12))
         .foregroundStyle(.yellow)
-      Text("\(holder) đang giữ Secure Input. Nếu không gõ được tiếng Việt, mở \(holder) và bấm ra ngoài ô mật khẩu, hoặc thoát app đó.")
+      Text("\(holder) đang giữ Secure Input nên vkey không nhận được phím. Mở \(holder) và bấm ra ngoài ô mật khẩu, hoặc thoát nó. Nếu không được, khoá màn hình rồi mở khoá lại.")
         .font(.system(size: 11))
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
@@ -522,12 +523,21 @@ struct VKMenuBarLabel: View {
   @ObservedObject var appDelegate: AppDelegate
   @ObservedObject var appState: AppState
 
+  /// SF Symbol có từ macOS 11, cùng biến thể `.fill` — đích triển khai là
+  /// macOS 14 nên không dùng symbol mới hơn (symbol thiếu thì hiện ô trống).
+  static let secureInputWarningSymbol = "exclamationmark.triangle"
+
   var body: some View {
     if !appDelegate.isTrusted {
       Image(systemName: "gear.badge.questionmark")
         .symbolRenderingMode(.hierarchical)
     } else if appState.secureInputActive {
       Image(systemName: "lock.square")
+        .symbolRenderingMode(.hierarchical)
+    } else if appState.secureInputHolderName != nil {
+      // Tiến trình khác đang giữ Secure Input: lúc này vkey không gõ được ở đâu
+      // cả, nên biểu tượng phải khác hẳn lá cờ "đang bật". Chi tiết trong menu.
+      Image(systemName: Self.secureInputWarningSymbol)
         .symbolRenderingMode(.hierarchical)
     } else {
       Image(appState.enabled ? "vn-flag" : "us-flag")

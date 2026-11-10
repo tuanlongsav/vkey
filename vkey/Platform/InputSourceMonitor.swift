@@ -110,7 +110,7 @@ final class InputSourceMonitor {
     return .unknown
   }
 
-  private static func classify(languageCode: String) -> InputSourceCategory {
+  static func classify(languageCode: String) -> InputSourceCategory {
     // Lấy primary subtag (vd "en-US" → "en", "zh-Hans" → "zh").
     let primary = languageCode
       .split(separator: "-")

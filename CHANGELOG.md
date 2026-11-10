@@ -2,6 +2,52 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [Chưa phát hành]
+
+Đợt gọn lại sau 4.34: gỡ bốn tính năng không phải việc của bộ gõ, dọn mã chết,
+sửa mấy lỗi tìm thấy khi đối chiếu với 12 bộ gõ tiếng Việt khác. Từ 22.929 dòng
+Swift còn 18.742 (trước khi cộng phần sửa lỗi bên dưới).
+
+### 🗑 Gỡ
+
+- **Lịch sử Clipboard**, **Đoán từ và HUD gợi ý**, **Quy tắc theo tiêu đề cửa
+  sổ**, **Công cụ chuyển đổi văn bản** (Text Tools, ⌃⇧). Cả bốn mặc định tắt
+  hoặc để trống; đoán từ còn chạy tra cứu đồng bộ ngay trên luồng nhận phím.
+  Cài đặt đã lưu của chúng và kho n-gram trên đĩa được xoá ở lần khởi động đầu.
+  Tệp sao lưu từ bản cũ vẫn nhập được, các mục của tính năng đã gỡ bị bỏ qua.
+- **Bật/tắt bằng tệp `/tmp/vkey_switch_<uid>`.** Không gì ghi tệp này, mà tệp ở
+  `/tmp` thì tiến trình nào cũng đổi được chế độ gõ.
+- **Smart Switch tự ghi cấu hình mỗi ngày.** "Tự học từ Thống kê" nay chỉ là
+  bảng đề xuất để duyệt. Cấu hình đã bị ghi tự động trước đây giữ nguyên và có
+  nhãn "Tự động học" trong danh sách.
+- Phím tắt chỉ-modifier chỉ còn một việc: đổi V/E.
+
+### 🐛 Sửa lỗi
+
+- **Hướng dẫn cấp quyền chỉ sai chỗ trên macOS 27.** Mục "Accessibility / Trợ
+  năng" nay tên "Device Control and Data Access / Điều khiển thiết bị và truy cập
+  dữ liệu"; tên cũ còn trong thanh bên nhưng là mục khác. Onboarding, màn hình
+  sau cập nhật và hộp thoại báo thiếu quyền nay gọi đúng tên theo phiên bản
+  macOS. Ảnh minh hoạ trong onboarding vẫn là ảnh cũ.
+- **Onboarding ghi phím tắt mặc định "⌃⇧".** Mặc định là ⇧⌥ từ 2.0.2; nay hiện
+  theo phím tắt đang đặt.
+- **Secure Input do tiến trình khác giữ: báo ngay trên biểu tượng menu bar.**
+  4.34 chỉ báo trong menu và chỉ khi chủ là một app thường. Nay biểu tượng đổi
+  thành ⚠️, và báo cả khi chủ là `loginwindow` (hay gặp sau khi máy ngủ dậy).
+  Không báo lúc đang nhập mật khẩu thật hay màn hình khoá.
+- **Danh sách Smart Switch đời cũ ép tiếng Anh mà không gỡ được.** App còn nằm
+  trong danh sách trước 1.7.0 bị ép tiếng Anh dù không có dòng nào trong tab
+  Smart Switch để xoá. Nay các app đó hiện thành dòng cấu hình, và danh sách cũ
+  không còn bị tra ở mỗi phím.
+- **`xcodebuild test` treo sau mỗi lần nâng version**, để lại một cửa sổ vkey
+  không phản hồi: app làm test host hiện hộp thoại "sao lưu khi cập nhật" và
+  chờ bấm nút. Nay không hỏi khi chạy dưới XCTest.
+- Công cụ chụp ảnh marketing không còn nằm trong bản phát hành (nó ghi đè theme
+  của người dùng khi chạy).
+- "Độ đậm thông báo" dời sang tab Chung, cạnh công tắc thông báo VI/EN mà nó
+  điều khiển.
+- **427 test pass** (gỡ 43 test của tính năng đã bỏ, thêm 13).
+
 ## [4.34] - 2026-11-10 — "Gõ được qua Screen Sharing"
 
 Bản sửa lỗi gõ. Phần `Tools/` và gói từ điển ở cuối mục đi độc lập với app.

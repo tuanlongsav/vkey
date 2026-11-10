@@ -10,6 +10,37 @@ import Defaults
 import LaunchAtLogin
 import SwiftUI
 
+/// Tên mục cấp quyền mà vkey cần, trong Cài đặt Hệ thống → Quyền riêng tư & Bảo mật.
+///
+/// macOS 27 đổi tên mục này: "Accessibility / Trợ năng" thành "Device Control
+/// and Data Access / Điều khiển thiết bị và truy cập dữ liệu". Tên cũ "Trợ năng"
+/// vẫn còn trong thanh bên nhưng là mục KHÁC (thị giác, thính giác), nên hướng
+/// dẫn cũ đưa người dùng tới nhầm chỗ. Đọc 2026-11-10 từ
+/// `SecurityPrivacyExtension.appex/…/Localizable.loctable` (khoá `ACCESSIBILITY`)
+/// trên macOS 27.2. API (`AXIsProcessTrusted`) và deep link
+/// `Privacy_Accessibility` không đổi tên.
+enum AccessibilityPermissionPane {
+  static func names(
+    osMajorVersion: Int = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+  ) -> (vi: String, en: String) {
+    osMajorVersion >= 27
+      ? ("Điều khiển thiết bị và truy cập dữ liệu", "Device Control and Data Access")
+      : ("Trợ năng", "Accessibility")
+  }
+
+  /// Dạng hiện cho người dùng: tên tiếng Việt kèm tên tiếng Anh, vì Cài đặt Hệ
+  /// thống theo ngôn ngữ của máy chứ không theo ngôn ngữ của vkey.
+  static var displayName: String {
+    let n = names()
+    return "\(n.vi) (\(n.en))"
+  }
+
+  /// Đường dẫn đầy đủ trong Cài đặt Hệ thống, tiếng Anh.
+  static var settingsPath: String {
+    "System Settings → Privacy & Security → \(names().en)"
+  }
+}
+
 // MARK: - Onboarding ViewModel
 
 class OnboardingViewModel: ObservableObject {
@@ -218,7 +249,7 @@ struct PermissionStepView: View {
         VStack(spacing: 12) {
             // Header
             HStack {
-                Text("Cấp quyền Accessibility")
+                Text("Cấp quyền \(AccessibilityPermissionPane.names().vi)")
                     .font(.system(size: 28, weight: .semibold))
                 Spacer()
                 Text("Bước 2/4")
@@ -270,7 +301,7 @@ struct PermissionStepView: View {
                     }) {
                         HStack {
                             ThemedSymbol(name: "gear")
-                            Text("Mở Cài đặt Accessibility")
+                            Text("Mở Cài đặt \(AccessibilityPermissionPane.names().vi)")
                         }
                         .frame(width: 280)
                     }
@@ -341,6 +372,15 @@ struct InstructionStep: View {
 // MARK: - Step 3: Configuration
 
 struct ConfigurationStepView: View {
+    /// Dòng giới thiệu phím tắt đổi VI/EN, theo giá trị ĐANG đặt. Trước đây ghi
+    /// cứng "⌃⇧ (Control + Shift)" — mặc định của 1.x; từ 2.0.2 mặc định là ⇧⌥.
+    static func toggleHotkeyLine(mask: Int) -> String {
+        let glyphs = formatModifierMask(mask)
+        return glyphs.isEmpty
+            ? "Phím tắt đổi VI/EN: chưa đặt"
+            : "Phím tắt đổi VI/EN: \(glyphs)"
+    }
+
     @ObservedObject var viewModel: OnboardingViewModel
     let appState: AppState
 
@@ -423,7 +463,7 @@ struct ConfigurationStepView: View {
                     .foregroundColor(.accentColor)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Phím tắt mặc định: ⌃⇧ (Control + Shift)")
+                    Text(Self.toggleHotkeyLine(mask: Defaults[.modifierOnlyToggleHotkey]))
                         .font(.system(size: 16, weight: .medium))
                     Text("Nhấn + nhả 2 phím này (không kèm ký tự nào) để chuyển VN ↔ EN. Đổi trong Cài đặt nếu muốn.")
                         .font(.system(size: 14))
