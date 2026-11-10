@@ -3,7 +3,7 @@
 //  vkey
 //
 //  v2.4.0: shared HUD primitives — extracted to avoid duplication between
-//  ToggleHUDWindow + PredictionHUDWindow under all themes.
+//  ToggleHUDWindow + NoticeHUDWindow under all themes.
 //
 //  v2.4.0 FIX "khoanh vuông mờ quanh HUD" — 3 nguyên nhân, 3 lớp vá:
 //
@@ -44,9 +44,6 @@ enum HUDMetrics {
     /// Đệm trong suốt quanh content của Toggle HUD — đủ chứa shadow lớn
     /// nhất (radius 30 + y 12 ≈ 57pt về phía dưới).
     static let shadowMargin: CGFloat = 64
-
-    /// Đệm cho Prediction HUD (shadow nhỏ hơn: radius ≤ 14 + y 6).
-    static let predictionShadowMargin: CGFloat = 40
 }
 
 // MARK: - HUDBackdrop (v2.4.0)

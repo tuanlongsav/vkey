@@ -6,6 +6,7 @@
 //  Chạy: vkey --export-marketing=/path/to/images
 //
 
+#if DEBUG
 import AppKit
 import Defaults
 import SwiftUI
@@ -45,7 +46,6 @@ enum MarketingSnapshotExporter {
     exportMenuPanel(appDelegate: appDelegate, scale: scale, to: out)
     exportSettingsTabs(appDelegate: appDelegate, size: settingsSize, scale: scale, to: out)
     exportToggleHUD(scale: scale, to: out)
-    exportPredictionHUD(scale: scale, to: out)
 
     if ProcessInfo.processInfo.arguments.contains("--export-marketing-carousel") {
       runCarousel(appDelegate: appDelegate, on: secondaryDisplay())
@@ -104,24 +104,6 @@ enum MarketingSnapshotExporter {
     if let vi = NSImage(contentsOf: out.appendingPathComponent("hud-toggle-vi.png")) {
       savePNG(vi, scale: 1, to: out.appendingPathComponent("hud-toggle.png"))
     }
-  }
-
-  @MainActor
-  private static func exportPredictionHUD(scale: CGFloat, to out: URL) {
-    let fontSize = Defaults[.predictionHUDFontSize]
-    let bg = Double(Defaults[.hudOpacityPercent])
-    let sample = "anh chị"
-    let contentSize = CGSize(width: 220, height: 44)
-    let view = PredictionHUDView(
-      prediction: sample,
-      fontSize: fontSize,
-      backgroundStrength: bg,
-      contentSize: contentSize
-    )
-    .padding(24)
-    .background(Color(white: 0.96))
-    renderPNG(view, size: CGSize(width: 320, height: 100), scale: scale,
-              file: out.appendingPathComponent("hud-prediction.png"))
   }
 
   // MARK: - Carousel (tuỳ chọn quay clip trên màn phụ)
@@ -282,3 +264,4 @@ enum MarketingSnapshotExporter {
     try? png.write(to: url)
   }
 }
+#endif

@@ -15,13 +15,10 @@ struct VKGeneralTab: View {
   @Default(.autoCapitalizeEnabled) private var autoCapitalize
   @Default(.nonLatinIMEAutoDisable) private var nonLatinAutoDisable
   @Default(.hudEnabled) private var hudEnabled
+  @Default(.hudOpacityPercent) private var hudOpacity
   @Default(.autoUpdateEnabled) private var autoUpdate
   @Default(.freeMarkModeEnabled) private var freeMark
   @Default(.newStyleTonePlacement) private var newStyleTone
-  @Default(.clipboardHistoryEnabled) private var clipboardHistory
-  @Default(.clipboardHistoryCapacity) private var clipboardCapacity
-  @Default(.clipboardHistoryContentMode) private var clipboardContentMode
-  @Default(.clipboardHistoryMaxEntryMegabytes) private var clipboardMaxEntryMB
 
   private var methodBinding: Binding<TypingMethods> {
     Binding(get: { appState.typingMethod }, set: { appState.setTypingMethod(method: $0) })
@@ -86,6 +83,21 @@ struct VKGeneralTab: View {
           VKToggleRow(icon: "bell.badge.fill", iconColor: VK.Color.gold,
                       label: "Hiển thị thông báo khi chuyển VI / EN",
                       isOn: $hudEnabled)
+          if hudEnabled {
+            VKRow(icon: "circle.lefthalf.filled", iconColor: VK.Color.brand,
+                  label: "Độ đậm thông báo") {
+              HStack(spacing: 8) {
+                Text("\(hudOpacity) %")
+                  .font(.system(size: 12.5, weight: .medium, design: .rounded))
+                  .foregroundStyle(VK.Color.fg2)
+                  .frame(minWidth: 52, alignment: .trailing)
+                  .monospacedDigit()
+                Stepper("", value: $hudOpacity, in: 30...100, step: 5)
+                  .labelsHidden()
+              }
+              .fixedSize()
+            }
+          }
         }
       }
 
@@ -116,77 +128,10 @@ struct VKGeneralTab: View {
               .fixedSize()
               .frame(height: 26)
           }
-          VKRow(icon: "wand.and.stars", iconColor: VK.Color.info, label: "Mở Text Tools") {
-            FlexibleShortcutRecorder(name: .openTextConversionMenu)
-              .fixedSize()
-              .frame(height: 26)
-          }
         }
-        VKGroupHint("Nhấn & thả tổ hợp modifier (vd ⌃⇧, ⇧⌥) để chuyển nhanh giữa tiếng Việt và tiếng Anh.")
-      }
-
-      // MARK: Clipboard tùy chỉnh
-      VKSection("Clipboard tùy chỉnh") {
-        VKRowGroup {
-          VKToggleRow(icon: "doc.on.clipboard.fill", iconColor: VK.Color.brand,
-                      label: "Bật lịch sử clipboard",
-                      hint: "⌘C lưu vào danh sách; phím tắt bên dưới chọn mục để dán. ⌘V dán clipboard hệ thống.",
-                      isOn: $clipboardHistory)
-            .onChange(of: clipboardHistory) { _, enabled in
-              if !enabled { ClipboardHistoryService.shared.clear() }
-            }
-          if clipboardHistory {
-            VKRow(icon: "keyboard", iconColor: VK.Color.brand,
-                  label: "Mở menu lịch sử clipboard") {
-              FlexibleShortcutRecorder(name: .pasteClipboardHistory)
-                .fixedSize()
-                .frame(height: 26)
-            }
-            VKRow(icon: "list.number", iconColor: VK.Color.info,
-                  label: "Số mục lưu tối đa") {
-              clipboardStepper(value: $clipboardCapacity, range: 3...50)
-            }
-            VKRow(icon: "tray.full.fill", iconColor: VK.Color.ink200,
-                  label: "Loại nội dung lưu") {
-              VKSegmented(
-                selection: $clipboardContentMode,
-                options: ClipboardHistoryContentMode.allCases.map { ($0, $0.label) }
-              )
-            }
-            VKRow(icon: "externaldrive.fill", iconColor: VK.Color.warning,
-                  label: "Dung lượng tối đa mỗi mục") {
-              clipboardStepper(value: $clipboardMaxEntryMB, range: 1...200, unit: "MB")
-            }
-            VKRow(icon: "trash", iconColor: VK.Color.warning,
-                  label: "Xóa lịch sử hiện tại") {
-              VKButton(title: "Xóa", icon: "trash", variant: .secondary, size: .sm) {
-                ClipboardHistoryService.shared.clear()
-              }
-            }
-            VKGroupHint(
-              "Mặc định ⇧⌘V (Paste and Match Style của macOS sẽ bị thay khi bật tính năng này). Tệp vượt dung lượng tối đa không lưu — hiện HUD cảnh báo."
-            )
-          }
-        }
+        VKGroupHint("Nhấn & thả tổ hợp modifier (vd ⇧⌥) để chuyển nhanh giữa tiếng Việt và tiếng Anh.")
       }
     }
   }
 
-  @ViewBuilder
-  private func clipboardStepper(
-    value: Binding<Int>,
-    range: ClosedRange<Int>,
-    unit: String = "mục"
-  ) -> some View {
-    HStack(spacing: 8) {
-      Text(unit == "mục" ? "\(value.wrappedValue) mục" : "\(value.wrappedValue) \(unit)")
-        .font(.system(size: 12.5, weight: .medium, design: .rounded))
-        .foregroundStyle(VK.Color.fg2)
-        .frame(minWidth: 52, alignment: .trailing)
-        .monospacedDigit()
-      Stepper("", value: value, in: range)
-        .labelsHidden()
-    }
-    .fixedSize()
-  }
 }

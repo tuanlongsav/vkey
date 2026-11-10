@@ -373,6 +373,7 @@ final class LexiconManager {
     queue.sync { (vnLexicon.version, enLexicon.version, keepLexicon.version) }
   }
 
+  /// Chỉ test gọi: kiểm gói nào (nhúng sẵn hay tải về) đang được dùng.
   func snapshotSources() -> (vn: LexiconSource, en: LexiconSource, keep: LexiconSource) {
     queue.sync { (vnLexicon.source, enLexicon.source, keepLexicon.source) }
   }

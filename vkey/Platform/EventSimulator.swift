@@ -94,34 +94,6 @@ class EventSimulator {
   private static let privateSourceLock = NSLock()
   nonisolated(unsafe) private static var sharedPrivateSource: CGEventSource?
 
-  /// 2.0 (C4): adaptive flush delay (ms) áp dụng SAU mỗi batch inject —
-  /// updated bởi `InputProcessor.changeActiveApp` từ Window Title Rule
-  /// `flushDelayMs`. 0 = no delay. Range hợp lệ: 0..500ms.
-  ///
-  /// Mục đích: tạo cushion giữa các batch injection để tránh race với
-  /// app's text engine (Google Docs composition, Chrome address-bar
-  /// autocomplete). Giải quyết bug-class "stickiness" mà gonhanh nổi tiếng.
-  nonisolated(unsafe) static var adaptiveFlushDelayMs: Int = 0
-
-  /// 2.0 (C4): re-entry counter cho post-flush serialization. Tăng khi
-  /// đang post events, giảm khi xong. Tất cả mutation chạy trên
-  /// `simulationQueue` (serial) nên không cần atomic.
-  nonisolated(unsafe) private static var inflightFlushCount: Int = 0
-
-  /// 2.0 (C4): wrapper áp dụng adaptive delay sau khi block hoàn thành.
-  /// Chỉ áp dụng nếu `cgEventRaceHardeningEnabled` ON và delay > 0.
-  /// Gọi từ simulationQueue (serial) nên counter không race.
-  static func withAdaptiveFlush<T>(_ work: () -> T) -> T {
-    inflightFlushCount += 1
-    defer { inflightFlushCount -= 1 }
-    let result = work()
-    let delay = adaptiveFlushDelayMs
-    if delay > 0, Defaults[.cgEventRaceHardeningEnabled] {
-      usleep(UInt32(min(500, max(0, delay)) * 1000))
-    }
-    return result
-  }
-
   /// Hardcoded macOS virtual key codes used by the simulator. US-layout
   /// positions; these are physical-key codes so they work even on QWERTZ /
   /// AZERTY / Dvorak keymaps.
@@ -969,13 +941,10 @@ class EventSimulator {
       // callback never blocks. Ordering with the user's next keystroke is
       // preserved because simulationQueue is serial and the system queues
       // pending events behind our outgoing post() calls.
-      // 2.0 (C4): wrap với withAdaptiveFlush — counter + optional usleep.
       let source = privateEventSource()
       simulationQueue.async {
-        withAdaptiveFlush {
-          sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
-          sendString(String(diffChars), source: source)
-        }
+        sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
+        sendString(String(diffChars), source: source)
       }
       return EventSendTelemetry(
         attemptedTransform: true,
@@ -995,12 +964,10 @@ class EventSimulator {
       }
       // Dispatch to background queue to avoid blocking the event tap
       simulationQueue.async {
-        withAdaptiveFlush {
-          sendBackspace(backspaceCount, source: source, delayMicroseconds: 2000)
-          usleep(3000)
-          sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
-          usleep(3000)
-        }
+        sendBackspace(backspaceCount, source: source, delayMicroseconds: 2000)
+        usleep(3000)
+        sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
+        usleep(3000)
       }
       return EventSendTelemetry(
         attemptedTransform: true,
@@ -1011,21 +978,19 @@ class EventSimulator {
 
     case .axDirect:
       simulationQueue.async {
-        withAdaptiveFlush {
-          // Spotlight có thể đang bận search → AX call fail thoáng qua; retry
-          // 3 lần (5ms/lần, theo gonhanh) rồi mới fallback synthetic.
-          for attempt in 0..<3 {
-            if attempt > 0 { usleep(5000) }
-            if axDirectReplace(
-              backspaceCount: backspaceCount, insert: String(diffChars),
-              usesNFC: normalizeToNFC, targetPID: targetPID) {
-              return
-            }
+        // Spotlight có thể đang bận search → AX call fail thoáng qua; retry
+        // 3 lần (5ms/lần, theo gonhanh) rồi mới fallback synthetic.
+        for attempt in 0..<3 {
+          if attempt > 0 { usleep(5000) }
+          if axDirectReplace(
+            backspaceCount: backspaceCount, insert: String(diffChars),
+            usesNFC: normalizeToNFC, targetPID: targetPID) {
+            return
           }
-          if let source = privateEventSource() {
-            sendSpotlightFallback(
-              backspaceCount: backspaceCount, diffChars: diffChars, source: source)
-          }
+        }
+        if let source = privateEventSource() {
+          sendSpotlightFallback(
+            backspaceCount: backspaceCount, diffChars: diffChars, source: source)
         }
       }
       return EventSendTelemetry(
@@ -1046,10 +1011,8 @@ class EventSimulator {
       }
       // Dispatch to background queue to avoid blocking the event tap
       simulationQueue.async {
-        withAdaptiveFlush {
-          sendBackspace(backspaceCount, source: source, delayMicroseconds: backspaceDelay)
-          sendString(String(diffChars), source: source)
-        }
+        sendBackspace(backspaceCount, source: source, delayMicroseconds: backspaceDelay)
+        sendString(String(diffChars), source: source)
       }
       return EventSendTelemetry(
         attemptedTransform: true,

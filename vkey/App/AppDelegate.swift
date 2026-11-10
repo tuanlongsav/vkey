@@ -43,6 +43,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // ATSApplicationFontsPath (xem FontRegistration.swift).
     FontRegistration.register()
 
+    // Công cụ chụp ảnh marketing chỉ có trong bản Debug
+    // (`Tools/capture_marketing.sh` build Debug): nó ghi đè theme và chế độ
+    // sáng/tối của người dùng, không nên nằm trong bản phát hành.
+    #if DEBUG
     if MarketingSnapshotExporter.isRequested {
       NSApp.setActivationPolicy(.regular)
       Task { @MainActor in
@@ -50,6 +54,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       }
       return
     }
+    #endif
 
     // Hide dock icon since we use MenuBarExtra
     NSApp.setActivationPolicy(.accessory)
@@ -70,19 +75,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // 1 lần khi user lên version mới. Chi tiết trong `DefaultMacros.swift`.
     seedDefaultMacrosIfNeeded()
 
-    // 1.7.0: migrate smartSwitchApps (list) → appSmartSwitchConfigs (3-state map).
-    // Idempotent — chỉ chạy nếu configs đang rỗng.
-    AppState.migrateSmartSwitchTo3State()
     // v4.11: Spotlight theo-mode (không ép English) — gỡ khỏi Smart Switch 1 lần.
     AppState.migrateSpotlightKeepMode()
     // v4.12: launcher (Raycast/Alfred/LaunchBar) theo-mode — gỡ 1 lần.
     AppState.migrateLaunchersKeepMode()
-
-    // 1.7.x: bootstrap NGramStore (singleton lazy init) để chạy migration từ
-    // Defaults[.userBigrams]/[.userTrigrams] sang file store ngay khi launch —
-    // tránh delay tới lần commit từ đầu tiên. Chỉ khi thật sự cần (đoán từ bật
-    // hoặc còn dữ liệu cũ), và trên queue nền.
-    NGramStore.warmUpIfNeeded()
+    // Danh sách "tắt VN" đời cũ → cấu hình 3 trạng thái, rồi xoá danh sách.
+    // Chạy SAU hai bước trên: chúng gỡ Spotlight/launcher khỏi danh sách cũ, để
+    // các app đó không hiện lại thành một dòng cấu hình.
+    AppState.migrateLegacySmartSwitchApps()
 
     // 1.9.0: set AX messaging timeout 100ms (default macOS 6000ms). Tránh
     // AX query block quá lâu khi target app không responsive — giảm risk
@@ -98,9 +98,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
         os_log("AppDelegate: cleaned %{public}d old backup files", log: .default, type: .info, deleted)
       }
     }
-
-    // 1.7.0: chạy auto-learn Smart Switch nếu chưa chạy tuần này.
-    runSmartSwitchAutoLearnIfDue()
 
     // When the Settings (or onboarding) window closes, slide the app back to
     // .accessory so it disappears from Cmd-Tab and the Dock. We only need to
@@ -179,24 +176,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     UserDataMigration.handleVersionChange(previousVersion: versionBeforeLaunch)
   }
 
-  /// 1.7.2+: Gate auto-learn Smart Switch chạy 1 lần/NGÀY (đổi từ 1 lần/tuần).
-  /// Combined với threshold ≥1 ngày dataset → user thấy auto-learn phản hồi
-  /// trong vòng 1-2 ngày sau khi gõ đủ data.
-  private func runSmartSwitchAutoLearnIfDue() {
-    let fmt = DateFormatter()
-    fmt.dateFormat = "yyyy-MM-dd"
-    fmt.calendar = Calendar(identifier: .iso8601)
-    let today = fmt.string(from: Date())
-    guard Defaults[.lastSmartSwitchAutoLearnDate] != today else { return }
-    DispatchQueue.global(qos: .utility).async { [weak self] in
-      let suggestions = UsageStatistics.shared.computeSmartSwitchAutoLearn()
-      DispatchQueue.main.async {
-        self?.appState.applySmartSwitchAutoLearn(suggestions)
-        Defaults[.lastSmartSwitchAutoLearnDate] = today
-      }
-    }
-  }
-
   /// Gate `performWeeklyFeedback()` so it fires once per ISO week even if
   /// the user opens the app several times. We track the last-run week id in
   /// `Defaults[.lastFeedbackWeekId]`.
@@ -228,7 +207,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       appState.storeTrustedAppVersion()
       appState.eventHook.setupEventTap(give: appState)
       appState.setEnabled(set: true)
-      appState.registerSwitchFileMonitor()
       startRevocationWatchdog()
   }
 
@@ -438,11 +416,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     // install). Bình thường scheduleFlush debounce 10s, nhưng terminate
     // race không thể đợi.
     UsageStatistics.shared.flushSynchronously()
-    // 1.7.x: cùng pattern cho n-gram store. Chưa dựng thì không có gì để ghi —
-    // đừng dựng nó (đọc cả file) chỉ để ghi lại y nguyên.
-    if NGramStore.isInstantiated {
-      NGramStore.shared.flushNowSync()
-    }
   }
 
   /// Shown after the trust polling loop has given up. The alert links the

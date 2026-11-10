@@ -34,15 +34,6 @@ extension KeyboardShortcuts.Name {
   // the user can keep their letter keys free.
   static let toggleInputMode = Self("toggleInputMode")
 
-  /// 2.0 (B4): mở Text Conversion Tools menu cho selected text.
-  static let openTextConversionMenu = Self("openTextConversionMenu")
-
-  /// Mở menu lịch sử clipboard để chọn mục dán (mặc định ⇧⌘V).
-  static let pasteClipboardHistory = Self(
-    "pasteClipboardHistory",
-    default: KeyboardShortcuts.Shortcut(.v, modifiers: [.command, .shift])
-  )
-
   // 2.0.1: `toggleFloatingToolbar` đã bị xoá cùng với Floating Toolbar.
 }
 
@@ -54,13 +45,6 @@ extension KeyboardShortcuts.Name {
 /// macOS, so the same Int value is compared on either side of the event tap.
 private let kDefaultModifierOnlyMask: Int =
   Int(NSEvent.ModifierFlags.shift.rawValue) | Int(NSEvent.ModifierFlags.option.rawValue)
-
-/// Default modifier-only hotkey cho Text Tools (B4): **Control + Shift** (⌃⇧).
-/// 2.0.2 thêm — mirror cấu trúc của VI/EN toggle. EventHook check thêm mask
-/// này để trigger `TextConversionService.shared.openMenu()` khi user nhấn
-/// + thả ⌃⇧ không kèm letter key.
-private let kDefaultTextToolsMask: Int =
-  Int(NSEvent.ModifierFlags.control.rawValue) | Int(NSEvent.ModifierFlags.shift.rawValue)
 
 /// A text-expansion macro: when the user types `from` as a standalone word, vkey replaces
 /// it with `to` before the word-ending key reaches the OS.
@@ -116,29 +100,16 @@ enum AppSmartSwitchState: String, CaseIterable, Codable, Defaults.Serializable {
     case .englishMode: return "🇺🇸 EN"
     }
   }
+
+  /// Trạng thái này có bật gõ tiếng Việt không. `englishMode` và `disabled`
+  /// đều là "không" — với đường gõ phím hai trạng thái đó như nhau.
+  var enablesVietnamese: Bool { self == .vietnameseMode }
 }
 
 /// Nguồn gốc cài đặt — phân biệt user thủ công vs auto-learn từ stats.
 enum AppSmartSwitchSource: String, CaseIterable, Codable, Defaults.Serializable {
   case user        // 👤 User set thủ công (override auto-learn)
-  case autoLearn   // 🤖 Auto-learn từ stats per-app language ratio
-
-  /// SF Symbol name cho UI badge — chỉ áp dụng cho .user.
-  /// .autoLearn dùng emoji 🤖 (qua `emojiIcon`) thay SF Symbol để rõ ràng hơn.
-  var iconSymbol: String {
-    switch self {
-    case .user: return "person.fill"
-    case .autoLearn: return "cpu"  // legacy fallback, prefer emojiIcon for autoLearn
-    }
-  }
-
-  /// v1.7.3+: emoji icon cho display (ưu tiên hơn iconSymbol cho autoLearn).
-  var emojiIcon: String {
-    switch self {
-    case .user: return "👤"
-    case .autoLearn: return "🤖"
-    }
-  }
+  case autoLearn   // 🤖 Do "Tự học từ Thống kê" ghi (trước 4.35 còn tự ghi mỗi ngày)
 
   var displayName: String {
     switch self {
@@ -373,9 +344,6 @@ extension Defaults.Keys {
   /// đều đọc qua `Defaults.observe(.uiTheme)`.
   static let uiTheme = Key<UITheme>("ui-theme", default: .tonal)
 
-  /// 2.16: màu accent (brand) cho giao diện redesign — user chọn 1 trong 5.
-  static let accentColorChoice = Key<AccentColorChoice>("accent-color-choice", default: .red)
-
   /// 2.16: chế độ sáng/tối cho cửa sổ Settings — auto theo hệ thống / sáng / tối.
   static let appearanceMode = Key<AppearanceMode>("appearance-mode", default: .auto)
 
@@ -433,21 +401,7 @@ extension Defaults.Keys {
     default: kDefaultModifierOnlyMask
   )
 
-  /// 2.0.2 (J3): tổ hợp modifier-only dùng để mở Text Tools menu (B4).
-  /// 0 = tắt. Default: ⌃⇧ (Control+Shift). EventHook check trên cùng path
-  /// với `modifierOnlyToggleHotkey` — trigger khi user nhấn + thả mask này
-  /// không kèm letter/punct key. Nếu mask trùng với toggle hotkey, toggle
-  /// thắng (check trước trong event handler).
-  static let modifierOnlyTextToolsHotkey = Key<Int>(
-    "modifier-only-text-tools-hotkey",
-    default: kDefaultTextToolsMask
-  )
 
-  /// Modifier-only override cho phím mở menu lịch sử clipboard (0 = dùng key+modifier).
-  static let clipboardHistoryModifierOnlyHotkey = Key<Int>(
-    "clipboard-history-modifier-only-hotkey",
-    default: 0
-  )
   
   /// Tuỳ chọn kiểu đặt dấu: false = Kiểu cũ (hòa, khỏe), true = Kiểu mới (hoà, khoẻ).
   static let newStyleTonePlacement = Key<Bool>("new-style-tone-placement", default: true)
@@ -460,9 +414,6 @@ extension Defaults.Keys {
 
   /// Bật kiểm tra từ điển/chính tả trước khi auto-restore và gợi ý.
   static let spellCheckEnabled = Key<Bool>("spell-check-enabled", default: true)
-
-  /// Kiểm tra chính tả đặt trong câu (khi gõ space/punctuation)
-  static let spellCheckInSentenceEnabled = Key<Bool>("spell-check-in-sentence-enabled", default: true)
 
   /// Cho phép tự khôi phục về tiếng Anh khi đầu ra không phải tiếng Việt hợp lệ.
   static let englishAutoRestoreEnabled = Key<Bool>("english-auto-restore-enabled", default: true)
@@ -500,23 +451,8 @@ extension Defaults.Keys {
   /// quyết định giữ/khôi phục từ. Tắt thì hành vi y hệt 1.4.x.
   static let useEnVnReference = Key<Bool>("use-en-vn-reference", default: true)
 
-  /// Hiển thị HUD dịch nghĩa Anh→Việt khi user gõ từ tiếng Anh trong chế độ VI.
-  static let translationHUDEnabled = Key<Bool>("translation-hud-enabled", default: false)
-
-  /// Thời gian (ms) HUD dịch nghĩa hiển thị trước khi tự ẩn.
-  static let translationHUDDurationMs = Key<Double>("translation-hud-duration-ms", default: 1500)
-
-  /// Programming Mode — tạm dừng VN sau các ký tự code phổ biến ({, (, [, =, :, ;, <).
-  /// Mặc định off vì làm thay đổi hành vi gõ trong context đời thường.
-  static let programmingMode = Key<Bool>("programming-mode", default: false)
-
-
   /// Bật ghi thống kê sử dụng (chỉ lưu local, không gửi đi đâu).
   static let statisticsEnabled = Key<Bool>("statistics-enabled", default: true)
-
-  /// Override per-app kiểu gõ. Key là bundleID, value là một trong:
-  /// "auto" (default), "telex", "vni", "off". Phase 5.1.
-  static let perAppOverride = Key<[String: String]>("per-app-override", default: [:])
 
   /// Tuần ISO đã chạy weekly feedback gần nhất (vd "2026-W21"). Dùng để
   /// đảm bảo `performWeeklyFeedback()` chỉ chạy 1 lần mỗi tuần.
@@ -558,33 +494,7 @@ extension Defaults.Keys {
     default: []
   )
 
-  /// Word Prediction (1.6.0+, thử nghiệm). Default OFF — opt-in.
-  /// Khi bật: sau khi commit 1 từ + space, vkey đoán từ tiếp theo và
-  /// hiển thị HUD nổi gần cursor. Nhấn Tab để chấp nhận.
-  static let wordPredictionEnabled = Key<Bool>("word-prediction-enabled", default: false)
-
-  /// Bundle ID các app không chạy đoán từ (HUD + Tab chấp nhận).
-  static let wordPredictionExcludedApps = Key<[String]>(
-    "word-prediction-excluded-apps",
-    default: []
-  )
-
-  /// Số từ tối đa trong gợi ý đoán (1–3). Mặc định 2 — gợi ý cụm ngắn
-  /// thay vì chỉ một từ đơn.
-  static let predictionMaxWords = Key<Int>("prediction-max-words", default: 2)
-
-  /// 1.8.1: số dòng văn bản cách giữa HUD prediction và caret line.
-  /// Range 1-10. Default 4 (cân bằng giữa nhìn rõ và không che nội dung).
-  /// Trước 1.8.1 HUD chỉ cách caret 4px — quá gần, hay che dòng đang gõ.
-  static let predictionHUDLineOffset = Key<Int>("prediction-hud-line-offset", default: 4)
-
-  /// 1.9.0: font size cho text trong PredictionHUD.
-  /// 1.9.4: default 13 → 16, range 10-20 → 12-24. User feedback v1.9.3 chữ
-  /// quá bé, khó đọc trên material background. Font weight cũng tăng
-  /// medium → semibold trong View (đậm hơn).
-  static let predictionHUDFontSize = Key<Int>("prediction-hud-font-size", default: 16)
-
-  /// 1.9.0: opacity cho HUD (cả PredictionHUD và ToggleHUD).
+  /// 1.9.0: opacity cho HUD (ToggleHUD và NoticeHUD).
   /// 1.9.4: default 100 → 75, range 50-100 → 30-100. User feedback ToggleHUD
   /// cần trong suốt hơn. User mới install sẽ thấy 75% — có thể chỉnh xuống
   /// 30% (rất trong suốt) hoặc lên 100% (đậm hẳn). User existing với value
@@ -601,39 +511,6 @@ extension Defaults.Keys {
     "app-smart-switch-configs",
     default: [:]
   )
-
-  /// 1.7.2+: gate auto-learn theo NGÀY thay TUẦN. Format ISO date "YYYY-MM-DD".
-  /// Threshold mới: ≥1 ngày dataset, ≥5 commit/ngày, ratio ≥75% → daily check.
-  static let lastSmartSwitchAutoLearnDate = Key<String>("last-smart-switch-auto-learn-date", default: "")
-
-  /// 1.9.0: Smart Switch auto-learn telemetry — đếm tổng số suggestions
-  /// đã sinh ra (mỗi lần user mở sheet "Tự học từ Thống kê") và tổng đã
-  /// áp dụng (qua "Áp dụng tất cả"). Hiển thị trong Smart Switch tab để
-  /// user verify auto-learn hoạt động.
-  static let smartSwitchSuggestionsTotal = Key<Int>("smart-switch-suggestions-total", default: 0)
-  static let smartSwitchSuggestionsAccepted = Key<Int>("smart-switch-suggestions-accepted", default: 0)
-
-  /// 1.9.1: preset cấu hình nhanh tính năng. 0=Người dùng (custom),
-  /// 1=Cơ bản, 2=Trung bình, 3=Cao. Khi user select preset → batch update
-  /// các toggle theo mapping ở SettingView. Khi user edit individual
-  /// toggle → tự revert sang .custom.
-  static let quickConfigPreset = Key<Int>("quick-config-preset", default: 0)
-
-  /// Bigram counts: previous word → next word → count. Học từ history
-  /// user gõ (1.6.0+).
-  ///
-  /// **Deprecated 1.7.x:** Storage chuyển sang `NGramStore` (file-backed
-  /// trong `~/Library/Application Support/vkey/ngram/`) để tránh jank UI
-  /// khi dict tăng vài MB. Key này chỉ còn cho migration 1 chiều
-  /// (Defaults → NGramStore) và import từ user-data export cũ.
-  /// Live read/write phải qua `NGramStore.shared`.
-  static let userBigrams = Key<[String: [String: Int]]>("user-bigrams", default: [:])
-
-  /// Trigram counts: "prev2|prev1" → next word → count. Compose key
-  /// bằng `|` để giảm nested level (Defaults serializer dễ hơn).
-  ///
-  /// **Deprecated 1.7.x:** xem ghi chú `userBigrams`.
-  static let userTrigrams = Key<[String: [String: Int]]>("user-trigrams", default: [:])
 
   //            ^            ^         ^                ^
   //           Key          Type   UserDefaults name   Default value
@@ -660,12 +537,6 @@ extension Defaults.Keys {
   // HUDThemeSection chưa wire vào HUD thực — gây nhầm lẫn user. Dùng
   // `hudOpacityPercent` (1.9.0) cho điều chỉnh HUD đang hoạt động.
 
-  // 2.0.2 (J1): xoá `predictionTopN` — multi-candidate UI bị bỏ.
-
-  /// B1 (2.0): danh sách rules theo bundle ID + window title regex để
-  /// override hành vi vkey per-context (vd Google Docs delay 50ms,
-  /// Notion tắt prediction). Settings UI ở tab "Rules".
-  static let windowTitleRules = Key<[WindowTitleRule]>("window-title-rules", default: [])
 
   // MARK: - 2.0 — Track 3: Compatibility & Stability
 
@@ -674,74 +545,6 @@ extension Defaults.Keys {
   /// thay đổi hành vi chuẩn xác cho user thông thường.
   static let freeMarkModeEnabled = Key<Bool>("free-mark-mode-enabled", default: false)
 
-  /// C4 (2.0): bật race-condition hardening cho CGEvent tap. Re-entry
-  /// guards, pending-event queue khi đang flush. Default on — tăng độ
-  /// ổn định trong Spotlight/Chrome/Arc overlays.
-  static let cgEventRaceHardeningEnabled = Key<Bool>(
-    "cgevent-race-hardening-enabled",
-    default: true
-  )
-
-  /// C4 (2.0): adaptive delay (ms) khi flush event tới một số app
-  /// nhạy cảm. Map theo bundle ID trong Window Title Rules; key này
-  /// là default fallback.
-  static let cgEventFlushDelayMs = Key<Int>("cgevent-flush-delay-ms", default: 0)
-
-  /// Bật lịch sử clipboard: ⌘C lưu; phím tắt (mặc định ⇧⌘V) mở menu chọn.
-  static let clipboardHistoryEnabled = Key<Bool>("clipboard-history-enabled", default: false)
-
-  /// Số mục clipboard tối đa giữ trong RAM (3–50).
-  static let clipboardHistoryCapacity = Key<Int>("clipboard-history-capacity", default: 10)
-
-  /// Chỉ văn bản hoặc cả tệp (file URL) khi lưu lịch sử.
-  static let clipboardHistoryContentMode = Key<ClipboardHistoryContentMode>(
-    "clipboard-history-content-mode",
-    default: .textOnly
-  )
-
-  /// Dung lượng tối đa mỗi mục lịch sử clipboard (MB, 1–200). Mặc định 10 MB.
-  static let clipboardHistoryMaxEntryMegabytes = Key<Int>(
-    "clipboard-history-max-entry-megabytes",
-    default: 10
-  )
-}
-
-// MARK: - 2.0 — Window Title Rule types
-//
-// 2.0.1: `enum HUDThemeStyle` đã được xoá cùng HUDThemeSection.
-
-/// B1 (2.0): rule cho per-context behavior. Áp dụng theo bundle ID
-/// (prefix match) cộng window title regex. Nếu cả hai match → áp dụng
-/// các override trong rule.
-///
-/// Ranking: rule có cả `bundleIdPrefix` + `titleRegex` thắng rule chỉ có
-/// `bundleIdPrefix`. Rules được lưu theo thứ tự — rule đầu tiên match
-/// trước thắng (cho phép user override bằng cách kéo lên trên).
-struct WindowTitleRule: Codable, Hashable, Identifiable, Defaults.Serializable {
-  var id: UUID = UUID()
-  var name: String = ""
-
-  /// Bundle ID prefix (vd "com.google.Chrome"). Empty = match mọi app.
-  var bundleIdPrefix: String = ""
-
-  /// Regex matching window title. Empty = match mọi title.
-  var titleRegex: String = ""
-
-  /// Override Smart Switch state khi rule match. nil = không override.
-  var overrideState: AppSmartSwitchState? = nil
-
-  /// Force tắt word prediction trong context này.
-  var disablePrediction: Bool = false
-
-  /// Force tắt spell check trong context này.
-  var disableSpellCheck: Bool = false
-
-  /// Adaptive delay (ms) khi flush event (C4) — vd Google Docs cần 50ms.
-  /// 0 = dùng default (`cgEventFlushDelayMs`).
-  var flushDelayMs: Int = 0
-
-  /// Enable for user to disable rule temporarily without deleting.
-  var enabled: Bool = true
 }
 
 // MARK: - Cache giá trị suy ra từ Defaults

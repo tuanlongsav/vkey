@@ -82,17 +82,6 @@ struct VKSmartTab: View {
           }
           VKGroupHint("Lấy Bundle ID bằng Terminal: osascript -e 'id of app \"Tên App\"'")
         }
-
-        // Quy tắc theo cửa sổ (nâng cao) — override theo bundle ID + title regex.
-        VKSection {
-          WindowRulesSection()
-            .padding(.horizontal, -12) // bù padding nội bộ của section cũ
-            .background(
-              RoundedRectangle(cornerRadius: VK.Radius.lg, style: .continuous)
-                .fill(VK.Color.bgElevated)
-                .overlay(RoundedRectangle(cornerRadius: VK.Radius.lg, style: .continuous)
-                          .strokeBorder(VK.Color.border1, lineWidth: 1)))
-        }
       }
     }
     .sheet(isPresented: $showingRunningApps) {
@@ -120,6 +109,16 @@ struct VKSmartTab: View {
           .lineLimit(1).truncationMode(.middle)
       }
       Spacer(minLength: VK.Space.s2)
+      // Cấu hình do "Tự học từ Thống kê" ghi chứ không phải người dùng tự đặt:
+      // nêu rõ, vì trước 4.35 việc ghi này diễn ra tự động mỗi ngày.
+      if config.source == .autoLearn {
+        Text(config.source.displayName)
+          .font(.system(size: 10.5, weight: .medium))
+          .foregroundStyle(VK.Color.fgMuted)
+          .padding(.horizontal, 6).frame(height: 20)
+          .background(Capsule().strokeBorder(VK.Color.border1, lineWidth: 1))
+          .help("vkey tự ghi cấu hình này từ thống kê gõ. Chọn lại chế độ để đặt theo ý bạn.")
+      }
       // mode chip
       Menu {
         Button("🇻🇳 Tiếng Việt") { setState(bundleId, .vietnameseMode) }

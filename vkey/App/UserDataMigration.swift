@@ -54,17 +54,13 @@ struct UserDataExport: Codable {
   let allowedZWJF: Bool?
   let hudEnabled: Bool?
   let modifierOnlyToggleHotkey: Int?
-  let modifierOnlyTextToolsHotkey: Int?
-  let clipboardHistoryModifierOnlyHotkey: Int?   // 3.22+
 
   // Smart Switch
   let smartSwitchEnabled: Bool?
   let smartSwitchApps: [String]?
-  let perAppOverride: [String: String]?
 
   // Spell check + suggestion
   let spellCheckEnabled: Bool?
-  let spellCheckInSentenceEnabled: Bool?
   let englishAutoRestoreEnabled: Bool?
   let restorePolicy: String?           // raw value
   let suggestionEnabled: Bool?
@@ -86,7 +82,6 @@ struct UserDataExport: Codable {
   // Theme (1.5.3+)
   let appTheme: String?             // AppTheme raw value
   let uiTheme: String?
-  let accentColorChoice: String?
   let appearanceMode: String?
   let themeConfigs: [String: ThemeConfig]?
 
@@ -94,29 +89,11 @@ struct UserDataExport: Codable {
   let autoPersonalDictFeedback: Bool?
 
   // 1.7.6+: full settings backup — bổ sung 9 fields trước đây bị bỏ sót.
-  let wordPredictionEnabled: Bool?
-  let wordPredictionExcludedApps: [String]?
-  let predictionHUDLineOffset: Int?
-  let predictionHUDFontSize: Int?
-  let predictionMaxWords: Int?
   let hudOpacityPercent: Int?
   let appSmartSwitchConfigs: [String: AppSmartSwitchConfig]?  // 1.7.0+ per-app 3-state
-  let translationHUDEnabled: Bool?
-  let translationHUDDurationMs: Double?
-  let programmingMode: Bool?
-  let quickConfigPreset: Int?
   let autoCapitalizeEnabled: Bool?
   let nonLatinIMEAutoDisable: Bool?
-  let windowTitleRules: [WindowTitleRule]?
   let freeMarkModeEnabled: Bool?
-  let cgEventRaceHardeningEnabled: Bool?
-  let cgEventFlushDelayMs: Int?
-  let clipboardHistoryEnabled: Bool?
-  let clipboardHistoryCapacity: Int?
-  let clipboardHistoryContentMode: String?
-  let clipboardHistoryMaxEntryMegabytes: Int?
-  let userBigrams: [String: [String: Int]]?
-  let userTrigrams: [String: [String: Int]]?
   let statisticsEnabled: Bool?
   let autoBackupOnUpgrade: Bool?
   let autoUpdateEnabled: Bool?          // 3.23+
@@ -135,25 +112,19 @@ struct UserDataExport: Codable {
   enum CodingKeys: String, CodingKey {
     case schemaVersion, exportedAt, appVersion, appBuild
     case typingMethod, newStyleTonePlacement, autoTypoCorrection, allowedZWJF
-    case hudEnabled, modifierOnlyToggleHotkey, modifierOnlyTextToolsHotkey, clipboardHistoryModifierOnlyHotkey
-    case smartSwitchEnabled, smartSwitchApps, perAppOverride
-    case spellCheckEnabled, spellCheckInSentenceEnabled, englishAutoRestoreEnabled
+    case hudEnabled, modifierOnlyToggleHotkey
+    case smartSwitchEnabled, smartSwitchApps
+    case spellCheckEnabled, englishAutoRestoreEnabled
     case restorePolicy, suggestionEnabled, autoApplyHighConfidenceSuggestion
     case useEnVnReference
     case personalDictionaryEnabled, userAllowWords, userKeepWords, userDenyWords
     case macros, macroEnabled, macrosSeeded, defaultMacrosVersion
-    case appTheme, uiTheme, accentColorChoice, appearanceMode, themeConfigs
+    case appTheme, uiTheme, appearanceMode, themeConfigs
     case autoPersonalDictFeedback
-    case wordPredictionEnabled, wordPredictionExcludedApps, predictionHUDLineOffset, predictionHUDFontSize
-    case predictionMaxWords
     case hudOpacityPercent, appSmartSwitchConfigs
-    case translationHUDEnabled, translationHUDDurationMs, programmingMode
-    case quickConfigPreset, autoCapitalizeEnabled, nonLatinIMEAutoDisable
-    case windowTitleRules, freeMarkModeEnabled, cgEventRaceHardeningEnabled
-    case cgEventFlushDelayMs
-    case clipboardHistoryEnabled, clipboardHistoryCapacity, clipboardHistoryContentMode
-    case clipboardHistoryMaxEntryMegabytes
-    case userBigrams, userTrigrams, statisticsEnabled, autoBackupOnUpgrade
+    case autoCapitalizeEnabled, nonLatinIMEAutoDisable
+    case freeMarkModeEnabled
+    case statisticsEnabled, autoBackupOnUpgrade
     case autoUpdateEnabled
     case statistics
   }
@@ -162,10 +133,8 @@ struct UserDataExport: Codable {
     schemaVersion: Int, exportedAt: Date, appVersion: String, appBuild: String,
     typingMethod: String?, newStyleTonePlacement: Bool?, autoTypoCorrection: Bool?,
     allowedZWJF: Bool?, hudEnabled: Bool?, modifierOnlyToggleHotkey: Int?,
-    modifierOnlyTextToolsHotkey: Int? = nil,
-    clipboardHistoryModifierOnlyHotkey: Int? = nil,
-    smartSwitchEnabled: Bool?, smartSwitchApps: [String]?, perAppOverride: [String: String]?,
-    spellCheckEnabled: Bool?, spellCheckInSentenceEnabled: Bool?,
+    smartSwitchEnabled: Bool?, smartSwitchApps: [String]?,
+    spellCheckEnabled: Bool?,
     englishAutoRestoreEnabled: Bool?, restorePolicy: String?,
     suggestionEnabled: Bool?, autoApplyHighConfidenceSuggestion: Bool?,
     useEnVnReference: Bool?,
@@ -175,33 +144,14 @@ struct UserDataExport: Codable {
     macroEnabled: Bool?, macrosSeeded: Bool?, defaultMacrosVersion: Int?,
     appTheme: String?,
     uiTheme: String? = nil,
-    accentColorChoice: String? = nil,
     appearanceMode: String? = nil,
     themeConfigs: [String: ThemeConfig]? = nil,
     autoPersonalDictFeedback: Bool?,
-    wordPredictionEnabled: Bool? = nil,
-    wordPredictionExcludedApps: [String]? = nil,
-    predictionHUDLineOffset: Int? = nil,
-    predictionHUDFontSize: Int? = nil,
-    predictionMaxWords: Int? = nil,
     hudOpacityPercent: Int? = nil,
     appSmartSwitchConfigs: [String: AppSmartSwitchConfig]? = nil,
-    translationHUDEnabled: Bool? = nil,
-    translationHUDDurationMs: Double? = nil,
-    programmingMode: Bool? = nil,
-    quickConfigPreset: Int? = nil,
     autoCapitalizeEnabled: Bool? = nil,
     nonLatinIMEAutoDisable: Bool? = nil,
-    windowTitleRules: [WindowTitleRule]? = nil,
     freeMarkModeEnabled: Bool? = nil,
-    cgEventRaceHardeningEnabled: Bool? = nil,
-    cgEventFlushDelayMs: Int? = nil,
-    clipboardHistoryEnabled: Bool? = nil,
-    clipboardHistoryCapacity: Int? = nil,
-    clipboardHistoryContentMode: String? = nil,
-    clipboardHistoryMaxEntryMegabytes: Int? = nil,
-    userBigrams: [String: [String: Int]]? = nil,
-    userTrigrams: [String: [String: Int]]? = nil,
     statisticsEnabled: Bool? = nil,
     autoBackupOnUpgrade: Bool? = nil,
     autoUpdateEnabled: Bool? = nil,
@@ -217,13 +167,9 @@ struct UserDataExport: Codable {
     self.allowedZWJF = allowedZWJF
     self.hudEnabled = hudEnabled
     self.modifierOnlyToggleHotkey = modifierOnlyToggleHotkey
-    self.modifierOnlyTextToolsHotkey = modifierOnlyTextToolsHotkey
-    self.clipboardHistoryModifierOnlyHotkey = clipboardHistoryModifierOnlyHotkey
     self.smartSwitchEnabled = smartSwitchEnabled
     self.smartSwitchApps = smartSwitchApps
-    self.perAppOverride = perAppOverride
     self.spellCheckEnabled = spellCheckEnabled
-    self.spellCheckInSentenceEnabled = spellCheckInSentenceEnabled
     self.englishAutoRestoreEnabled = englishAutoRestoreEnabled
     self.restorePolicy = restorePolicy
     self.suggestionEnabled = suggestionEnabled
@@ -239,33 +185,14 @@ struct UserDataExport: Codable {
     self.defaultMacrosVersion = defaultMacrosVersion
     self.appTheme = appTheme
     self.uiTheme = uiTheme
-    self.accentColorChoice = accentColorChoice
     self.appearanceMode = appearanceMode
     self.themeConfigs = themeConfigs
     self.autoPersonalDictFeedback = autoPersonalDictFeedback
-    self.wordPredictionEnabled = wordPredictionEnabled
-    self.wordPredictionExcludedApps = wordPredictionExcludedApps
-    self.predictionHUDLineOffset = predictionHUDLineOffset
-    self.predictionHUDFontSize = predictionHUDFontSize
-    self.predictionMaxWords = predictionMaxWords
     self.hudOpacityPercent = hudOpacityPercent
     self.appSmartSwitchConfigs = appSmartSwitchConfigs
-    self.translationHUDEnabled = translationHUDEnabled
-    self.translationHUDDurationMs = translationHUDDurationMs
-    self.programmingMode = programmingMode
-    self.quickConfigPreset = quickConfigPreset
     self.autoCapitalizeEnabled = autoCapitalizeEnabled
     self.nonLatinIMEAutoDisable = nonLatinIMEAutoDisable
-    self.windowTitleRules = windowTitleRules
     self.freeMarkModeEnabled = freeMarkModeEnabled
-    self.cgEventRaceHardeningEnabled = cgEventRaceHardeningEnabled
-    self.cgEventFlushDelayMs = cgEventFlushDelayMs
-    self.clipboardHistoryEnabled = clipboardHistoryEnabled
-    self.clipboardHistoryCapacity = clipboardHistoryCapacity
-    self.clipboardHistoryContentMode = clipboardHistoryContentMode
-    self.clipboardHistoryMaxEntryMegabytes = clipboardHistoryMaxEntryMegabytes
-    self.userBigrams = userBigrams
-    self.userTrigrams = userTrigrams
     self.statisticsEnabled = statisticsEnabled
     self.autoBackupOnUpgrade = autoBackupOnUpgrade
     self.autoUpdateEnabled = autoUpdateEnabled
@@ -284,13 +211,9 @@ struct UserDataExport: Codable {
     self.allowedZWJF = try c.decodeIfPresent(Bool.self, forKey: .allowedZWJF)
     self.hudEnabled = try c.decodeIfPresent(Bool.self, forKey: .hudEnabled)
     self.modifierOnlyToggleHotkey = try c.decodeIfPresent(Int.self, forKey: .modifierOnlyToggleHotkey)
-    self.modifierOnlyTextToolsHotkey = try c.decodeIfPresent(Int.self, forKey: .modifierOnlyTextToolsHotkey)
-    self.clipboardHistoryModifierOnlyHotkey = try c.decodeIfPresent(Int.self, forKey: .clipboardHistoryModifierOnlyHotkey)
     self.smartSwitchEnabled = try c.decodeIfPresent(Bool.self, forKey: .smartSwitchEnabled)
     self.smartSwitchApps = try c.decodeIfPresent([String].self, forKey: .smartSwitchApps)
-    self.perAppOverride = try c.decodeIfPresent([String: String].self, forKey: .perAppOverride)
     self.spellCheckEnabled = try c.decodeIfPresent(Bool.self, forKey: .spellCheckEnabled)
-    self.spellCheckInSentenceEnabled = try c.decodeIfPresent(Bool.self, forKey: .spellCheckInSentenceEnabled)
     self.englishAutoRestoreEnabled = try c.decodeIfPresent(Bool.self, forKey: .englishAutoRestoreEnabled)
     self.restorePolicy = try c.decodeIfPresent(String.self, forKey: .restorePolicy)
     self.suggestionEnabled = try c.decodeIfPresent(Bool.self, forKey: .suggestionEnabled)
@@ -306,35 +229,16 @@ struct UserDataExport: Codable {
     self.defaultMacrosVersion = try c.decodeIfPresent(Int.self, forKey: .defaultMacrosVersion)
     self.appTheme = try c.decodeIfPresent(String.self, forKey: .appTheme)
     self.uiTheme = try c.decodeIfPresent(String.self, forKey: .uiTheme)
-    self.accentColorChoice = try c.decodeIfPresent(String.self, forKey: .accentColorChoice)
     self.appearanceMode = try c.decodeIfPresent(String.self, forKey: .appearanceMode)
     self.themeConfigs = try c.decodeIfPresent([String: ThemeConfig].self, forKey: .themeConfigs)
     self.autoPersonalDictFeedback = try c.decodeIfPresent(Bool.self, forKey: .autoPersonalDictFeedback)
     // 1.7.6+ fields — optional cho file v1.x cũ.
-    self.wordPredictionEnabled = try c.decodeIfPresent(Bool.self, forKey: .wordPredictionEnabled)
-    self.wordPredictionExcludedApps = try c.decodeIfPresent([String].self, forKey: .wordPredictionExcludedApps)
-    self.predictionHUDLineOffset = try c.decodeIfPresent(Int.self, forKey: .predictionHUDLineOffset)
-    self.predictionHUDFontSize = try c.decodeIfPresent(Int.self, forKey: .predictionHUDFontSize)
-    self.predictionMaxWords = try c.decodeIfPresent(Int.self, forKey: .predictionMaxWords)
     self.hudOpacityPercent = try c.decodeIfPresent(Int.self, forKey: .hudOpacityPercent)
     self.appSmartSwitchConfigs = try c.decodeIfPresent([String: AppSmartSwitchConfig].self,
                                                       forKey: .appSmartSwitchConfigs)
-    self.translationHUDEnabled = try c.decodeIfPresent(Bool.self, forKey: .translationHUDEnabled)
-    self.translationHUDDurationMs = try c.decodeIfPresent(Double.self, forKey: .translationHUDDurationMs)
-    self.programmingMode = try c.decodeIfPresent(Bool.self, forKey: .programmingMode)
-    self.quickConfigPreset = try c.decodeIfPresent(Int.self, forKey: .quickConfigPreset)
     self.autoCapitalizeEnabled = try c.decodeIfPresent(Bool.self, forKey: .autoCapitalizeEnabled)
     self.nonLatinIMEAutoDisable = try c.decodeIfPresent(Bool.self, forKey: .nonLatinIMEAutoDisable)
-    self.windowTitleRules = try c.decodeIfPresent([WindowTitleRule].self, forKey: .windowTitleRules)
     self.freeMarkModeEnabled = try c.decodeIfPresent(Bool.self, forKey: .freeMarkModeEnabled)
-    self.cgEventRaceHardeningEnabled = try c.decodeIfPresent(Bool.self, forKey: .cgEventRaceHardeningEnabled)
-    self.cgEventFlushDelayMs = try c.decodeIfPresent(Int.self, forKey: .cgEventFlushDelayMs)
-    self.clipboardHistoryEnabled = try c.decodeIfPresent(Bool.self, forKey: .clipboardHistoryEnabled)
-    self.clipboardHistoryCapacity = try c.decodeIfPresent(Int.self, forKey: .clipboardHistoryCapacity)
-    self.clipboardHistoryContentMode = try c.decodeIfPresent(String.self, forKey: .clipboardHistoryContentMode)
-    self.clipboardHistoryMaxEntryMegabytes = try c.decodeIfPresent(Int.self, forKey: .clipboardHistoryMaxEntryMegabytes)
-    self.userBigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userBigrams)
-    self.userTrigrams = try c.decodeIfPresent([String: [String: Int]].self, forKey: .userTrigrams)
     self.statisticsEnabled = try c.decodeIfPresent(Bool.self, forKey: .statisticsEnabled)
     self.autoBackupOnUpgrade = try c.decodeIfPresent(Bool.self, forKey: .autoBackupOnUpgrade)
     self.autoUpdateEnabled = try c.decodeIfPresent(Bool.self, forKey: .autoUpdateEnabled)
@@ -388,7 +292,6 @@ enum UserDataMigration {
 
   /// Build a `UserDataExport` from the running app's current state.
   static func currentExport(includeStatistics: Bool = true) -> UserDataExport {
-    let ngrams = NGramStore.shared.snapshot()
     return UserDataExport(
       schemaVersion: UserDataExport.currentSchemaVersion,
       exportedAt: Date(),
@@ -401,15 +304,11 @@ enum UserDataMigration {
       allowedZWJF: Defaults[.allowedZWJF],
       hudEnabled: Defaults[.hudEnabled],
       modifierOnlyToggleHotkey: Defaults[.modifierOnlyToggleHotkey],
-      modifierOnlyTextToolsHotkey: Defaults[.modifierOnlyTextToolsHotkey],
-      clipboardHistoryModifierOnlyHotkey: Defaults[.clipboardHistoryModifierOnlyHotkey],
 
       smartSwitchEnabled: Defaults[.smartSwitchEnabled],
       smartSwitchApps: Defaults[.smartSwitchApps],
-      perAppOverride: Defaults[.perAppOverride],
 
       spellCheckEnabled: Defaults[.spellCheckEnabled],
-      spellCheckInSentenceEnabled: Defaults[.spellCheckInSentenceEnabled],
       englishAutoRestoreEnabled: Defaults[.englishAutoRestoreEnabled],
       restorePolicy: Defaults[.restorePolicy].rawValue,
       suggestionEnabled: Defaults[.suggestionEnabled],
@@ -428,36 +327,17 @@ enum UserDataMigration {
 
       appTheme: nil, // 2.16: AppTheme đã xoá — giữ field để backup cũ vẫn decode
       uiTheme: Defaults[.uiTheme].rawValue,
-      accentColorChoice: Defaults[.accentColorChoice].rawValue,
       appearanceMode: Defaults[.appearanceMode].rawValue,
       themeConfigs: Defaults[.themeConfigs],
 
       autoPersonalDictFeedback: Defaults[.autoPersonalDictFeedback],
 
       // 1.7.6+: full settings backup
-      wordPredictionEnabled: Defaults[.wordPredictionEnabled],
-      wordPredictionExcludedApps: Defaults[.wordPredictionExcludedApps],
-      predictionHUDLineOffset: Defaults[.predictionHUDLineOffset],
-      predictionHUDFontSize: Defaults[.predictionHUDFontSize],
-      predictionMaxWords: Defaults[.predictionMaxWords],
       hudOpacityPercent: Defaults[.hudOpacityPercent],
       appSmartSwitchConfigs: Defaults[.appSmartSwitchConfigs],
-      translationHUDEnabled: Defaults[.translationHUDEnabled],
-      translationHUDDurationMs: Defaults[.translationHUDDurationMs],
-      programmingMode: Defaults[.programmingMode],
-      quickConfigPreset: Defaults[.quickConfigPreset],
       autoCapitalizeEnabled: Defaults[.autoCapitalizeEnabled],
       nonLatinIMEAutoDisable: Defaults[.nonLatinIMEAutoDisable],
-      windowTitleRules: Defaults[.windowTitleRules],
       freeMarkModeEnabled: Defaults[.freeMarkModeEnabled],
-      cgEventRaceHardeningEnabled: Defaults[.cgEventRaceHardeningEnabled],
-      cgEventFlushDelayMs: Defaults[.cgEventFlushDelayMs],
-      clipboardHistoryEnabled: Defaults[.clipboardHistoryEnabled],
-      clipboardHistoryCapacity: Defaults[.clipboardHistoryCapacity],
-      clipboardHistoryContentMode: Defaults[.clipboardHistoryContentMode].rawValue,
-      clipboardHistoryMaxEntryMegabytes: Defaults[.clipboardHistoryMaxEntryMegabytes],
-      userBigrams: ngrams.bigrams,
-      userTrigrams: ngrams.trigrams,
       statisticsEnabled: Defaults[.statisticsEnabled],
       autoBackupOnUpgrade: Defaults[.autoBackupOnUpgrade],
       autoUpdateEnabled: Defaults[.autoUpdateEnabled],
@@ -589,24 +469,18 @@ enum UserDataMigration {
     applyScalar(.hudEnabled, export.hudEnabled, label: "HUD")
     applyScalar(.modifierOnlyToggleHotkey, export.modifierOnlyToggleHotkey,
                 label: "Phím tắt chỉ modifier (VI/EN)")
-    applyScalar(.modifierOnlyTextToolsHotkey, export.modifierOnlyTextToolsHotkey,
-                label: "Phím tắt chỉ modifier (Text Tools)")
-    applyScalar(.clipboardHistoryModifierOnlyHotkey, export.clipboardHistoryModifierOnlyHotkey,
-                label: "Phím tắt chỉ modifier (lịch sử clipboard)")
 
     // Smart Switch
     applyScalar(.smartSwitchEnabled, export.smartSwitchEnabled, label: "Smart Switch")
     mergeStringList(.smartSwitchApps, export.smartSwitchApps,
                     replace: replaceLists, label: "Danh sách app Smart Switch",
                     into: &changes)
-    mergeStringDict(.perAppOverride, export.perAppOverride,
-                    replace: replaceLists, label: "Ghi đè theo từng app",
-                    into: &changes)
+    // Sao lưu từ bản cũ còn mang danh sách "tắt VN": chuyển ngay sang cấu hình
+    // 3 trạng thái, vì danh sách này không còn được tra ở đường gõ phím.
+    AppState.migrateLegacySmartSwitchApps()
 
     // Spell check
     applyScalar(.spellCheckEnabled, export.spellCheckEnabled, label: "Kiểm tra chính tả")
-    applyScalar(.spellCheckInSentenceEnabled, export.spellCheckInSentenceEnabled,
-                label: "Kiểm tra trong câu")
     applyScalar(.englishAutoRestoreEnabled, export.englishAutoRestoreEnabled,
                 label: "Tự khôi phục tiếng Anh")
     if let rp = export.restorePolicy, let parsed = RestorePolicy(rawValue: rp),
@@ -665,11 +539,6 @@ enum UserDataMigration {
       Defaults[.uiTheme] = parsed
       changes.append("Giao diện UI ← \(raw)")
     }
-    if let raw = export.accentColorChoice, let parsed = AccentColorChoice(rawValue: raw),
-       Defaults[.accentColorChoice] != parsed {
-      Defaults[.accentColorChoice] = parsed
-      changes.append("Màu nhấn ← \(raw)")
-    }
     if let raw = export.appearanceMode, let parsed = AppearanceMode(rawValue: raw),
        Defaults[.appearanceMode] != parsed {
       Defaults[.appearanceMode] = parsed
@@ -682,49 +551,14 @@ enum UserDataMigration {
                 label: "Tự động cập nhật từ điển cá nhân")
 
     // 1.7.6+: previously-missing scalar settings
-    applyScalar(.wordPredictionEnabled, export.wordPredictionEnabled,
-                label: "Đoán từ tiếp theo")
-    mergeStringList(.wordPredictionExcludedApps, export.wordPredictionExcludedApps,
-                    replace: replaceLists, label: "App loại trừ đoán từ", into: &changes)
-    applyScalar(.predictionHUDLineOffset, export.predictionHUDLineOffset,
-                label: "Khoảng cách HUD dự đoán")
-    applyScalar(.predictionHUDFontSize, export.predictionHUDFontSize,
-                label: "Cỡ chữ HUD dự đoán")
-    applyScalar(.predictionMaxWords, export.predictionMaxWords,
-                label: "Số từ gợi ý tối đa")
     applyScalar(.hudOpacityPercent, export.hudOpacityPercent,
                 label: "Độ trong suốt HUD")
-    applyScalar(.translationHUDEnabled, export.translationHUDEnabled,
-                label: "HUD dịch")
-    applyScalar(.translationHUDDurationMs, export.translationHUDDurationMs,
-                label: "Thời lượng HUD dịch (ms)")
-    applyScalar(.programmingMode, export.programmingMode,
-                label: "Chế độ lập trình")
-    applyScalar(.quickConfigPreset, export.quickConfigPreset,
-                label: "Preset cấu hình nhanh")
     applyScalar(.autoCapitalizeEnabled, export.autoCapitalizeEnabled,
                 label: "Tự viết hoa đầu câu")
     applyScalar(.nonLatinIMEAutoDisable, export.nonLatinIMEAutoDisable,
                 label: "Tự tắt khi dùng IME không Latin")
     applyScalar(.freeMarkModeEnabled, export.freeMarkModeEnabled,
                 label: "Đặt dấu tự do")
-    applyScalar(.cgEventRaceHardeningEnabled, export.cgEventRaceHardeningEnabled,
-                label: "Cứng hóa race CGEvent")
-    applyScalar(.cgEventFlushDelayMs, export.cgEventFlushDelayMs,
-                label: "Độ trễ flush CGEvent (ms)")
-    applyScalar(.clipboardHistoryEnabled, export.clipboardHistoryEnabled,
-                label: "Lịch sử clipboard")
-    applyScalar(.clipboardHistoryCapacity, export.clipboardHistoryCapacity,
-                label: "Số mục lịch sử clipboard")
-    applyScalar(.clipboardHistoryMaxEntryMegabytes, export.clipboardHistoryMaxEntryMegabytes,
-                label: "Dung lượng tối đa mục clipboard (MB)")
-    if let mode = export.clipboardHistoryContentMode,
-       let parsed = ClipboardHistoryContentMode(rawValue: mode) {
-      if Defaults[.clipboardHistoryContentMode] != parsed {
-        Defaults[.clipboardHistoryContentMode] = parsed
-        changes.append("Chế độ lịch sử clipboard: \(mode)")
-      }
-    }
     applyScalar(.statisticsEnabled, export.statisticsEnabled,
                 label: "Bật thống kê")
     applyScalar(.autoBackupOnUpgrade, export.autoBackupOnUpgrade,
@@ -734,9 +568,6 @@ enum UserDataMigration {
     if export.autoUpdateEnabled != nil {
       Updater.applyAutomaticUpdatePreference()
     }
-
-    mergeWindowTitleRules(export.windowTitleRules,
-                          replace: replaceLists, into: &changes)
 
     // 1.7.6+: per-app Smart Switch configs (critical — 1.7.0+ 3-state).
     // 1.7.7: merge mode đảo sang imported wins (file thắng khi trùng bundle id).
@@ -758,23 +589,6 @@ enum UserDataMigration {
           changes.append("Smart Switch theo app: +\(changed) (gộp, file ưu tiên)")
         }
       }
-    }
-
-    // 1.7.6+: bigram/trigram (prediction learning data).
-    // 1.7.7: merge mode đảo sang imported wins — file thắng khi trùng (prev, next).
-    // 1.7.x: storage chuyển sang NGramStore (file-backed), không qua Defaults.
-    let importBi = export.userBigrams ?? [:]
-    let importTri = export.userTrigrams ?? [:]
-    if replaceLists {
-      if !importBi.isEmpty || !importTri.isEmpty {
-        NGramStore.shared.replaceAll(bigrams: importBi, trigrams: importTri)
-        if !importBi.isEmpty { changes.append("Bigram dự đoán: \(importBi.count) (ghi đè)") }
-        if !importTri.isEmpty { changes.append("Trigram dự đoán: \(importTri.count) (ghi đè)") }
-      }
-    } else if !importBi.isEmpty || !importTri.isEmpty {
-      let (biChanged, triChanged) = NGramStore.shared.merge(bigrams: importBi, trigrams: importTri)
-      if biChanged > 0 { changes.append("Bigram dự đoán: +\(biChanged) (gộp, file ưu tiên)") }
-      if triChanged > 0 { changes.append("Trigram dự đoán: +\(triChanged) (gộp, file ưu tiên)") }
     }
 
     // 1.7.6+: stats restoration. Trước đây bỏ qua hoàn toàn → tab Thống kê
@@ -811,6 +625,44 @@ enum UserDataMigration {
   /// - Parameter previousVersion: phiên bản của lần chạy trước, phải chụp
   ///   TRƯỚC `AppState.storeTrustedAppVersion()` — hàm đó ghi chung key
   ///   `currentVersion` ngay khi có quyền Trợ năng, sớm hơn lời gọi này.
+  /// Khoá Defaults của các tính năng đã gỡ (lịch sử clipboard, đoán từ, quy tắc
+  /// theo tiêu đề cửa sổ, công cụ chuyển đổi văn bản) và các khoá bỏ hoang từ
+  /// lộ trình 1.5.x. Không còn mã nào đọc chúng; để lại chỉ làm phình plist.
+  static let obsoleteDefaultsKeys: [String] = [
+    "modifier-only-text-tools-hotkey", "KeyboardShortcuts_openTextConversionMenu",
+    "clipboard-history-enabled", "clipboard-history-capacity",
+    "clipboard-history-content-mode", "clipboard-history-max-entry-megabytes",
+    "clipboard-history-modifier-only-hotkey", "KeyboardShortcuts_pasteClipboardHistory",
+    "word-prediction-enabled", "word-prediction-excluded-apps", "prediction-max-words",
+    "prediction-hud-line-offset", "prediction-hud-font-size", "user-bigrams", "user-trigrams",
+    "window-title-rules", "cgevent-race-hardening-enabled", "cgevent-flush-delay-ms",
+    "translation-hud-enabled", "translation-hud-duration-ms", "programming-mode",
+    "per-app-override", "quick-config-preset", "spell-check-in-sentence-enabled",
+    "accent-color-choice", "last-smart-switch-auto-learn-date",
+    "smart-switch-suggestions-total", "smart-switch-suggestions-accepted",
+  ]
+
+  /// Xoá giá trị đã lưu của `obsoleteDefaultsKeys` và kho n-gram của tính năng
+  /// đoán từ. Idempotent, chạy mỗi lần khởi động.
+  static func removeObsoleteStoredValues(
+    defaults: UserDefaults = .standard, fileManager: FileManager = .default
+  ) {
+    for key in obsoleteDefaultsKeys where defaults.object(forKey: key) != nil {
+      defaults.removeObject(forKey: key)
+    }
+    if let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+      let ngramDir = support.appendingPathComponent("vkey/ngram", isDirectory: true)
+      if fileManager.fileExists(atPath: ngramDir.path) {
+        try? fileManager.removeItem(at: ngramDir)
+      }
+    }
+  }
+
+  /// Tiến trình này có đang được XCTest nạp làm test host không.
+  static var isRunningUnderXCTest: Bool {
+    ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+  }
+
   @discardableResult
   static func handleVersionChange(
     previousVersion: String = Defaults[.currentVersion]
@@ -819,6 +671,7 @@ enum UserDataMigration {
     // lần không sao. Chạy mọi launch để bao quát cả user mới upgrade.
     UserDefaults.standard.removeObject(forKey: "dictionary-update-channel")
     UserDefaults.standard.removeObject(forKey: "dictionary-github-update-enabled")
+    removeObsoleteStoredValues()
 
     let persisted = previousVersion
     let running = Bundle.main.appVersionLong
@@ -829,6 +682,16 @@ enum UserDataMigration {
     }
 
     guard Defaults[.autoBackupOnUpgrade] else {
+      Defaults[.currentVersion] = running
+      return true
+    }
+
+    // App đang làm test host cho XCTest: không hỏi. Alert dưới đây chạy
+    // `runModal()` trên main thread, nên tiến trình không thoát được sau khi
+    // test xong — `xcodebuild test` treo vô hạn và trên màn hình còn lại một
+    // cửa sổ vkey không phản hồi. Xảy ra đúng lần chạy test đầu tiên sau mỗi
+    // lần nâng version (đo 2026-11-10, ngay sau khi lên 4.34).
+    guard !isRunningUnderXCTest else {
       Defaults[.currentVersion] = running
       return true
     }
@@ -916,73 +779,6 @@ enum UserDataMigration {
     if added > 0 {
       Defaults[key] = current
       changes.append("\(label): +\(added)")
-    }
-  }
-
-  private static func mergeStringDict(
-    _ key: Defaults.Key<[String: String]>,
-    _ value: [String: String]?,
-    replace: Bool,
-    label: String,
-    into changes: inout [String]
-  ) {
-    guard let value = value else { return }
-    if replace {
-      if Defaults[key] != value {
-        Defaults[key] = value
-        changes.append("\(label): \(value.count) (ghi đè)")
-      }
-      return
-    }
-    // 1.7.7: merge mode đảo sang imported wins — file thắng khi trùng key.
-    var current = Defaults[key]
-    var changed = 0
-    for (k, v) in value where current[k] != v {
-      current[k] = v
-      changed += 1
-    }
-    if changed > 0 {
-      Defaults[key] = current
-      changes.append("\(label): +\(changed) (gộp, file ưu tiên)")
-    }
-  }
-
-  private static func mergeWindowTitleRules(
-    _ value: [WindowTitleRule]?,
-    replace: Bool,
-    into changes: inout [String]
-  ) {
-    guard let value = value else { return }
-    if replace {
-      if Defaults[.windowTitleRules] != value {
-        Defaults[.windowTitleRules] = value
-        changes.append("Quy tắc tiêu đề cửa sổ: \(value.count) (ghi đè)")
-      }
-      return
-    }
-
-    var current = Defaults[.windowTitleRules]
-    var indexesById: [UUID: Int] = [:]
-    for (index, rule) in current.enumerated() {
-      indexesById[rule.id] = index
-    }
-
-    var changed = 0
-    for rule in value {
-      if let index = indexesById[rule.id] {
-        if current[index] != rule {
-          current[index] = rule
-          changed += 1
-        }
-      } else {
-        current.append(rule)
-        changed += 1
-      }
-    }
-
-    if changed > 0 {
-      Defaults[.windowTitleRules] = current
-      changes.append("Quy tắc tiêu đề cửa sổ: +\(changed) (gộp, file ưu tiên)")
     }
   }
 }

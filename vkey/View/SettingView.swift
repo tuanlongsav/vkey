@@ -36,16 +36,11 @@ func formatModifierMask(_ raw: Int) -> String {
   return out
 }
 
-/// v2.3.1: mapping `KeyboardShortcuts.Name` → modifier-only Defaults key.
-/// Trước 2.3.1 hardcode `.modifierOnlyToggleHotkey` cho cả Toggle VI/EN
-/// lẫn Text Tools → 2 button hiển thị cùng 1 mask (bug). Sau khi parameterize,
-/// mỗi recorder đọc/ghi vào đúng key của nó.
+/// Mapping `KeyboardShortcuts.Name` → khoá Defaults của tổ hợp chỉ-modifier.
+/// Hiện chỉ còn một phím tắt (đổi VI/EN); giữ dạng hàm để recorder không phải
+/// biết tên khoá.
 private func modifierOnlyKey(for name: KeyboardShortcuts.Name) -> Defaults.Key<Int> {
-  switch name {
-  case .openTextConversionMenu: return .modifierOnlyTextToolsHotkey
-  case .pasteClipboardHistory: return .clipboardHistoryModifierOnlyHotkey
-  default:                      return .modifierOnlyToggleHotkey
-  }
+  .modifierOnlyToggleHotkey
 }
 
 final class FlexibleShortcutButton: NSButton {

@@ -18,7 +18,6 @@ final class vkeyTests: XCTestCase {
   override func setUp() {
     super.setUp()
     Defaults.reset(.spellCheckEnabled)
-    Defaults.reset(.spellCheckInSentenceEnabled)
     Defaults.reset(.englishAutoRestoreEnabled)
     Defaults.reset(.restorePolicy)
     Defaults.reset(.suggestionEnabled)
@@ -2172,17 +2171,6 @@ final class vkeyTests: XCTestCase {
 
   // MARK: - P1: lọc pasteboard bí mật (mật khẩu) khỏi clipboard history
 
-  @MainActor
-  func testClipboardSkipsConcealedPasteboardType() throws {
-    let concealed = NSPasteboardItem()
-    concealed.setString("hunter2", forType: NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType"))
-    XCTAssertTrue(ClipboardHistoryService.containsSecretPasteboardType([concealed]))
-
-    let normal = NSPasteboardItem()
-    normal.setString("xin chào", forType: .string)
-    XCTAssertFalse(ClipboardHistoryService.containsSecretPasteboardType([normal]))
-  }
-
   // MARK: - L1: verify chữ ký Ed25519 gói từ điển
 
   func testLexiconSignatureVerifier() throws {
@@ -2362,7 +2350,6 @@ final class vkeyTests: XCTestCase {
     XCTAssertEqual(transform_text_telex(for: "thfi"), "thì")
     XCTAssertEqual(transform_text_telex(for: "dinhjd"), "định")
   }
-
 
   func testBugTesst() throws {
     let inputProcessor = InputProcessor(method: .Telex)
@@ -2802,38 +2789,6 @@ final class KeyboardUSTests: XCTestCase {
     XCTAssertEqual(processor.transformed, "a")
   }
 
-  func testPredictionEngineEnhancements() throws {
-    let oldAllow = Defaults[.userAllowWords]
-    let oldKeep = Defaults[.userKeepWords]
-    defer {
-      Defaults[.userAllowWords] = oldAllow
-      Defaults[.userKeepWords] = oldKeep
-    }
-    
-    Defaults[.userAllowWords] = ["dựán"]
-    Defaults[.userKeepWords] = ["thànhcông"]
-    
-    let allowSet = Set(Defaults[.userAllowWords].map { $0.lowercased() })
-    
-    // Verify isValidCandidate filter
-    XCTAssertTrue(PredictionEngine.isValidCandidate("dựán", allowedSet: allowSet))
-    XCTAssertFalse(PredictionEngine.isValidCandidate("t%", allowedSet: allowSet))
-    XCTAssertFalse(PredictionEngine.isValidCandidate("f", allowedSet: allowSet))
-    XCTAssertTrue(PredictionEngine.isValidCandidate("à", allowedSet: allowSet))
-    // Từ đơn 1 chữ có dấu thanh trên ô/ơ/ư phải hợp lệ ("ở" cực phổ biến)
-    XCTAssertTrue(PredictionEngine.isValidCandidate("ở", allowedSet: []))
-    XCTAssertTrue(PredictionEngine.isValidCandidate("ừ", allowedSet: []))
-    XCTAssertTrue(PredictionEngine.isValidCandidate("ồ", allowedSet: []))
-    XCTAssertFalse(PredictionEngine.isValidCandidate("b", allowedSet: []))
-
-    // Layer 4: phrase completion từ embedded corpus
-    let phraseCandidates = PredictionEngine.shared.collectCandidates(
-      prev2: "kính",
-      prev1: "gửi"
-    )
-    XCTAssertTrue(phraseCandidates.contains { $0.word == "anh" && $0.freq > 0 })
-  }
-
   func testMeaningfulVietnamesePhraseFilter() {
     XCTAssertTrue(UsageStatistics.isMeaningfulVietnamesePhrase(["công", "ty"]))
     XCTAssertTrue(UsageStatistics.isMeaningfulVietnamesePhrase(["xin", "chào"]))
@@ -2841,550 +2796,23 @@ final class KeyboardUSTests: XCTestCase {
     XCTAssertFalse(UsageStatistics.isMeaningfulVietnamesePhrase(["asdf", "ghjk"]))
   }
 
-  func testPhraseCompletionIndexBuildAndLookup() {
-    let index = UsageStatistics.buildPhraseSuffixIndex(
-      phrases2: ["công ty": 5],
-      phrases3: [
-        "kính gửi anh": 4,
-        "kính gửi chị": 2,
-        "xin chào bạn": 3,
-      ],
-      phrases4: ["kính gửi anh chị": 2]
-    )
-    XCTAssertEqual(index["kính gửi"]?["anh"], 4)
-    XCTAssertEqual(index["kính gửi"]?["chị"], 2)
-    XCTAssertEqual(index["kính gửi"]?["anh chị"], 2)
-    XCTAssertEqual(index["xin chào"]?["bạn"], 3)
-    XCTAssertEqual(index["công"]?["ty"], 5)
-  }
-
-  func testTopPhrasePredictionPrefersMultiWordWhenConfigured() {
-    Defaults[.predictionMaxWords] = 2
-    defer { Defaults.reset(.predictionMaxWords) }
-    let prediction = PredictionEngine.shared.topPhrasePrediction(
-      prev2: "kính",
-      prev1: "gửi",
-      maxWords: 2
-    )
-    XCTAssertNotNil(prediction)
-    XCTAssertGreaterThanOrEqual(prediction?.split(separator: " ").count ?? 0, 1)
-  }
 }
 
 // MARK: - ===========================================
 // MARK: - Word Prediction Exclusion Tests
 // MARK: - ===========================================
 
-final class WordPredictionExclusionTests: XCTestCase {
-
-  override func tearDown() {
-    Defaults.reset(.wordPredictionEnabled)
-    Defaults.reset(.wordPredictionExcludedApps)
-    super.tearDown()
-  }
-
-  func test_isWordPredictionActive_respectsGlobalToggle() {
-    Defaults[.wordPredictionEnabled] = false
-    XCTAssertFalse(InputProcessor.isWordPredictionActive(bundleId: "com.apple.Notes"))
-    Defaults[.wordPredictionEnabled] = true
-    XCTAssertTrue(InputProcessor.isWordPredictionActive(bundleId: "com.apple.Notes"))
-  }
-
-  func test_isWordPredictionActive_respectsExcludedApps_caseInsensitive() {
-    Defaults[.wordPredictionEnabled] = true
-    Defaults[.wordPredictionExcludedApps] = ["com.google.chrome"]
-    XCTAssertFalse(InputProcessor.isWordPredictionActive(bundleId: "com.google.Chrome"))
-    XCTAssertFalse(InputProcessor.isWordPredictionActive(bundleId: " COM.GOOGLE.CHROME "))
-    XCTAssertTrue(InputProcessor.isWordPredictionActive(bundleId: "com.apple.Notes"))
-  }
-
-  func test_isWordPredictionActive_respectsRuleDisablePrediction() {
-    Defaults[.wordPredictionEnabled] = true
-    var overrides = ResolvedRuleOverrides()
-    overrides.disablePrediction = true
-    XCTAssertFalse(InputProcessor.isWordPredictionActive(
-      bundleId: "com.apple.Notes", ruleOverrides: overrides))
-  }
-
-  func test_isWordPredictionActive_inactiveForEmptyBundleId() {
-    Defaults[.wordPredictionEnabled] = true
-    XCTAssertFalse(InputProcessor.isWordPredictionActive(bundleId: ""))
-  }
-}
-
 // MARK: - ===========================================
 // MARK: - Word Prediction Tab Acceptance Tests
 // MARK: - ===========================================
-
-final class WordPredictionTabAcceptanceTests: XCTestCase {
-
-  override func setUp() {
-    super.setUp()
-    Defaults[.spellCheckEnabled] = true
-    Defaults[.wordPredictionEnabled] = true
-    Defaults[.wordPredictionExcludedApps] = []
-  }
-
-  override func tearDown() {
-    Defaults.reset(.spellCheckEnabled)
-    Defaults.reset(.wordPredictionEnabled)
-    Defaults.reset(.wordPredictionExcludedApps)
-    super.tearDown()
-  }
-
-  func testTabImmediatelyAfterSpaceAcceptsFreshPrediction() {
-    let processor = makeNotesProcessor()
-
-    typeKeys([40, 34, 45, 4, 1], into: processor) // kinhs -> kính
-    _ = typeKey(49, into: processor) // Space creates a prediction from "kính".
-
-    let tabResult = typeKey(48, into: processor)
-    XCTAssertTrue(tabResult == nil, "Fresh prediction after Space should be accepted by Tab")
-  }
-
-  func testTabAfterEnterPassesThroughInsteadOfAcceptingStalePrediction() {
-    let processor = makeNotesProcessor()
-
-    typeKeys([40, 34, 45, 4, 1], into: processor) // kinhs -> kính
-    XCTAssertEqual(processor.transformed, "kính")
-
-    _ = typeKey(49, into: processor) // Space creates a prediction from "kính".
-    XCTAssertEqual(processor.transformed, "")
-    XCTAssertTrue(typeKey(36, into: processor) != nil) // Enter starts a new line.
-
-    let tabResult = typeKey(48, into: processor)
-    XCTAssertTrue(tabResult != nil, "Tab at a new line must pass through for indentation")
-  }
-
-  func testTabAfterExplicitWordBoundaryPassesThrough() {
-    let processor = makeNotesProcessor()
-
-    typeKeys([40, 34, 45, 4, 1], into: processor) // kinhs -> kính
-    _ = typeKey(49, into: processor) // Space creates a prediction from "kính".
-    processor.newWord()
-
-    let tabResult = typeKey(48, into: processor)
-    XCTAssertTrue(tabResult != nil, "Tab after a caret/mouse boundary must not accept stale text")
-  }
-
-  /// Gợi ý còn hiện từ Space trước, người dùng gõ tiếp một từ tiếng Việt giữ
-  /// nguyên rồi bấm Tab (chuyển ô). Không có gì để thay nên Tab đi thẳng về
-  /// app — nhưng bộ đệm từ PHẢI được xoá, nếu không phím kế tiếp diff trên từ
-  /// cũ và backspace ăn vào ô mới.
-  func testTabThatCannotAcceptPredictionStillEndsTheWord() {
-    let processor = makeNotesProcessor()
-
-    typeKeys([40, 34, 45, 4, 1], into: processor) // kinhs -> kính
-    _ = typeKey(49, into: processor) // Space creates a prediction from "kính".
-    typeKeys([9, 34, 14, 14, 38, 17], into: processor) // vieejt -> việt
-    XCTAssertEqual(processor.transformed, "việt")
-
-    let tabResult = typeKey(48, into: processor)
-    XCTAssertTrue(tabResult != nil, "Nothing to replace — Tab must reach the app")
-    XCTAssertEqual(processor.transformed, "", "Tab ends the word even when no prediction was accepted")
-    XCTAssertTrue(processor.keys.isEmpty)
-  }
-
-  private func makeNotesProcessor() -> InputProcessor {
-    let processor = InputProcessor(method: .Telex)
-    processor.changeActiveApp("com.apple.Notes")
-    return processor
-  }
-
-  private func typeKeys(_ codes: [UInt16], into processor: InputProcessor) {
-    for code in codes {
-      _ = typeKey(code, into: processor)
-    }
-  }
-
-  @discardableResult
-  private func typeKey(_ code: UInt16, into processor: InputProcessor) -> Unmanaged<CGEvent>? {
-    let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(code), keyDown: true)!
-    return processor.handleEvent(event: event)
-  }
-}
 
 // MARK: - ===========================================
 // MARK: - Prediction HUD Layout Tests
 // MARK: - ===========================================
 
-final class PredictionHUDWindowTests: XCTestCase {
-
-  func testContentSizeHasMinimumDimensions() {
-    let size = PredictionHUDWindow.contentSize(for: "→ theo   ⇥ Tab", fontSize: 16)
-
-    XCTAssertGreaterThanOrEqual(size.width, 160)
-    XCTAssertGreaterThanOrEqual(size.height, 36)
-  }
-
-  func testContentSizeExpandsForLongText() {
-    let shortSize = PredictionHUDWindow.contentSize(for: "→ theo   ⇥ Tab", fontSize: 16)
-    let longSize = PredictionHUDWindow.contentSize(
-      for: "→ phương pháp   ⇥ Tab",
-      fontSize: 16
-    )
-
-    XCTAssertGreaterThan(longSize.width, shortSize.width)
-    XCTAssertEqual(longSize.height, shortSize.height)
-  }
-
-  func testContentSizeExpandsForLargerFont() {
-    let smallSize = PredictionHUDWindow.contentSize(for: "→ theo   ⇥ Tab", fontSize: 12)
-    let largeSize = PredictionHUDWindow.contentSize(for: "→ theo   ⇥ Tab", fontSize: 24)
-
-    XCTAssertGreaterThan(largeSize.width, smallSize.width)
-    XCTAssertGreaterThan(largeSize.height, smallSize.height)
-  }
-
-  func testNormalizedCaretRectClampsWideLineBounds() {
-    let wide = CGRect(x: 100, y: 400, width: 900, height: 22)
-    let normalized = PredictionHUDWindow.normalizedCaretRect(wide)
-    XCTAssertLessThanOrEqual(normalized.width, 8)
-    XCTAssertGreaterThanOrEqual(normalized.maxX, wide.maxX - 4)
-  }
-
-  func testComputeVisualFramePlacesHUDAboveCaretNearScreenBottom() {
-    let contentSize = CGSize(width: 200, height: 36)
-    let caret = CGRect(x: 420, y: 820, width: 2, height: 20)
-    let screen = NSRect(x: 0, y: 0, width: 1440, height: 900)
-    guard let frame = PredictionHUDWindow.computeVisualFrame(
-      caretAX: caret,
-      contentSize: contentSize,
-      lineOffset: 4,
-      visibleFrame: screen,
-      primaryDisplayHeight: 900
-    ) else {
-      return XCTFail("expected a frame")
-    }
-
-    let caretTopCocoa = 900 - caret.minY
-    let caretBottomCocoa = 900 - caret.maxY
-    let hudTop = frame.origin.y + frame.height
-    XCTAssertFalse(frame.origin.y < caretTopCocoa && hudTop > caretBottomCocoa)
-    XCTAssertGreaterThanOrEqual(frame.origin.y, caretTopCocoa + 8)
-    // Căn giữa theo bề ngang màn hình.
-    XCTAssertEqual(frame.midX, screen.midX, accuracy: 1)
-  }
-
-  func testComputeVisualFrameRespectsLineOffset() {
-    let contentSize = CGSize(width: 200, height: 36)
-    let caret = CGRect(x: 420, y: 820, width: 2, height: 20)
-    let screen = NSRect(x: 0, y: 0, width: 1440, height: 900)
-    guard let near = PredictionHUDWindow.computeVisualFrame(
-      caretAX: caret,
-      contentSize: contentSize,
-      lineOffset: 2,
-      visibleFrame: screen,
-      primaryDisplayHeight: 900
-    ), let far = PredictionHUDWindow.computeVisualFrame(
-      caretAX: caret,
-      contentSize: contentSize,
-      lineOffset: 10,
-      visibleFrame: screen,
-      primaryDisplayHeight: 900
-    ) else {
-      return XCTFail("expected frames")
-    }
-    XCTAssertGreaterThan(far.origin.y, near.origin.y)
-  }
-
-  func testComputeVisualFrameAvoidsBelowCaretForChatInputAtBottom() {
-    let contentSize = CGSize(width: 200, height: 36)
-    let caret = CGRect(x: 420, y: 820, width: 2, height: 20)
-    let screen = NSRect(x: 0, y: 0, width: 1440, height: 900)
-    guard let frame = PredictionHUDWindow.computeVisualFrame(
-      caretAX: caret,
-      contentSize: contentSize,
-      lineOffset: 4,
-      visibleFrame: screen,
-      primaryDisplayHeight: 900
-    ) else {
-      return XCTFail("expected a frame")
-    }
-
-    let caretTopCocoa = 900 - caret.minY
-    let caretBottomCocoa = 900 - caret.maxY
-    // Không đặt HUD dưới dòng đang gõ (bug cũ khi thiếu chỗ phía trên).
-    XCTAssertGreaterThanOrEqual(frame.origin.y + frame.height, caretBottomCocoa + 4)
-    XCTAssertGreaterThanOrEqual(frame.origin.y, caretTopCocoa + 4)
-  }
-}
-
 // MARK: - Clipboard history
 
-@MainActor
-final class ClipboardHistoryTests: XCTestCase {
-
-  override func setUp() {
-    super.setUp()
-    Defaults.reset(.clipboardHistoryEnabled)
-    Defaults.reset(.clipboardHistoryCapacity)
-    Defaults.reset(.clipboardHistoryContentMode)
-    Defaults.reset(.clipboardHistoryMaxEntryMegabytes)
-    Defaults.reset(.clipboardHistoryModifierOnlyHotkey)
-    ClipboardHistoryService.shared.clear()
-  }
-
-  func testPreviewTextTruncatesLongString() {
-    let long = String(repeating: "a", count: 100)
-    let preview = ClipboardHistoryService.previewText(long)
-    XCTAssertEqual(preview.count, 70)
-    XCTAssertTrue(preview.hasSuffix("…"))
-  }
-
-  func testBuildSnapshotTextOnlySkipsEmpty() {
-    let pb = NSPasteboard.general
-    pb.clearContents()
-    XCTAssertNil(ClipboardHistoryService.buildSnapshot(from: pb, mode: .textOnly))
-    pb.setString("xin chào", forType: .string)
-    let snap = ClipboardHistoryService.buildSnapshot(from: pb, mode: .textOnly)
-    XCTAssertNotNil(snap)
-    XCTAssertEqual(snap?.preview, "xin chào")
-    XCTAssertFalse(snap?.isFileEntry ?? true)
-  }
-
-  func testCaptureRespectsCapacity() {
-    Defaults[.clipboardHistoryEnabled] = true
-    Defaults[.clipboardHistoryCapacity] = 3
-    let pb = NSPasteboard.general
-    for i in 1...5 {
-      pb.clearContents()
-      pb.setString("item \(i)", forType: .string)
-      ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
-    }
-    XCTAssertEqual(ClipboardHistoryService.shared.entries.count, 3)
-    XCTAssertEqual(ClipboardHistoryService.shared.entries.first?.preview, "item 5")
-    XCTAssertEqual(ClipboardHistoryService.shared.entries.last?.preview, "item 3")
-  }
-
-  func testDedupSkipsIdenticalConsecutiveCapture() {
-    Defaults[.clipboardHistoryEnabled] = true
-    let pb = NSPasteboard.general
-    pb.clearContents()
-    pb.setString("same", forType: .string)
-    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
-    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
-    XCTAssertEqual(ClipboardHistoryService.shared.entries.count, 1)
-  }
-
-  func testDifferentContentWithSamePreviewCreatesTwoEntries() {
-    Defaults[.clipboardHistoryEnabled] = true
-    let pb = NSPasteboard.general
-    pb.clearContents()
-    pb.setString("hello", forType: .string)
-    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
-    pb.clearContents()
-    let item = NSPasteboardItem()
-    item.setString("hello", forType: .string)
-    item.setString("extra", forType: NSPasteboard.PasteboardType("org.vkey.test-meta"))
-    pb.writeObjects([item])
-    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
-    XCTAssertEqual(ClipboardHistoryService.shared.entries.count, 2)
-  }
-
-  func testMarkInternalPasteboardWriteSkipsNextCapture() {
-    Defaults[.clipboardHistoryEnabled] = true
-    let pb = NSPasteboard.general
-    pb.clearContents()
-    pb.setString("internal", forType: .string)
-    let before = pb.changeCount
-    ClipboardHistoryService.shared.markInternalPasteboardWrite(pb)
-    ClipboardHistoryService.shared.captureIfPasteboardChanged(since: before)
-    XCTAssertTrue(ClipboardHistoryService.shared.entries.isEmpty)
-  }
-
-  func testFingerprintDiffersForDifferentStrings() {
-    let a = NSPasteboardItem()
-    a.setString("a", forType: .string)
-    let b = NSPasteboardItem()
-    b.setString("b", forType: .string)
-    XCTAssertNotEqual(
-      ClipboardHistoryService.fingerprint(for: [a]),
-      ClipboardHistoryService.fingerprint(for: [b])
-    )
-  }
-
-  func testMaxEntryBytesFromSettingsDefaultsTo10MB() {
-    Defaults[.clipboardHistoryMaxEntryMegabytes] = 10
-    XCTAssertEqual(ClipboardHistoryService.maxEntryBytesFromSettings(), 10 * 1024 * 1024)
-  }
-
-  func testOversizedCaptureDoesNotAddEntry() {
-    Defaults[.clipboardHistoryEnabled] = true
-    Defaults[.clipboardHistoryMaxEntryMegabytes] = 1
-    let pb = NSPasteboard.general
-    pb.clearContents()
-    let big = String(repeating: "x", count: 2 * 1024 * 1024)
-    pb.setString(big, forType: .string)
-    XCTAssertGreaterThan(
-      ClipboardHistoryService.buildSnapshot(from: pb, mode: .textOnly)?.byteCount ?? 0,
-      ClipboardHistoryService.maxEntryBytesFromSettings()
-    )
-    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
-    XCTAssertTrue(ClipboardHistoryService.shared.entries.isEmpty)
-  }
-
-  func testSnapshotBytesSumPasteboardAndFilePayload() throws {
-    let tempDir = FileManager.default.temporaryDirectory
-    let fileURL = tempDir.appendingPathComponent("vkey-clip-\(UUID().uuidString).txt")
-    try String(repeating: "z", count: 4096).write(to: fileURL, atomically: true, encoding: .utf8)
-    defer { try? FileManager.default.removeItem(at: fileURL) }
-
-    let pb = NSPasteboard.general
-    pb.clearContents()
-    pb.setString("caption", forType: .string)
-    pb.writeObjects([fileURL as NSURL])
-
-    let snap = try XCTUnwrap(ClipboardHistoryService.buildSnapshot(from: pb, mode: .textAndFiles))
-    let pasteBytes = ClipboardHistoryService.payloadBytes(of: snap.items, allowFiles: true)
-    let fileBytes = ClipboardHistoryService.filePayloadBytes(from: [fileURL])
-    XCTAssertGreaterThan(pasteBytes, 0)
-    XCTAssertGreaterThan(fileBytes, 0)
-    XCTAssertEqual(snap.byteCount, pasteBytes + fileBytes)
-  }
-
-  func testPayloadBytesSkipsFilesInTextOnlyMode() throws {
-    let pb = NSPasteboard.general
-    pb.clearContents()
-    pb.setString("only text", forType: .string)
-    let items = try XCTUnwrap(pb.pasteboardItems)
-    let withFiles = ClipboardHistoryService.payloadBytes(of: items, allowFiles: true)
-    let textOnly = ClipboardHistoryService.payloadBytes(of: items, allowFiles: false)
-    XCTAssertEqual(withFiles, textOnly)
-  }
-
-  /// Excel/Word/Safari kèm TIFF/PDF/webarchive cho CÙNG vùng chọn đã có chữ —
-  /// lịch sử chỉ giữ chữ (plain/RTF/HTML), không giữ bản dựng thành hình.
-  func testSnapshotDropsRenditionsWhenItemHasText() {
-    let pb = NSPasteboard.general
-    pb.clearContents()
-    let item = NSPasteboardItem()
-    item.setString("bảng tính", forType: .string)
-    item.setString("<b>bảng tính</b>", forType: .html)
-    item.setData(Data(repeating: 0xAB, count: 64 * 1024), forType: .tiff)
-    item.setData(Data(repeating: 0xCD, count: 64 * 1024), forType: .pdf)
-    pb.writeObjects([item])
-
-    for mode in ClipboardHistoryContentMode.allCases {
-      let snap = ClipboardHistoryService.buildSnapshot(from: pb, mode: mode)
-      let types = Set(snap?.items.first?.types ?? [])
-      XCTAssertTrue(types.contains(.string), "\(mode)")
-      XCTAssertTrue(types.contains(.html), "\(mode)")
-      XCTAssertFalse(types.contains(.tiff), "\(mode)")
-      XCTAssertFalse(types.contains(.pdf), "\(mode)")
-      XCTAssertLessThan(snap?.byteCount ?? .max, 1024, "\(mode)")
-    }
-  }
-
-  /// Trước đây TIFF 2 MB đi kèm làm cả mục bị từ chối "quá lớn" dù chữ chỉ vài byte.
-  func testLargeRenditionNoLongerBlocksTextCapture() {
-    Defaults[.clipboardHistoryEnabled] = true
-    Defaults[.clipboardHistoryMaxEntryMegabytes] = 1
-    let pb = NSPasteboard.general
-    pb.clearContents()
-    let item = NSPasteboardItem()
-    item.setString("A1:Z999", forType: .string)
-    item.setData(Data(repeating: 0xAB, count: 2 * 1024 * 1024), forType: .tiff)
-    pb.writeObjects([item])
-    ClipboardHistoryService.shared.captureCurrentPasteboard(pb)
-    XCTAssertEqual(ClipboardHistoryService.shared.entries.count, 1)
-    XCTAssertEqual(ClipboardHistoryService.shared.entries.first?.preview, "A1:Z999")
-  }
-
-  /// Office/app đời cũ ghi kèm tên pboard NeXT/Carbon thay vì UTI — vẫn phải
-  /// nhận ra là ảnh/PDF.
-  func testLegacyPasteboardNamesResolveToRenditions() {
-    for raw in [
-      "NeXT TIFF v4.0 pasteboard type",
-      "Apple PDF pasteboard type",
-      "CorePasteboardFlavorType 0x54494646",
-    ] {
-      XCTAssertTrue(
-        ClipboardHistoryService.isRenditionType(NSPasteboard.PasteboardType(raw)), raw)
-    }
-    XCTAssertFalse(ClipboardHistoryService.isRenditionType(.string))
-    XCTAssertTrue(ClipboardHistoryService.isTextType(NSPasteboard.PasteboardType("NSStringPboardType")))
-  }
-
-  /// "Sao chép ảnh" của trình duyệt: chữ chỉ là URL, ảnh mới là nội dung.
-  func testRenditionKeptWhenItemCarriesURL() {
-    let item = NSPasteboardItem()
-    item.setString("https://example.com/a.png", forType: .string)
-    item.setString("https://example.com/a.png", forType: .URL)
-    item.setData(Data([0x01]), forType: .png)
-    let types = ClipboardHistoryService.capturedTypes(of: item, allowFiles: false)
-    XCTAssertTrue(types.contains(.png))
-  }
-
-  func testRenditionKeptWhenItemHasNoText() {
-    let item = NSPasteboardItem()
-    item.setData(Data([0x01]), forType: .tiff)
-    item.setString("file:///tmp/a.png", forType: .fileURL)
-    let types = ClipboardHistoryService.capturedTypes(of: item, allowFiles: true)
-    XCTAssertTrue(types.contains(.tiff))
-    XCTAssertTrue(types.contains(.fileURL))
-  }
-}
-
 // MARK: - Clipboard history hotkey
-
-final class ClipboardHistoryHotkeyTests: XCTestCase {
-
-  override func setUp() {
-    super.setUp()
-    Defaults.reset(.clipboardHistoryModifierOnlyHotkey)
-    KeyboardShortcuts.setShortcut(nil, for: .pasteClipboardHistory)
-  }
-
-  private func keyDown(keyCode: UInt16, flags: CGEventFlags = []) -> CGEvent {
-    let event = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(keyCode), keyDown: true)!
-    event.flags = flags
-    return event
-  }
-
-  func testDefaultShiftCommandVMatches() {
-    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
-    let event = keyDown(keyCode: 9, flags: [.maskCommand, .maskShift])
-    XCTAssertTrue(ClipboardHistoryHotkey.matchesKeyDown(event))
-  }
-
-  func testDoesNotMatchWhenModifierOnlyHotkeyConfigured() {
-    Defaults[.clipboardHistoryModifierOnlyHotkey] = 456
-    let event = keyDown(keyCode: 9, flags: [.maskCommand, .maskShift])
-    XCTAssertFalse(ClipboardHistoryHotkey.matchesKeyDown(event))
-  }
-
-  func testDoesNotMatchPlainCommandV() {
-    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
-    let event = keyDown(keyCode: 9, flags: [.maskCommand])
-    XCTAssertFalse(ClipboardHistoryHotkey.matchesKeyDown(event))
-  }
-
-  func testDoesNotMatchWhenOptionHeld() {
-    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
-    let event = keyDown(keyCode: 9, flags: [.maskCommand, .maskShift, .maskAlternate])
-    XCTAssertFalse(ClipboardHistoryHotkey.matchesKeyDown(event))
-  }
-
-  func testInstallDefaultIfNeededSetsShiftCommandV() {
-    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
-    ClipboardHistoryHotkey.installDefaultIfNeeded()
-    let shortcut = KeyboardShortcuts.getShortcut(for: .pasteClipboardHistory)
-    XCTAssertNotNil(shortcut)
-    XCTAssertEqual(shortcut?.key?.rawValue, KeyboardShortcuts.Key.v.rawValue)
-    XCTAssertEqual(shortcut?.modifiers, [.shift, .command])
-  }
-
-  func testCustomShortcutMatchesKeyDown() {
-    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
-    KeyboardShortcuts.setShortcut(
-      KeyboardShortcuts.Shortcut(.c, modifiers: [.command, .option]),
-      for: .pasteClipboardHistory
-    )
-    let event = keyDown(keyCode: 8, flags: [.maskCommand, .maskAlternate])
-    XCTAssertTrue(ClipboardHistoryHotkey.matchesKeyDown(event))
-  }
-}
 
 // MARK: - ===========================================
 // MARK: - TiengVietValidator Rule Tests
@@ -3398,7 +2826,6 @@ final class TiengVietValidatorTests: XCTestCase {
   override func setUp() {
     super.setUp()
     Defaults.reset(.spellCheckEnabled)
-    Defaults.reset(.spellCheckInSentenceEnabled)
     Defaults.reset(.englishAutoRestoreEnabled)
     Defaults.reset(.restorePolicy)
     Defaults.reset(.suggestionEnabled)
@@ -4557,76 +3984,41 @@ final class UserDataMigrationTests: XCTestCase {
     Defaults.reset(.userKeepWords)
     Defaults.reset(.userDenyWords)
     Defaults.reset(.macros)
-    Defaults.reset(.perAppOverride)
   }
 
   func test_currentExport_capturesState() {
     Defaults[.userAllowWords] = ["alpha", "beta"]
     Defaults[.macros] = [Macro(from: "vn", to: "Việt Nam")]
-    Defaults[.perAppOverride] = ["com.apple.Terminal": "off"]
-    Defaults[.modifierOnlyTextToolsHotkey] = 123
-    Defaults[.clipboardHistoryModifierOnlyHotkey] = 456
     Defaults[.autoUpdateEnabled] = false
     Defaults[.uiTheme] = .glass
-    Defaults[.accentColorChoice] = .blue
     Defaults[.appearanceMode] = .dark
-    Defaults[.predictionHUDLineOffset] = 7
-    Defaults[.predictionHUDFontSize] = 19
     Defaults[.hudOpacityPercent] = 64
     Defaults[.autoCapitalizeEnabled] = false
     Defaults[.nonLatinIMEAutoDisable] = false
     Defaults[.freeMarkModeEnabled] = true
-    Defaults[.cgEventRaceHardeningEnabled] = false
-    Defaults[.cgEventFlushDelayMs] = 42
-    var titleRule = WindowTitleRule()
-    titleRule.name = "Docs"
-    titleRule.bundleIdPrefix = "com.google.Chrome"
-    titleRule.titleRegex = "Docs"
-    titleRule.overrideState = .englishMode
-    titleRule.disablePrediction = true
-    Defaults[.windowTitleRules] = [titleRule]
     defer {
       Defaults.reset(.userAllowWords)
       Defaults.reset(.macros)
-      Defaults.reset(.perAppOverride)
-      Defaults.reset(.modifierOnlyTextToolsHotkey)
-      Defaults.reset(.clipboardHistoryModifierOnlyHotkey)
       Defaults.reset(.autoUpdateEnabled)
       Defaults.reset(.uiTheme)
-      Defaults.reset(.accentColorChoice)
       Defaults.reset(.appearanceMode)
-      Defaults.reset(.predictionHUDLineOffset)
-      Defaults.reset(.predictionHUDFontSize)
       Defaults.reset(.hudOpacityPercent)
       Defaults.reset(.autoCapitalizeEnabled)
       Defaults.reset(.nonLatinIMEAutoDisable)
       Defaults.reset(.freeMarkModeEnabled)
-      Defaults.reset(.cgEventRaceHardeningEnabled)
-      Defaults.reset(.cgEventFlushDelayMs)
-      Defaults.reset(.windowTitleRules)
     }
 
     let export = UserDataMigration.currentExport(includeStatistics: false)
     XCTAssertEqual(export.schemaVersion, UserDataExport.currentSchemaVersion)
     XCTAssertEqual(export.userAllowWords?.sorted(), ["alpha", "beta"])
     XCTAssertEqual(export.macros?.first?.from, "vn")
-    XCTAssertEqual(export.perAppOverride?["com.apple.Terminal"], "off")
-    XCTAssertEqual(export.modifierOnlyTextToolsHotkey, 123)
-    XCTAssertEqual(export.clipboardHistoryModifierOnlyHotkey, 456)
     XCTAssertEqual(export.autoUpdateEnabled, false)
     XCTAssertEqual(export.uiTheme, UITheme.glass.rawValue)
-    XCTAssertEqual(export.accentColorChoice, AccentColorChoice.blue.rawValue)
     XCTAssertEqual(export.appearanceMode, AppearanceMode.dark.rawValue)
-    XCTAssertEqual(export.predictionHUDLineOffset, 7)
-    XCTAssertEqual(export.predictionHUDFontSize, 19)
     XCTAssertEqual(export.hudOpacityPercent, 64)
     XCTAssertEqual(export.autoCapitalizeEnabled, false)
     XCTAssertEqual(export.nonLatinIMEAutoDisable, false)
     XCTAssertEqual(export.freeMarkModeEnabled, true)
-    XCTAssertEqual(export.cgEventRaceHardeningEnabled, false)
-    XCTAssertEqual(export.cgEventFlushDelayMs, 42)
-    XCTAssertEqual(export.windowTitleRules?.first?.name, "Docs")
-    XCTAssertEqual(export.windowTitleRules?.first?.overrideState, .englishMode)
   }
 
   func test_encodeRoundTrip() throws {
@@ -4651,18 +4043,6 @@ final class UserDataMigrationTests: XCTestCase {
     XCTAssertEqual(Defaults[.autoUpdateEnabled], false)
   }
 
-  func test_clipboardHistoryModifierOnlyHotkey_roundTrip() {
-    Defaults[.clipboardHistoryModifierOnlyHotkey] = 999
-    defer { Defaults.reset(.clipboardHistoryModifierOnlyHotkey) }
-
-    let export = UserDataMigration.currentExport(includeStatistics: false)
-    XCTAssertEqual(export.clipboardHistoryModifierOnlyHotkey, 999)
-
-    Defaults[.clipboardHistoryModifierOnlyHotkey] = 0
-    UserDataMigration.importExport(export)
-    XCTAssertEqual(Defaults[.clipboardHistoryModifierOnlyHotkey], 999)
-  }
-
   func test_importMerge_keepsExistingEntries() {
     Defaults[.userAllowWords] = ["existing"]
     defer { Defaults.reset(.userAllowWords) }
@@ -4672,8 +4052,8 @@ final class UserDataMigrationTests: XCTestCase {
       appVersion: "1.5.0", appBuild: "15000",
       typingMethod: nil, newStyleTonePlacement: nil, autoTypoCorrection: nil,
       allowedZWJF: nil, hudEnabled: nil, modifierOnlyToggleHotkey: nil,
-      smartSwitchEnabled: nil, smartSwitchApps: nil, perAppOverride: nil,
-      spellCheckEnabled: nil, spellCheckInSentenceEnabled: nil,
+      smartSwitchEnabled: nil, smartSwitchApps: nil,
+      spellCheckEnabled: nil,
       englishAutoRestoreEnabled: nil, restorePolicy: nil,
       suggestionEnabled: nil, autoApplyHighConfidenceSuggestion: nil,
       useEnVnReference: nil,
@@ -4699,8 +4079,8 @@ final class UserDataMigrationTests: XCTestCase {
       appVersion: "1.5.0", appBuild: "15000",
       typingMethod: nil, newStyleTonePlacement: nil, autoTypoCorrection: nil,
       allowedZWJF: nil, hudEnabled: nil, modifierOnlyToggleHotkey: nil,
-      smartSwitchEnabled: nil, smartSwitchApps: nil, perAppOverride: nil,
-      spellCheckEnabled: nil, spellCheckInSentenceEnabled: nil,
+      smartSwitchEnabled: nil, smartSwitchApps: nil,
+      spellCheckEnabled: nil,
       englishAutoRestoreEnabled: nil, restorePolicy: nil,
       suggestionEnabled: nil, autoApplyHighConfidenceSuggestion: nil,
       useEnVnReference: nil,
@@ -5177,7 +4557,6 @@ final class AXDeleteStartTests: XCTestCase {
       EventSimulator.axDeleteStart(s, caretUTF16: 3, backspaceCount: 2, usesNFC: false), 0)
   }
 }
-
 
 // MARK: - ===========================================
 // MARK: - Vowel Typo-Correction Final-Consonant Guard (v2.15)
@@ -5878,7 +5257,6 @@ final class NFDvsNFCDiffingTests: XCTestCase {
   }
 }
 
-
 // MARK: - ===========================================
 // MARK: - Commit-Time Replacement vs previousWordState
 // MARK: - ===========================================
@@ -6180,7 +5558,6 @@ final class EngineRulesFromGoNhanhTests: XCTestCase {
   }
 }
 
-
 // MARK: - v4.20: bảng app tương thích + manual accessibility
 final class AppCompatV420Tests: XCTestCase {
 
@@ -6206,7 +5583,6 @@ final class AppCompatV420Tests: XCTestCase {
       }
     }
   }
-
 
 }
 
@@ -8992,28 +8368,27 @@ final class TypingLossReviewTests: XCTestCase {
     AppSmartSwitchConfig(state: state, source: .autoLearn)
   }
 
-  func testSmartSwitchDesiredModeFollowsRuleThenConfigThenLegacyList() throws {
-    func desired(
-      rule: (String, AppSmartSwitchState)? = nil, config: AppSmartSwitchConfig? = nil,
-      legacy: Bool = false
-    ) -> Bool? {
-      EventHook.smartSwitchDesiredEnabled(
-        bundleId: "com.google.Chrome", ruleBundleId: rule?.0, ruleState: rule?.1,
-        config: config, isLegacyEnglishApp: legacy)
-    }
+  func testOnlyVietnameseModeEnablesTyping() throws {
+    XCTAssertTrue(AppSmartSwitchState.vietnameseMode.enablesVietnamese)
+    XCTAssertFalse(AppSmartSwitchState.englishMode.enablesVietnamese)
+    XCTAssertFalse(AppSmartSwitchState.disabled.enablesVietnamese)
+  }
 
-    XCTAssertNil(desired(), "app không có cấu hình")
-    XCTAssertEqual(desired(config: config(.vietnameseMode)), true)
-    XCTAssertEqual(desired(config: config(.englishMode)), false)
-    XCTAssertEqual(desired(config: config(.disabled)), false)
-    XCTAssertEqual(desired(legacy: true), false, "danh sách 'tắt VN' đời cũ")
+  /// Danh sách "tắt VN" đời cũ được chuyển sang cấu hình 3 trạng thái: app
+  /// chưa có cấu hình thành `englishMode`, app đã có cấu hình giữ nguyên.
+  func testLegacySmartSwitchListMergesIntoConfigsWithoutOverwriting() throws {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let existing = ["com.google.Chrome": config(.vietnameseMode)]
+    let merged = AppState.mergingLegacySmartSwitchApps(
+      ["com.google.Chrome", "com.apple.Terminal"], into: existing, now: now)
+
+    XCTAssertEqual(merged["com.google.Chrome"], existing["com.google.Chrome"], "cấu hình đã có thắng")
+    XCTAssertEqual(merged["com.apple.Terminal"]?.state, .englishMode)
+    XCTAssertEqual(merged["com.apple.Terminal"]?.source, .user)
+    XCTAssertEqual(merged["com.apple.Terminal"]?.lastModified, now)
+    XCTAssertEqual(merged.count, 2)
     XCTAssertEqual(
-      desired(rule: ("com.google.Chrome", .englishMode), config: config(.vietnameseMode)), false,
-      "rule tiêu đề của đúng app thắng cấu hình")
-    XCTAssertEqual(
-      desired(rule: ("com.apple.Safari", .englishMode), config: config(.vietnameseMode)), true,
-      "rule của app khác không được áp")
-    XCTAssertEqual(desired(config: config(.vietnameseMode), legacy: true), true)
+      AppState.mergingLegacySmartSwitchApps([], into: existing, now: now), existing)
   }
 
   /// Hộp thoại Lưu chạy ở tiến trình ngoài; AX trả bundle của nó chứ không phải
@@ -9023,9 +8398,7 @@ final class TypingLossReviewTests: XCTestCase {
     let configs = ["com.google.Chrome": config(.vietnameseMode)]
     func desired(focused: String) -> Bool? {
       let app = InputProcessor.canonicalAppBundle(focused: focused, frontmost: "com.google.Chrome")
-      return EventHook.smartSwitchDesiredEnabled(
-        bundleId: app, ruleBundleId: nil, ruleState: nil, config: configs[app],
-        isLegacyEnglishApp: false)
+      return configs[app]?.state.enablesVietnamese
     }
 
     XCTAssertEqual(desired(focused: "com.google.Chrome"), true)

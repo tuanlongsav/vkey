@@ -261,9 +261,6 @@ final class UsageStatistics {
   /// Reset khi xen .keepVietnamese / .suggest / smart switch (đổi context).
   private var recentEnQueue: [String] = []
 
-  /// O(1) lookup: ngữ cảnh đã gõ → suffix 1–3 từ gợi ý chèn tiếp.
-  private var vnPhraseSuffixIndex: [String: [String: Int]] = [:]
-
   /// Limit on the number of weekly files we keep on disk. Older files get
   /// deleted automatically during flush.
   private let maxWeeksRetained = 4
@@ -312,8 +309,6 @@ final class UsageStatistics {
   /// File-scoped declaration sang `CGSIsSecureEventInputSet` không
   /// access được cross-file, nên dùng public API `IsSecureEventInputEnabled`
   /// từ HIToolbox (Carbon framework).
-  /// Internal (không private) để `PredictionEngine.learnTransition` tái dùng
-  /// làm secure-input guard cho việc học n-gram.
   static func isSecureInputActive() -> Bool {
     // `IsSecureEventInputEnabled` là public API trong HIToolbox/Carbon,
     // không cần private @_silgen_name như CGSIsSecureEventInputSet.
@@ -472,7 +467,6 @@ final class UsageStatistics {
         }
         if bucket.weekId == currentId {
           counters = bucket
-          rebuildPhraseSuffixIndex()
           flushNow()
           restored += 1
         } else {
@@ -536,23 +530,6 @@ final class UsageStatistics {
         .map { WordCount(word: $0.key, count: $0.value) }
         .sorted { $0.count > $1.count }
     }
-  }
-
-  /// Gợi ý suffix 1–3 từ sau ngữ cảnh đã gõ (cho đoán cụm).
-  func phraseSuffixHints(prev2: String?, prev1: String, maxWords: Int = 3) -> [String: Int] {
-    let key = Self.phraseContextKey(prev2: prev2, prev1: prev1)
-    guard !key.isEmpty else { return [:] }
-    let cap = max(1, min(3, maxWords))
-    return queue.sync {
-      (vnPhraseSuffixIndex[key] ?? [:]).filter {
-        $0.key.split(separator: " ", omittingEmptySubsequences: true).count <= cap
-      }
-    }
-  }
-
-
-  static func phraseContextKey(prev2: String?, prev1: String) -> String {
-    PredictionEngine.phraseContextKey(prev2: prev2, prev1: prev1)
   }
 
   /// 1.7.9: Aggregate top phrases EN/raw (2 hoặc 3 từ ngoài tiếng Việt liền).
@@ -702,11 +679,9 @@ final class UsageStatistics {
     guard !key.isEmpty else { return }
     switch kind {
     case .vietnamese:
-      var removed = false
-      if counters.vnPhraseCounts2.removeValue(forKey: key) != nil { removed = true }
-      if counters.vnPhraseCounts3.removeValue(forKey: key) != nil { removed = true }
-      if counters.vnPhraseCounts4.removeValue(forKey: key) != nil { removed = true }
-      if removed { rebuildPhraseSuffixIndex() }
+      counters.vnPhraseCounts2.removeValue(forKey: key)
+      counters.vnPhraseCounts3.removeValue(forKey: key)
+      counters.vnPhraseCounts4.removeValue(forKey: key)
     case .english:
       counters.enPhraseCounts2.removeValue(forKey: key)
       counters.enPhraseCounts3.removeValue(forKey: key)
@@ -743,7 +718,6 @@ final class UsageStatistics {
       counters = WeekBucket(weekId: counters.weekId, weekEnd: counters.weekEnd)
       recentVnQueue.removeAll()
       recentEnQueue.removeAll()
-      vnPhraseSuffixIndex.removeAll()
     }
   }
 
@@ -981,7 +955,6 @@ final class UsageStatistics {
     // current.json → mất hết stats khi upgrade qua biên tuần ISO.
     queue.sync {
       counters = loaded
-      rebuildPhraseSuffixIndex()
       rotateIfNeeded()
     }
   }
@@ -1003,7 +976,6 @@ final class UsageStatistics {
 
     // Reset counters for the new week.
     counters = WeekBucket()
-    vnPhraseSuffixIndex.removeAll()
     try? FileManager.default.removeItem(at: storageDir.appendingPathComponent("current.json"))
 
     pruneOldWeeks()
@@ -1109,18 +1081,9 @@ final class UsageStatistics {
     // Cap the per-bucket sizes so a runaway map can't blow disk.
     trimDict(&counters.vnWordCounts, max: 500)
     trimDict(&counters.enWordCounts, max: 500)
-    let phraseCountBefore = counters.vnPhraseCounts2.count
-      + counters.vnPhraseCounts3.count
-      + counters.vnPhraseCounts4.count
     trimDict(&counters.vnPhraseCounts2, max: 300)
     trimDict(&counters.vnPhraseCounts3, max: 300)
     trimDict(&counters.vnPhraseCounts4, max: 200)
-    let phraseCountAfter = counters.vnPhraseCounts2.count
-      + counters.vnPhraseCounts3.count
-      + counters.vnPhraseCounts4.count
-    if phraseCountAfter != phraseCountBefore {
-      rebuildPhraseSuffixIndex()
-    }
     // 1.7.9: cap EN phrase counters tương tự.
     trimDict(&counters.enPhraseCounts2, max: 300)
     trimDict(&counters.enPhraseCounts3, max: 300)
@@ -1140,7 +1103,6 @@ final class UsageStatistics {
       if Self.isMeaningfulVietnamesePhrase(words2) {
         let phrase2 = words2.joined(separator: " ")
         counters.vnPhraseCounts2[phrase2, default: 0] += 1
-        notePhraseSuffix(words: words2)
       }
     }
     if recentVnQueue.count >= 3 {
@@ -1148,7 +1110,6 @@ final class UsageStatistics {
       if Self.isMeaningfulVietnamesePhrase(words3) {
         let phrase3 = words3.joined(separator: " ")
         counters.vnPhraseCounts3[phrase3, default: 0] += 1
-        notePhraseSuffix(words: words3)
       }
     }
     if recentVnQueue.count >= 4 {
@@ -1156,53 +1117,9 @@ final class UsageStatistics {
       if Self.isMeaningfulVietnamesePhrase(words4) {
         let phrase4 = words4.joined(separator: " ")
         counters.vnPhraseCounts4[phrase4, default: 0] += 1
-        notePhraseSuffix(words: words4)
       }
     }
   }
-
-  private func notePhraseSuffix(words: [String]) {
-    guard words.count >= 2 else { return }
-    for i in 1..<words.count {
-      let key = words[0..<i].map { $0.lowercased() }.joined(separator: " ")
-      let suffix = words[i..<words.count].map { $0.lowercased() }.joined(separator: " ")
-      let suffixWordCount = words.count - i
-      guard suffixWordCount >= 1, suffixWordCount <= 3 else { continue }
-      vnPhraseSuffixIndex[key, default: [:]][suffix, default: 0] += 1
-    }
-  }
-
-  private func rebuildPhraseSuffixIndex() {
-    vnPhraseSuffixIndex = Self.buildPhraseSuffixIndex(
-      phrases2: counters.vnPhraseCounts2,
-      phrases3: counters.vnPhraseCounts3,
-      phrases4: counters.vnPhraseCounts4
-    )
-  }
-
-  /// Internal — testable rebuild từ phrase counters đã lưu.
-  static func buildPhraseSuffixIndex(
-    phrases2: [String: Int],
-    phrases3: [String: Int],
-    phrases4: [String: Int] = [:]
-  ) -> [String: [String: Int]] {
-    var index: [String: [String: Int]] = [:]
-    func ingest(_ phrase: String, count: Int) {
-      let parts = phrase.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
-      guard parts.count >= 2 else { return }
-      for i in 1..<parts.count {
-        let key = parts[0..<i].map { $0.lowercased() }.joined(separator: " ")
-        let suffix = parts[i..<parts.count].map { $0.lowercased() }.joined(separator: " ")
-        guard suffix.split(separator: " ", omittingEmptySubsequences: true).count <= 3 else { continue }
-        index[key, default: [:]][suffix, default: 0] += count
-      }
-    }
-    for (phrase, count) in phrases2 { ingest(phrase, count: count) }
-    for (phrase, count) in phrases3 { ingest(phrase, count: count) }
-    for (phrase, count) in phrases4 { ingest(phrase, count: count) }
-    return index
-  }
-
 
   /// Cụm tiếng Việt có nghĩa: mọi token ≥2 ký tự và nằm trong từ điển VN
   /// (hoặc user keep/allow). Loại chuỗi ngẫu nhiên / xen tiếng Anh.
@@ -1241,9 +1158,8 @@ final class UsageStatistics {
 
   /// Cắt về `max` mục count cao nhất — nhưng chỉ khi đã vượt `max` một
   /// khoảng (25%). Cắt ngay khi vượt MỘT mục thì lúc map đã đầy (người gõ nhiều,
-  /// khoảng một giờ vào mỗi tuần) gần như mỗi từ commit đều sort cả map, dựng
-  /// dict mới, rồi kéo theo `rebuildPhraseSuffixIndex` (~1.500 cặp khoá/hậu tố
-  /// split + lowercase + join). Có biên thì mỗi lần cắt chừa chỗ cho ~max/4 mục.
+  /// khoảng một giờ vào mỗi tuần) gần như mỗi từ commit đều sort cả map và dựng
+  /// dict mới. Có biên thì mỗi lần cắt chừa chỗ cho ~max/4 mục.
   private func trimDict(_ dict: inout [String: Int], max: Int) {
     guard dict.count > max + max / 4 else { return }
     let keepers = dict.sorted { $0.value > $1.value }.prefix(max)

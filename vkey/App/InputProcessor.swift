@@ -919,10 +919,6 @@ class InputProcessor {
 
   public private(set) var lastSuggestions: [SuggestionCandidate] = []
 
-  /// 2.0 (B1): cached Window Title Rule overrides cho activeApp.
-  /// AppState cập nhật giá trị này khi đổi app hoặc focus.
-  public var ruleOverrides: ResolvedRuleOverrides = .init()
-
   private let spellDecisionEngine = SpellDecisionEngine.shared
 
   /// Word buffer manages the current word state
@@ -933,17 +929,6 @@ class InputProcessor {
   // được xếp SAU replacement đang bay thay vì đi thẳng qua event tap. Cơ chế đó
   // đã gỡ hẳn — lý do đầy đủ ghi ở `effectiveTypingStrategy`. Đừng dựng lại nếu
   // chưa đọc chỗ đó.
-
-  // 1.6.0: Word prediction state — track 2 previous committed words để
-  // feed bigram + trigram model. `activePrediction` lưu prediction đang
-  // hiển thị trên HUD; `activePredictionAcceptsTab` chặn Tab nhận gợi ý stale
-  // sau Enter/click/caret boundary.
-  private var prev1Committed: String? = nil
-  private var prev2Committed: String? = nil
-  private var activePrediction: String? = nil
-  private var activePredictionAcceptsTab = false
-  // 2.0.2 (J1): xoá `activePredictionCandidates: [String]` — predict về top-1
-  // only, không cần lưu danh sách candidates.
 
   /// Shift do bàn phím thật báo qua `flagsChanged`.
   ///
@@ -1073,23 +1058,16 @@ class InputProcessor {
     let appChanged = app != activeApp
     activeApp = app
     if appChanged {
-      // P8 (GIỮ, không thuộc phần bị lùi): cắt cửa sổ n-gram khi đổi app. Chỉ
-      // đụng `prev1Committed`/`prev2Committed` + cờ viết hoa, KHÔNG đụng bộ đệm
-      // từ đang gõ — nên không mất ký tự nào kể cả khi `activeApp` dao động như
-      // mô tả ở (c). ĐỪNG đọc thành "vô hại": trong lúc dao động, reset chạy
-      // MỖI PHÍM, nên `prev1Committed` luôn nil ⇒ bigram/trigram không bao giờ
-      // tra được và NGramStore không học cặp nào ở app đó; `pendingCapitalize`
-      // cũng bị xoá giữa Enter và phím chữ (gõ ra `a` thay vì `A`). Đó là xuống
-      // cấp gợi ý + viết hoa, chấp nhận được so với việc mất chữ, và đúng ý đồ
-      // A5 (đổi app = gián đoạn ngữ cảnh câu) khi app đổi THẬT.
+      // Đổi app THẬT là gián đoạn ngữ cảnh câu: huỷ chờ viết hoa. KHÔNG đụng bộ
+      // đệm từ đang gõ (xem (c) ở trên), nên kể cả khi `activeApp` dao động mỗi
+      // phím cũng không mất ký tự nào. Cái giá trong lúc dao động:
+      // `pendingCapitalize` bị xoá giữa Enter và phím chữ (gõ ra `a` thay vì
+      // `A`) — chấp nhận được so với việc mất chữ.
       // Đã truy riêng: KHÔNG sinh trạng thái lệch giữa cờ viết hoa và bộ đệm từ
       // — `pendingCapitalize` chỉ bật bởi Enter/Space, cả hai đều qua `newWord()`,
       // nên không dựng được ca "cờ bật + bộ đệm còn chữ".
       resetSentenceCapitalizeState()
     }
-    clearActivePrediction()
-    updateAdaptiveFlushDelay()
-    refreshWordPredictionState()
   }
 
   /// 2.0 (A5) fix: mọi thao tác DI CHUYỂN con trỏ / gián đoạn (click chuột, phím
@@ -1100,67 +1078,12 @@ class InputProcessor {
   public func resetSentenceCapitalizeState() {
     pendingCapitalize = false
     sentenceJustEnded = false
-    // v4.23: cửa sổ n-gram phải chết cùng ngữ cảnh câu. `prev1Committed`/
-    // `prev2Committed` trước đây chỉ có chỗ GHI (lúc commit), không chỗ nào gán
-    // nil — nên từ commit ở app/dòng TRƯỚC ghép với từ đầu tiên gõ ở chỗ MỚI
-    // thành một bigram RÁC, và cặp đó được ghi VĨNH VIỄN vào NGramStore
-    // (Defaults user-bigrams): commit "lương" trong Zalo, sang Xcode gõ tiếp là
-    // học cặp ("lương", <từ đầu tiên ở Xcode>). HUD cũng gợi ý theo câu của app
-    // trước. Mọi đường gọi hàm này (đổi app, Escape, mũi tên/Home/End, tổ hợp
-    // Cmd/Ctrl/Alt, click chuột trong EventHook) đều là gián đoạn ngữ cảnh nên
-    // là đúng chỗ để cắt cửa sổ.
-    prev1Committed = nil
-    prev2Committed = nil
-  }
-
-  /// Ẩn HUD / xoá prediction khi đoán từ không còn active (đổi app,
-  /// rule, hoặc danh sách loại trừ).
-  public func refreshWordPredictionState() {
-    if !Self.isWordPredictionActive(bundleId: activeApp, ruleOverrides: ruleOverrides) {
-      clearActivePrediction()
-    }
-  }
-
-  /// Đoán từ bật globally, không bị Window Title Rule tắt, và app không nằm
-  /// trong danh sách loại trừ.
-  static func isWordPredictionActive(
-    bundleId: String,
-    ruleOverrides: ResolvedRuleOverrides = .init()
-  ) -> Bool {
-    guard Defaults[.wordPredictionEnabled] else { return false }
-    guard !ruleOverrides.disablePrediction else { return false }
-    guard !bundleId.isEmpty else { return false }
-    return !isExcludedFromWordPrediction(bundleId: bundleId)
-  }
-
-  static func isExcludedFromWordPrediction(bundleId: String) -> Bool {
-    let normalized = normalizedBundleIdentifier(bundleId)
-    guard !normalized.isEmpty else { return false }
-    return Defaults[.wordPredictionExcludedApps]
-      .contains { normalizedBundleIdentifier($0) == normalized }
-  }
-
-  private func isWordPredictionActive() -> Bool {
-    Self.isWordPredictionActive(bundleId: activeApp, ruleOverrides: ruleOverrides)
-  }
-
-  public func updateAdaptiveFlushDelay() {
-    // 2.0 (C4): cập nhật adaptive flush delay theo rule (nếu có) hoặc
-    // global default. Đọc ruleOverrides hiện tại — AppState gán trước
-    // khi gọi changeActiveApp khi đổi app.
-    let delay = ruleOverrides.flushDelayMs > 0
-      ? ruleOverrides.flushDelayMs
-      : Defaults[.cgEventFlushDelayMs]
-    EventSimulator.adaptiveFlushDelayMs = max(0, min(500, delay))
   }
 
   // MARK: - Word Operations (delegate to WordBuffer)
 
   public func newWord(storePrevious: Bool = false) {
     wordBuffer.newWord(storePrevious: storePrevious)
-    if !storePrevious {
-      clearActivePrediction()
-    }
   }
 
   /// Kế hoạch phát cho MỘT lần gửi. Đo lại mỗi lần gọi, trừ khi `nfdEmitPlan`
@@ -1318,30 +1241,7 @@ class InputProcessor {
   // MARK: - Private Event Handlers
 
   private func handleTaskKey(_ taskKey: TaskKey, event: CGEvent) -> Unmanaged<CGEvent>? {
-    // 1.6.1/1.7.7/1.8.1: Tab handling khi prediction enabled — SMART-DETECT buffer.
-    // - Buffer sạch (sau commit qua Space, caret đã ở sau 1 space): chèn THẲNG
-    //   prediction, KHÔNG leading space. Trước 1.8.1 chèn " prediction" → thừa
-    //   space ("đoán  từ" thay vì "đoán từ").
-    // - Buffer có từ chưa commit: commit từ qua spell decision (emit space)
-    //   rồi chèn prediction (không leading space — space đã được emit).
-    //   User có thể gõ "viet" + Tab → "việt Nam" (commit + insert prediction).
-    // - Nếu không có activePrediction hợp lệ → fall-through cho Tab pass-through
-    //   (legitimate form navigation / tab indent).
-    // - Nhận gợi ý KHÔNG thành (từ đang gõ được giữ nguyên, không có gì để thay)
-    //   cũng rơi xuống nhánh Tab thường bên dưới để bộ đệm từ được xoá. Trước
-    //   đây trả thẳng Tab về app với bộ đệm còn nguyên: Tab chèn ký tự / chuyển
-    //   ô, rồi phím kế tiếp diff trên từ CŨ và backspace ăn vào ô mới.
-    if taskKey == .Tab,
-       isWordPredictionActive(),
-       activePredictionAcceptsTab,
-       let prediction = activePrediction,
-       injectAcceptedPrediction(prediction)
-    {
-      return nil  // swallow Tab
-    }
-
     if InputProcessor.NewWordTaskKeys.contains(taskKey) {
-      let hadBufferedWord = !wordBuffer.keys.isEmpty || !wordBuffer.wordState.isBlank
       // 2.0 (A5): Enter ALWAYS đánh dấu đầu câu kế tiếp. Space chỉ propagate
       // pendingCapitalize nếu sentence-ending punctuation vừa được commit.
       updateCapitalizeStateForTaskKey(taskKey)
@@ -1359,9 +1259,6 @@ class InputProcessor {
       // giữ `previousWordState` để cho phép Backspace re-edit từ vừa commit.
       // Enter/Tab tạo ranh giới (xuống dòng / chuyển field) → KHÔNG giữ history,
       // tránh Backspace-sau-Enter khôi phục từ dòng trước gây desync.
-      if taskKey == .Space, !hadBufferedWord {
-        clearActivePrediction()
-      }
       newWord(storePrevious: taskKey == .Space)
       // Space rơi xuống cuối hàm và được trả về app như event THẬT.
       // (Đã thử hoãn nó qua `passThroughOrDefer` để giữ thứ tự với replacement
@@ -1501,77 +1398,6 @@ class InputProcessor {
 
   // MARK: - Helpers
 
-  // MARK: - 2.0 (A2): Prediction Acceptance
-
-  private func setActivePrediction(_ prediction: String, acceptsTab: Bool) {
-    activePrediction = prediction
-    activePredictionAcceptsTab = acceptsTab
-    DispatchQueue.main.async {
-      PredictionHUDWindow.shared.show(prediction: prediction)
-    }
-  }
-
-  private func clearActivePrediction() {
-    let hadPrediction = activePrediction != nil || activePredictionAcceptsTab
-    activePrediction = nil
-    activePredictionAcceptsTab = false
-    guard hadPrediction else { return }
-    DispatchQueue.main.async {
-      PredictionHUDWindow.shared.hide()
-    }
-  }
-
-  /// Chấp nhận một prediction (Tab hoặc digit 1/2/3) — inject vào caret,
-  /// cập nhật n-gram window, ẩn HUD. Re-fetches top-1 prediction nếu
-  /// buffer còn từ chưa commit (commit qua space trước rồi chèn dự đoán).
-  private func injectAcceptedPrediction(_ prediction: String) -> Bool {
-    let words = prediction
-      .split(separator: " ", omittingEmptySubsequences: true)
-      .map(String.init)
-    if wordBuffer.wordState.isBlank {
-      newWord(storePrevious: false)
-      // Chèn thuần vào một từ MỚI: không backspace nào để lệch với dạng phát.
-      sendTypedReplacement(emitPlan().insertion(of: Array(prediction)))
-      PredictionEngine.shared.learnAcceptedPhrase(
-        prediction,
-        prev2: prev2Committed,
-        prev1: prev1Committed
-      )
-      if let last = words.last?.lowercased() {
-        prev2Committed = words.count >= 2 ? words[words.count - 2].lowercased() : prev1Committed
-        prev1Committed = last
-      }
-    } else {
-      guard applySpellDecisionAndAdvance(endingChar: " ", swallowEndingChar: true) else {
-        clearActivePrediction()
-        return false
-      }
-      let recomputed = PredictionEngine.shared.topPhrasePrediction(
-        prev2: prev2Committed,
-        prev1: prev1Committed ?? ""
-      ) ?? prediction
-      // `applySpellDecisionAndAdvance` phía trên đã commit từ cũ và gọi
-      // `newWord()` — chèn thuần vào từ MỚI.
-      sendTypedReplacement(emitPlan().insertion(of: Array(recomputed)))
-      PredictionEngine.shared.learnAcceptedPhrase(
-        recomputed,
-        prev2: prev2Committed,
-        prev1: prev1Committed
-      )
-      let acceptedWords = recomputed
-        .split(separator: " ", omittingEmptySubsequences: true)
-        .map(String.init)
-      if let last = acceptedWords.last?.lowercased() {
-        prev2Committed = acceptedWords.count >= 2
-          ? acceptedWords[acceptedWords.count - 2].lowercased()
-          : prev1Committed
-        prev1Committed = last
-      }
-    }
-    clearActivePrediction()
-    return true
-  }
-
   // MARK: - 2.0 (A5): Auto-Capitalize Helpers
 
   /// Sentence-ending punctuation set — chỉ . ! ? trigger capitalize.
@@ -1603,12 +1429,6 @@ class InputProcessor {
     case .Enter:
       pendingCapitalize = true
       sentenceJustEnded = false
-      // v4.23: Enter là ranh giới câu/dòng — cửa sổ n-gram của dòng trước không
-      // được nối sang dòng sau (xem `resetSentenceCapitalizeState`). Enter vốn
-      // KHÔNG chạy `applySpellDecisionOnCommit` nên từ đang gõ cũng chưa từng
-      // vào cửa sổ; cắt ở đây không mất dữ liệu học nào.
-      prev1Committed = nil
-      prev2Committed = nil
     case .Space:
       if sentenceJustEnded {
         pendingCapitalize = true
@@ -1807,11 +1627,10 @@ class InputProcessor {
       return false
     }
 
-    // v1.7.0: bỏ guard spellCheckInSentenceEnabled — sub-toggle UI đã gộp vào
-    // master `spellCheckEnabled`. Khi master ON thì luôn check cả single word
-    // và in-sentence. Key vẫn giữ trong Defaults cho backward-compat.
-    // 2.0 (B1): Window Title Rule có thể force tắt spell-check cho context này.
-    guard Defaults[.spellCheckEnabled], !ruleOverrides.disableSpellCheck else {
+    // v1.7.0: sub-toggle "kiểm tra trong câu" đã gộp vào master
+    // `spellCheckEnabled`. Khi master ON thì luôn check cả single word và
+    // in-sentence.
+    guard Defaults[.spellCheckEnabled] else {
       lastSuggestions = []
       return false
     }
@@ -1854,37 +1673,6 @@ class InputProcessor {
       appBundleId: activeApp.isEmpty ? nil : activeApp,
       needsRecovery: needsRecovery
     )
-
-    // 1.6.0: Word prediction learning + lookup. Học passively từ commit;
-    // chỉ trigger HUD khi user bật toggle `wordPredictionEnabled`.
-    let committedToken = current.normalizedDictionaryToken
-    if isWordPredictionActive() {
-      PredictionEngine.shared.learnTransition(
-        prev2: prev2Committed,
-        prev1: prev1Committed,
-        current: committedToken
-      )
-    }
-    // Slide window
-    prev2Committed = prev1Committed
-    prev1Committed = committedToken
-
-    // 2.0 (B1): Window Title Rule có thể force tắt prediction cho context này.
-    // Prediction HUD luôn hướng dẫn nhận bằng Tab, nên chỉ hiện sau Space.
-    if isWordPredictionActive(), endingChar == " " {
-      // 2.0.2 (J1): chỉ top-1 prediction. Multi-candidate UI đã được xoá
-      // (digit 1/2/3 dễ nhầm với gõ số trong văn bản).
-      if let prediction = PredictionEngine.shared.topPhrasePrediction(
-        prev2: prev2Committed,
-        prev1: prev1Committed ?? ""
-      ) {
-        setActivePrediction(prediction, acceptsTab: true)
-      } else {
-        clearActivePrediction()
-      }
-    } else {
-      clearActivePrediction()
-    }
 
     switch decision {
     case .keepVietnamese, .keepRaw:
@@ -1949,11 +1737,9 @@ class InputProcessor {
         ? target.precomposedStringWithCanonicalMapping
         : target
       EventSimulator.simulationQueueAsync {
-        EventSimulator.withAdaptiveFlush {
-          EventSimulator.sendOptionBackspace(source: source)
-          usleep(10_000)  // 10ms delay — đủ cho app process word deletion
-          EventSimulator.sendString(typed, source: source)
-        }
+        EventSimulator.sendOptionBackspace(source: source)
+        usleep(10_000)  // 10ms delay — đủ cho app process word deletion
+        EventSimulator.sendString(typed, source: source)
       }
       // ⚠️ Đây là chuỗi gửi DÀI NHẤT trong vkey (Option+Backspace + usleep 10ms
       // + gõ lại cả từ), nên cũng là cửa sổ race rộng nhất: phím đầu của TỪ KẾ

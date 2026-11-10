@@ -10,11 +10,9 @@
 		0757D78148617667C5D66327 /* VKComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 678377A8AD0029F0A4116AD9 /* VKComponents.swift */; };
 		0FC9E2EEDDE9786C60941BBF /* Lexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0937E79B85F7643A7EC6A8 /* Lexicon.swift */; };
 		14863DB76A8C437B6D74D810 /* VKSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037F2FB81C8513F799873AE1 /* VKSettingsView.swift */; };
-		1C1E141EB16B027B173B8F1F /* WindowTitleRuleEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DE993E0CD7CE91EF6CAF208 /* WindowTitleRuleEngine.swift */; };
 		1F691DC514BBA9BA3DC91F0B /* MarketingSnapshotExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40EC0F9ED5D84E8E4A8ABA19 /* MarketingSnapshotExporter.swift */; };
 		1FD660B8C1175A0C4D3F8BE1 /* VKMacroTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9E2D5DCF8930D0F2AE3BA30 /* VKMacroTab.swift */; };
 		242AC5D777C38643F9D3FBA4 /* Nunito-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8BD228BBD86DB0D88EDA7EC1 /* Nunito-Variable.ttf */; };
-		28F11D31D04926F7FB4860B4 /* PredictionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9983D8DCAE1ACF9310738F1F /* PredictionEngine.swift */; };
 		2EC44B9C1573B3FD5ADBA5BB /* VKGeneralTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC77A77A3D020CFB5E91A14 /* VKGeneralTab.swift */; };
 		3A1CEF871E6A885DD3916044 /* MacroSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */; };
 		3F2E85C92B9EDE7900A95282 /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2E85C82B9EDE7900A95282 /* Defaults */; };
@@ -30,7 +28,6 @@
 		3F8A650A2B8E3BE8009E2AF1 /* TypingMethod.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F8A65092B8E3BE8009E2AF1 /* TypingMethod.swift */; };
 		3F8A650C2B8F08B3009E2AF1 /* Focused.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F8A650B2B8F08B3009E2AF1 /* Focused.swift */; };
 		3F94E7AF2BA736E100360F8B /* UpgradeAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F94E7AE2BA736E100360F8B /* UpgradeAppView.swift */; };
-		3F9FC6D52B9E14AF00659712 /* FileMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F9FC6D42B9E14AF00659712 /* FileMonitor.swift */; };
 		3F9FC6D82B9EB6A200659712 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 3F9FC6D72B9EB6A200659712 /* LaunchAtLogin */; };
 		3FAF00022B84AB390032A55E /* ToggleHUDWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAF00012B84AB390032A55E /* ToggleHUDWindow.swift */; };
 		3FAFBB852B84A86C0032A55E /* vkeyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FAFBB842B84A86C0032A55E /* vkeyApp.swift */; };
@@ -59,22 +56,17 @@
 		757DCAEB9D825EC7776C2BEE /* VKDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 252B2D3658BCA8B49784C82E /* VKDesign.swift */; };
 		7BEAE86A3D1B31E3C36D6645 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C15A8AB81A235FF54939DC /* Updater.swift */; };
 		7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */; };
-		87265526075A3173B7F27A01 /* WindowRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 510E09F49FE0897E64D40434 /* WindowRules.swift */; };
 		87E125B7BEC3E062DBEF8E63 /* VKStatsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12E48189AF4A1252777C0EE /* VKStatsTab.swift */; };
 		8DA66064BE4A249CD5C995DA /* Inter-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8DAE37A60471BD596352E583 /* Inter-Variable.ttf */; };
-		964199382501358B452A147B /* TextConversionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */; };
 		9972B2786EB0E3A600C0FF4A /* EnVnReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0A79FB401501E597B689C9 /* EnVnReference.swift */; };
 		9E05F0ABBD1B4DB14CFE48AD /* Lora-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 34FFCE6BCFCE45A530A2C2AC /* Lora-Variable.ttf */; };
 		A085F9440573F6BC7380FAEE /* PersonalDictSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5A620251BD70C5F36817A13 /* PersonalDictSuggestionSheet.swift */; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* NGramStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A2 /* NGramStore.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F3 /* VKeyDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A3 /* VKeyDesign.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F4 /* AppIconSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A4 /* AppIconSwitcher.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F5 /* HUDComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F6 /* FontRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A6 /* FontRegistration.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F7 /* NotoSansDisplay-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A7 /* NotoSansDisplay-Variable.ttf */; };
-		A1B2C3D4E5F6A7B8C9D0E1FA /* TonalRowIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1B1 /* TonalRowIcon.swift */; };
 		A577F31CCB6071AB62F71BD8 /* EmbeddedLexiconData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF27B5F4C4E372971F4466A7 /* EmbeddedLexiconData.swift */; };
-		A7C8D9E0F1A2B3C4D5E6F702 /* ClipboardHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C7D8E9F0A1B2C3D4E5F601 /* ClipboardHistoryService.swift */; };
 		AF2AFB400277D4216834DA63 /* BeVietnamPro-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 89AA7DE2ED2B09A420DFC488 /* BeVietnamPro-Regular.ttf */; };
 		B5120602CCC5EAE262D73C62 /* SmartSwitchSuggestionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */; };
 		C2EC9B7D79B25412654504A0 /* VKBarControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D96418BD00F1CCCC026F67 /* VKBarControls.swift */; };
@@ -82,11 +74,8 @@
 		CDD99ACF8126FA2BF147D861 /* SuggestionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FF73C92A71721E44ACDE39 /* SuggestionService.swift */; };
 		CF29D6E8B08E5792A1B870F4 /* VKSmartTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A132B1E7CD9978F8BF13B21 /* VKSmartTab.swift */; };
 		D758117C8E78CEBBC2E36544 /* VKThemeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3416A437829EB9F2B9AB6BD4 /* VKThemeTab.swift */; };
-		D7BEBA3029B05306751A69B3 /* EmbeddedBigrams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521F6BD0B4DB972BC0C580DE /* EmbeddedBigrams.swift */; };
-		E1F2A3B4C5D6E7F8091A2B3C /* EmbeddedPhraseCompletions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A69788796A5B4C /* EmbeddedPhraseCompletions.swift */; };
 		E678805A2EF92EAE65B2E3FF /* LexiconManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FF852BE303C340328CB8C0 /* LexiconManager.swift */; };
 		E7BABD9189FF85601AB2B0D7 /* TopWordsDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 469BB617734DD2389D962454 /* TopWordsDetail.swift */; };
-		EC46658134875A59BD2FCBC3 /* PredictionHUDWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */; };
 		EFFCE0E4013BAD0984BC07CC /* VKSpellTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E87049C6C5D5457BEEBEDD /* VKSpellTab.swift */; };
 		F348AD6A8752A1C54FA5C347 /* InputSourceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C5E95C08CD53A70A0C43DF /* InputSourceMonitor.swift */; };
 		F5E5BFC82700BF11BAF4FBAF /* UserDataMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0316EE5AB4EBE700B533B62 /* UserDataMigration.swift */; };
@@ -130,7 +119,6 @@
 		3F8A65092B8E3BE8009E2AF1 /* TypingMethod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypingMethod.swift; sourceTree = "<group>"; };
 		3F8A650B2B8F08B3009E2AF1 /* Focused.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Focused.swift; sourceTree = "<group>"; };
 		3F94E7AE2BA736E100360F8B /* UpgradeAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeAppView.swift; sourceTree = "<group>"; };
-		3F9FC6D42B9E14AF00659712 /* FileMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileMonitor.swift; sourceTree = "<group>"; };
 		3FAF00012B84AB390032A55E /* ToggleHUDWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleHUDWindow.swift; sourceTree = "<group>"; };
 		3FAFBB812B84A86C0032A55E /* vkey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = vkey.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FAFBB842B84A86C0032A55E /* vkeyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = vkeyApp.swift; sourceTree = "<group>"; };
@@ -158,10 +146,6 @@
 		40EC0F9ED5D84E8E4A8ABA19 /* MarketingSnapshotExporter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MarketingSnapshotExporter.swift; sourceTree = "<group>"; };
 		469BB617734DD2389D962454 /* TopWordsDetail.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TopWordsDetail.swift; sourceTree = "<group>"; };
 		46CEC38FE55740D55866E6D3 /* VKMenuBar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKMenuBar.swift; path = ../View/Redesign/VKMenuBar.swift; sourceTree = "<group>"; };
-		510E09F49FE0897E64D40434 /* WindowRules.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowRules.swift; sourceTree = "<group>"; };
-		521F6BD0B4DB972BC0C580DE /* EmbeddedBigrams.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedBigrams.swift; sourceTree = "<group>"; };
-		558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PredictionHUDWindow.swift; sourceTree = "<group>"; };
-		5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TextConversionService.swift; sourceTree = "<group>"; };
 		678377A8AD0029F0A4116AD9 /* VKComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKComponents.swift; path = ../View/Redesign/VKComponents.swift; sourceTree = "<group>"; };
 		69FBFDFE5A5939C5BF69506D /* ThemedSymbol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThemedSymbol.swift; sourceTree = "<group>"; };
 		6A132B1E7CD9978F8BF13B21 /* VKSmartTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKSmartTab.swift; path = ../View/Redesign/VKSmartTab.swift; sourceTree = "<group>"; };
@@ -173,20 +157,15 @@
 		8A7B0E4F98B35FEF09CD2E49 /* DonateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DonateView.swift; sourceTree = "<group>"; };
 		8BD228BBD86DB0D88EDA7EC1 /* Nunito-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Nunito-Variable.ttf"; sourceTree = "<group>"; };
 		8DAE37A60471BD596352E583 /* Inter-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Inter-Variable.ttf"; sourceTree = "<group>"; };
-		9983D8DCAE1ACF9310738F1F /* PredictionEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PredictionEngine.swift; sourceTree = "<group>"; };
 		99C5E95C08CD53A70A0C43DF /* InputSourceMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InputSourceMonitor.swift; sourceTree = "<group>"; };
-		9DE993E0CD7CE91EF6CAF208 /* WindowTitleRuleEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WindowTitleRuleEngine.swift; sourceTree = "<group>"; };
 		9FC77A77A3D020CFB5E91A14 /* VKGeneralTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKGeneralTab.swift; path = ../View/Redesign/VKGeneralTab.swift; sourceTree = "<group>"; };
-		A6C7D8E9F0A1B2C3D4E5F601 /* ClipboardHistoryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryService.swift; sourceTree = "<group>"; };
 		B0FF852BE303C340328CB8C0 /* LexiconManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LexiconManager.swift; sourceTree = "<group>"; };
 		B12E48189AF4A1252777C0EE /* VKStatsTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKStatsTab.swift; path = ../View/Redesign/VKStatsTab.swift; sourceTree = "<group>"; };
-		B1C2D3E4F5A6B7C8D9E0F1A2 /* NGramStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NGramStore.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A3 /* VKeyDesign.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VKeyDesign.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A4 /* AppIconSwitcher.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppIconSwitcher.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Components/HUDComponents.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A6 /* FontRegistration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FontRegistration.swift; path = ../App/FontRegistration.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5A6B7C8D9E0F1A7 /* NotoSansDisplay-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "NotoSansDisplay-Variable.ttf"; sourceTree = "<group>"; };
-		B1C2D3E4F5A6B7C8D9E0F1B1 /* TonalRowIcon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Components/TonalRowIcon.swift; sourceTree = "<group>"; };
 		B8D9E0F1A2B3C4D5E6F7031 /* NoticeHUDWindow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NoticeHUDWindow.swift; sourceTree = "<group>"; };
 		B9E2D5DCF8930D0F2AE3BA30 /* VKMacroTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKMacroTab.swift; path = ../View/Redesign/VKMacroTab.swift; sourceTree = "<group>"; };
 		C2D96418BD00F1CCCC026F67 /* VKBarControls.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKBarControls.swift; path = ../View/Redesign/VKBarControls.swift; sourceTree = "<group>"; };
@@ -195,7 +174,6 @@
 		E0316EE5AB4EBE700B533B62 /* UserDataMigration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDataMigration.swift; sourceTree = "<group>"; };
 		E7FF73C92A71721E44ACDE39 /* SuggestionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SuggestionService.swift; sourceTree = "<group>"; };
 		EA0937E79B85F7643A7EC6A8 /* Lexicon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Lexicon.swift; sourceTree = "<group>"; };
-		F1E2D3C4B5A69788796A5B4C /* EmbeddedPhraseCompletions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedPhraseCompletions.swift; sourceTree = "<group>"; };
 		F5E87049C6C5D5457BEEBEDD /* VKSpellTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VKSpellTab.swift; path = ../View/Redesign/VKSpellTab.swift; sourceTree = "<group>"; };
 		FF0A79FB401501E597B689C9 /* EnVnReference.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnVnReference.swift; sourceTree = "<group>"; };
 		FF27B5F4C4E372971F4466A7 /* EmbeddedLexiconData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedLexiconData.swift; sourceTree = "<group>"; };
@@ -234,7 +212,6 @@
 			isa = PBXGroup;
 			children = (
 				716E0AA319F8D9D8AA4B5A28 /* UsageStatistics.swift */,
-				B1C2D3E4F5A6B7C8D9E0F1A2 /* NGramStore.swift */,
 			);
 			name = Stats;
 			path = Stats;
@@ -349,14 +326,9 @@
 				3FAF00012B84AB390032A55E /* ToggleHUDWindow.swift */,
 				3FAFBBBB2B84AB390032A55E /* EventHook.swift */,
 				3F8A650B2B8F08B3009E2AF1 /* Focused.swift */,
-				3F9FC6D42B9E14AF00659712 /* FileMonitor.swift */,
 				3FDB83CC2BB468BA00AD6322 /* EventSimulator.swift */,
-				558E8CD8289F7C5482D99385 /* PredictionHUDWindow.swift */,
 				B8D9E0F1A2B3C4D5E6F7031 /* NoticeHUDWindow.swift */,
-				A6C7D8E9F0A1B2C3D4E5F601 /* ClipboardHistoryService.swift */,
 				99C5E95C08CD53A70A0C43DF /* InputSourceMonitor.swift */,
-				5CFDB9A32919241C6D05BE9B /* TextConversionService.swift */,
-				9DE993E0CD7CE91EF6CAF208 /* WindowTitleRuleEngine.swift */,
 			);
 			path = Platform;
 			sourceTree = "<group>";
@@ -381,13 +353,11 @@
 				B1C2D3E4F5A6B7C8D9E0F1A3 /* VKeyDesign.swift */,
 				B1C2D3E4F5A6B7C8D9E0F1A4 /* AppIconSwitcher.swift */,
 				B1C2D3E4F5A6B7C8D9E0F1A5 /* HUDComponents.swift */,
-				B1C2D3E4F5A6B7C8D9E0F1B1 /* TonalRowIcon.swift */,
 				82F137405BA930639B47C0FC /* MacroSuggestionSheet.swift */,
 				76EC17AF146C87FEEC980B8E /* SmartSwitchSuggestionSheet.swift */,
 				D5A620251BD70C5F36817A13 /* PersonalDictSuggestionSheet.swift */,
 				88B0AD4B1E7237CEF175AEB8 /* SmartSwitchRunningAppsSheet.swift */,
 				469BB617734DD2389D962454 /* TopWordsDetail.swift */,
-				510E09F49FE0897E64D40434 /* WindowRules.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -401,8 +371,6 @@
 				B0FF852BE303C340328CB8C0 /* LexiconManager.swift */,
 				E7FF73C92A71721E44ACDE39 /* SuggestionService.swift */,
 				FF0A79FB401501E597B689C9 /* EnVnReference.swift */,
-				521F6BD0B4DB972BC0C580DE /* EmbeddedBigrams.swift */,
-				F1E2D3C4B5A69788796A5B4C /* EmbeddedPhraseCompletions.swift */,
 			);
 			name = Lexicon;
 			path = Lexicon;
@@ -459,7 +427,6 @@
 			isa = PBXGroup;
 			children = (
 				01E0C61F7740281BEB6DB9C7 /* SpellDecisionEngine.swift */,
-				9983D8DCAE1ACF9310738F1F /* PredictionEngine.swift */,
 			);
 			name = Input;
 			path = Input;
@@ -638,7 +605,6 @@
 				3FAF00022B84AB390032A55E /* ToggleHUDWindow.swift in Sources */,
 				3FAFBBB22B84A98E0032A55E /* AppDelegate.swift in Sources */,
 				3FAFBBBC2B84AB390032A55E /* EventHook.swift in Sources */,
-				3F9FC6D52B9E14AF00659712 /* FileMonitor.swift in Sources */,
 				3F4564E42BA5FFD800F087BB /* OnboardingView.swift in Sources */,
 				3F8A65042B89AD74009E2AF1 /* TiengViet.swift in Sources */,
 				3FCA000012C00001000000B /* Trie.swift in Sources */,
@@ -669,28 +635,19 @@
 				4045075CC083173E587560A9 /* SpellDecisionEngine.swift in Sources */,
 				9972B2786EB0E3A600C0FF4A /* EnVnReference.swift in Sources */,
 				6222920C197312B2360B6B43 /* UsageStatistics.swift in Sources */,
-				A1B2C3D4E5F6A7B8C9D0E1F2 /* NGramStore.swift in Sources */,
 				F5E5BFC82700BF11BAF4FBAF /* UserDataMigration.swift in Sources */,
 				5DF6BF0E4EBC27745F7CA7AA /* DefaultMacros.swift in Sources */,
 				7EF826E34F069D08CD35CA02 /* ThemedSymbol.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F3 /* VKeyDesign.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F4 /* AppIconSwitcher.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F5 /* HUDComponents.swift in Sources */,
-				A1B2C3D4E5F6A7B8C9D0E1FA /* TonalRowIcon.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F6 /* FontRegistration.swift in Sources */,
 				3A1CEF871E6A885DD3916044 /* MacroSuggestionSheet.swift in Sources */,
 				B5120602CCC5EAE262D73C62 /* SmartSwitchSuggestionSheet.swift in Sources */,
 				A085F9440573F6BC7380FAEE /* PersonalDictSuggestionSheet.swift in Sources */,
-				D7BEBA3029B05306751A69B3 /* EmbeddedBigrams.swift in Sources */,
-				E1F2A3B4C5D6E7F8091A2B3C /* EmbeddedPhraseCompletions.swift in Sources */,
-				28F11D31D04926F7FB4860B4 /* PredictionEngine.swift in Sources */,
-				EC46658134875A59BD2FCBC3 /* PredictionHUDWindow.swift in Sources */,
 				C9E0F1A2B3C4D5E6F708142 /* NoticeHUDWindow.swift in Sources */,
-				A7C8D9E0F1A2B3C4D5E6F702 /* ClipboardHistoryService.swift in Sources */,
 				5501620FAC63ADA15F6A37B4 /* SmartSwitchRunningAppsSheet.swift in Sources */,
 				F348AD6A8752A1C54FA5C347 /* InputSourceMonitor.swift in Sources */,
-				964199382501358B452A147B /* TextConversionService.swift in Sources */,
-				1C1E141EB16B027B173B8F1F /* WindowTitleRuleEngine.swift in Sources */,
 				757DCAEB9D825EC7776C2BEE /* VKDesign.swift in Sources */,
 				0757D78148617667C5D66327 /* VKComponents.swift in Sources */,
 				14863DB76A8C437B6D74D810 /* VKSettingsView.swift in Sources */,
@@ -704,7 +661,6 @@
 				D758117C8E78CEBBC2E36544 /* VKThemeTab.swift in Sources */,
 				1F691DC514BBA9BA3DC91F0B /* MarketingSnapshotExporter.swift in Sources */,
 				E7BABD9189FF85601AB2B0D7 /* TopWordsDetail.swift in Sources */,
-				87265526075A3173B7F27A01 /* WindowRules.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

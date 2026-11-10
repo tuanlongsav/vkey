@@ -44,7 +44,7 @@ final class NoticeHUDWindow {
     let contentSize = Self.contentSize(title: title, message: message)
     let panel = ensurePanel()
 
-    // Tái dùng controller như `PredictionHUDWindow` — dựng mới mỗi lần hiện
+    // Tái dùng controller — dựng mới mỗi lần hiện
     // để lại KVO + ảnh mask của đồ thị cũ.
     let controller: NSHostingController<NoticeHUDView>
     if let existing = hostingController {
@@ -181,7 +181,7 @@ private struct NoticeHUDView: View {
   let message: String
   let style: NoticeHUDWindow.Style
   let backgroundStrength: Double
-  /// Giá trị đọc lúc `show()` — xem `PredictionHUDView.uiTheme`.
+  /// Giá trị đọc lúc `show()`, không quan sát Defaults trong view.
   let uiTheme: UITheme
 
   private var palette: NoticeHUDPalette { NoticeHUDPalette.forStyle(style) }

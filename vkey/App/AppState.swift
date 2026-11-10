@@ -15,12 +15,11 @@ import os.log
 
 private let appLog = OSLog(subsystem: "dev.longht.vkey", category: "AppState")
 
-class AppState: ObservableObject, FileMonitorDelegate {
+class AppState: ObservableObject {
 
     /// When true, the next `enabled` mutation skips persistence into `appModes`.
     /// Used by Smart Switch so launcher apps don't pollute the per-app memory.
     private var skipPersistAppMode = false
-    private var switchFileMonitor: FileMonitor?
     public var smartSwitchActive = false
     public var enabledBeforeSmartSwitch = false
     private var skipHUDNotification = true
@@ -29,15 +28,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
     private let inputSourceMonitor = InputSourceMonitor()
     public private(set) var nonLatinIMEActive = false
     private var enabledBeforeNonLatinIME = false
-
-    // 2.0 (B1): cache resolved overrides cho focused context. Tránh
-    // gọi AX query mỗi keystroke.
-    public private(set) var activeRuleOverrides: ResolvedRuleOverrides = .init()
-    public private(set) var activeRuleOverridesBundleId: String?
-    private var ruleOverrideActive = false
-    private var enabledBeforeRuleOverride = false
-    /// State VI/EN đã apply từ Window Title Rule — tránh toggle lại mỗi focus refresh.
-    private var appliedRuleOverrideState: AppSmartSwitchState?
 
     @Published public var enabled = false {
         didSet {
@@ -140,7 +130,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// focus cũ; nhịp trễ ~0.5s bắt đúng field mới.
     private var pendingDelayedFocusRefresh: DispatchWorkItem?
     private let immediateFocusRefreshQueued = OSAllocatedUnfairLock(initialState: false)
-    private var wordPredictionSettingsObserver: Defaults.Observation?
     /// Bản đã giải mã của `Defaults[.appSmartSwitchConfigs]`. Key đó là
     /// `[String: Codable]`: MỖI lần đọc `Defaults[...]` là giải mã JSON lại TỪNG
     /// cấu hình (kèm `Date`) — trước đây event tap làm vậy ở mọi keyDown/click
@@ -178,15 +167,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
 
         // 2.0.1: Floating Toolbar handler đã bị xoá cùng với tính năng.
 
-        // 2.0 (B4): mở Text Conversion menu cho selection.
-        KeyboardShortcuts.onKeyUp(for: .openTextConversionMenu) {
-            DispatchQueue.main.async {
-                TextConversionService.shared.openMenu(near: nil)
-            }
-        }
-
-        ClipboardHistoryHotkey.installDefaultIfNeeded()
-
         // Register application change observer
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(activeApplicationDidChange),
@@ -213,16 +193,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
             self?.handleInputSourceCategoryChange(category)
         }
         inputSourceMonitor.start()
-
-        wordPredictionSettingsObserver = Defaults.observe(
-            keys: .wordPredictionEnabled, .wordPredictionExcludedApps,
-            options: []
-        ) { [weak self] in
-            self?.inputProcessor.refreshWordPredictionState()
-            // Bật đoán từ lúc đang chạy: nạp n-gram trên queue nền trước khi
-            // từ đầu tiên cần tới, thay vì giải mã cả file trên đường gõ phím.
-            NGramStore.warmUpIfNeeded()
-        }
     }
 
     /// Cấu hình Smart Switch của `bundleId`, tra trên bản đã giải mã sẵn.
@@ -296,31 +266,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
         enabled = state
     }
 
-    func registerSwitchFileMonitor() {
-        let uid = getuid()
-        let tmpPath = URL(fileURLWithPath: "/tmp/vkey_switch_\(uid)")
-        do {
-            try "".write(to: tmpPath, atomically: true, encoding: .utf8)
-        } catch {
-            os_log("AppState: failed to seed %{public}@ — %{public}@",
-                   log: appLog, type: .error, tmpPath.path, error.localizedDescription)
-            // Continue: monitor init may still succeed if the file already exists.
-        }
-        do {
-            switchFileMonitor = try FileMonitor(url: tmpPath)
-            switchFileMonitor?.delegate = self
-        } catch {
-            os_log("AppState: FileMonitor init failed for %{public}@ — %{public}@. Smart Switch via /tmp signalling disabled.",
-                   log: appLog, type: .error, tmpPath.path, error.localizedDescription)
-            // Smart Switch via AX probing still works; the /tmp signalling is
-            // a secondary path (used by some launcher integrations).
-        }
-    }
-
-    func didReceive(changes: String) {
-        setEnabled(set: changes.trimmingCharacters(in: .whitespacesAndNewlines) == "vi")
-    }
-
     @objc func activeApplicationDidChange(notification: Notification) {
         let wasSkippingHUD = skipHUDNotification
         skipHUDNotification = true
@@ -339,39 +284,18 @@ class AppState: ObservableObject, FileMonitorDelegate {
             currentFocusedBundleId = appName
             refreshFocusedBundleIdAsync()
 
-            refreshRuleOverrides(for: appName)
             activeAppName = appName
             inputProcessor.changeActiveApp(activeAppName)
 
-            if applyActiveRuleOverrideState() {
-                return
-            }
-
-            // 1.7.0: ưu tiên đọc từ appSmartSwitchConfigs (3-state).
-            // Fallback smartSwitchApps để backward-compat user chưa migrate.
+            // Cấu hình 3 trạng thái theo app. Danh sách "tắt VN" đời cũ
+            // (`smartSwitchApps`) đã được `migrateLegacySmartSwitchApps` chuyển
+            // hết sang đây lúc khởi động nên không còn đường tra thứ hai.
             if Defaults[.smartSwitchEnabled], let config = smartSwitchConfig(for: appName) {
                 if !smartSwitchActive {
                     enabledBeforeSmartSwitch = enabled
                 }
                 smartSwitchActive = true
-                switch config.state {
-                case .disabled, .englishMode:
-                    setEnabledWithoutPersist(false)
-                case .vietnameseMode:
-                    setEnabledWithoutPersist(true)
-                }
-                return
-            }
-
-            // Legacy fallback: smartSwitchApps list (will be migrated later).
-            if Defaults[.smartSwitchEnabled],
-                Defaults[.smartSwitchApps].contains(appName)
-            {
-                if !smartSwitchActive {
-                    enabledBeforeSmartSwitch = enabled
-                }
-                smartSwitchActive = true
-                setEnabledWithoutPersist(false)
+                setEnabledWithoutPersist(config.state.enablesVietnamese)
                 return
             }
 
@@ -393,19 +317,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
     /// cho overlay UIElement (Spotlight). Gọi trên main run loop (event tap).
     public func noteFocusedBundleId(_ bid: String) {
         currentFocusedBundleId = bid
-        if activeRuleOverridesBundleId != bid {
-            if ruleOverrideActive {
-                ruleOverrideActive = false
-                setEnabledWithoutPersist(enabledBeforeRuleOverride)
-            }
-            activeRuleOverrides = .init()
-            activeRuleOverridesBundleId = nil
-            appliedRuleOverrideState = nil
-            inputProcessor.ruleOverrides = .init()
-            inputProcessor.updateAdaptiveFlushDelay()
-            refreshRuleOverrides(for: bid, invalidate: false)
-            _ = applyActiveRuleOverrideState()
-        }
     }
 
     /// v3.13: snapshot AX đồng bộ ngay trước transform — `focusedFieldKind` async
@@ -433,52 +344,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
     // (e). Hệ quả CỐ Ý: hai đường lại có hai luật khác nhau đúng như HEAD —
     // đường đồng bộ sticky `bundleId` (`if let`), đường async gán thẳng kể cả
     // nil. Đó là hành vi HEAD, đừng "dọn" cho đồng nhất nếu chưa đo lại.
-
-    private func refreshRuleOverrides(for appName: String, invalidate: Bool = true) {
-        if invalidate {
-            WindowTitleRuleEngine.shared.invalidateCache()
-        }
-        let evaluated = WindowTitleRuleEngine.shared.evaluate(bundleId: appName)
-        guard activeRuleOverridesBundleId != appName || activeRuleOverrides != evaluated else {
-            return
-        }
-        activeRuleOverrides = evaluated
-        activeRuleOverridesBundleId = appName
-        inputProcessor.ruleOverrides = activeRuleOverrides
-        inputProcessor.updateAdaptiveFlushDelay()
-        inputProcessor.refreshWordPredictionState()
-    }
-
-    @discardableResult
-    private func applyActiveRuleOverrideState() -> Bool {
-        let target = activeRuleOverrides.overrideState
-        if target == appliedRuleOverrideState {
-            return target != nil
-        }
-
-        if target == nil {
-            if ruleOverrideActive {
-                ruleOverrideActive = false
-                setEnabledWithoutPersist(enabledBeforeRuleOverride)
-            }
-            appliedRuleOverrideState = nil
-            return false
-        }
-
-        if !ruleOverrideActive {
-            enabledBeforeRuleOverride = enabled
-        }
-        ruleOverrideActive = true
-        appliedRuleOverrideState = target
-
-        switch target! {
-        case .disabled, .englishMode:
-            setEnabledWithoutPersist(false)
-        case .vietnameseMode:
-            setEnabledWithoutPersist(true)
-        }
-        return true
-    }
 
     /// 1.7.x: refresh `currentFocusedBundleId` async — gọi từ EventHook
     /// callback trên mouse-click events. Chạy trên background queue để
@@ -523,30 +388,38 @@ class AppState: ObservableObject, FileMonitorDelegate {
         let snap = Focused.snapshot(timeout: Focused.defaultAXTimeout)
         DispatchQueue.main.async {
             self.currentFocusedBundleId = snap.bundleId
-            if let focusedBundleId = snap.bundleId,
-               focusedBundleId != self.bundleId {
-                self.refreshRuleOverrides(for: focusedBundleId, invalidate: false)
-                _ = self.applyActiveRuleOverrideState()
-            }
             self.currentFocusedFieldKind = snap.fieldKind
         }
     }
 
-    /// 1.7.0: Migration smartSwitchApps (list) → appSmartSwitchConfigs (3-state map).
-    /// Chạy 1 lần khi app launch v1.7.0 và `appSmartSwitchConfigs` đang rỗng
-    /// (user chưa migrate). Idempotent — gọi nhiều lần không sao.
-    public static func migrateSmartSwitchTo3State() {
-        guard Defaults[.appSmartSwitchConfigs].isEmpty else { return }
-        var newConfigs: [String: AppSmartSwitchConfig] = [:]
-        let now = Date()
-        for bundleId in Defaults[.smartSwitchApps] {
-            newConfigs[bundleId] = AppSmartSwitchConfig(
-                state: .englishMode,
-                source: .user,
-                lastModified: now
-            )
+    /// Chuyển danh sách "tắt VN" đời cũ (`smartSwitchApps`, trước 1.7.0) sang
+    /// cấu hình 3 trạng thái rồi XOÁ danh sách. Idempotent.
+    ///
+    /// Bản 1.7.0 chỉ chép khi `appSmartSwitchConfigs` còn rỗng và không xoá
+    /// nguồn, nên danh sách cũ sống mãi làm đường tra thứ hai ở MỖI PHÍM — và
+    /// một app còn nằm trong đó thì xoá cấu hình ở tab Smart Switch cũng không
+    /// hết bị ép tiếng Anh, vì không có dòng nào trên UI để xoá. Nay app nào
+    /// trong danh sách cũ mà chưa có cấu hình thì hiện thành một dòng
+    /// `englishMode` (đúng hành vi đang có), người dùng thấy và gỡ được.
+    public static func migrateLegacySmartSwitchApps() {
+        let legacy = Defaults[.smartSwitchApps]
+        guard !legacy.isEmpty else { return }
+        Defaults[.appSmartSwitchConfigs] = mergingLegacySmartSwitchApps(
+            legacy, into: Defaults[.appSmartSwitchConfigs], now: Date())
+        Defaults[.smartSwitchApps] = []
+    }
+
+    /// Lõi thuần của `migrateLegacySmartSwitchApps`: app trong danh sách cũ mà
+    /// chưa có cấu hình thì nhận `englishMode`; app đã có cấu hình giữ nguyên.
+    static func mergingLegacySmartSwitchApps(
+        _ legacy: [String], into configs: [String: AppSmartSwitchConfig], now: Date
+    ) -> [String: AppSmartSwitchConfig] {
+        var merged = configs
+        for bundleId in legacy where merged[bundleId] == nil {
+            merged[bundleId] = AppSmartSwitchConfig(
+                state: .englishMode, source: .user, lastModified: now)
         }
-        Defaults[.appSmartSwitchConfigs] = newConfigs
+        return merged
     }
 
     /// v4.11: Spotlight giờ THEO MODE hiện tại (không ép English). Gỡ nó khỏi
@@ -588,29 +461,6 @@ class AppState: ObservableObject, FileMonitorDelegate {
         }
         Defaults[.appSmartSwitchConfigs] = configs
         Defaults[.didMigrateLaunchersKeepMode] = true
-    }
-
-    /// 1.7.0: Apply auto-learn suggestions → ghi vào configs với source=.autoLearn.
-    /// User-set entries (source=.user) KHÔNG bị override.
-    public func applySmartSwitchAutoLearn(_ suggestions: [String: AppSmartSwitchState]) {
-        var configs = Defaults[.appSmartSwitchConfigs]
-        let now = Date()
-        var updated = 0
-        for (bundleId, state) in suggestions {
-            // Skip nếu đã có user setting
-            if let existing = configs[bundleId], existing.source == .user { continue }
-            // Skip nếu state đã đúng (giữ lastModified ổn định)
-            if configs[bundleId]?.state == state { continue }
-            configs[bundleId] = AppSmartSwitchConfig(
-                state: state,
-                source: .autoLearn,
-                lastModified: now
-            )
-            updated += 1
-        }
-        if updated > 0 {
-            Defaults[.appSmartSwitchConfigs] = configs
-        }
     }
 
     /// Apply an enabled state change without writing it to per-app memory.

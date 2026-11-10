@@ -194,29 +194,6 @@ class EventHook {
     return (false, owner)
   }
 
-  /// Chế độ mà Smart Switch muốn áp cho `bundleId`: `true` = tiếng Việt,
-  /// `false` = tiếng Anh/tắt, `nil` = app không có cấu hình.
-  ///
-  /// Thứ tự: rule tiêu đề cửa sổ của đúng app đó → cấu hình 3 trạng thái →
-  /// danh sách "tắt VN" đời cũ.
-  static func smartSwitchDesiredEnabled(
-    bundleId: String,
-    ruleBundleId: String?, ruleState: AppSmartSwitchState?,
-    config: AppSmartSwitchConfig?,
-    isLegacyEnglishApp: @autoclosure () -> Bool
-  ) -> Bool? {
-    func enabled(for state: AppSmartSwitchState) -> Bool {
-      switch state {
-      case .disabled, .englishMode: return false
-      case .vietnameseMode: return true
-      }
-    }
-    if ruleBundleId == bundleId, let ruleState { return enabled(for: ruleState) }
-    if let config { return enabled(for: config.state) }
-    if isLegacyEnglishApp() { return false }
-    return nil
-  }
-
   /// keyDown đến qua Screen Sharing mang CHỮ ĐÃ SOẠN SẴN chứ không phải một
   /// phím thô.
   ///
@@ -641,61 +618,20 @@ private func handleTapEvent(
     return Unmanaged.passUnretained(event)
   }
 
-  // ── Clipboard history: ⌘C lưu; phím tắt cấu hình mở menu chọn (mặc định ⇧⌘V) ──
-  if type == .keyDown, Defaults[.clipboardHistoryEnabled] {
-    let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-    let mods = event.flags
-    let commandOnly = mods.contains(.maskCommand)
-      && !mods.contains(.maskControl)
-      && !mods.contains(.maskAlternate)
-      && !mods.contains(.maskShift)
-    if commandOnly, keyCode == 8 {
-      let beforeCount = NSPasteboard.general.changeCount
-      DispatchQueue.main.async {
-        ClipboardHistoryService.shared.scheduleCaptureAfterCopy(since: beforeCount)
-      }
-    } else if ClipboardHistoryHotkey.matchesKeyDown(event),
-              ClipboardHistoryService.shared.hasEntriesForEventTap
+  // ── Modifier-only hotkey detection ────────────────────────────────────────
+  // The user can configure a pure-modifier combo (e.g. ⇧⌥) for the Vi/En
+  // toggle. Carbon's RegisterEventHotKey can't bind to modifiers alone, so we
+  // watch .flagsChanged events directly and trigger on press→release without
+  // an intervening keyDown or click.
+  let toggleTarget = UInt64(Defaults[.modifierOnlyToggleHotkey])
+  if toggleTarget != 0 {
+    let currentMods = event.flags.rawValue & kModifierMask
+    if eventHook.handleModifierOnlyHotkey(
+      type: type, currentMods: currentMods, modifierTarget: toggleTarget),
+      let appState = eventHook.appState
     {
       DispatchQueue.main.async {
-        ClipboardHistoryService.shared.showPickerAndPaste()
-      }
-      return nil
-    }
-  }
-
-  // ── Modifier-only hotkey detection ────────────────────────────────────────
-  // The user can configure pure-modifier combos (e.g. ⇧⌥ for Vi/En toggle,
-  // ⌃⇧ for Text Tools menu). Carbon's RegisterEventHotKey can't bind to
-  // modifiers alone, so we watch .flagsChanged events directly and trigger
-  // on press→release without an intervening keyDown.
-  // 2.0.2 (J3): support 2 modifier-only targets song song.
-  let toggleTarget = UInt64(Defaults[.modifierOnlyToggleHotkey])
-  let textToolsTarget = UInt64(Defaults[.modifierOnlyTextToolsHotkey])
-  let clipboardTarget = ClipboardHistoryHotkey.modifierOnlyMask
-  if toggleTarget != 0 || textToolsTarget != 0 || clipboardTarget != 0 {
-    let currentMods = event.flags.rawValue & kModifierMask
-    let firedMask = eventHook.processModifierTargets(
-      type: type,
-      currentMods: currentMods,
-      targets: [toggleTarget, textToolsTarget, clipboardTarget]
-    )
-    if firedMask != 0 {
-      if firedMask == toggleTarget, let appState = eventHook.appState {
-        DispatchQueue.main.async {
-          appState.setEnabledByUser(!appState.enabled)
-        }
-      } else if firedMask == textToolsTarget {
-        DispatchQueue.main.async {
-          TextConversionService.shared.openMenu(near: nil)
-        }
-      } else if firedMask == clipboardTarget,
-                Defaults[.clipboardHistoryEnabled],
-                ClipboardHistoryService.shared.hasEntriesForEventTap
-      {
-        DispatchQueue.main.async {
-          ClipboardHistoryService.shared.showPickerAndPaste()
-        }
+        appState.setEnabledByUser(!appState.enabled)
       }
     }
   }
@@ -793,12 +729,8 @@ private func handleTapEvent(
            focused: rawFocusedBundleId, frontmost: frontmostBundle),
          appState.manualModeBundleId != focusedBundleId
       {
-        let desiredEnabled = EventHook.smartSwitchDesiredEnabled(
-          bundleId: focusedBundleId,
-          ruleBundleId: appState.activeRuleOverridesBundleId,
-          ruleState: appState.activeRuleOverrides.overrideState,
-          config: appState.smartSwitchConfig(for: focusedBundleId),
-          isLegacyEnglishApp: Defaults[.smartSwitchApps].contains(focusedBundleId))
+        let desiredEnabled =
+          appState.smartSwitchConfig(for: focusedBundleId)?.state.enablesVietnamese
 
         if let desired = desiredEnabled {
           if !appState.smartSwitchActive {
@@ -820,7 +752,7 @@ private func handleTapEvent(
   }
 
   // Không chạy Telex/VNI khi user đang gõ trong chính vkey (Settings, macro…).
-  // Clipboard / modifier-only / focus vẫn xử lý phía trên.
+  // Modifier-only / focus vẫn xử lý phía trên.
   let skipVietnameseIME = frontmostBundle == Bundle.main.bundleIdentifier
 
   if type == .keyDown && eventHook.processing && !skipVietnameseIME {
@@ -842,51 +774,4 @@ private func handleTapEvent(
   }
 
   return Unmanaged.passUnretained(event)
-}
-
-// MARK: - Clipboard history hotkey (EventHook)
-
-/// So khớp phím tắt mở menu lịch sử clipboard trong event tap.
-/// Khi lịch sử rỗng, caller không nuốt phím (⇧⌘V vẫn là Paste and Match Style).
-enum ClipboardHistoryHotkey {
-  static var modifierOnlyMask: UInt64 {
-    UInt64(Defaults[.clipboardHistoryModifierOnlyHotkey])
-  }
-
-  static func installDefaultIfNeeded() {
-    guard KeyboardShortcuts.getShortcut(for: .pasteClipboardHistory) == nil,
-          Defaults[.clipboardHistoryModifierOnlyHotkey] == 0
-    else { return }
-    KeyboardShortcuts.setShortcut(
-      KeyboardShortcuts.Shortcut(.v, modifiers: [.shift, .command]),
-      for: .pasteClipboardHistory
-    )
-  }
-
-  static func matchesKeyDown(_ event: CGEvent) -> Bool {
-    guard Defaults[.clipboardHistoryModifierOnlyHotkey] == 0 else { return false }
-    let keyCode = Int(event.getIntegerValueField(.keyboardEventKeycode))
-    let flags = event.flags
-    if let shortcut = KeyboardShortcuts.getShortcut(for: .pasteClipboardHistory),
-       let key = shortcut.key
-    {
-      return keyCode == key.rawValue
-        && modifierFlags(from: flags) == shortcut.modifiers
-    }
-    // Mặc định ⇧⌘V
-    return keyCode == 9
-      && flags.contains(.maskCommand)
-      && flags.contains(.maskShift)
-      && !flags.contains(.maskAlternate)
-      && !flags.contains(.maskControl)
-  }
-
-  private static func modifierFlags(from flags: CGEventFlags) -> NSEvent.ModifierFlags {
-    var mods = NSEvent.ModifierFlags()
-    if flags.contains(.maskCommand) { mods.insert(.command) }
-    if flags.contains(.maskShift) { mods.insert(.shift) }
-    if flags.contains(.maskAlternate) { mods.insert(.option) }
-    if flags.contains(.maskControl) { mods.insert(.control) }
-    return mods
-  }
 }
