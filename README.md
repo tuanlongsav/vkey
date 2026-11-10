@@ -8,7 +8,16 @@ Bộ gõ tiếng Việt native cho macOS — app menu bar nhỏ gọn, Telex & V
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC%20BY--SA%204.0-orange.svg)
 
-**Phiên bản hiện tại: [4.33](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 446 test pass · [Tải bản mới nhất](../../releases/latest)
+**Phiên bản hiện tại: [4.34](CHANGELOG.md)** — app & DMG đều Developer ID signed + notarized · 457 test pass · [Tải bản mới nhất](../../releases/latest)
+
+## Mới ở v4.34
+
+**Bản sửa lỗi gõ — nên cập nhật nếu hay điều khiển máy qua Screen Sharing, dùng Smart Switch, hoặc từng thấy vkey "đang bật mà không ra dấu".**
+
+- **Gõ được tiếng Việt khi điều khiển máy qua Screen Sharing** — trước đây phím từ máy khác bị bỏ hết nên không ra dấu, và ổ khoá trên menu bar kẹt mãi sau khi ô mật khẩu đã đóng.
+- **Smart Switch giữ đúng chế độ** — không còn rơi về chế độ cũ khi gõ tên file trong hộp thoại Lưu, và đổi Việt/Anh bằng phím tắt không còn bị hoàn tác ngay ở phím kế tiếp (giữ tới khi đổi app).
+- **Hết xoá nhầm chữ sau khi macOS tạm ngắt vkey** — máy tải nặng làm hệ thống tắt event tap một nhịp; nay bật lại là bắt đầu từ mới thay vì sửa tiếp trên từ đã lệch. Tab khi còn gợi ý cũng không còn làm hỏng chữ ở ô kế tiếp.
+- **Menu nêu tên app đang giữ Secure Input** — một ô mật khẩu bỏ quên ở cửa sổ khác (thường là trình duyệt) có thể làm bộ gõ không nhận được phím; menu vkey nay nói rõ app nào và cách gỡ.
 
 ## Mới ở v4.33
 
@@ -122,7 +131,7 @@ Lịch sử đầy đủ các phiên bản trước: [CHANGELOG.md](CHANGELOG.md
 | **Giao diện** | Menu bar panel · Cài đặt sidebar 6 tab · 3 theme: **Mặc định** / **Liquid Glass** / **Neural AI** · màu nhấn · phông chữ · độ bo góc · mật độ dòng · Sáng / Tối / Hệ thống |
 | **HUD** | Capsule VI/EN giữa màn hình · pill gợi ý `→ cụm · Tab` (chỉnh được cỡ chữ + khoảng cách tới con trỏ) · cảnh báo clipboard amber |
 | **Tiện ích** | Lịch sử clipboard (⇧⌘V mở menu, tùy chỉnh phím tắt — **mặc định TẮT**) · tự động cập nhật im lặng qua Sparkle, dialog tiếng Việt · tự khởi động cùng hệ thống · tự tắt khi đổi sang bộ gõ khác · Text Tools ⌃⇧ · VietQR donate |
-| **Tương thích** | Chrome omnibox (axDirect) · Electron/Office/terminal · QWERTZ/AZERTY/Dvorak · bypass ô password (secure input) |
+| **Tương thích** | Chrome omnibox (axDirect) · Electron/Office/terminal · QWERTZ/AZERTY/Dvorak · bypass ô password (secure input), báo tên app nền đang giữ secure input · gõ được qua Screen Sharing |
 
 Dữ liệu thống kê & từ điển cá nhân **chỉ lưu cục bộ** — không telemetry.
 

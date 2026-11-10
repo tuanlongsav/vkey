@@ -2,10 +2,13 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
-## [Chưa phát hành]
+## [4.34] - 2026-11-10 — "Gõ được qua Screen Sharing"
 
-Phần app (mục đầu) chỉ tới người dùng ở bản phát hành kế tiếp. Phần `Tools/` và
-gói từ điển không cần phát hành app: gói từ điển đi độc lập.
+Bản sửa lỗi gõ. Phần `Tools/` và gói từ điển ở cuối mục đi độc lập với app.
+
+Chưa đo trên máy thật ở bản này: phím có tới vkey không khi một app nền giữ
+secure input, và Screen Sharing khi cả hai máy cùng bật vkey. Xem
+`Tools/probe/README.md` mục "Còn phải đo".
 
 ### 🐛 Sửa lỗi trong app
 
@@ -69,7 +72,8 @@ gói từ điển không cần phát hành app: gói từ điển đi độc l�
   Defaults mỗi lần Space; bớt cảnh báo biên dịch.
 - Test: 5 test khôi phục "ARM"/"USA" chỉ xanh trên máy đã tải gói từ điển về
   (hai từ đó không có trong danh sách nhúng sẵn). Nay test tự nạp dữ liệu cần,
-  không phụ thuộc máy. **446 test pass.**
+  không phụ thuộc máy.
+- **457 test pass.**
 
 ### 🔒 Chuỗi phát hành
 
