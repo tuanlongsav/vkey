@@ -6,6 +6,30 @@
     <description>Most recent changes for vkey.</description>
     <language>vi</language>
     <item>
+      <title>Version 4.37 — "Gọn kiến trúc"</title>
+      <sparkle:version>43700</sparkle:version>
+      <sparkle:shortVersionString>4.37</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 26 Nov 2026 00:16:59 +0700</pubDate>
+      <enclosure
+        url="https://github.com/tuanlongsav/vkey/releases/download/v4.37/vkey-4.37.dmg"
+        sparkle:edSignature="eiTiJprHjV+v/hL2FuBENGMJFSQqDe1KpSL/zdPpivtZNCOndso6J/OEiMwYzeBAzJFaNVUFsn48BAtRWrI4Bg=="
+        length="6205575"
+        type="application/octet-stream"
+      />
+      <description><![CDATA[
+        <h2>v4.37 — Gọn kiến trúc</h2>
+        <p><b>Bản tái cấu trúc &amp; tối ưu nội bộ — gọn mã nguồn, sửa lỗi phông chữ giao diện và tăng ổn định. Hành vi gõ tiếng Việt giữ nguyên.</b></p>
+        <ul>
+          <li><b>Phông chữ tuỳ chọn hoạt động đồng bộ</b> ở cả cửa sổ Cài đặt lẫn Menu bar; sửa cỡ chữ bị to nhầm ở mục "Khởi động cùng máy tính" trong màn hình Onboarding.</li>
+          <li><b>Tab Thống kê &amp; Sao lưu mượt hơn</b> — cache cụm từ hay gõ thay vì tính lại mỗi lượt vẽ lại giao diện; cửa sổ hướng dẫn nâng cấp không còn mở trùng.</li>
+          <li><b>Ổn định hơn ở tầng lõi &amp; Accessibility</b> — loại bỏ mutable state trong <code>Engine/</code> (thuần Foundation 100%), khoá đồng bộ timeout Accessibility và cắt retain cycle <code>EventHook</code>.</li>
+          <li><b>Module hoá toàn bộ kiến trúc &amp; bộ kiểm thử</b> — tách gọn các khối lớn, hợp nhất Design System / HUD / Sheet, bỏ 7.184 dòng từ điển trùng lặp trong mã nguồn.</li>
+        </ul>
+        <p>448/448 test pass · 0 cảnh báo biên dịch.</p>
+      ]]></description>
+    </item>
+    <item>
       <title>Version 4.36 — "Screen Sharing tự lo"</title>
       <sparkle:version>43600</sparkle:version>
       <sparkle:shortVersionString>4.36</sparkle:shortVersionString>

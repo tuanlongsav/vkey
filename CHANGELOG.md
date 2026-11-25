@@ -2,6 +2,24 @@
 
 > **Lưu ý về Bản quyền và Đóng góp (Credits & Attribution)**: Kể từ phiên bản v1.3.9 đến v1.5.0, vkey đã học tập, cải tiến và tích hợp các ý tưởng thiết kế, giải pháp kỹ thuật xuất sắc từ các dự án mã nguồn mở **[Caffee](https://github.com/khanhicetea/Caffee)** của tác giả KhanhIceTea, **[XKey](https://github.com/xmannv/xkey)** của tác giả Xuan Manh Nguyen (@xmannv), **[GoNhanh.org](https://github.com/khaphanspace/gonhanh.org)** của tác giả Khaphan, và tích hợp bộ cơ sở dữ liệu từ điển 7.184 âm tiết tiếng Việt chuẩn từ dự án mã nguồn mở **[common-vietnamese-syllables](https://github.com/vietnameselanguage/syllable)** của tác giả Luông Hiếu Thi (@hieuthi). Từ **v1.5.0** ("Bilingual Reborn") còn tích hợp thêm nguồn dữ liệu Anh ↔ Việt từ **[English Wiktionary](https://en.wiktionary.org/)** qua [Wiktextract / Kaikki.org](https://kaikki.org) (CC BY-SA 4.0) và **[wordfreq](https://github.com/rspeer/wordfreq)** của Robyn Speer. Từ **v1.6.1** bổ sung **[undertheseanlp/dictionary](https://github.com/undertheseanlp/dictionary)** của tác giả Vũ Anh (GPL-3.0) — tổng hợp từ Hồ Ngọc Đức + tudientv + Wiktionary VN. Xem [`LICENSE-DATA.md`](LICENSE-DATA.md) để biết chi tiết license dữ liệu.
 
+## [4.37] - 2026-11-26 — "Gọn kiến trúc"
+
+Đợt tái cấu trúc và module hoá toàn diện mã nguồn (giảm ròng hơn 10.700 dòng, 0 cảnh báo biên dịch) đồng thời khắc phục các điểm lặp và lỗi nhỏ ở giao diện/nền tảng; hành vi gõ tiếng Việt giữ nguyên 100%.
+
+### 🛠 Cải thiện & Sửa lỗi nhỏ
+
+- **Phông chữ tuỳ chọn (`ThemeFont`) áp dụng đồng bộ** cho cả cửa sổ Cài đặt lẫn Menu bar (trước đây nhiều nhãn còn dùng `.font(.system(...))` bỏ qua lựa chọn phông).
+- **Tab Thống kê & Sao lưu mượt hơn** — cache danh sách cụm từ tiếng Việt / ngoài tiếng Việt trong `@State` thay vì tính lại mỗi lượt render `body`.
+- **Sửa lỗi hiển thị & vòng đời cửa sổ**: sửa cỡ chữ 26pt bị phóng to nhầm ở mục "Khởi động cùng máy tính" trong Onboarding; chặn mở trùng cửa sổ hướng dẫn nâng cấp; cắt retain cycle `EventHook.appState` (`weak`); khoá `NSLock` cho `Focused.withAXTimeout` và `LexiconManager`.
+- **Loại bỏ data race tiềm ẩn trong `Engine`**: thay `TiengViet.PhuAmDauTrie` mutable bằng 2 Trie bất biến (`Standard` / `WithZWJF`) và truyền `EngineOptions` tường minh — toàn bộ `vkey/Engine/` thuần Foundation 100%.
+
+### 🧱 Tái cấu trúc & Module hoá
+
+- **Hạ tầng & Kiểm thử**: chuyển `vkey` & `vkeyTests` sang `PBXFileSystemSynchronizedRootGroup`; tách `vkeyTests.swift` (8.978 dòng) thành 22 tệp theo miền; gộp từ điển âm tiết về một nguồn duy nhất `vkey/Resources/syllables.txt` (xoá bản lặp 7.184 dòng trong mã Swift).
+- **Đường ống gõ lõi & Nền tảng**: tách gọn `InputProcessor`, `EventSimulator`, `EventHook`, `AppState`, `AppDelegate`, `UsageStatistics`, `Setting`, `UserDataMigration` thành các module chuyên trách (`TextDiff`, `EmitPlan`, `WordBuffer`, `AutoCapitalizer`, `MacroExpander`, `AppCompatibilityRegistry`, `AXHelpers`, `AXDirectInjector`, `SecureInputMonitor`, `RemoteInputPolicy`, `ModifierHotkeyTracker`, `FocusContextTracker`, `WindowCoordinator`, `AccessibilityWatchdog`, `StartupMigrations`, `FileExportService`).
+- **Giao diện & HUD**: hợp nhất `View/Redesign/` thành cấu trúc chính thức `View/{DesignSystem,MenuBar,Settings,Sheets,HUD,Onboarding}/`, gộp `VKeyDesign` vào `VKDesign`, hợp nhất `VKVisualEffect` & `FloatingHUDPanel`, dùng chung `VKSheetScaffold`, `NumberedStepRow`, `RunningAppsLookup`.
+- **448/448 test pass** (0 cảnh báo Swift).
+
 ## [4.36] - 2026-11-10 — "Screen Sharing tự lo"
 
 ### 🖥 Screen Sharing khi cả hai máy đều có vkey
