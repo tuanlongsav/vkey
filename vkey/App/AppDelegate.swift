@@ -1,51 +1,30 @@
 import Cocoa
-import Combine
 import Defaults
 import Foundation
 import os.log
-import SwiftUI
 import UserNotifications
-
-private let delegateLog = OSLog(subsystem: "dev.longht.vkey", category: "AppDelegate")
 
 extension Notification.Name {
   static let vkeyOnboardingDidComplete = Notification.Name("vkeyOnboardingDidComplete")
 }
 
-// AppDelegate manages the application lifecycle and background services
+// AppDelegate manages the application lifecycle and coordinates background services.
 class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNotificationCenterDelegate {
 
   @Published var appState = AppState()
   @Published var isTrusted = false
 
-  /// Polling timer for Accessibility-permission grant. Stored so we can
-  /// invalidate it on max-retry or app termination.
-  private var trustCheckTimer: Timer?
-  private var trustCheckRetries = 0
-  /// v3.2: watchdog phát hiện quyền Accessibility BỊ THU HỒI khi đang chạy.
-  /// Không có nó: tap tiếp tục xử lý phím + gọi AX (block sau revoke) →
-  /// kẹt toàn bộ input macOS, user phải reset cứng.
-  private var revocationWatchdog: Timer?
-  /// Stop polling after ~60s — beyond that the user almost certainly hasn't
-  /// granted permission (or never will in this session). A one-time NSAlert
-  /// then guides them to System Settings.
-  private let maxTrustCheckRetries = 30
+  private let windowCoordinator = WindowCoordinator()
+  private var accessibilityWatchdog: AccessibilityWatchdog?
 
   func applicationWillFinishLaunching(_ notification: Notification) {
-    // vkey ưu tiên tiếng Việt — dialog Sparkle (Kiểm tra cập nhật) và NSAlert hệ thống
-    // lấy chuỗi từ vi.lproj thay vì theo ngôn ngữ macOS (thường là English).
+    // vkey ưu tiên tiếng Việt — dialog Sparkle và NSAlert hệ thống lấy chuỗi từ vi.lproj.
     UserDefaults.standard.set(["vi", "en"], forKey: "AppleLanguages")
   }
 
   func applicationDidFinishLaunching(_ notification: Notification) {
-    // v2.3.0: register bundled custom fonts before any view materialises.
-    // Đây là đường DUY NHẤT đăng ký font — Info.plist không có
-    // ATSApplicationFontsPath (xem FontRegistration.swift).
     FontRegistration.register()
 
-    // Công cụ chụp ảnh marketing chỉ có trong bản Debug
-    // (`Tools/capture_marketing.sh` build Debug): nó ghi đè theme và chế độ
-    // sáng/tối của người dùng, không nên nằm trong bản phát hành.
     #if DEBUG
     if MarketingSnapshotExporter.isRequested {
       NSApp.setActivationPolicy(.regular)
@@ -56,42 +35,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     }
     #endif
 
-    // Hide dock icon since we use MenuBarExtra
     NSApp.setActivationPolicy(.accessory)
 
-    // v2.1.1: set notification-banner / alert-dialog icon (luôn Tonal).
-    AppIconSwitcher.apply()
-
-    // 1.6.0: setup UN center delegate + xin permission cho update banner.
-    UNUserNotificationCenter.current().delegate = self
-    UNUserNotificationCenter.current().requestAuthorization(
-      options: [.alert, .sound]
-    ) { _, _ in
-      // Ignore errors — user can grant later via System Settings.
-      // Sparkle's own dialog vẫn là backup nếu user reject banner.
+    if let img = NSImage(named: "Cficon") {
+      NSApplication.shared.applicationIconImage = img
     }
 
-    // 1.5.5: seed/migrate bộ macro mặc định. Idempotent — chỉ chạy migration
-    // 1 lần khi user lên version mới. Chi tiết trong `DefaultMacros.swift`.
-    seedDefaultMacrosIfNeeded()
+    UNUserNotificationCenter.current().delegate = self
+    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
 
-    // v4.11: Spotlight theo-mode (không ép English) — gỡ khỏi Smart Switch 1 lần.
-    AppState.migrateSpotlightKeepMode()
-    // v4.12: launcher (Raycast/Alfred/LaunchBar) theo-mode — gỡ 1 lần.
-    AppState.migrateLaunchersKeepMode()
-    // Danh sách "tắt VN" đời cũ → cấu hình 3 trạng thái, rồi xoá danh sách.
-    // Chạy SAU hai bước trên: chúng gỡ Spotlight/launcher khỏi danh sách cũ, để
-    // các app đó không hiện lại thành một dòng cấu hình.
-    AppState.migrateLegacySmartSwitchApps()
+    // Wire Toggle HUD observer outside AppState
+    appState.onToggleHUD = { isEnabled in
+      ToggleHUDWindow.shared.show(isEnabled: isEnabled)
+    }
 
-    // 1.9.0: set AX messaging timeout 100ms (default macOS 6000ms). Tránh
-    // AX query block quá lâu khi target app không responsive — giảm risk
-    // macOS disable event tap do callback chậm.
+    StartupMigrations.runAll()
     Focused.setupAXTimeout(0.1)
 
-    // 1.9.0: backup retention cleanup — chạy silent ở background, giữ ≥5
-    // file gần nhất + xóa > 30 ngày khi vượt 5 file. Tránh ~/Library/
-    // Application Support/vkey/backups/ tích lũy vô hạn.
     DispatchQueue.global(qos: .background).async {
       let deleted = UserDataMigration.cleanupOldBackups()
       if deleted > 0 {
@@ -99,97 +59,59 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       }
     }
 
-    // When the Settings (or onboarding) window closes, slide the app back to
-    // .accessory so it disappears from Cmd-Tab and the Dock. We only need to
-    // be .regular while a real window is on screen — otherwise the menu bar
-    // app couldn't accept first-responder events (which is why the
-    // KeyboardShortcuts.Recorder fails to capture keystrokes under .accessory).
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(windowWillClose(_:)),
-      name: NSWindow.willCloseNotification,
-      object: nil
-    )
     NotificationCenter.default.addObserver(
       self,
       selector: #selector(onboardingDidComplete),
       name: .vkeyOnboardingDidComplete,
       object: nil
     )
-    // 1.6.1: nhận biết Settings NSWindow khi vừa được tạo bởi SwiftUI
-    // Settings scene → áp resizable + min size + autosave frame. SwiftUI
-    // không expose customization cho Settings scene nên phải hook qua AppKit.
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(windowDidBecomeKey(_:)),
-      name: NSWindow.didBecomeKeyNotification,
-      object: nil
-    )
 
-    // v2.10: event tap fail sau retry (vd TCC entry cũ sau khi update đổi chữ
-    // ký → isTrusted true nhưng tapCreate bị từ chối) → hiện alert hướng dẫn
-    // re-grant Accessibility thay vì chết im lặng với toggle "bật".
-    appState.eventHook.onTapSetupFailed = { [weak self] in
-      self?.showAccessibilityHelpAlert()
+    let watchdog = AccessibilityWatchdog(
+      appState: appState,
+      isCurrentlyTrusted: { [weak self] in self?.isTrusted ?? false },
+      onTrustStatusChanged: { [weak self] trusted in self?.isTrusted = trusted },
+      onBecameTrusted: { [weak self] in self?.setupTrustedSession() }
+    )
+    self.accessibilityWatchdog = watchdog
+
+    appState.eventHook.onTapSetupFailed = { [weak watchdog] in
+      watchdog?.showAccessibilityHelpAlert()
     }
 
-    // Chụp phiên bản lần chạy trước TRƯỚC khi `setupTrustedSession()` ghi đè
-    // nó bằng phiên bản đang chạy (`storeTrustedAppVersion`). Đọc sau thì
-    // `handleVersionChange` luôn thấy "không đổi" và lời mời sao lưu khi lên
-    // phiên bản mới không bao giờ hiện với người đã cấp quyền Trợ năng.
+    // Chụp phiên bản lần chạy trước TRƯỚC khi `setupTrustedSession()` ghi đè.
     let versionBeforeLaunch = Defaults[.currentVersion]
 
     checkTrustStatus()
 
     if isTrusted {
-      // Set up the event tap if the process is trusted (kèm watchdog
-      // theo dõi thu hồi quyền — v3.2).
       setupTrustedSession()
-
     } else if appState.isNewAppVersion() {
       openUpgradeNewVersion()
     } else {
       openOnboarding()
     }
-    
-    // Periodically check trust status if not trusted. Capped at
-    // `maxTrustCheckRetries` to avoid polling forever (e.g. when the user
-    // permanently denies Accessibility). After the cap, an NSAlert nudges
-    // them to System Settings → Privacy & Security → Accessibility.
+
     if !isTrusted {
-      restartTrustCheckLoop()
+      watchdog.restartTrustCheckLoop()
     }
-    
-    // Sparkle prefs + post-update HUD + throttled background check
+
     Updater.configureOnLaunch()
-
-    // Check for dictionary updates on launch
     LexiconManager.shared.checkAndPromptForDictionaryUpdate()
-
-    // 1.5.0: run the weekly stats → personal-dictionary feedback loop, but at
-    // most once per ISO week. The summary is computed regardless; promotion
-    // logic inside `performWeeklyFeedback` is itself idempotent.
     runWeeklyFeedbackIfDue()
-
-    // 1.5.0: prompt for a personal-data backup the first launch after a
-    // version upgrade (gated by Defaults[.autoBackupOnUpgrade]).
     UserDataMigration.handleVersionChange(previousVersion: versionBeforeLaunch)
   }
 
-  /// Gate `performWeeklyFeedback()` so it fires once per ISO week even if
-  /// the user opens the app several times. We track the last-run week id in
-  /// `Defaults[.lastFeedbackWeekId]`.
   private func runWeeklyFeedbackIfDue() {
-    // 1.5.5+: gate trên toggle "Học hành vi từ Thống kê" trong tab Chính tả.
     guard Defaults[.autoPersonalDictFeedback] else { return }
 
     let cal = Calendar(identifier: .iso8601)
     let now = Date()
-    let weekId = String(format: "%04d-W%02d",
-                        cal.component(.yearForWeekOfYear, from: now),
-                        cal.component(.weekOfYear, from: now))
+    let weekId = String(
+      format: "%04d-W%02d",
+      cal.component(.yearForWeekOfYear, from: now),
+      cal.component(.weekOfYear, from: now))
     guard Defaults[.lastFeedbackWeekId] != weekId else { return }
-    // Run on a background queue so we don't delay app launch.
+
     DispatchQueue.global(qos: .utility).async {
       _ = UsageStatistics.shared.performWeeklyFeedback()
       DispatchQueue.main.async {
@@ -197,80 +119,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
       }
     }
   }
-  
+
   func checkTrustStatus() {
-      isTrusted = appState.eventHook.isTrusted(prompt: false)
-  }
-  
-  func setupTrustedSession() {
-      isTrusted = true
-      appState.storeTrustedAppVersion()
-      appState.eventHook.setupEventTap(give: appState)
-      appState.setEnabled(set: true)
-      startRevocationWatchdog()
+    isTrusted = appState.eventHook.isTrusted(prompt: false)
   }
 
-  /// v3.2: theo dõi quyền Accessibility SUỐT phiên trusted (2s/lần, rẻ).
-  /// Thu hồi quyền → tháo tap ngay (hết chặn input hệ thống) + menu chuyển
-  /// về hướng dẫn cấp quyền. Cấp lại → tự dựng tap mới, không cần mở lại app.
-  ///
-  /// v4.20: cùng nhịp đó kiểm luôn tap CÒN BẬT không. macOS tự tắt tap khi
-  /// callback chạy quá lâu; handler `.tapDisabledByTimeout` trong callback
-  /// vá được phần lớn ca đó, nhưng KHÔNG vá được ca tap bị tắt mà callback
-  /// không còn được gọi nữa — lúc ấy chẳng còn ai để tự cứu. Watchdog là
-  /// đường phục hồi duy nhất.
-  private func startRevocationWatchdog() {
-    revocationWatchdog?.invalidate()
-    let timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-      guard let self else { return }
-      let trusted = self.appState.eventHook.isTrusted(prompt: false)
-      self.appState.eventHook.trustedCache = trusted
-      if !trusted && self.isTrusted {
-        // Quyền vừa bị thu hồi khi đang chạy.
-        self.isTrusted = false
-        self.appState.eventHook.suspendAfterRevocation()
-        self.appState.setEnabled(set: false)
-      } else if trusted && !self.isTrusted {
-        // User cấp lại quyền → dựng tap mới.
-        self.setupTrustedSession()
-      } else if trusted, let tap = self.appState.eventHook.eventTap,
-        !CGEvent.tapIsEnabled(tap: tap)
-      {
-        // Tap bị macOS tắt ngầm — bật lại. An toàn với ca mất quyền vì
-        // `suspendAfterRevocation` đã set `eventTap = nil`, nên nhánh này
-        // không chạy khi chưa có tap.
-        // `recoverTap` còn bỏ từ đang gõ dở và đọc lại Shift: suốt lúc tap tắt
-        // phím đi thẳng vào app, bộ đệm không còn khớp màn hình.
-        self.appState.eventHook.recoverTap()
-        os_log(
-          "Event tap was silently disabled, watchdog re-enabled it (count: %{public}d)",
-          log: delegateLog, type: .error, self.appState.eventHook.tapRecoveryCount)
-      }
-      // Ổ khoá kẹt khi không còn phím phần cứng nào tới tap (Screen Sharing,
-      // hoặc đơn giản là chưa gõ gì sau khi ô mật khẩu đóng).
-      let secureInputOn = CGSIsSecureEventInputSet()
-      if self.appState.eventHook.reconcileSecureInput(
-        systemFlag: secureInputOn,
-        lockShown: self.appState.secureInputActive)
-      {
-        self.appState.secureInputActive = false
-      }
-      // Một tiến trình KHÁC app đang gõ giữ secure input (ô mật khẩu bỏ quên ở
-      // cửa sổ khác, `loginwindow` sau khi ngủ dậy): ổ khoá không hiện vì ô đó
-      // không ở app đang gõ, nên biểu tượng và menu phải nêu tên thủ phạm. Chỉ
-      // đọc IORegistry khi cờ đang bật; chỉ gán khi giá trị đổi để `@Published`
-      // không dựng lại menu mỗi 2 giây.
-      let holder = trusted
-        ? self.appState.eventHook.secureInputWarningHolder(systemFlag: secureInputOn) : nil
-      if self.appState.secureInputHolderName != holder {
-        self.appState.secureInputHolderName = holder
-      }
-    }
-    timer.tolerance = 0.5
-    // .common để watchdog vẫn chạy khi user đang giữ menu mở hoặc kéo cửa sổ —
-    // đúng lúc dễ làm callback chậm và bị macOS tắt tap nhất.
-    RunLoop.main.add(timer, forMode: .common)
-    revocationWatchdog = timer
+  func setupTrustedSession() {
+    isTrusted = true
+    appState.storeTrustedAppVersion()
+    appState.eventHook.setupEventTap(give: appState)
+    appState.setEnabled(set: true)
+    accessibilityWatchdog?.startRevocationWatchdog()
   }
 
   @objc func onboardingDidComplete() {
@@ -278,209 +137,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     if isTrusted {
       setupTrustedSession()
     }
-
-    closeOnboardingWindows()
+    windowCoordinator.closeOnboardingWindows()
   }
 
-  /// Cửa sổ onboarding / ủng hộ đang mở (weak — tự về nil khi cửa sổ giải
-  /// phóng). Trước đây mỗi lần bấm menu dựng thêm một cửa sổ + một cây SwiftUI
-  /// mới chồng lên cái cũ (onboarding không có nút đóng, ảnh hướng dẫn giải mã
-  /// ở độ phân giải gốc).
-  private weak var onboardingWindow: NSWindow?
-  private weak var donateWindow: NSWindow?
-
-  /// Đưa cửa sổ đang mở ra trước thay vì dựng thêm. Trả `false` nếu không có.
-  private func bringToFront(_ window: NSWindow?) -> Bool {
-    guard let window, window.isVisible else { return false }
-    NSApp.setActivationPolicy(.regular)
-    window.makeKeyAndOrderFront(nil)
-    NSApp.activate(ignoringOtherApps: true)
-    return true
-  }
-
-  // Opens onboarding guide
   @objc func openOnboarding() {
-    if bringToFront(onboardingWindow) { return }
-    NSApp.setActivationPolicy(.regular)
-    let contentView = OnboardingView().environmentObject(appState)
-    let windowController = OnboardingWindowController()
-    windowController.contentViewController = NSHostingController(rootView: contentView)
-    windowController.showWindow(nil)
-    onboardingWindow = windowController.window
-    NSApp.activate(ignoringOtherApps: true)
+    windowCoordinator.openOnboarding(appState: appState)
   }
 
-  // Opens upgrade guide
   @objc func openUpgradeNewVersion() {
-    NSApp.setActivationPolicy(.regular)
-    let contentView = UpgradeAppView().environmentObject(appState)
-    let windowController = OnboardingWindowController()
-    windowController.contentViewController = NSHostingController(rootView: contentView)
-    windowController.showWindow(nil)
-    NSApp.activate(ignoringOtherApps: true)
+    windowCoordinator.openUpgradeNewVersion(appState: appState)
   }
 
-  // Opens donate window
   @objc func openDonate() {
-    if bringToFront(donateWindow) { return }
-    NSApp.setActivationPolicy(.regular)
-    let contentView = DonateView()
-    let window = NSWindow(
-        contentRect: NSRect(x: 0, y: 0, width: 400, height: 520),
-        styleMask: [.titled, .closable, .fullSizeContentView],
-        backing: .buffered, defer: false)
-    window.center()
-    window.title = "Ủng hộ tác giả"
-    window.titlebarAppearsTransparent = true
-    window.isMovableByWindowBackground = true
-    window.contentViewController = NSHostingController(rootView: contentView)
-    
-    let windowController = NSWindowController(window: window)
-    windowController.showWindow(nil)
-    donateWindow = window
-    NSApp.activate(ignoringOtherApps: true)
+    windowCoordinator.openDonate()
   }
 
-  private func closeOnboardingWindows() {
-    NSApp.windows
-      .filter { $0.title == "vkey - Cài Đặt" }
-      .forEach { $0.close() }
-
-    let hasVisibleWindow = NSApp.windows.contains { window in
-      window.isVisible && window.canBecomeKey && !(window is NSPanel)
-    }
-
-    if !hasVisibleWindow {
-      NSApp.setActivationPolicy(.accessory)
-    }
-  }
-
-  /// 1.7.6: Settings window resize do SwiftUI xử lý qua modifier
-  /// `.windowResizability(.contentMinSize)` trên Settings scene
-  /// ([vkeyApp.swift](vkey/vkeyApp.swift)). AppDelegate chỉ chịu trách
-  /// nhiệm gắn frame autosave + dọn các key cũ trong NSUserDefaults.
-  @objc func windowDidBecomeKey(_ note: Notification) {
-    guard let win = note.object as? NSWindow else { return }
-    // Settings window có title "vkey Settings" (English locale) hoặc local
-    // hoá. Match qua identifier "com_apple_SwiftUI_Settings_window" cho
-    // robust cross-locale.
-    let isSettingsWindow =
-      win.identifier?.rawValue == "com_apple_SwiftUI_Settings_window"
-      || win.title.localizedCaseInsensitiveContains("settings")
-      || win.title.localizedCaseInsensitiveContains("cài đặt")
-    guard isSettingsWindow else { return }
-    // Idempotent — chỉ gắn autosave name 1 lần.
-    if win.frameAutosaveName.isEmpty {
-      // Dọn key autosave cũ để tránh tích luỹ orphan trong NSUserDefaults.
-      let legacyAutosaveKeys = [
-        "NSWindow Frame VkeySettingsWindow",
-        "NSWindow Frame VkeySettingsWindow.v174",
-        "NSWindow Frame VkeySettingsWindow.v175",
-        "NSWindow Frame VkeySettingsWindow.v176",
-        "NSWindow Frame VkeySettingsWindow.v177",
-      ]
-      for key in legacyAutosaveKeys {
-        UserDefaults.standard.removeObject(forKey: key)
-      }
-      win.setFrameAutosaveName("VkeySettingsWindow.v178")
-    }
-  }
-
-  // Called for every NSWindow close. When the last visible regular window is
-  // closing, drop activation policy back to .accessory so the app re-hides.
-  @objc func windowWillClose(_ note: Notification) {
-    guard let closing = note.object as? NSWindow else { return }
-    DispatchQueue.main.async {
-      let stillOpen = NSApp.windows.contains { win in
-        win !== closing && win.isVisible
-          && win.canBecomeKey
-          && !(win is NSPanel)
-      }
-      if !stillOpen {
-        NSApp.setActivationPolicy(.accessory)
-      }
-    }
-  }
-
-  // Returns true to opt-in to secure coding for state restoration
   func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
     return true
   }
 
-  // Cleans up before the application terminates
   func applicationWillTerminate(_ aNotification: Notification) {
-    trustCheckTimer?.invalidate()
-    trustCheckTimer = nil
+    accessibilityWatchdog?.stopAll()
     LexiconManager.shared.cancelInFlightDownloads()
     appState.eventHook.destroy()
-    // 1.6.0: ensure stats persist trước khi exit (vd Sparkle restart sau
-    // install). Bình thường scheduleFlush debounce 10s, nhưng terminate
-    // race không thể đợi.
     UsageStatistics.shared.flushSynchronously()
   }
 
-  /// Shown after the trust polling loop has given up. The alert links the
-  /// user to System Settings so they can grant Accessibility manually, and
-  /// offers a "Try again" path that restarts polling.
-  /// v3.3: guard chống hiện chồng nhiều alert (mỗi alert là 1 runModal chặn
-  /// main thread).
-  private var accessibilityAlertShowing = false
+  // MARK: - UNUserNotificationCenterDelegate
 
-  private func showAccessibilityHelpAlert() {
-    // BUG TREO (đã gặp trên máy thật): activate ngay sau setActivationPolicy
-    // thường bị NUỐT → alert modal chạy nhưng VÔ HÌNH (app accessory không
-    // được kích hoạt) → main thread kẹt vĩnh viễn trong runModal → menu bar
-    // hiện mà bấm không phản hồi, Settings không mở. Fix: chờ activation
-    // settle 1 nhịp + ép cửa sổ alert nổi lên trên + guard single-shot.
-    guard !accessibilityAlertShowing else { return }
-    accessibilityAlertShowing = true
-
-    NSApp.setActivationPolicy(.regular)
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-      guard let self else { return }
-      NSApp.activate(ignoringOtherApps: true)
-
-      let alert = NSAlert()
-      alert.messageText = "vkey cần quyền \(AccessibilityPermissionPane.displayName)"
-      alert.informativeText = """
-      vkey cần được cấp quyền này để có thể chuyển ký tự bạn gõ thành tiếng \
-      Việt. Vui lòng mở:
-
-      \(AccessibilityPermissionPane.settingsPath)
-
-      rồi bật toggle cho vkey. Sau đó nhấn "Thử lại" để vkey tiếp tục.
-      """
-      alert.addButton(withTitle: "Mở Cài đặt")
-      alert.addButton(withTitle: "Thử lại")
-      alert.addButton(withTitle: "Để sau")
-      alert.alertStyle = .warning
-      alert.window.level = .floating
-      alert.window.orderFrontRegardless()
-
-      let response = alert.runModal()
-      self.accessibilityAlertShowing = false
-
-      switch response {
-      case .alertFirstButtonReturn:
-        // Open the Accessibility pane directly. URL accepted by macOS 14+.
-        if let url = URL(
-          string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-        ) {
-          NSWorkspace.shared.open(url)
-        }
-        self.restartTrustCheckLoop()
-      case .alertSecondButtonReturn:
-        self.restartTrustCheckLoop()
-      default:
-        break
-      }
-    }
-  }
-
-  // MARK: - UNUserNotificationCenterDelegate (1.6.0+)
-
-  /// Khi app đang foreground và banner update tới, hiển thị banner luôn
-  /// (mặc định macOS suppress notification của foreground app).
   func userNotificationCenter(
     _ center: UNUserNotificationCenter,
     willPresent notification: UNNotification,
@@ -489,93 +173,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject, UNUserNoti
     completionHandler([.banner, .sound])
   }
 
-  /// User click banner → mở Sparkle dialog với option Install Update.
   func userNotificationCenter(
     _ center: UNUserNotificationCenter,
     didReceive response: UNNotificationResponse,
     withCompletionHandler completionHandler: @escaping () -> Void
   ) {
     if response.notification.request.identifier.hasPrefix("vkey-update-") {
-      // Trigger Sparkle manual check → dialog Install.
       Updater.checkForUpdates(manual: true)
     }
     completionHandler()
-  }
-
-  /// Seed / migrate bộ macro mặc định. Idempotent — chạy mỗi launch nhưng
-  /// chỉ thực thi khi `Defaults[.defaultMacrosVersion] < 2`. Migration v1→v2:
-  /// - User mới chưa từng seed: seed `DefaultMacros.allDefaults` (34 entries).
-  /// - User 1.5.3/1.5.4 đã seed 19 entries cũ: dọn entries bỏ + rename + add
-  ///   entries mới còn thiếu. Tôn trọng entry user đã sửa (chỉ migrate khi
-  ///   tuple (from, to) vẫn giữ nguyên bản default cũ).
-  private func seedDefaultMacrosIfNeeded() {
-    let currentSeedVersion = Defaults[.defaultMacrosVersion]
-
-    // Already at v2 → done.
-    if currentSeedVersion >= 2 { return }
-
-    // First-launch ever (1.5.0+): nothing seeded yet.
-    if !Defaults[.macrosSeeded] && Defaults[.macros].isEmpty {
-      Defaults[.macros] = DefaultMacros.allDefaults
-      Defaults[.macrosSeeded] = true
-      Defaults[.defaultMacrosVersion] = 2
-      return
-    }
-
-    // Migrate v1 (1.5.3/1.5.4 seed) → v2 (1.5.5 seed).
-    var macros = Defaults[.macros]
-
-    // 1) Remove obsolete seeds — chỉ nếu user chưa sửa (cả `from` và `to`
-    //    vẫn khớp với default cũ).
-    for entry in DefaultMacros.obsoleteSeedsV1 {
-      macros.removeAll { $0.from == entry.from && $0.to == entry.to }
-    }
-
-    // 2) Rename seeds — chỉ nếu tuple (oldFrom, oldTo) vẫn nguyên bản.
-    for rule in DefaultMacros.renamedSeedsV1ToV2 {
-      if let idx = macros.firstIndex(where: { $0.from == rule.oldFrom && $0.to == rule.oldTo }) {
-        macros[idx] = Macro(from: rule.newFrom, to: rule.newTo)
-      }
-    }
-
-    // 3) Add new entries user chưa có. 1.5.7: dedupe theo cả `from`
-    //    lẫn `to` — nếu user đã tự đặt macro với `to` giống default
-    //    (vd `vietnam → Việt Nam` thay vì `vn → Việt Nam`), không thêm
-    //    bản default nữa để tránh duplicate `to`.
-    let existingFroms = Set(macros.map { $0.from })
-    let existingTos = Set(macros.map { $0.to })
-    for newMacro in DefaultMacros.allDefaults {
-      if existingFroms.contains(newMacro.from) { continue }
-      if existingTos.contains(newMacro.to)     { continue }
-      macros.append(newMacro)
-    }
-
-    Defaults[.macros] = macros
-    Defaults[.defaultMacrosVersion] = 2
-  }
-
-  private func restartTrustCheckLoop() {
-    trustCheckRetries = 0
-    trustCheckTimer?.invalidate()
-    trustCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) {
-      [weak self] timer in
-      guard let self else {
-        timer.invalidate()
-        return
-      }
-      self.checkTrustStatus()
-      if self.isTrusted {
-        timer.invalidate()
-        self.trustCheckTimer = nil
-        self.setupTrustedSession()
-        return
-      }
-      self.trustCheckRetries += 1
-      if self.trustCheckRetries >= self.maxTrustCheckRetries {
-        timer.invalidate()
-        self.trustCheckTimer = nil
-        self.showAccessibilityHelpAlert()
-      }
-    }
   }
 }

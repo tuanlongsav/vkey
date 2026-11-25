@@ -7,7 +7,6 @@
 //  1.5.0 (Phase 3 split).
 //
 
-import AppKit
 import Defaults
 import Foundation
 
@@ -69,12 +68,9 @@ final class LexiconManager {
     } else {
       let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
       let dir = appSupport?.appendingPathComponent("vkey/lexicon", isDirectory: true)
-      try? FileManager.default.createDirectory(
-        at: dir ?? URL(fileURLWithPath: "/tmp"),
-        withIntermediateDirectories: true,
-        attributes: nil
-      )
-      self.updatePackageURL = (dir ?? URL(fileURLWithPath: "/tmp")).appendingPathComponent("lexicon-update.json")
+        ?? URL(fileURLWithPath: "/tmp")
+      try? Self.ensureDirectory(dir)
+      self.updatePackageURL = dir.appendingPathComponent("lexicon-update.json")
     }
 
     reload()
@@ -92,23 +88,10 @@ final class LexiconManager {
     let performReload = { [weak self] in
       guard let self = self else { return }
 
-      // Load base syllables from NSDataAsset (compiled in Assets.xcassets)
-      var vnWords: Set<String> = []
-      if let asset = NSDataAsset(name: "syllables"),
-         let raw = String(data: asset.data, encoding: .utf8) {
-        let list = raw.components(separatedBy: "\n")
-          .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
-          .filter { !$0.isEmpty }
-        vnWords = Set(list)
-      } else {
-        // Fallback to embedded list if asset load fails
-        vnWords = EmbeddedLexiconData.vietnameseWords
-      }
-
       let embeddedVN = InMemoryLexicon(
         version: EmbeddedLexiconData.version,
         source: .embedded,
-        words: vnWords
+        words: EmbeddedLexiconData.vietnameseWords
       )
       let embeddedEN = InMemoryLexicon(
         version: EmbeddedLexiconData.version,
@@ -175,13 +158,16 @@ final class LexiconManager {
     }
   }
 
-  func setUpdatePackageData(_ data: Data) throws {
-    let dir = updatePackageURL.deletingLastPathComponent()
+  private static func ensureDirectory(_ url: URL) throws {
     try FileManager.default.createDirectory(
-      at: dir,
+      at: url,
       withIntermediateDirectories: true,
       attributes: nil
     )
+  }
+
+  func setUpdatePackageData(_ data: Data) throws {
+    try Self.ensureDirectory(updatePackageURL.deletingLastPathComponent())
     try data.write(to: updatePackageURL, options: .atomic)
     reload()
   }
@@ -237,14 +223,23 @@ final class LexiconManager {
     return validatedPackage(data)
   }
 
-  /// In-flight task. Cancelled in `applicationWillTerminate` (via
-  /// `cancelInFlightDownloads`) so the app can exit cleanly without the
-  /// completion handler touching a deallocated `self`.
+  private let downloadLock = NSLock()
   private var inFlightDictionaryTask: URLSessionDataTask?
 
   func cancelInFlightDownloads() {
-    inFlightDictionaryTask?.cancel()
+    downloadLock.lock()
+    let task = inFlightDictionaryTask
     inFlightDictionaryTask = nil
+    downloadLock.unlock()
+    task?.cancel()
+  }
+
+  private func clearInFlightTask(_ task: URLSessionDataTask?) {
+    downloadLock.lock()
+    if inFlightDictionaryTask === task {
+      inFlightDictionaryTask = nil
+    }
+    downloadLock.unlock()
   }
 
   /// Auto-check & auto-apply dictionary update from GitHub.
@@ -273,7 +268,9 @@ final class LexiconManager {
     // 1.6.2+: raw.githubusercontent.com trả text/plain trực tiếp, không cần
     // Accept header tùy chỉnh.
 
+    var taskRef: URLSessionDataTask?
     let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+      defer { self?.clearInFlightTask(taskRef) }
       guard let self = self,
             error == nil,
             let httpResponse = response as? HTTPURLResponse,
@@ -285,17 +282,17 @@ final class LexiconManager {
       guard let package = self.validatedDownloadedPackage(
               data, expectedContentLength: httpResponse.expectedContentLength)
       else {
-        // Gói không đạt (quá lớn / hỏng / sai chữ ký) → bỏ qua, thử lại lần sau.
         return
       }
       let currentVersion = self.snapshotVersions().vn
       if package.version > currentVersion {
-        // Apply im lặng. Nếu ghi file lỗi (rất hiếm — full disk / perm),
-        // bỏ qua; lần check kế tiếp 24h sau sẽ thử lại.
         try? self.setUpdatePackageData(data)
       }
     }
+    taskRef = task
+    downloadLock.lock()
     inFlightDictionaryTask = task
+    downloadLock.unlock()
     task.resume()
   }
 
@@ -355,7 +352,7 @@ final class LexiconManager {
   }
 
   /// 1.7.10: list HẸP cho instant-raw-restore tại typing time. Chỉ dùng
-  /// `EmbeddedLexiconData.englishWords` (126 từ hand-curated cho cases
+  /// `EmbeddedLexiconData.englishWords` (hand-curated cho cases
   /// thường conflict telex như "off", "ass", "of") + `userAllowWords`.
   /// KHÔNG dùng package EN (~9826 từ) để tránh collision với telex stems
   /// ngắn (`cos`/`the`/`tie`/`hop`/`thee` → "có"/"thế"/"tiếng"/"họp"/"thế").

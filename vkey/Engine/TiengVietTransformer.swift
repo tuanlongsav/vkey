@@ -184,17 +184,8 @@ enum TiengVietTransformer {
 
   // MARK: - Tiện ích
 
-  /// Chuyển đổi ký tự theo bảng quy tắc
-  /// - Parameters:
-  ///   - kytu: Ký tự cần chuyển đổi
-  ///   - quyTac: Bảng ánh xạ (ký tự gốc, ký tự mới)
-  /// - Returns: Ký tự mới nếu tìm thấy, nil nếu không
-  private static func chuyenKyTu(kytu: Character, quyTac: [(Character, Character)]) -> Character? {
-    for (match, to) in quyTac {
-      if match == kytu {
-        return to
-      }
-    }
-    return nil
+  /// Chuyển đổi ký tự theo bảng quy tắc O(1)
+  private static func chuyenKyTu(kytu: Character, quyTac: [Character: Character]) -> Character? {
+    quyTac[kytu]
   }
 }

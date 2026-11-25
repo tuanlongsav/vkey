@@ -5,11 +5,9 @@
 //  Data structure for fast prefix matching.
 //
 //  Supports an optional case-insensitive mode: when enabled, all inserts and
-//  lookups are normalised to lowercase. This is used for the bilingual
-//  lexicon (English ↔ Vietnamese reference, where user input may be in any
-//  casing). The Vietnamese-syllable Tries keep the original case-sensitive
-//  behaviour because they need to distinguish "Nh"/"nH"/"NH" variants for
-//  precise syllable matching.
+//  lookups are normalised to lowercase. `longestPrefixLength(in:)` returns the
+//  matched prefix length on the original input string so callers can slice
+//  `text.prefix(length)` while preserving the user's exact casing.
 //
 
 import Foundation
@@ -45,7 +43,7 @@ final class Trie {
   }
 
   /// Find the longest prefix of `text` that exists in the Trie.
-  /// Returns the matched word with its **original casing** (not folded).
+  /// Returns the matched word with the stored casing from `insert(_:)`.
   func findLongestPrefix(in text: String) -> String? {
     var current = root
     var longestMatch: String?
@@ -63,6 +61,37 @@ final class Trie {
     return longestMatch
   }
 
+  /// Find the character count of the longest prefix of `text` that exists in the Trie.
+  /// Preserves input indexing so callers can slice `text.prefix(len)` with exact input casing.
+  func longestPrefixLength(in text: String) -> Int {
+    var current = root
+    var longestLen = 0
+    var index = 0
+
+    for ch in text {
+      index += 1
+      if caseInsensitive {
+        var matchedAll = true
+        for foldedChar in ch.lowercased() {
+          if let nextNode = current.children[foldedChar] {
+            current = nextNode
+          } else {
+            matchedAll = false
+            break
+          }
+        }
+        guard matchedAll else { break }
+      } else {
+        guard let nextNode = current.children[ch] else { break }
+        current = nextNode
+      }
+      if current.isEndOfWord {
+        longestLen = index
+      }
+    }
+    return longestLen
+  }
+
   /// Exact-match lookup. Returns true if `word` was previously inserted.
   func contains(_ word: String) -> Bool {
     var current = root
@@ -75,9 +104,6 @@ final class Trie {
 
   // MARK: - Internal
 
-  /// Apply case folding when the trie is case-insensitive. We fold the entire
-  /// string in one pass so that mappings like "İ" → "i̇" (multi-character
-  /// lowercasing) produce a deterministic sequence of characters.
   private func fold(_ s: String) -> [Character] {
     caseInsensitive ? Array(s.lowercased()) : Array(s)
   }

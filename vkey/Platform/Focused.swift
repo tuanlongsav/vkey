@@ -48,11 +48,18 @@ public struct Focused {
   /// nhất TĂNG GẤP ĐÔI ở đúng đường nóng. Hai hằng số vì có thật hai ngân sách.
   public static let hotPathAXTimeout: Float = 0.05
 
+  /// Khoá bảo vệ cửa sổ mượn timeout toàn tiến trình (`withAXTimeout`) tránh
+  /// hai thread cùng ghi/khôi phục `AXUIElementSetMessagingTimeout` trên
+  /// system-wide element chồng lên nhau.
+  private static let axTimeoutLock = NSLock()
+
   /// 1.9.0: timeout cho AX queries (giây). Gọi 1 lần lúc app launch để
   /// áp dụng global. Tránh AX call block quá lâu khi target app không
   /// responsive (vd app hang) → giảm risk macOS disable event tap.
   /// Áp dụng cho system-wide element nên cover tất cả AX query subsequent.
   public static func setupAXTimeout(_ timeoutSeconds: Float = defaultAXTimeout) {
+    axTimeoutLock.lock()
+    defer { axTimeoutLock.unlock() }
     let systemWide = AXUIElementCreateSystemWide()
     AXUIElementSetMessagingTimeout(systemWide, timeoutSeconds)
   }
@@ -65,13 +72,10 @@ public struct Focused {
   /// Chỉ dùng khi thứ cần truy vấn CHÍNH LÀ system-wide element (hỏi "ai đang
   /// focus" thì không biết trước pid, nên không có element nào khác để hỏi).
   /// Truy vấn một element đã biết thì đặt timeout LÊN CHÍNH ELEMENT ĐÓ —
-  /// element-scope không rò ra toàn tiến trình (xem `focusedElement(ofPID:)`).
-  ///
-  /// ⚠️ Vẫn là trạng thái toàn tiến trình: một AX call trên thread khác rơi
-  /// đúng cửa sổ này sẽ chịu timeout ngắn. API không có timeout theo từng lời
-  /// gọi cho system-wide nên không tránh được — nhưng cửa sổ giờ hữu hạn và
-  /// trạng thái ổn định là `defaultAXTimeout`, thay vì "kẻ ghi sau thắng".
+  /// element-scope không rò ra toàn tiến trình (xem `AXHelpers.focusedElement(ofPID:)`).
   public static func withAXTimeout<T>(_ timeoutSeconds: Float, _ body: () -> T) -> T {
+    axTimeoutLock.lock()
+    defer { axTimeoutLock.unlock() }
     let systemWide = AXUIElementCreateSystemWide()
     AXUIElementSetMessagingTimeout(systemWide, timeoutSeconds)
     defer { AXUIElementSetMessagingTimeout(systemWide, defaultAXTimeout) }
@@ -237,11 +241,7 @@ public struct Focused {
       return FocusSnapshot(bundleId: nil, fieldKind: .unknown)
     }
     AXUIElementSetMessagingTimeout(element, timeout)
-    var bundleId: String? = nil
-    var pid: pid_t = 0
-    if AXUIElementGetPid(element, &pid) == .success {
-      bundleId = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
-    }
+    let bundleId = element.bundleIdentifier()
     let kind = Focused.fieldKind(from: element, timeout: timeout)
     return FocusSnapshot(bundleId: bundleId, fieldKind: kind)
   }
@@ -252,18 +252,6 @@ public struct Focused {
   /// is global and stays on while a *background* app holds a focused password
   /// field, which would otherwise keep vkey stuck in private mode after the
   /// user switches away.
-  ///
-  /// Returns `false` when AX can't resolve the focused element. Callers should
-  /// treat that as "front app owns it" only when the front app is already the
-  /// known secure-input owner (e.g. Terminal sudo, which exposes no secure
-  /// subrole) — see `EventHook`.
-  ///
-  /// F4: chạy trên TAP THREAD (`EventHook`), mỗi event trong lúc secure input
-  /// đang bật — nên đi bằng ngân sách đường nóng.
-  public static func isSecureField() -> Bool {
-    secureFieldState() == .secure
-  }
-
   /// Ô đang focus là gì, xét riêng cho câu hỏi "đây có phải chỗ nhập mật khẩu".
   public enum SecureFieldState {
     /// AX báo đây là ô mật khẩu (`AXSecureTextField`).
@@ -280,9 +268,7 @@ public struct Focused {
   /// chứ không phải `plainText`: một ô mật khẩu tự vẽ thường lộ ra dưới role
   /// chung chung (`AXGroup`, `AXUnknown`), và "không biết" phải rơi về phía an
   /// toàn là không bỏ dấu.
-  static let plainTextRoles: Set<String> = [
-    "AXTextField", "AXTextArea", "AXComboBox", "AXSearchField",
-  ]
+  static let plainTextRoles: Set<String> = AXHelpers.editableTextRoles
 
   /// Lõi thuần của `secureFieldState()`.
   static func classifySecureField(subrole: String?, role: String?) -> SecureFieldState {
@@ -312,24 +298,7 @@ public struct Focused {
   public static func focusedTextHasSelection() -> Bool {
     guard let el = focusedElement(timeout: hotPathAXTimeout) else { return false }
     AXUIElementSetMessagingTimeout(el, hotPathAXTimeout)
-    var rangeRef: CFTypeRef?
-    guard
-      AXUIElementCopyAttributeValue(
-        el, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
-      let rv = rangeRef, CFGetTypeID(rv) == AXValueGetTypeID()
-    else { return false }
-    var sel = CFRange()
-    guard AXValueGetValue(rv as! AXValue, .cfRange, &sel) else { return false }
+    guard let sel = el.selectedTextRange() else { return false }
     return sel.length > 0
-  }
-}
-
-extension AXUIElement {
-  public func getAttribute<T>(property: String) -> T? {
-    var ptr: AnyObject?
-    if AXUIElementCopyAttributeValue(self, property as CFString, &ptr) != AXError.success {
-      return nil
-    }
-    return ptr as? T
   }
 }

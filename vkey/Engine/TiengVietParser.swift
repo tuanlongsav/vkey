@@ -11,49 +11,46 @@ import Foundation
 ///
 /// Chuyển đổi mảng ký tự chưa có dấu thành cấu trúc ThanhPhanTieng.
 /// Quy trình: Phụ âm đầu → Nguyên âm → Phụ âm cuối → Phần dư.
-///
-/// Parser **không** đọc `Defaults` — mọi tuỳ chọn (vd autoTypoCorrection)
-/// được truyền vào qua tham số. `TiengVietState` là điểm đọc Defaults duy
-/// nhất và truyền cờ xuống. Điều này cho phép unit test dễ dàng và tách
-/// rõ trách nhiệm giữa pure logic và stateful UI layer.
 enum TiengVietParser {
 
   // MARK: - API chính
 
-  /// Phân tích chuỗi ký tự thành các thành phần âm tiết tiếng Việt.
-  /// - Parameters:
-  ///   - chuKhongDau: Mảng ký tự chưa có dấu (từ bàn phím)
-  ///   - autoTypoCorrection: Bật/tắt sửa lỗi gõ nhầm tự động
-  /// - Returns: ThanhPhanTieng với các thành phần đã phân tích
-  static func parse(_ chuKhongDau: [Character], autoTypoCorrection: Bool = true) -> ThanhPhanTieng {
-    var result = rawParse(chuKhongDau)
+  static func parse(
+    _ chuKhongDau: [Character],
+    autoTypoCorrection: Bool = true,
+    allowedZWJF: Bool = true
+  ) -> ThanhPhanTieng {
+    var result = rawParse(chuKhongDau, allowedZWJF: allowedZWJF)
     if autoTypoCorrection {
-      applyTypoCorrections(to: &result, originalInput: chuKhongDau)
+      let options = EngineOptions(
+        autoTypoCorrection: autoTypoCorrection,
+        allowedZWJF: allowedZWJF
+      )
+      applyTypoCorrections(to: &result, originalInput: chuKhongDau, options: options)
     }
     return result
   }
 
   /// Phân tích chuỗi ký tự thành các thành phần âm tiết tiếng Việt (không áp dụng sửa lỗi tự động)
-  static func rawParse(_ chuKhongDau: [Character]) -> ThanhPhanTieng {
+  static func rawParse(_ chuKhongDau: [Character], allowedZWJF: Bool = true) -> ThanhPhanTieng {
     var result = ThanhPhanTieng()
     var remaining = String(chuKhongDau)
 
     guard !remaining.isEmpty else { return result }
 
-    // Bước 1: Tách phụ âm đầu bằng Trie
-    if let matched = TiengViet.PhuAmDauTrie.findLongestPrefix(in: remaining) {
-      result.phuAmDau = Array(matched)
-      remaining = String(remaining.dropFirst(matched.count))
+    // Bước 1: Tách phụ âm đầu bằng Trie (giữ nguyên hoa/thường đầu vào)
+    let initialLen = TiengViet.phuAmDauTrie(allowedZWJF: allowedZWJF).longestPrefixLength(in: remaining)
+    if initialLen > 0 {
+      result.phuAmDau = Array(remaining.prefix(initialLen))
+      remaining = String(remaining.dropFirst(initialLen))
     }
 
     // Tiếp tục với nguyên âm, phụ âm cuối, phần dư
     result = finishParsing(result: &result, remaining: remaining)
 
     // Xử lý đặc biệt cho "gi":
-    // Trie ban đầu match "gi" như phụ âm ghép, nhưng trong tiếng Việt "gi" có ngữ nghĩa kép:
     // - Phụ âm "gi": gia, giá, giáng, giữ (gi + nguyên âm)
     // - Phụ âm "g" + nguyên âm "i": gì, gin, giếng, giết (g + i...)
-    // Dùng classifyGi() để quyết định cách tách.
     if result.phuAmDau.count == 2,
        result.phuAmDau[0].lowercased() == "g",
        result.phuAmDau[1].lowercased() == "i" {
@@ -63,16 +60,14 @@ enum TiengVietParser {
         iChar: iChar,
         originalVowel: result.nguyenAm,
         originalFinal: result.phuAmCuoi,
-        originalLeftover: result.conLai
+        originalLeftover: result.conLai,
+        allowedZWJF: allowedZWJF
       ) {
       case .splitG:
-        // "g" là phụ âm, "i" ghép vào nhóm nguyên âm
         result.phuAmDau = [result.phuAmDau[0]]
         if result.nguyenAm.isEmpty {
-          // "gi", "gin" → g + i, g + i + n
           result.nguyenAm = [iChar]
         } else {
-          // "giếng" → g + iê + ng, "giết" → g + iê + t
           let newRemaining = String([iChar] + result.nguyenAm + result.phuAmCuoi + result.conLai)
           result.nguyenAm = []
           result.phuAmCuoi = []
@@ -81,7 +76,6 @@ enum TiengVietParser {
         }
 
       case .keepGi:
-        // "gi" giữ nguyên là phụ âm ghép
         break
       }
     }
@@ -91,7 +85,6 @@ enum TiengVietParser {
 
   // MARK: - Hàm nội bộ
 
-  /// Tiếp tục phân tích sau khi đã tách phụ âm đầu
   private static func finishParsing(
     result: inout ThanhPhanTieng,
     remaining: String
@@ -99,221 +92,157 @@ enum TiengVietParser {
     var remaining = remaining
 
     // Bước 2: Tách nguyên âm bằng Trie
-    if let matched = TiengViet.NguyenAmTrie.findLongestPrefix(in: remaining) {
-      result.nguyenAm = Array(matched)
-      result.chuaNguyenAmUO = TiengViet.NguyenAmUO.contains {
-        $0.lowercased() == matched.lowercased()
-      }
-      remaining = String(remaining.dropFirst(matched.count))
+    let vowelLen = TiengViet.NguyenAmTrie.longestPrefixLength(in: remaining)
+    if vowelLen > 0 {
+      result.nguyenAm = Array(remaining.prefix(vowelLen))
+      result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
+      remaining = String(remaining.dropFirst(vowelLen))
     }
 
     // Bước 3: Tách phụ âm cuối bằng Trie
-    if let matched = TiengViet.PhuAmCuoiTrie.findLongestPrefix(in: remaining) {
-      result.phuAmCuoi = Array(matched)
-      remaining = String(remaining.dropFirst(matched.count))
+    let finalLen = TiengViet.PhuAmCuoiTrie.longestPrefixLength(in: remaining)
+    if finalLen > 0 {
+      result.phuAmCuoi = Array(remaining.prefix(finalLen))
+      remaining = String(remaining.dropFirst(finalLen))
     }
 
-    // Bước 4: Phần còn lại (không thuộc âm tiết tiếng Việt hợp lệ)
+    // Bước 4: Phần còn lại
     result.conLai = Array(remaining)
     return result
   }
 
   /// Phân tích PHẦN ĐUÔI đứng sau nguyên âm: chỉ tách phụ âm cuối + phần dư,
-  /// KHÔNG tách nguyên âm.
-  ///
-  /// Các rule "swap nguyên âm" bên dưới gán sẵn `reparsed.nguyenAm` rồi mới phân
-  /// tích phần đuôi. Nếu dùng `finishParsing` thì bước tách nguyên âm của nó GHI
-  /// ĐÈ nguyên âm vừa gán khi đuôi bắt đầu bằng nguyên âm — ký tự biến mất mà
-  /// `needsRecovery` vẫn false nên không có đường phục hồi ("veia" → "va",
-  /// "boui" → "bỉ", "haoan" → "hoân", "afoot" → "òt").
-  /// Ở đây đuôi bắt đầu bằng nguyên âm rơi thẳng vào `conLai`, nên guard
-  /// `reparsed.conLai.isEmpty` sẵn có của từng rule tự loại bỏ phép swap.
+  /// KHÔNG tách nguyên âm (tránh ghi đè nguyên âm vừa swap).
   private static func parseDuoiSauNguyenAm(
     result: inout ThanhPhanTieng,
     remaining: String
   ) -> ThanhPhanTieng {
     var remaining = remaining
 
-    if let matched = TiengViet.PhuAmCuoiTrie.findLongestPrefix(in: remaining) {
-      result.phuAmCuoi = Array(matched)
-      remaining = String(remaining.dropFirst(matched.count))
+    let finalLen = TiengViet.PhuAmCuoiTrie.longestPrefixLength(in: remaining)
+    if finalLen > 0 {
+      result.phuAmCuoi = Array(remaining.prefix(finalLen))
+      remaining = String(remaining.dropFirst(finalLen))
     }
 
     result.conLai = Array(remaining)
     return result
   }
 
-  /// Re-compute whether the given vowel group should be flagged as a "uo"-class
-  /// vowel (móc on both u and o → "ươ"). Reads from `TiengViet.NguyenAmUO` so
-  /// future additions to that table propagate without code changes here.
   private static func isNguyenAmUO(_ nguyenAm: [Character]) -> Bool {
-    let key = String(nguyenAm).lowercased()
-    return TiengViet.NguyenAmUO.contains { $0.lowercased() == key }
+    TiengViet.NguyenAmUO.contains(String(nguyenAm).lowercased())
   }
 
-  /// True khi phụ âm đầu của syllable là loanword consonant (`w/z/j/f`).
-  /// Tiếng Việt không có từ bản địa bắt đầu bằng các chữ này, nên các typo-correction
-  /// dạng "swap vowel" (vd veit→viet, bous→buos) không nên áp cho loanword —
-  /// nếu không sẽ phá luôn từ tiếng Anh (weight → wieght, journey → juorney, …).
-  /// Chỉ tác động khi user bật `allowedZWJF` (mặc định true) khiến w/z/j/f thành phụ âm đầu.
   private static func startsWithForeignConsonant(_ phuAmDau: [Character]) -> Bool {
     guard let first = phuAmDau.first?.lowercased().first else { return false }
-    return first == "w" || first == "z" || first == "j" || first == "f"
+    return TiengViet.ForeignConsonants.contains(first)
+  }
+
+  /// Helper dùng chung cho 4 rule swap nguyên âm (`ei→ie`, `ou→uo`, `aoi→oai`, `ao+C→oa+C`).
+  private static func trySwapVowel(
+    into result: inout ThanhPhanTieng,
+    swappedVowel: [Character],
+    tail: String,
+    shouldCommit: (ThanhPhanTieng) -> Bool = { $0.conLai.isEmpty }
+  ) {
+    var reparsed = ThanhPhanTieng()
+    reparsed.nguyenAm = swappedVowel
+    reparsed = parseDuoiSauNguyenAm(result: &reparsed, remaining: tail)
+    guard shouldCommit(reparsed) else { return }
+    result.nguyenAm = reparsed.nguyenAm
+    result.phuAmCuoi = reparsed.phuAmCuoi
+    result.conLai = reparsed.conLai
+    result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
   }
 
   /// Auto-correct common adjacent-key ordering mistakes before validation.
-  private static func applyTypoCorrections(to result: inout ThanhPhanTieng, originalInput: [Character]) {
-    // Fast path (perf, chạy mỗi phím): nếu âm tiết đã có nguyên âm, không còn
-    // ký tự thừa (`conLai` rỗng) và KHÔNG cần recovery thì không rule nào bên
-    // dưới có thể fire — các rule swap đều đòi `conLai` không rỗng hoặc nguyên
-    // âm đặc thù; rule "ao"+phụ-âm-cuối chỉ gặp khi "ao"+phụ-âm-cuối là bất hợp
-    // lệ (⇒ needsRecovery=true); Rule 5 chỉ chạy khi nguyên-âm-rỗng / conLai
-    // không rỗng / needsRecovery. Bỏ qua sớm để tránh re-parse thừa. Đây là
-    // no-op về hành vi (điều kiện chính là phủ định điều kiện kích hoạt mọi rule).
+  private static func applyTypoCorrections(
+    to result: inout ThanhPhanTieng,
+    originalInput: [Character],
+    options: EngineOptions
+  ) {
+    // Fast path: âm tiết đã sạch và không cần recovery → không rule nào có thể fire.
     if !result.nguyenAm.isEmpty,
        result.conLai.isEmpty,
-       !TiengVietValidator.needsRecovery(result) {
+       !TiengVietValidator.needsRecovery(result, options: options) {
       return
     }
-    // "veit" -> "viet": users sometimes type the second "e" before "i"
-    // when aiming for "việt". The first parse sees "e" + leftover "i...";
-    // reparsing the tail lets final consonants such as "t" or "ng" attach normally.
-    // Gate: không áp cho loanword-initial (w/z/j/f) — vd "weight" KHÔNG nên thành "wieght".
-    if result.nguyenAm.count == 1,
-      result.nguyenAm[0].lowercased() == "e",
-      result.phuAmCuoi.isEmpty,
-      let firstLeftover = result.conLai.first,
-      firstLeftover.lowercased() == "i",
-      !startsWithForeignConsonant(result.phuAmDau)
+
+    let isForeign = startsWithForeignConsonant(result.phuAmDau)
+
+    // "veit" -> "viet"
+    if !isForeign,
+       result.nguyenAm.count == 1,
+       result.nguyenAm[0].lowercased() == "e",
+       result.phuAmCuoi.isEmpty,
+       let firstLeftover = result.conLai.first,
+       firstLeftover.lowercased() == "i"
     {
-      let eChar = result.nguyenAm[0]
-      let iChar = firstLeftover
+      trySwapVowel(
+        into: &result,
+        swappedVowel: [firstLeftover, result.nguyenAm[0]],
+        tail: String(result.conLai.dropFirst())
+      )
+    }
+
+    // "bous" -> "buos" (guard prefix EN `sou`→`source` + không nuốt phụ âm cuối như "opu")
+    if !isForeign,
+       result.nguyenAm.count == 1,
+       result.nguyenAm[0].lowercased() == "o",
+       result.phuAmCuoi.isEmpty,
+       let firstLeftover = result.conLai.first,
+       firstLeftover.lowercased() == "u"
+    {
       let tail = String(result.conLai.dropFirst())
-      var reparsed = ThanhPhanTieng()
-      reparsed.nguyenAm = [iChar, eChar]
-      reparsed = parseDuoiSauNguyenAm(result: &reparsed, remaining: tail)
-      // FIX (loanword): chỉ swap khi reparse tiêu hoá HẾT (conLai rỗng) — nếu
-      // còn rác phía sau thì là từ tiếng Anh, giữ nguyên (vd "their" → "thie"+
-      // "r" ⇒ KHÔNG thành "thier"). "veit" → "ie"+"t" (rỗng) vẫn fire.
-      if reparsed.conLai.isEmpty {
-        result.nguyenAm = reparsed.nguyenAm
-        result.phuAmCuoi = reparsed.phuAmCuoi
-        result.conLai = reparsed.conLai
-        // chuaNguyenAmUO recomputed by finishParsing against NguyenAmUO table —
-        // never hardcode here, otherwise new vowel patterns added to that table
-        // would not propagate through typo recovery.
-        result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
+      let englishOuPrefix = tail.isEmpty && TiengViet.isEnglishOuTypoInProgress(originalInput)
+      if !englishOuPrefix {
+        trySwapVowel(
+          into: &result,
+          swappedVowel: [firstLeftover, result.nguyenAm[0]],
+          tail: tail
+        )
       }
     }
 
-    // "bous" -> "buos" (to become "buốt" when tone/diacritics applied)
-    // "ou" is not a valid Vietnamese vowel group, so vowel trie parses "o"
-    // leaving "u" in conLai.
-    // Gate: không áp cho loanword (vd "four", "journey" KHÔNG nên thành "fuor", "juorney").
-    // v2.15 FIX: chỉ áp khi KHÔNG có phụ âm cuối chen giữa. Gõ "opu" → parser
-    // cho o=nguyênÂm, p=phụÂmCuối, u=conLai; nếu reparse "uo" sẽ NUỐT mất 'p'
-    // → "opu" thành "uo" (bug "Opus"→"uOs"). "bous" thì phuAmCuoi rỗng nên OK.
-    if result.nguyenAm.count == 1,
-      result.nguyenAm[0].lowercased() == "o",
-      result.phuAmCuoi.isEmpty,
-      let firstLeftover = result.conLai.first,
-      firstLeftover.lowercased() == "u",
-      !startsWithForeignConsonant(result.phuAmDau)
+    // "haois" -> "hoais"
+    if !isForeign,
+       result.nguyenAm.count == 2,
+       result.nguyenAm[0].lowercased() == "a",
+       result.nguyenAm[1].lowercased() == "o",
+       result.phuAmCuoi.isEmpty,
+       let firstLeftover = result.conLai.first,
+       firstLeftover.lowercased() == "i"
     {
-      let oChar = result.nguyenAm[0]
-      let uChar = firstLeftover
-      let tail = String(result.conLai.dropFirst())
-      var reparsed = ThanhPhanTieng()
-      reparsed.nguyenAm = [uChar, oChar]
-      reparsed = parseDuoiSauNguyenAm(result: &reparsed, remaining: tail)
-      // FIX (loanword "source" → "suorce"): chỉ áp swap khi sau khi reparse
-      // KHÔNG còn rác (conLai rỗng) — tức "uo" + (phụ âm cuối hợp lệ | hết chữ).
-      // Nếu vẫn còn ký tự thừa thì đây là từ tiếng Anh, KHÔNG phải gõ nhầm
-      // tiếng Việt → giữ nguyên thay vì phá:
-      //   "source" → "suo"+"rce", "count" → "cuo"+"n"+"t", "your" → "yuo"+"r".
-      // v3.11+: tail rỗng + prefix EN (vd "sou"→"source") vẫn swap → "suo"
-      // trên màn hình rồi CGEvent không kịp sửa → "Suorce". Chặn thêm bằng
-      // `isEnglishOuTypoInProgress`. ("bou"→"uo" vẫn fire — không trong guard.)
-      let englishOuPrefix = tail.isEmpty
-        && EmbeddedLexiconData.isEnglishOuTypoInProgress(originalInput)
-      if reparsed.conLai.isEmpty && !englishOuPrefix {
-        result.nguyenAm = reparsed.nguyenAm
-        result.phuAmCuoi = reparsed.phuAmCuoi
-        result.conLai = reparsed.conLai
-        result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
-      }
+      trySwapVowel(
+        into: &result,
+        swappedVowel: [result.nguyenAm[1], result.nguyenAm[0], firstLeftover],
+        tail: String(result.conLai.dropFirst())
+      )
     }
 
-    // "haois" -> "hoais" (to become "hoái")
-    // "aoi" is not valid. Vowel trie parses "ao" -> nguyenAm = ["a", "o"], leaving "i" in conLai.
-    // Gate: không áp cho loanword (vd "waoi", "faoi" rare nhưng giữ predictable).
-    if result.nguyenAm.count == 2,
-      result.nguyenAm[0].lowercased() == "a",
-      result.nguyenAm[1].lowercased() == "o",
-      result.phuAmCuoi.isEmpty,
-      let firstLeftover = result.conLai.first,
-      firstLeftover.lowercased() == "i",
-      !startsWithForeignConsonant(result.phuAmDau)
+    // "haoc" -> "hoac" (chặn camelCase "DaoTao" bằng guard hoa/thường ở phụ âm cuối)
+    if !isForeign,
+       result.nguyenAm.count == 2,
+       result.nguyenAm[0].lowercased() == "a",
+       result.nguyenAm[1].lowercased() == "o",
+       (!result.phuAmCuoi.isEmpty || !result.conLai.isEmpty)
     {
-      let aChar = result.nguyenAm[0]
       let oChar = result.nguyenAm[1]
-      let iChar = firstLeftover
-      let tail = String(result.conLai.dropFirst())
-      var reparsed = ThanhPhanTieng()
-      reparsed.nguyenAm = [oChar, aChar, iChar]
-      reparsed = parseDuoiSauNguyenAm(result: &reparsed, remaining: tail)
-      // FIX (loanword): chỉ swap khi reparse tiêu hoá HẾT (conLai rỗng) — nếu
-      // còn rác phía sau thì là từ tiếng Anh, giữ nguyên. "haoi" → "oai" (rỗng)
-      // vẫn fire.
-      if reparsed.conLai.isEmpty {
-        result.nguyenAm = reparsed.nguyenAm
-        result.phuAmCuoi = reparsed.phuAmCuoi
-        result.conLai = reparsed.conLai
-        result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
+      trySwapVowel(
+        into: &result,
+        swappedVowel: [oChar, result.nguyenAm[0]],
+        tail: String(result.phuAmCuoi + result.conLai)
+      ) { reparsed in
+        let capitalBoundary = (reparsed.phuAmCuoi.first?.isUppercase ?? false) && oChar.isLowercase
+        return !reparsed.phuAmCuoi.isEmpty && reparsed.conLai.isEmpty && !capitalBoundary
       }
     }
 
-    // "haoc" -> "hoac" (to become "hoác").
-    // Vowel trie parses "ao" -> nguyenAm = ["a", "o"].
-    // If we have "ao" and either phuAmCuoi or conLai is not empty, we try to re-parse with "oa" as the vowel group.
-    // If the re-parsed result extracts a final consonant AND consumes everything
-    // (conLai rỗng), then this was indeed a typo of "oa" followed by a final
-    // consonant → apply the swap.
-    if result.nguyenAm.count == 2,
-      result.nguyenAm[0].lowercased() == "a",
-      result.nguyenAm[1].lowercased() == "o",
-      (!result.phuAmCuoi.isEmpty || !result.conLai.isEmpty),
-      !startsWithForeignConsonant(result.phuAmDau)
-    {
-      let aChar = result.nguyenAm[0]
-      let oChar = result.nguyenAm[1]
-      let remainingStr = String(result.phuAmCuoi + result.conLai)
-      var reparsed = ThanhPhanTieng()
-      reparsed.nguyenAm = [oChar, aChar]
-      reparsed = parseDuoiSauNguyenAm(result: &reparsed, remaining: remainingStr)
-      // Guard 1 (regression "DaoTao" → "DoaTao", bản gõ tăng dần): phụ âm cuối
-      // viết HOA trong khi nguyên âm "ao" viết thường ⇒ đây là ranh giới âm tiết
-      // mới kiểu camelCase ("Dao|Tao"), KHÔNG phải "oa" + phụ âm cuối ("hoác").
-      // Ở bước gõ tới "DaoT", reparse "oa"+"T" cho conLai rỗng nên Guard 2 không
-      // chặn được; case-mismatch là tín hiệu tách âm tiết đáng tin ở đây.
-      let capitalBoundary = (reparsed.phuAmCuoi.first?.isUppercase ?? false) && oChar.isLowercase
-      // Guard 2 (đồng bộ 3 rule anh em phía trên): chỉ swap khi reparse "oa"+phụ-âm-cuối
-      // tiêu hoá HẾT (conLai rỗng); nếu còn ký tự thừa thì phần "ao" là âm tiết riêng.
-      // "haoc"→"hoac" / "haong"→"hoang" (toàn chữ thường, conLai rỗng) vẫn fire.
-      if !reparsed.phuAmCuoi.isEmpty && reparsed.conLai.isEmpty && !capitalBoundary {
-        result.nguyenAm = reparsed.nguyenAm
-        result.phuAmCuoi = reparsed.phuAmCuoi
-        result.conLai = reparsed.conLai
-        result.chuaNguyenAmUO = isNguyenAmUO(result.nguyenAm)
-      }
-    }
-
-    // "phuowgn" -> "phuong": transpose a trailing "gn" into the valid
-    // Vietnamese final consonant "ng".
+    // "phuowgn" -> "phuong"
     if result.phuAmCuoi.isEmpty,
-      result.conLai.count >= 2,
-      result.conLai[0].lowercased() == "g",
-      result.conLai[1].lowercased() == "n"
+       result.conLai.count >= 2,
+       result.conLai[0].lowercased() == "g",
+       result.conLai[1].lowercased() == "n"
     {
       let gChar = result.conLai[0]
       let nChar = result.conLai[1]
@@ -324,32 +253,21 @@ enum TiengVietParser {
       result.conLai = Array(result.conLai.dropFirst(2))
     }
 
-    // Rule 5: Misplaced tone-mark auto-correction (e.g. "thfi" -> "thì", "dinhj" -> "dịnh" which can be combined, etc.)
-    // We try to find and strip any misplaced tone mark key and see if the rest forms a perfect syllable
-    if result.nguyenAm.isEmpty || !result.conLai.isEmpty || TiengVietValidator.needsRecovery(result) {
-      let telexTones: [Character: DauThanh] = ["s": .sac, "f": .huyen, "r": .hoi, "x": .nga, "j": .nang]
-      let vniTones: [Character: DauThanh] = ["1": .sac, "2": .huyen, "3": .hoi, "4": .nga, "5": .nang]
-
-      // Bỏ qua PHỤ ÂM ĐẦU khi đi tìm phím dấu đặt sai chỗ: s/x/r/f/j vừa là phím
-      // dấu Telex vừa là phụ âm đầu hợp lệ. Vòng cũ `break` ngay ở ký tự dấu ĐẦU
-      // TIÊN nên với "trfong" nó chốt vào chữ 'r' của cụm "tr" rồi guard
-      // `index > 0` vô hiệu hoá cả Rule 5 → "trfong" không ra "trồng".
-      //
-      // KHÔNG bỏ qua phụ âm đầu loanword (w/z/j/f, chỉ có khi allowedZWJF bật):
-      // tiếng Việt không có từ bản địa mở đầu bằng các chữ đó nên phím dấu phía
-      // sau là chữ cái thật, không phải gõ nhầm. Bỏ qua thì "from" ra "fỏm",
-      // "free" ra "fể", "frost" ra "fót" — cùng lý do với `startsWithForeignConsonant`
-      // ở các rule swap phía trên.
-      let phuAmDauKhopDau = TiengViet.PhuAmDauTrie.findLongestPrefix(in: String(originalInput))
-      let doDaiPhuAmDau = startsWithForeignConsonant(Array(phuAmDauKhopDau ?? ""))
-        ? 0
-        : (phuAmDauKhopDau?.count ?? 0)
+    // Rule 5: Misplaced tone-mark auto-correction (e.g. "thfi" -> "thì", "trfong" -> "trồng")
+    if result.nguyenAm.isEmpty || !result.conLai.isEmpty
+      || TiengVietValidator.needsRecovery(result, options: options)
+    {
+      let inputStr = String(originalInput)
+      let initialLen = TiengViet.phuAmDauTrie(allowedZWJF: options.allowedZWJF)
+        .longestPrefixLength(in: inputStr)
+      let matchedInitial = initialLen > 0 ? Array(inputStr.prefix(initialLen)) : []
+      let doDaiPhuAmDau = startsWithForeignConsonant(matchedInitial) ? 0 : initialLen
 
       var toneIndex: Int? = nil
       if doDaiPhuAmDau < originalInput.count {
         for i in doDaiPhuAmDau..<originalInput.count {
           let lower = originalInput[i].lowercased().first!
-          if telexTones[lower] != nil || vniTones[lower] != nil {
+          if TiengViet.TelexToneKeys[lower] != nil || TiengViet.VNIToneKeys[lower] != nil {
             toneIndex = i
             break
           }
@@ -357,17 +275,16 @@ enum TiengVietParser {
       }
 
       if let index = toneIndex, index > 0, index < originalInput.count - 1 {
-        // Xoá ĐÚNG ký tự vừa tìm được. Vòng strip cũ quét lại từ đầu và bỏ ký tự
-        // dấu đầu tiên gặp ở BẤT KỲ đâu, nên với "trfong" nó xoá nhầm chữ 'r'
-        // của phụ âm đầu ("tfong") thay vì chữ 'f' đặt sai chỗ.
         let kyTuDau = originalInput[index].lowercased().first!
-        let foundTone: DauThanh? = telexTones[kyTuDau] ?? vniTones[kyTuDau]
+        let foundTone = TiengViet.TelexToneKeys[kyTuDau] ?? TiengViet.VNIToneKeys[kyTuDau]
         var strippedChars = originalInput
         strippedChars.remove(at: index)
 
         if let tone = foundTone, !strippedChars.isEmpty {
-          let tempResult = rawParse(strippedChars)
-          if !tempResult.nguyenAm.isEmpty && tempResult.conLai.isEmpty && !TiengVietValidator.needsRecovery(tempResult) {
+          let tempResult = rawParse(strippedChars, allowedZWJF: options.allowedZWJF)
+          if !tempResult.nguyenAm.isEmpty && tempResult.conLai.isEmpty
+            && !TiengVietValidator.needsRecovery(tempResult, options: options)
+          {
             result.phuAmDau = tempResult.phuAmDau
             result.nguyenAm = tempResult.nguyenAm
             result.phuAmCuoi = tempResult.phuAmCuoi
@@ -384,52 +301,27 @@ enum TiengVietParser {
 
   // MARK: - Phân loại "gi"
 
-  /// Kết quả phân loại cách xử lý "gi"
   private enum GiClassification {
-    /// "g" là phụ âm đầu, "i" ghép vào nhóm nguyên âm
-    /// Ví dụ: gi → g+i, gin → g+i+n, giếng → g+iê+ng, giết → g+iê+t
     case splitG
-
-    /// "gi" giữ nguyên là phụ âm ghép, phần sau là nguyên âm
-    /// Ví dụ: gia → gi+a, giáng → gi+a+ng, giữ → gi+ư
     case keepGi
   }
 
-  /// Quyết định cách xử lý "gi" dựa trên ngữ cảnh phía sau
-  ///
-  /// Quy tắc:
-  /// 1. Không có nguyên âm sau → tách "g" + "i" (i là nguyên âm duy nhất)
-  /// 2. Có nguyên âm nhưng không có phụ âm cuối → giữ "gi" (để đặt dấu đúng)
-  /// 3. Có nguyên âm + phụ âm cuối → thử ghép "i" vào nguyên âm:
-  ///    - Nếu kết quả hợp lệ (ie+ng) → tách "g"
-  ///    - Nếu không hợp lệ (ia+ng) → giữ "gi"
   private static func classifyGi(
     iChar: Character,
     originalVowel: [Character],
     originalFinal: [Character],
-    originalLeftover: [Character]
+    originalLeftover: [Character],
+    allowedZWJF: Bool
   ) -> GiClassification {
-    // Trường hợp 1: Không có nguyên âm sau "gi" → "i" phải là nguyên âm
-    // Ví dụ: "gi" → g+i, "gin" → g+i+n
-    if originalVowel.isEmpty {
-      return .splitG
-    }
+    if originalVowel.isEmpty { return .splitG }
+    if originalFinal.isEmpty { return .keepGi }
 
-    // Trường hợp 2: Có nguyên âm nhưng không có phụ âm cuối → giữ "gi"
-    // Để đặt dấu thanh đúng vị trí. Ví dụ: "giá" = gi+á (dấu trên 'a')
-    if originalFinal.isEmpty {
-      return .keepGi
-    }
-
-    // Trường hợp 3: Có nguyên âm + phụ âm cuối → thử ghép "i" vào nguyên âm
-    // Dùng probe riêng để kiểm tra, không ảnh hưởng kết quả gốc
     let candidate = String([iChar] + originalVowel + originalFinal + originalLeftover)
     var probe = ThanhPhanTieng()
     probe = finishParsing(result: &probe, remaining: candidate)
 
-    // Nếu kết quả hợp lệ (ví dụ ie+ng), tách "g"
-    // Nếu không hợp lệ (ví dụ ia+ng), giữ "gi"
-    if !probe.phuAmCuoi.isEmpty && !TiengVietValidator.needsRecovery(probe) {
+    let opts = EngineOptions(allowedZWJF: allowedZWJF)
+    if !probe.phuAmCuoi.isEmpty && !TiengVietValidator.needsRecovery(probe, options: opts) {
       return .splitG
     }
 

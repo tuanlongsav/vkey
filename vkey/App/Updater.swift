@@ -46,7 +46,7 @@ enum Updater {
       DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
         manualCheckInProgress = false
       }
-      prepareAppForUserFacingModal {
+      WindowCoordinator.presentFloatingModal(delay: 0.25) {
         updaterController.checkForUpdates(nil)
       }
       return
@@ -74,15 +74,6 @@ enum Updater {
         style: .success,
         duration: 4.0
       )
-    }
-  }
-
-  /// Menu-bar accessory cần activation + delay ngắn trước modal Sparkle/NSAlert.
-  private static func prepareAppForUserFacingModal(_ work: @escaping () -> Void) {
-    NSApp.setActivationPolicy(.regular)
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-      NSApp.activate(ignoringOtherApps: true)
-      work()
     }
   }
 

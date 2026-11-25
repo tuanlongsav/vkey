@@ -11,12 +11,8 @@
 //  AppState restore state trước đó qua Smart Switch.
 //
 
-import AppKit
 import Carbon
 import Foundation
-import os.log
-
-private let isLog = OSLog(subsystem: "dev.longht.vkey", category: "InputSource")
 
 /// Phân loại input source theo language để quyết định có disable vkey không.
 enum InputSourceCategory {

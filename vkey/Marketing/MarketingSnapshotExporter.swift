@@ -13,7 +13,6 @@ import SwiftUI
 
 enum MarketingSnapshotExporter {
 
-  /// `--export-marketing` hoặc `--export-marketing=/path`
   static var isRequested: Bool {
     ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("--export-marketing") }
   }
@@ -31,7 +30,16 @@ enum MarketingSnapshotExporter {
     let out = outputDirectory
     try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
 
-    // Theme Tonal + dark appearance — khớp README hiện tại.
+    // Lưu trạng thái theme/appearance hiện tại để khôi phục sau khi chụp.
+    let savedTheme = Defaults[.uiTheme]
+    let savedAppearanceMode = Defaults[.appearanceMode]
+    let savedAppAppearance = NSApp.appearance
+    let restoreUserPreferences = {
+      Defaults[.uiTheme] = savedTheme
+      Defaults[.appearanceMode] = savedAppearanceMode
+      NSApp.appearance = savedAppAppearance
+    }
+
     Defaults[.uiTheme] = .tonal
     Defaults[.appearanceMode] = .dark
     NSApp.appearance = NSAppearance(named: .darkAqua)
@@ -48,8 +56,15 @@ enum MarketingSnapshotExporter {
     exportToggleHUD(scale: scale, to: out)
 
     if ProcessInfo.processInfo.arguments.contains("--export-marketing-carousel") {
-      runCarousel(appDelegate: appDelegate, on: secondaryDisplay())
+      runCarousel(
+        appDelegate: appDelegate,
+        on: secondaryDisplay(),
+        onFinish: {
+          restoreUserPreferences()
+          NSApp.terminate(nil)
+        })
     } else {
+      restoreUserPreferences()
       NSApp.terminate(nil)
     }
   }
@@ -62,8 +77,9 @@ enum MarketingSnapshotExporter {
       .frame(width: 292)
       .padding(16)
       .background(Color(white: 0.96))
-    snapshotHosting(view, size: CGSize(width: 292, height: 520), scale: scale,
-                    file: out.appendingPathComponent("menubar-menu.png"))
+    snapshotHosting(
+      view, size: CGSize(width: 292, height: 520), scale: scale,
+      file: out.appendingPathComponent("menubar-menu.png"))
   }
 
   @MainActor
@@ -82,8 +98,7 @@ enum MarketingSnapshotExporter {
       (.theme, "theme-settings.png"),
     ]
     for (tab, filename) in tabs {
-      UserDefaults.standard.set(tab.rawValue, forKey: "vk-settings-tab")
-      let view = VKSettingsView()
+      let view = VKSettingsView(initialTab: tab)
         .environmentObject(appDelegate.appState)
         .frame(width: size.width, height: size.height)
       snapshotHosting(view, size: size, scale: scale, file: out.appendingPathComponent(filename))
@@ -95,21 +110,24 @@ enum MarketingSnapshotExporter {
     for (enabled, name) in [(true, "hud-toggle-vi.png"), (false, "hud-toggle-en.png")] {
       ToggleHUDWindow.shared.show(isEnabled: enabled, duration: 60)
       RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.35))
-      if let img = snapshotFrontPanel(named: "ToggleHUD") {
-        savePNG(img, scale: scale, to: out.appendingPathComponent(name))
+      if let img = snapshotFrontPanel() {
+        savePNG(img, to: out.appendingPathComponent(name))
       }
       ToggleHUDWindow.shared.hideImmediately()
     }
-    // README / social — một ảnh đại diện HUD
     if let vi = NSImage(contentsOf: out.appendingPathComponent("hud-toggle-vi.png")) {
-      savePNG(vi, scale: 1, to: out.appendingPathComponent("hud-toggle.png"))
+      savePNG(vi, to: out.appendingPathComponent("hud-toggle.png"))
     }
   }
 
-  // MARK: - Carousel (tuỳ chọn quay clip trên màn phụ)
+  // MARK: - Carousel
 
   @MainActor
-  private static func runCarousel(appDelegate: AppDelegate, on display: NSScreen?) {
+  private static func runCarousel(
+    appDelegate: AppDelegate,
+    on display: NSScreen?,
+    onFinish: @escaping @MainActor () -> Void
+  ) {
     let screen = display ?? NSScreen.main!
     let frame = screen.visibleFrame
 
@@ -126,7 +144,6 @@ enum MarketingSnapshotExporter {
     window.isOpaque = true
 
     let tabs = VKTab.allCases
-    var index = 0
     let host = NSHostingController(
       rootView: carouselPage(appDelegate: appDelegate, tab: tabs[0])
         .frame(width: 860, height: 640)
@@ -135,20 +152,14 @@ enum MarketingSnapshotExporter {
     window.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
 
-    Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { timer in
-      Task { @MainActor in
-        index = (index + 1) % tabs.count
-        if index == 0 {
-          timer.invalidate()
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            NSApp.terminate(nil)
-          }
-          return
-        }
-        UserDefaults.standard.set(tabs[index].rawValue, forKey: "vk-settings-tab")
-        host.rootView = carouselPage(appDelegate: appDelegate, tab: tabs[index])
+    Task { @MainActor in
+      for tab in tabs.dropFirst() {
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        host.rootView = carouselPage(appDelegate: appDelegate, tab: tab)
           .frame(width: 860, height: 640)
       }
+      try? await Task.sleep(nanoseconds: 2_000_000_000)
+      onFinish()
     }
   }
 
@@ -159,14 +170,11 @@ enum MarketingSnapshotExporter {
         VKMenuPanel(appDelegate: appDelegate)
         Spacer()
       }
-      VKSettingsView()
+      VKSettingsView(initialTab: tab)
         .environmentObject(appDelegate.appState)
     }
     .padding(40)
     .background(Color(white: 0.97))
-    .onAppear {
-      UserDefaults.standard.set(tab.rawValue, forKey: "vk-settings-tab")
-    }
   }
 
   private static func secondaryDisplay() -> NSScreen? {
@@ -179,7 +187,6 @@ enum MarketingSnapshotExporter {
 
   // MARK: - Render helpers
 
-  /// Snapshot qua NSWindow — ImageRenderer không vẽ đủ ScrollView / NSViewRepresentable.
   @MainActor
   private static func snapshotHosting<V: View>(
     _ view: V,
@@ -223,26 +230,7 @@ enum MarketingSnapshotExporter {
   }
 
   @MainActor
-  private static func renderPNG<V: View>(
-    _ view: V,
-    size: CGSize,
-    scale: CGFloat,
-    file: URL
-  ) {
-    let renderer = ImageRenderer(
-      content: view.frame(width: size.width, height: size.height)
-    )
-    renderer.scale = scale
-    guard let cg = renderer.cgImage else {
-      fputs("MarketingSnapshot: render failed \(file.lastPathComponent)\n", stderr)
-      return
-    }
-    savePNG(NSImage(cgImage: cg, size: NSSize(width: size.width, height: size.height)), scale: 1, to: file)
-    print("MarketingSnapshot: \(file.path)")
-  }
-
-  @MainActor
-  private static func snapshotFrontPanel(named hint: String) -> NSImage? {
+  private static func snapshotFrontPanel() -> NSImage? {
     for w in NSApp.windows {
       guard w.isVisible, w.className.contains("Panel") || w.level == .floating else { continue }
       guard let view = w.contentView else { continue }
@@ -257,7 +245,7 @@ enum MarketingSnapshotExporter {
     return nil
   }
 
-  private static func savePNG(_ image: NSImage, scale: CGFloat, to url: URL) {
+  private static func savePNG(_ image: NSImage, to url: URL) {
     guard let tiff = image.tiffRepresentation,
           let rep = NSBitmapImageRep(data: tiff),
           let png = rep.representation(using: .png, properties: [:]) else { return }

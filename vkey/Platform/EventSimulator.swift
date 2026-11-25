@@ -5,96 +5,26 @@
 //  Created by KhanhIceTea on 27/3/24.
 //
 
-import AppKit
-import ApplicationServices
 import CoreGraphics
-import Defaults
 import Foundation
 import os.log
 
-/// v2.14: log chẩn đoán đường AX-direct (Spotlight) — xem bằng:
-/// `log stream --predicate 'subsystem == "dev.longht.vkey"' --info`
-private let axLog = OSLog(subsystem: "dev.longht.vkey", category: "AXDirect")
-
-/// Strategy for sending keyboard events to replace text.
-enum SendingStrategy {
-  /// Send all characters in a single batch event (fastest, may fail in some apps).
-  case batch
-  /// Send each character as individual key events (slowest, most compatible).
-  case stepByStep
-  /// Send as batch but with delays between backspaces (balanced approach).
-  case hybrid(backspaceDelayMicroseconds: UInt32)
-  /// v2.12: ghi thẳng giá trị ô text qua Accessibility API thay vì gửi event.
-  /// Spotlight (inline autocomplete) nuốt/đảo synthetic backspace nên MỌI
-  /// strategy event-based đều loạn chữ; ghi AXValue thì nguyên tử, không đụng
-  /// event pipeline. Tham khảo gonhanh.org `InjectionMethod.axDirect`.
-  case axDirect
-}
-
-extension AppSendingMode {
-  /// Chiến lược gửi tương ứng. `.paced` nghỉ lâu hơn mặc định (hybrid 800µs)
-  /// để lựa chọn này khác hẳn "tự động" với app chưa có trong bảng.
-  var strategy: SendingStrategy {
-    switch self {
-    case .fast: return .batch
-    case .paced: return .hybrid(backspaceDelayMicroseconds: 2000)
-    case .stepByStep: return .stepByStep
-    }
-  }
-}
-
-/// Configuration for per-app event sending strategies.
-struct AppSendingConfig {
-  /// Bundle ID prefix to match.
-  let bundlePrefix: String
-  /// Sending strategy for this app.
-  let strategy: SendingStrategy
-  /// Human-readable name for logging.
-  let name: String
-}
-
-/// Telemetry for a replacement attempt.
-struct EventSendTelemetry {
-  let attemptedTransform: Bool
-  let createdEvents: Bool
-  let usedAsyncQueue: Bool
-  let touchedCharacters: Int
-}
+private let simLog = OSLog(subsystem: "dev.longht.vkey", category: "AXDirect")
 
 class EventSimulator {
   /// Dedicated serial queue for event simulation to avoid blocking the event tap callback.
-  /// **All** sending strategies dispatch to this queue (since 1.5.0) so the
-  /// CGEvent tap callback returns immediately, preventing macOS from disabling
-  /// the tap when the system is under load. Earlier versions ran `.batch` sync,
-  /// which produced inconsistent semantics across strategies — the tap would
-  /// occasionally be blocked long enough to trigger `tapDisabledByTimeout`.
   private static let simulationQueue = DispatchQueue(
     label: "dev.longht.vkey.eventSimulator", qos: .userInteractive,
-    // Mỗi block gửi phím tạo CGEvent/NSString/AX object autorelease; mặc định
-    // pool chỉ xả khi worker rảnh hẳn — gõ liên tục thì dồn lại.
     autoreleaseFrequency: .workItem
   )
 
-  /// v2.3.15: expose dispatch helper for callers (vd InputProcessor commit
-  /// path) cần đặt CGEvent posts vào simulationQueue serial.
+  /// Expose dispatch helper for callers needing serial CGEvent posts on `simulationQueue`.
   static func simulationQueueAsync(_ block: @escaping () -> Void) {
     simulationQueue.async(execute: block)
   }
 
   /// Nguồn `.privateState` DÙNG CHUNG cho mọi phím vkey tự phát.
-  ///
-  /// ⚠️ ĐỪNG tạo `CGEventSource(stateID: .privateState)` mới cho mỗi lần gửi.
-  /// Mỗi source private được WindowServer cấp một state riêng kèm một trang
-  /// shared memory 16 KB, và SkyLight giữ trang đó trong `CGSEventSourceCache`
-  /// (`get_cache()`) tới khi vkey thoát — giải phóng source KHÔNG trả lại. Đo
-  /// trên máy thật (v4.29): 20 lần thay chữ → đúng +20 vùng `shared memory`;
-  /// đây là phần chính của footprint phình theo thời gian gõ (không phải HUD).
-  ///
-  /// Dùng chung an toàn: mọi event tạo từ source đều gán `flags` tường minh nên
-  /// trạng thái modifier của state private không lọt sang lần gửi sau; stateID
-  /// vẫn khác 1 nên bộ lọc self-event ở EventHook vẫn bỏ qua phím của vkey.
-  /// Gọi từ luồng event tap lẫn `simulationQueue` → giữ bằng khoá. Tạo hỏng
-  /// (nil) thì không ghim nil — lần sau thử lại.
+  /// Tạo mới mỗi lần gửi sẽ rò 16 KB shared memory trong SkyLight (`CGSEventSourceCache`).
   static func privateEventSource() -> CGEventSource? {
     privateSourceLock.lock()
     defer { privateSourceLock.unlock() }
@@ -106,300 +36,54 @@ class EventSimulator {
   private static let privateSourceLock = NSLock()
   nonisolated(unsafe) private static var sharedPrivateSource: CGEventSource?
 
-  /// Hardcoded macOS virtual key codes used by the simulator. US-layout
-  /// positions; these are physical-key codes so they work even on QWERTZ /
-  /// AZERTY / Dvorak keymaps.
-  // `internal` (không `private`) để test đọc được `unicodeOnly`: mã phím của
-  // event chỉ mang Unicode là chỗ đã làm vỡ đường gõ ở v4.32, xem
-  // `UnicodeOnlyKeyCodeTests`. `@testable import` chỉ mở tới `internal`.
-  enum KeyCode {
-    static let delete: CGKeyCode = 0x33      // Backspace / Delete-Left
-    static let forwardDelete: CGKeyCode = 0x75  // v2.12: xoá suggestion auto-select
-    // 0x7B (leftArrow) đã gỡ cùng `sendShiftLeft`: đường Shift+Left bỏ từ
-    // v2.3.10, hằng số chỉ còn nuôi hàm chết. Nếu cần lại thì thêm mới.
+  /// Hộp thư một chiều từ tap thread cho PID đích; chụp đồng bộ lúc vào `sendReplacement`.
+  nonisolated(unsafe) static var axTargetPID: pid_t = 0
 
-    /// Mã phím cho event CHỈ mang chuỗi Unicode.
-    ///
-    /// Phải là mã phím ảo HỢP LỆ, vì app chỉ nhận chuỗi Unicode kèm theo nếu
-    /// nó nhận cả event. v4.32 đặt 0xFF với lý do "không sinh ký tự" → app bỏ
-    /// im lặng cả event: chữ mới không bao giờ tới, mà backspace (0x33) vẫn
-    /// hợp lệ nên vẫn xoá chữ cũ. Hậu quả ở MỌI app: dấu không ra, mất chữ
-    /// giữa/cuối, mất cả cụm.
-    ///
-    /// Đo 09/10/2026 (`Tools/probe/kcsweep.swift`, event `.privateState` —
-    /// đúng loại vkey tự phát) vào TextEdit và ô `<input>` trong Chrome:
-    ///   - tới được cả hai: 0, 10, 90, 110
-    ///   - mất trắng: 64 (F17), 79 (F18), 80 (F19), 106 (F16), 126 (Up) —
-    ///     AppKit dịch thành phím chức năng, `characters` rỗng
-    ///   - mất trắng: 255 (0xFF) — ngoài dải 7 bit của virtual keycode
-    ///
-    /// Giữ 0 (phím A) như v4.31 trở về trước. Phép đo cùng ngày KHÔNG tái hiện
-    /// được "Chromium chèn thêm ký tự của mã phím": mã 0 gửi "google" vào ô
-    /// web ra đúng "google", gửi "Việt" ra đúng "Việt". Nếu lỗi thừa chữ quay
-    /// lại thì đo lại bằng probe trên, đừng đổi hằng số này theo suy diễn.
+  /// Hardcoded macOS virtual key codes used by the simulator.
+  enum KeyCode {
+    static let delete: CGKeyCode = 0x33         // Backspace / Delete-Left
+    static let forwardDelete: CGKeyCode = 0x75  // Xoá suggestion auto-select
+    static let leftOption: CGKeyCode = 0x3A     // Left Option (Option+Backspace)
+
+    /// Mã phím hợp lệ 7-bit cho event CHỈ mang chuỗi Unicode (giữ 0 = phím A;
+    /// 0xFF/F16..F20 bị AppKit/Blink bỏ im lặng).
     static let unicodeOnly: CGKeyCode = 0
   }
 
-  /// Gắn chuỗi Unicode lên một event phím, kèm mã phím và cờ chuẩn cho event
-  /// chỉ-mang-Unicode (xem `KeyCode.unicodeOnly`).
+  /// Gắn chuỗi Unicode lên một event phím, kèm mã phím và cờ chuẩn.
   static func applyUnicodePayload(_ event: CGEvent, units: [UniChar]) {
     event.setIntegerValueField(.keyboardEventKeycode, value: Int64(KeyCode.unicodeOnly))
     event.flags = .maskNonCoalesced
     event.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)
   }
 
-  /// Per-app sending strategy configuration.
-  /// Apps are checked in order - first match wins.
-  /// Apps not listed use the default batch strategy.
-  static let appStrategies: [AppSendingConfig] = [
-    AppSendingConfig(bundlePrefix: "com.microsoft.Word", strategy: .hybrid(backspaceDelayMicroseconds: 1000), name: "Word"),
-    AppSendingConfig(bundlePrefix: "com.microsoft.Excel", strategy: .hybrid(backspaceDelayMicroseconds: 1000), name: "Excel"),
-    AppSendingConfig(bundlePrefix: "com.microsoft.Powerpoint", strategy: .hybrid(backspaceDelayMicroseconds: 1000), name: "PowerPoint"),
-    AppSendingConfig(bundlePrefix: "com.microsoft.Outlook", strategy: .hybrid(backspaceDelayMicroseconds: 1000), name: "Outlook"),
-    AppSendingConfig(bundlePrefix: "com.microsoft.onenote.mac", strategy: .hybrid(backspaceDelayMicroseconds: 1000), name: "OneNote"),
-
-    AppSendingConfig(bundlePrefix: "com.apple.Terminal", strategy: .stepByStep, name: "Terminal"),
-    AppSendingConfig(bundlePrefix: "com.googlecode.iterm2", strategy: .stepByStep, name: "iTerm2"),
-    AppSendingConfig(bundlePrefix: "net.kovidgoyal.kitty", strategy: .stepByStep, name: "Kitty"),
-    AppSendingConfig(bundlePrefix: "com.mitchellh.ghostty", strategy: .stepByStep, name: "Ghostty"),
-    // Warp phát hành theo kênh: bundle ID thật là "dev.warp.Warp-Stable"
-    // (và -Preview). Entry cũ "com.warp.Warp" không khớp gì cả — Warp vẫn chạy
-    // đường batch mặc định suốt. Prefix "dev.warp.Warp" bao mọi kênh.
-    AppSendingConfig(bundlePrefix: "dev.warp.Warp", strategy: .stepByStep, name: "Warp"),
-    AppSendingConfig(bundlePrefix: "co.zeit.hyper", strategy: .stepByStep, name: "Hyper"),
-    AppSendingConfig(bundlePrefix: "org.tabby", strategy: .stepByStep, name: "Tabby"),
-    // Alacritty: bundle ID upstream (extra/osx/Alacritty.app/Contents/Info.plist)
-    // là "org.alacritty". Entry "io.alacritty" thừa kế từ lúc fork, chưa ai đối
-    // chiếu — cùng lớp lỗi "com.warp.Warp" ở trên. GIỮ cả hai: khớp bằng
-    // hasPrefix nên entry không đúng chỉ đơn giản là không bao giờ khớp, còn
-    // bỏ đi mà đoán sai chiều thì Alacritty lại âm thầm rơi về hybrid.
-    AppSendingConfig(bundlePrefix: "org.alacritty", strategy: .stepByStep, name: "Alacritty"),
-    AppSendingConfig(bundlePrefix: "io.alacritty", strategy: .stepByStep, name: "Alacritty (legacy id)"),
-    AppSendingConfig(bundlePrefix: "com.github.wez.wezterm", strategy: .stepByStep, name: "WezTerm"),
-    AppSendingConfig(bundlePrefix: "com.raphaelamorim.rio", strategy: .stepByStep, name: "Rio"),
-    // Termius: "com.termius-dmg.mac" chỉ bao bản DMG; bản Mac App Store mang ID
-    // khác ("com.termius.mac"). Giữ entry DMG (đứng trước để tên log không đổi)
-    // và thêm prefix rút gọn "com.termius" bao MỌI kênh — chuỗi
-    // "com.termius-dmg.mac" cũng bắt đầu bằng "com.termius" nên thêm là vô hại.
-    AppSendingConfig(bundlePrefix: "com.termius-dmg.mac", strategy: .stepByStep, name: "Termius"),
-    AppSendingConfig(bundlePrefix: "com.termius", strategy: .stepByStep, name: "Termius"),
-
-    // Electron apps thường cần stepByStep vì input model phức tạp (composition events
-    // không sync với CGEvent injection thông thường).
-    AppSendingConfig(bundlePrefix: "com.anthropic.claudefordesktop", strategy: .stepByStep, name: "Claude"),
-
-    // App CHAT — cùng luật Electron ngay trên, trước đây bị bỏ sót nên rơi hết
-    // về .hybrid(800) mặc định: ô soạn tin là contenteditable, batch/hybrid gửi
-    // cụm backspace + retype async không sync với composition của Chromium →
-    // rớt/lặp chữ đúng lớp lỗi Claude Desktop. ĐÁNH ĐỔI CÓ CHỦ Ý: stepByStep
-    // chậm hơn (2ms/phím) nhưng không rớt chữ; chat là chỗ gõ tiếng Việt nhiều
-    // nhất nên ưu tiên đúng hơn nhanh.
-    //
-    // ⚠️ PHẠM VI THẬT CỦA CÁC ENTRY NÀY HẸP HƠN VẺ NGOÀI — đọc trước khi tin.
-    // `InputProcessor.effectiveTypingStrategy` hạ MỌI app xuống `.batch` khi
-    // `backspaceCount <= 1 && diffCharCount <= 1`, và nhánh đó nằm SAU bảng này.
-    // Nghĩa là phần lớn phím KHÔNG đi stepByStep dù app có tên ở đây:
-    //   `caa`→"câ", `dd`→"đ", `ee`→"ê", `oo`→"ô", `w`→"ư"  ⇒ .batch (diff 1 ký tự)
-    //   `chaof`→"chào" (bs=1, diff=2), thay cả cụm            ⇒ .stepByStep
-    // Từng có bản vá miễn trừ `.stepByStep` khỏi downgrade đó, nhưng nó dựng lại
-    // race "push"→"pussh" và đã bị lùi (xem docstring `effectiveTypingStrategy`).
-    // Nên các entry dưới đây chỉ bảo vệ ca "thay cả cụm" — đúng ca Telegram từng
-    // mất chữ đầu, nhưng KHÔNG phải mọi phím.
-    // Mức tin cậy của từng bundle ID ghi ngay tại chỗ — đừng "dọn" entry nào
-    // chưa kiểm chứng, entry sai chỉ đơn giản là không khớp (hasPrefix).
-    // ĐÃ KIỂM trên máy: Zalo.app có Electron Framework.framework, ID com.vng.zalo
-    // (helper com.vng.zalo.zalocall cũng khớp prefix này).
-    AppSendingConfig(bundlePrefix: "com.vng.zalo", strategy: .stepByStep, name: "Zalo"),
-    // Slack & Discord: ID đối chiếu được ngay trong repo (vkeyTests dùng đúng hai
-    // chuỗi này làm ví dụ Electron). "com.hnc.Discord" bao cả Canary/PTB.
-    AppSendingConfig(bundlePrefix: "com.tinyspeck.slackmacgap", strategy: .stepByStep, name: "Slack"),
-    AppSendingConfig(bundlePrefix: "com.hnc.Discord", strategy: .stepByStep, name: "Discord"),
-    // Messenger for macOS (Electron). ID theo tài liệu cộng đồng, CHƯA kiểm
-    // được ở đây (app không cài trên máy này) → độ tin cậy trung bình.
-    AppSendingConfig(bundlePrefix: "com.facebook.archon", strategy: .stepByStep, name: "Messenger"),
-    // Plume — native AppKit + WKWebView nhúng Messenger (ô chat bong bóng).
-    // Lexical trong WKWebView dễ gộp hai backspace liên tiếp khi .batch (delay 0)
-    // → "để" thành "ể". stepByStep + miễn trừ downgrade ở effectiveTypingStrategy.
-    AppSendingConfig(bundlePrefix: "com.htl.plume", strategy: .stepByStep, name: "Plume"),
-    // WhatsApp Desktop bản Electron tải từ web. Bản Mac App Store là Catalyst
-    // (ID "net.whatsapp.WhatsApp") — AppKit thật nên CỐ Ý không thêm, để nó
-    // dùng .hybrid mặc định. Chưa kiểm trên máy → tin cậy trung bình.
-    AppSendingConfig(bundlePrefix: "desktop.WhatsApp", strategy: .stepByStep, name: "WhatsApp"),
-    // Viber: ĐÃ KIỂM trên máy — ID com.viber.osx, Frameworks toàn Qt* nên là
-    // Qt/QML, KHÔNG phải Electron. Xếp cùng nhóm vì cùng lớp "text engine
-    // riêng, không phải AppKit" như Telegram, chứ không phải vì Electron.
-    AppSendingConfig(bundlePrefix: "com.viber.osx", strategy: .stepByStep, name: "Viber"),
-
-    // Telegram for macOS (native Swift/AppKit, "ru.keepcoder.Telegram"). Ô soạn
-    // tin là custom NSTextInputClient view: batch/hybrid gửi cụm backspace +
-    // retype async không sync với text engine của nó → khi thay cả cụm nó nuốt/
-    // xoá lố → mất chữ ("gửi" → "ửi", mất chữ ĐẦU; khác lỗi NFD "điều"→"đều" cũ
-    // đã whitelist NFC). stepByStep gửi từng phím (delay 2ms) nên đồng bộ đúng —
-    // cùng lớp Dock/Launchpad + Claude. NFC grapheme diff giữ nguyên qua
-    // usesNFCGraphemeStorage (Telegram vẫn nằm trong whitelist đó).
-    AppSendingConfig(bundlePrefix: "ru.keepcoder.Telegram", strategy: .stepByStep, name: "Telegram"),
-
-    // Launchpad / Spotlight search field chạy trong tiến trình Dock. Ô tìm kiếm
-    // này có input model nhạy: batch/hybrid backspace+replace không sync → gõ
-    // tiếng Việt bị loạn (lặp/mất chữ, dấu sai). stepByStep gửi từng phím nên
-    // đồng bộ đúng. (com.apple.Spotlight = tiến trình Spotlight overlay riêng,
-    // mặc định auto English qua Smart Switch; Dock thì không nên vẫn cần fix này.)
-    AppSendingConfig(bundlePrefix: "com.apple.dock", strategy: .stepByStep, name: "Launchpad/Dock"),
-
-    // v2.12: Spotlight — synthetic backspace bị inline-autocomplete nuốt/đảo
-    // bất kể delay (v2.10 stepByStep vẫn lỗi) → ghi thẳng AXValue (axDirect).
-    // systemuiserver: các ô text trong menu bar, cùng hành vi (theo gonhanh).
-    AppSendingConfig(bundlePrefix: "com.apple.Spotlight", strategy: .axDirect, name: "Spotlight"),
-    AppSendingConfig(bundlePrefix: "com.apple.systemuiserver", strategy: .axDirect, name: "SystemUIServer"),
-  ]
-
-  /// App terminal. Ô nhập của chúng là một vùng chữ thường, nên lời nhắc mật
-  /// khẩu (`sudo`, `ssh`) KHÔNG lộ qua AX dưới dạng ô mật khẩu — `EventHook` vì
-  /// thế vẫn đứng ngoài khi một terminal đang trước và giữ secure input. Cùng
-  /// các app với nhóm terminal trong `appStrategies` (test giữ hai chỗ khớp nhau).
-  static let terminalBundlePrefixes: [String] = [
-    "com.apple.Terminal", "com.googlecode.iterm2", "net.kovidgoyal.kitty",
-    "com.mitchellh.ghostty", "dev.warp.Warp", "co.zeit.hyper", "org.tabby",
-    "org.alacritty", "io.alacritty", "com.github.wez.wezterm", "com.raphaelamorim.rio",
-    "com.termius",
-  ]
-
-  static func isTerminalApp(_ bundleId: String?) -> Bool {
-    guard let bundleId else { return false }
-    return terminalBundlePrefixes.contains { bundleId.hasPrefix($0) }
+  static func unicodeUnits(for char: Character) -> [UniChar] {
+    String(char).utf16.map { UniChar($0) }
   }
 
-  /// Bản đã giải mã của `Defaults[.appSendingModes]` — tra ở mỗi lần thay chữ,
-  /// nên không đọc thẳng Defaults (giải mã lại cả dictionary mỗi lần).
-  private static let userSendingModes =
-    DefaultsDerivedCache<[String: AppSendingMode]>(.appSendingModes) {
-      Defaults[.appSendingModes]
+  /// Dựng cặp event keyDown/keyUp mang payload Unicode và post tới `tap`.
+  @discardableResult
+  private static func postUnicodeUnits(
+    _ units: [UniChar],
+    source: CGEventSource,
+    tap: CGEventTapLocation
+  ) -> Bool {
+    guard
+      let downEvent = CGEvent(
+        keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: true),
+      let upEvent = CGEvent(
+        keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: false)
+    else {
+      return false
     }
-
-  /// Cách gửi phím người dùng tự chọn cho `bundleId`, nếu có.
-  static func userSendingMode(for bundleId: String) -> AppSendingMode? {
-    userSendingModes.value[bundleId]
+    applyUnicodePayload(downEvent, units: units)
+    applyUnicodePayload(upEvent, units: units)
+    downEvent.post(tap: tap)
+    upEvent.post(tap: tap)
+    return true
   }
 
-  static func getStrategy(for bundleId: String) -> SendingStrategy {
-    resolveStrategy(for: bundleId, userMode: userSendingMode(for: bundleId))
-  }
-
-  /// Lựa chọn của người dùng thắng bảng dựng sẵn — TRỪ app đi `.axDirect`
-  /// (Spotlight, ô menu bar): ở đó mọi cách gửi bằng event đều loạn chữ, đổi
-  /// sang event là làm hỏng chắc chắn.
-  static func resolveStrategy(for bundleId: String, userMode: AppSendingMode?) -> SendingStrategy {
-    let builtIn = builtInStrategy(for: bundleId)
-    if case .axDirect = builtIn { return builtIn }
-    return userMode?.strategy ?? builtIn
-  }
-
-  static func builtInStrategy(for bundleId: String) -> SendingStrategy {
-    // Per-app table first; otherwise fall back to a conservative hybrid default
-    // (light backspace delay) which works for native AppKit apps AND most Electron
-    // / web apps that need a beat between backspace and the replacement string.
-    // Pure .batch is faster but fails silently on apps like Claude, Notion, Slack.
-    return appStrategies.first(where: { bundleId.hasPrefix($0.bundlePrefix) })?.strategy
-      ?? .hybrid(backspaceDelayMicroseconds: 800)
-  }
-
-  static func calcKeyStrokes(from: String, to: String) -> (Int, [Character]) {
-    let fromChars = Array(from)
-    let toChars = Array(to)
-    var commonPrefixLength = 0
-    let minLength = min(fromChars.count, toChars.count)
-
-    while commonPrefixLength < minLength
-      && fromChars[commonPrefixLength] == toChars[commonPrefixLength]
-    {
-      commonPrefixLength += 1
-    }
-
-    let backspaceCount = fromChars.count - commonPrefixLength
-    let diffChars = Array(toChars.dropFirst(commonPrefixLength))
-
-    return (backspaceCount, diffChars)
-  }
-
-  /// v2.3.8: NFD scalar-aware diff cho `FixAutocompleteApps` (Chrome, Google
-  /// Docs, Google Sheets) — apps có thể store Vietnamese text dạng decomposed
-  /// (NFD: o + combining ̂) trong khi vkey send NFC (precomposed ô).
-  /// Khi đó Shift+Left của browser đếm theo UTF-16 scalar (NFD = 2 cho "ô"),
-  /// trong khi grapheme-based diff đếm 1 → selectLeftCount thiếu → replace
-  /// sai → bug "google → gooogle" (extra 'o' do combining mark còn sót).
-  ///
-  /// Fix: compute diff trong NFD scalar space. selectLeft match đúng số scalar
-  /// mà browser storage cần Shift+Left.
-  ///
-  /// Trace ví dụ "gôg" → "googl":
-  /// - from NFD: [g, o, ◌̂, g] (4 scalars)
-  /// - to   NFD: [g, o, o, g, l] (5 scalars)
-  /// - common prefix: 2 (g, o)
-  /// - backspaceCount = 4 - 2 = 2
-  /// - remaining = [o, g, l] → "ogl"
-  /// - Shift+Left ×2 selects [◌̂, g] (NFD storage) → replace "ogl" → "googl" ✓
-  static func calcKeyStrokesNFD(from: String, to: String) -> (Int, [Character]) {
-    let fromNFD = from.decomposedStringWithCanonicalMapping
-    let toNFD = to.decomposedStringWithCanonicalMapping
-    let fromScalars = Array(fromNFD.unicodeScalars)
-    let toScalars = Array(toNFD.unicodeScalars)
-    var commonPrefixLength = 0
-    let minLength = min(fromScalars.count, toScalars.count)
-    while commonPrefixLength < minLength
-      && fromScalars[commonPrefixLength] == toScalars[commonPrefixLength]
-    {
-      commonPrefixLength += 1
-    }
-
-    // v3.6: KHÔNG BAO GIỜ gửi combining mark "trần" mở đầu diff. Nếu phần
-    // retype bắt đầu bằng dấu rời (ccc != 0), bất kỳ sai lệch nào giữa số
-    // backspace gửi đi và số ký tự field thật sự xoá sẽ làm dấu bám nhầm
-    // base ("nhập" → "nḥ̂p"). Lùi ranh giới prefix về đầu cụm grapheme:
-    // xoá nguyên cụm và retype cụm hoàn chỉnh — đúng với field NFD thật,
-    // và chỉ lệch nhẹ (không phá chữ) nếu field bị phân loại nhầm.
-    // Diff rỗng (chỉ xoá, không retype) giữ nguyên — không có gì để bám sai.
-    // ccc != 0 nhận diện mọi dấu thanh/dấu phụ tiếng Việt (U+0300..U+0323,
-    // U+031B… đều có ccc 216–230). Không phủ HẾT grapheme-extender Unicode
-    // (ZWJ, variation selector có ccc = 0) nhưng các ký tự đó không xuất
-    // hiện trong output bộ gõ → đủ và đúng cho miền dữ liệu này.
-    func isCombining(_ s: Unicode.Scalar) -> Bool {
-      s.properties.canonicalCombiningClass != .notReordered
-    }
-    if commonPrefixLength < toScalars.count && isCombining(toScalars[commonPrefixLength]) {
-      while commonPrefixLength > 0 {
-        let splitsFrom = commonPrefixLength < fromScalars.count
-          && isCombining(fromScalars[commonPrefixLength])
-        let splitsTo = commonPrefixLength < toScalars.count
-          && isCombining(toScalars[commonPrefixLength])
-        if splitsFrom || splitsTo {
-          commonPrefixLength -= 1
-        } else {
-          break
-        }
-      }
-    }
-
-    let backspaceCount = fromScalars.count - commonPrefixLength
-    var remainingScalars = String.UnicodeScalarView()
-    for s in toScalars.dropFirst(commonPrefixLength) {
-      remainingScalars.append(s)
-    }
-    return (backspaceCount, Array(String(remainingScalars)))
-  }
-
-  /// Chọn trục diff theo dạng lưu của field — grapheme (`calcKeyStrokes`) cho
-  /// field NFC, scalar NFD (`calcKeyStrokesNFD`) cho field NFD. Gom về một chỗ
-  /// để mọi call site dùng CHUNG một quy tắc thay vì lặp lại ternary.
-  ///
-  /// Giá trị `usesNFC` này phải được truyền tiếp xuống
-  /// `sendReplacement(normalizeToNFC:)` và `axDirectReplace(usesNFC:)`: cả ba
-  /// (đếm backspace / đơn vị xoá / dạng emit) buộc phải cùng một trục, nếu
-  /// không sẽ lệch scalar và ăn mất ký tự — regression v4.14 ("gửi"→"ửi").
-  static func calcKeyStrokes(from: String, to: String, usesNFC: Bool) -> (Int, [Character]) {
-    usesNFC
-      ? calcKeyStrokes(from: from, to: to)
-      : calcKeyStrokesNFD(from: from, to: to)
-  }
+  // MARK: - Low-level CGEvent Posting
 
   @discardableResult
   static func sendBackspace(
@@ -433,38 +117,34 @@ class EventSimulator {
     return true
   }
 
-  /// v2.3.15 → v2.3.16: Option+Backspace = delete word (macOS standard).
-  /// v2.3.15 chỉ set `.maskAlternate` trên key event — không work ở Notes/
-  /// Claude desktop vì app check actual modifier state qua NSEvent. Một số
-  /// app chỉ react khi nhận đầy đủ event sequence: Option down → Backspace
-  /// down → Backspace up → Option up.
-  ///
-  /// v2.3.16: gửi proper modifier press/release sequence để simulate đúng
-  /// hành vi keyboard thực.
   @discardableResult
   static func sendOptionBackspace(source: CGEventSource? = nil) -> Bool {
     let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
     guard let source = eventSource else { return false }
-    let leftOptionKey: CGKeyCode = 0x3A  // 58 = Left Option
 
-    // 1. Press Option key (modifier down)
-    if let optionDown = CGEvent(keyboardEventSource: source, virtualKey: leftOptionKey, keyDown: true) {
+    if let optionDown = CGEvent(
+      keyboardEventSource: source, virtualKey: KeyCode.leftOption, keyDown: true)
+    {
       optionDown.flags = .maskAlternate
       optionDown.post(tap: .cgSessionEventTap)
     }
 
-    // 2. Press + release Backspace with Option held
-    if let bsDown = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: true) {
+    if let bsDown = CGEvent(
+      keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: true)
+    {
       bsDown.flags = [.maskAlternate, .maskNonCoalesced]
       bsDown.post(tap: .cgSessionEventTap)
     }
-    if let bsUp = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: false) {
+    if let bsUp = CGEvent(
+      keyboardEventSource: source, virtualKey: KeyCode.delete, keyDown: false)
+    {
       bsUp.flags = [.maskAlternate, .maskNonCoalesced]
       bsUp.post(tap: .cgSessionEventTap)
     }
 
-    // 3. Release Option key (modifier up)
-    if let optionUp = CGEvent(keyboardEventSource: source, virtualKey: leftOptionKey, keyDown: false) {
+    if let optionUp = CGEvent(
+      keyboardEventSource: source, virtualKey: KeyCode.leftOption, keyDown: false)
+    {
       optionUp.flags = []
       optionUp.post(tap: .cgSessionEventTap)
     }
@@ -476,28 +156,11 @@ class EventSimulator {
   static func sendString(_ str: String, source: CGEventSource? = nil) -> Bool {
     guard !str.isEmpty else { return true }
 
-    // v4.15: transport gửi ĐÚNG bytes được giao — KHÔNG tự chuẩn hoá. Việc
-    // chọn NFC/NFD do tầng diff quyết định (sendReplacement, theo field) vì
-    // dạng gửi PHẢI khớp dạng đếm backspace. Ép NFC ở đây làm field NFD lưu ít
-    // scalar hơn model của vkey → backspace dư ăn mất ký tự đứng trước nguyên
-    // âm mang dấu ("gửi"→"ửi"). Xem sendReplacement/emittedCharacters.
     let uniChars = str.utf16.map { UniChar($0) }
-    let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
-
-    guard
-      let source = eventSource,
-      let downEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: true),
-      let upEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: false)
-    else {
+    guard let source = source ?? CGEventSource(stateID: .combinedSessionState) else {
       return false
     }
-
-    applyUnicodePayload(downEvent, units: uniChars)
-    applyUnicodePayload(upEvent, units: uniChars)
-
-    downEvent.post(tap: .cgSessionEventTap)
-    upEvent.post(tap: .cgSessionEventTap)
-    return true
+    return postUnicodeUnits(uniChars, source: source, tap: .cgSessionEventTap)
   }
 
   @discardableResult
@@ -508,29 +171,18 @@ class EventSimulator {
   ) -> Bool {
     guard !str.isEmpty else { return true }
 
-    let eventSource = source ?? CGEventSource(stateID: .combinedSessionState)
-    guard let source = eventSource else {
+    guard let source = source ?? CGEventSource(stateID: .combinedSessionState) else {
       return sendString(str)
     }
 
     var createdAnyEvent = false
-    // v4.15: gửi đúng bytes được giao (xem sendString). Chuẩn hoá NFC/NFD đã
-    // do sendReplacement xử lý theo field TRƯỚC khi tới đây.
     let chars = Array(str)
     for (index, char) in chars.enumerated() {
       let uniChars = unicodeUnits(for: char)
       guard !uniChars.isEmpty else { continue }
 
-      if
-        let downEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: true),
-        let upEvent = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: false)
-      {
+      if postUnicodeUnits(uniChars, source: source, tap: .cgSessionEventTap) {
         createdAnyEvent = true
-        applyUnicodePayload(downEvent, units: uniChars)
-        applyUnicodePayload(upEvent, units: uniChars)
-
-        downEvent.post(tap: .cgSessionEventTap)
-        upEvent.post(tap: .cgSessionEventTap)
       }
 
       if delayMicroseconds > 0 && index < chars.count - 1 {
@@ -540,362 +192,13 @@ class EventSimulator {
     return createdAnyEvent
   }
 
-  static func unicodeUnits(for char: Character) -> [UniChar] {
-    String(char).utf16.map { UniChar($0) }
-  }
-
-  // MARK: - AX-direct injection (v2.12, tham khảo gonhanh.org)
-
-  /// Ghi thẳng giá trị ô text của focused element qua Accessibility API:
-  /// xoá `backspaceCount` ký tự (grapheme) TRƯỚC con trỏ rồi chèn `insert`.
-  /// - Spotlight auto-select phần suggestion SAU con trỏ (gõ "saf" → "saf|ari"
-  ///   với "ari" được select) — phần đó không phải text user gõ, loại bỏ.
-  /// - AX trả offset UTF-16; engine đếm grapheme → quy đổi cẩn thận.
-  /// - Trả false nếu element không đọc/ghi được → caller fallback synthetic.
-  /// v2.15: PID của app đích (đọc từ event.eventTargetUnixProcessID trong
-  /// EventHook). Cần thiết vì trên macOS 26 Tahoe, Spotlight KHÔNG expose
-  /// focused element qua `AXUIElementCreateSystemWide()` (trả nil) — phải đọc
-  /// trực tiếp qua `AXUIElementCreateApplication(pid)`. Verified bằng probe:
-  /// systemwide=nil nhưng app-element cho role=AXTextField, AXValue settable.
-  ///
-  /// ⚠️ ĐÂY LÀ HỘP THƯ MỘT CHIỀU TỪ TAP THREAD, KHÔNG PHẢI BIẾN ĐỌC ĐƯỢC MỌI
-  /// LÚC. Chỉ `EventHook.eventTapCallback` GHI (trên tap thread, ngay đầu mỗi
-  /// keyDown/mouseDown), và chỉ `sendReplacement` ĐỌC — đọc ĐỒNG BỘ ngay lúc
-  /// vào hàm, tức vẫn trong đúng lần gọi tap callback đã ghi giá trị đó, rồi
-  /// mang theo PID như tham số suốt phần còn lại của lần gửi.
-  ///
-  /// Trước đây `axFocusedElement()` đọc thẳng biến này lúc FLUSH, mà flush chạy
-  /// sau trên `simulationQueue`: đổi app đúng giữa hai thời điểm thì thao tác
-  /// gửi của app A được ghi AX vào ô đang focus của app B. Vì thế đừng đọc lại
-  /// biến này ở tầng dưới — nhận PID qua tham số.
-  nonisolated(unsafe) static var axTargetPID: pid_t = 0
-
-  /// v2.15: bundle id các overlay luôn-chạy mà `eventTargetUnixProcessID`
-  /// KHÔNG trả đúng PID trên macOS 26 (verified: Spotlight gửi PID app nền,
-  /// không phải 844). Khi systemwide focus = nil ta tự duyệt các tiến trình
-  /// này, tìm ô search đang focus + ghi được.
-  private static let overlayBundleIds = [
-    "com.apple.Spotlight",
-    "com.apple.systemuiserver",
-    "com.apple.dock",
-  ]
-
-  /// v4.10: bundle có phải overlay luôn-chạy (Spotlight/Dock/menu bar) không.
-  static func isOverlayBundle(_ bundleId: String) -> Bool {
-    return overlayBundleIds.contains { bundleId == $0 || bundleId.hasPrefix($0) }
-  }
-
-  /// v4.11: bundle của overlay ĐANG thực-focus qua systemwide AX (nguồn ĐÁNG
-  /// TIN), hoặc nil nếu focused không phải overlay. Dùng để fix nháy Smart
-  /// Switch khi gõ Spotlight: `eventTargetUnixProcessID` trả PID APP NỀN cho
-  /// Spotlight trên macOS 26 (sai), còn hàm này đọc đúng Spotlight. Nhẹ —
-  /// KHÔNG walk field-kind, timeout ngắn để không treo callback.
-  static func focusedOverlayBundle() -> String? {
-    // Chỉ mượn ngân sách đường nóng cho MỘT lời gọi system-wide fetch; đọc pid/
-    // bundle trên chính focused element dùng timeout element-scope.
-    guard let el = Focused.focusedElement(timeout: Focused.hotPathAXTimeout) else { return nil }
-    AXUIElementSetMessagingTimeout(el, Focused.hotPathAXTimeout)
-    var pid: pid_t = 0
-    guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return nil }
-    let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
-    return isOverlayBundle(bundle) ? bundle : nil
-  }
-
-  /// Element focus đọc qua app-element của 1 pid (timeout ngắn, không treo).
-  ///
-  /// Timeout ở đây đặt lên CHÍNH `appEl` — đây là dạng đúng: element-scope chỉ
-  /// áp cho các message gửi tới element đó, không rò ra mặc định toàn tiến
-  /// trình như khi đặt lên system-wide. Đừng "gom" nó về `Focused.withAXTimeout`.
-  ///
-  /// F4: `defaultAXTimeout` (0,1) chứ không `hotPathAXTimeout` vì người gọi duy
-  /// nhất là `axFocusedElement`, chạy trên `simulationQueue` — chẹn ở đó không
-  /// đụng event tap.
-  private static func focusedElement(ofPID pid: pid_t) -> AXUIElement? {
-    guard pid > 0 else { return nil }
-    let appEl = AXUIElementCreateApplication(pid)
-    AXUIElementSetMessagingTimeout(appEl, Focused.defaultAXTimeout)
-    var ref: CFTypeRef?
-    guard
-      AXUIElementCopyAttributeValue(appEl, kAXFocusedUIElementAttribute as CFString, &ref)
-        == .success,
-      let r = ref, CFGetTypeID(r) == AXUIElementGetTypeID()
-    else { return nil }
-    return (r as! AXUIElement)
-  }
-
-  /// True nếu element là ô text/search nhập được (có AXValue settable).
-  private static func isEditableTextElement(
-    _ el: AXUIElement, timeout: Float = Focused.defaultAXTimeout
-  ) -> Bool {
-    AXUIElementSetMessagingTimeout(el, timeout)
-    var roleRef: CFTypeRef?
-    AXUIElementCopyAttributeValue(el, kAXRoleAttribute as CFString, &roleRef)
-    let role = (roleRef as? String) ?? ""
-    guard role == "AXTextField" || role == "AXTextArea" || role == "AXSearchField"
-            || role == "AXComboBox" else { return false }
-    var settable: DarwinBoolean = false
-    AXUIElementIsAttributeSettable(el, kAXValueAttribute as CFString, &settable)
-    return settable.boolValue
-  }
-
-  /// Lấy focused element để ghi AX:
-  /// 1. system-wide (app thường, nhanh nhất),
-  /// 2. app-element của `axTargetPID` (nếu event cho PID hợp lệ),
-  /// 3. DUYỆT overlay đã biết (Spotlight/Dock/SystemUIServer) — đường CHÍNH cho
-  ///    Spotlight Tahoe vì systemwide=nil và eventTargetPID sai.
-  /// - Parameter targetPID: PID đích của CHÍNH lần gửi này, chụp đồng bộ lúc
-  ///   vào `sendReplacement`. KHÔNG đọc `axTargetPID` ở đây — lúc hàm này chạy
-  ///   thì tap thread có thể đã ghi đè bằng PID của app khác.
-  private static func axFocusedElement(targetPID: pid_t) -> AXUIElement? {
-    // Không đặt timeout ở đây nữa: chỗ này chạy trên `simulationQueue` và muốn
-    // đúng bằng `Focused.defaultAXTimeout` (0,1) — mà đó ĐÃ là mặc định tiến
-    // trình, đặt lúc launch. Lời gọi cũ chỉ ghi đè mặc định toàn tiến trình
-    // bằng chính giá trị của nó, từ một thread khác, để giành với hai chỗ đang
-    // đặt 0,05 — thắng thua tuỳ thứ tự chạy. Xem `Focused.withAXTimeout`.
-    //
-    // F4: ĐÂY là đường DUY NHẤT được hưởng 0,1 mặc định, và nó hưởng đúng vì
-    // không nằm trên tap thread. Mọi đường chạy mỗi phím trên tap thread mượn
-    // `Focused.hotPathAXTimeout`. Nếu sau này có ai gọi hàm này ĐỒNG BỘ từ tap
-    // thread thì phải bọc lại bằng ngân sách đường nóng, không phải để nguyên.
-    let systemWide = AXUIElementCreateSystemWide()
-    var focusedRef: CFTypeRef?
-    if AXUIElementCopyAttributeValue(
-         systemWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
-       let ref = focusedRef, CFGetTypeID(ref) == AXUIElementGetTypeID() {
-      return (ref as! AXUIElement)
-    }
-
-    // (2) PID đích từ event — nếu hợp lệ và là ô nhập được.
-    if targetPID > 0, let el = focusedElement(ofPID: targetPID), isEditableTextElement(el) {
-      os_log("axDirect: focus via target pid=%d", log: axLog, type: .info, targetPID)
-      return el
-    }
-
-    // (3) Duyệt overlay đã biết: tìm tiến trình có focused element là ô nhập.
-    for bundleId in overlayBundleIds {
-      for app in NSRunningApplication.runningApplications(withBundleIdentifier: bundleId) {
-        let pid = app.processIdentifier
-        if let el = focusedElement(ofPID: pid), isEditableTextElement(el) {
-          os_log("axDirect: focus via overlay %{public}@ pid=%d",
-                 log: axLog, type: .info, bundleId, pid)
-          return el
-        }
-      }
-    }
-    return nil
-  }
-
-  /// - Parameter usesNFC: trục mà caller đã dùng để đếm `backspaceCount`;
-  ///   quyết định `axDeleteStart` lùi theo grapheme hay theo scalar.
-  /// - Parameter targetPID: PID đích của lần gửi này (xem `axTargetPID`).
-  static func axDirectReplace(
-    backspaceCount: Int, insert: String, usesNFC: Bool, targetPID: pid_t
-  ) -> Bool {
-    guard let element = axFocusedElement(targetPID: targetPID) else {
-      os_log("axDirect: no focused element (systemwide + app pid both nil)",
-             log: axLog, type: .default)
-      return false
-    }
-
-    var valueRef: CFTypeRef?
-    guard
-      AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueRef) == .success
-    else {
-      os_log("axDirect: AXValue unreadable", log: axLog, type: .default)
-      return false
-    }
-    let valueStr = (valueRef as? String) ?? ""
-    let valueNS = valueStr as NSString
-    let valueLength = valueNS.length
-
-    // Caret + selection (offset UTF-16). Thiếu range → coi caret ở cuối.
-    var caret = valueLength
-    var selLen = 0
-    var rangeRef: CFTypeRef?
-    if AXUIElementCopyAttributeValue(
-         element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
-       let rv = rangeRef, CFGetTypeID(rv) == AXValueGetTypeID() {
-      var sel = CFRange()
-      if AXValueGetValue(rv as! AXValue, .cfRange, &sel), sel.location >= 0 {
-        caret = min(sel.location, valueLength)
-        selLen = max(0, sel.length)
-      }
-    }
-
-    // Vùng thay thế (theo PHTV PHTVAccessibilityService):
-    // - selection GIỮA text (user bôi đen) → thay đúng vùng select.
-    // - selection Ở CUỐI (suffix autocomplete Spotlight, vd "saf|ari") →
-    //   xoá [deleteStart, caret) + cả suffix trong cùng một lần replace.
-    var start = caret
-    var len = 0
-    let selectionAtEnd = selLen > 0 && (caret + selLen == valueLength)
-    if selLen > 0 && !selectionAtEnd {
-      start = caret
-      len = selLen
-    } else {
-      let deleteStart = axDeleteStart(
-        valueStr, caretUTF16: caret, backspaceCount: backspaceCount, usesNFC: usesNFC)
-      start = deleteStart
-      len = (caret - deleteStart) + (selectionAtEnd ? selLen : 0)
-    }
-    if start + len > valueLength { len = valueLength - start }
-    if len < 0 { len = 0 }
-
-    // ĐỪNG "sửa" precompose này theo `usesNFC`: truy hết mọi đường tới
-    // `.axDirect` thì field đích LUÔN là NSTextField của Apple (Spotlight,
-    // SystemUIServer, omnibox Chromium Views) — đều lưu NFC, nên ghi NFC vào là
-    // ĐÚNG. Chỗ thật sự phải khớp trục là `axDeleteStart` (lùi grapheme vs
-    // scalar) ngay phía trên; đổi dòng này chỉ làm lệch thêm.
-    let insertNFC = insert.precomposedStringWithCanonicalMapping
-    let newValue = valueNS.replacingCharacters(
-      in: NSRange(location: start, length: len), with: insertNFC)
-
-    guard
-      AXUIElementSetAttributeValue(element, kAXValueAttribute as CFString, newValue as CFTypeRef)
-        == .success
-    else {
-      os_log("axDirect: AXValue write REFUSED", log: axLog, type: .default)
-      return false
-    }
-
-    // Đặt con trỏ ngay sau text vừa chèn — TRỪ KHI field đã tự để nó đúng chỗ.
-    // Omnibox Chrome nhận AXValue qua `SetUserText(update_popup: true)`,
-    // tự điền gợi ý trang và bôi đen phần đuôi. Đặt lại con trỏ lúc này là đổi
-    // selection = Chrome chấp nhận gợi ý, đuôi thành chữ thật và phím kế tiếp
-    // chèn vào giữa. Xem `axShouldPlaceCaret`.
-    let targetCaret = start + (insertNFC as NSString).length
-    let written = Self.axReadValueAndSelection(element)
-    if Self.axShouldPlaceCaret(
-      selectionAfterWrite: written.selection, targetCaret: targetCaret,
-      valueLength: ((written.value ?? newValue) as NSString).length)
-    {
-      var newSel = CFRange(location: targetCaret, length: 0)
-      if let newRange = AXValueCreate(.cfRange, &newSel) {
-        AXUIElementSetAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, newRange)
-      }
-    }
-
-    // v2.14 (theo PHTV): VERIFY khi có xoá — một số app trả success nhưng áp
-    // async hoặc âm thầm bỏ. Không verify thì tưởng thành công trong khi field
-    // không đổi → "vẫn lỗi" mà không có dấu vết.
-    guard backspaceCount > 0 else { return true }
-    var got = written.value
-    for attempt in 0..<2 {
-      if attempt > 0 {
-        usleep(2000)
-        got = Self.axReadValueAndSelection(element).value
-      }
-      if let got, Self.axWriteLanded(
-        oldValue: valueStr, wanted: newValue, got: got, hadSuffixSelection: selectionAtEnd)
-      {
-        return true
-      }
-    }
-    os_log("axDirect: verify FAILED (write not applied)", log: axLog, type: .default)
-    return false
-  }
-
-  /// Đọc AXValue và AXSelectedTextRange của ô vừa ghi. Chạy trên
-  /// `simulationQueue`, cùng ngân sách AX với `axFocusedElement`.
-  private static func axReadValueAndSelection(
-    _ element: AXUIElement
-  ) -> (value: String?, selection: CFRange?) {
-    var valueRef: CFTypeRef?
-    let value = AXUIElementCopyAttributeValue(
-      element, kAXValueAttribute as CFString, &valueRef) == .success
-      ? (valueRef as? String) : nil
-    var rangeRef: CFTypeRef?
-    var selection: CFRange?
-    if AXUIElementCopyAttributeValue(
-         element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
-       let rv = rangeRef, CFGetTypeID(rv) == AXValueGetTypeID() {
-      var sel = CFRange()
-      if AXValueGetValue(rv as! AXValue, .cfRange, &sel) { selection = sel }
-    }
-    return (value, selection)
-  }
-
-  /// Có cần đặt lại con trỏ sau khi ghi AXValue không.
-  ///
-  /// Không, khi caret ĐÃ nằm ngay sau chữ vừa ghi — kể cả khi kèm một vùng bôi
-  /// đen kéo tới cuối ô, vì đó là gợi ý field vừa tự điền (omnibox Chrome,
-  /// Spotlight). Giữ vùng đó y như lúc gõ phím thật: phím kế tiếp thay nó, gợi ý
-  /// không bị chấp nhận. Mọi trường hợp khác (field đẩy caret về cuối khi sửa
-  /// giữa chuỗi, hoặc không đọc được selection) đặt lại như trước.
-  static func axShouldPlaceCaret(
-    selectionAfterWrite: CFRange?, targetCaret: Int, valueLength: Int
-  ) -> Bool {
-    guard let sel = selectionAfterWrite, sel.location == targetCaret else { return true }
-    let isSuggestionTail = sel.location + sel.length == valueLength
-    return !(sel.length == 0 || isSuggestionTail)
-  }
-
-  /// Lần ghi AXValue đã tới field chưa (so sau chuẩn hoá NFC).
-  ///
-  /// Tới rồi khi field khớp đúng chữ đã ghi, hoặc khi field ĐÃ ĐỔI so với trước
-  /// lúc ghi dù không khớp từng chữ — thường là omnibox vừa gắn thêm gợi ý trang.
-  /// Trước đây ca sau bị coi là thất bại: vòng thử lại ghi CHỒNG phép thay thế
-  /// lên chữ đã sửa (lặp chữ), hết lượt còn rơi xuống `sendSpotlightFallback`.
-  /// Chỉ khi field y nguyên mới là chưa tới, và chỉ khi đó thử lại mới an toàn.
-  ///
-  /// `hadSuffixSelection`: luật cũ của Spotlight — ô đang bôi đen đuôi gợi ý từ
-  /// TRƯỚC khi ghi, đọc lại mà vẫn bắt đầu bằng chữ đã ghi thì coi là tới.
-  static func axWriteLanded(
-    oldValue: String, wanted: String, got: String, hadSuffixSelection: Bool
-  ) -> Bool {
-    let gotNFC = got.precomposedStringWithCanonicalMapping
-    let wantNFC = wanted.precomposedStringWithCanonicalMapping
-    if gotNFC == wantNFC { return true }
-    if hadSuffixSelection && gotNFC.hasPrefix(wantNFC) { return true }
-    return gotNFC != oldValue.precomposedStringWithCanonicalMapping
-  }
-
-  /// Lùi từ caret `backspaceCount` "phím xoá" trong không gian UTF-16.
-  ///
-  /// Đơn vị lùi PHẢI khớp trục mà caller đã dùng để ĐẾM `backspaceCount`
-  /// (xem `calcKeyStrokes(from:to:usesNFC:)`):
-  /// - `usesNFC == true` → mỗi cụm grapheme (base + combining marks, surrogate
-  ///   pair) là MỘT đơn vị, khớp `calcKeyStrokes`.
-  /// - `usesNFC == false` → mỗi Unicode scalar là MỘT đơn vị, khớp
-  ///   `calcKeyStrokesNFD`. Trước đây luôn lùi theo grapheme, nên khi caller
-  ///   đưa số đếm scalar (field NFD) mà strategy bị ép sang axDirect —
-  ///   `sendReplacement` tự nâng cấp khi `overlaySearchIsFocused()` — thì mỗi
-  ///   dấu thanh làm lùi dư một cụm và xoá lố sang ký tự đứng trước.
-  static func axDeleteStart(
-    _ value: String, caretUTF16: Int, backspaceCount: Int, usesNFC: Bool
-  ) -> Int {
-    guard backspaceCount > 0, caretUTF16 > 0 else { return max(0, caretUTF16) }
-    let ns = value as NSString
-    var idx = min(caretUTF16, ns.length)
-    for _ in 0..<backspaceCount {
-      guard idx > 0 else { break }
-      if usesNFC {
-        idx = ns.rangeOfComposedCharacterSequence(at: idx - 1).location
-      } else {
-        // Lùi đúng MỘT scalar: surrogate pair chiếm 2 UTF-16 unit, combining
-        // mark là scalar riêng nên KHÔNG gộp vào base như nhánh grapheme.
-        idx -= 1
-        if idx > 0,
-          UTF16.isTrailSurrogate(ns.character(at: idx)),
-          UTF16.isLeadSurrogate(ns.character(at: idx - 1))
-        {
-          idx -= 1
-        }
-      }
-    }
-    return idx
-  }
-
-  /// Fallback khi AX fail 3 lần: ForwardDelete xoá suggestion đang auto-select
-  /// (gonhanh) → backspace chậm → text từng ký tự. v2.14: post vào HID TAP
-  /// (`.cghidEventTap`, theo PHTV `postToHIDTapEnabled`) — Spotlight xử lý
-  /// event mức HID đáng tin hơn session tap. Event dùng `.privateState` nên
-  /// vẫn bị tap của vkey bỏ qua (eventSourceStateID != 1), không loop.
+  /// Fallback khi AX fail 3 lần: ForwardDelete xoá suggestion → backspace chậm → text từng ký tự qua HID tap.
   private static func sendSpotlightFallback(
     backspaceCount: Int, diffChars: [Character], source: CGEventSource
   ) {
-    os_log("axDirect: fallback synthetic (HID tap), bs=%d diff=%d",
-           log: axLog, type: .default, backspaceCount, diffChars.count)
+    os_log(
+      "axDirect: fallback synthetic (HID tap), bs=%d diff=%d",
+      log: simLog, type: .default, backspaceCount, diffChars.count)
     func postHID(_ event: CGEvent?) {
       guard let event else { return }
       event.flags = .maskNonCoalesced
@@ -913,131 +216,54 @@ class EventSimulator {
     for ch in diffChars {
       let units = unicodeUnits(for: ch)
       guard !units.isEmpty else { continue }
-      let dn = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: true)
-      let up = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.unicodeOnly, keyDown: false)
-      if let dn { applyUnicodePayload(dn, units: units) }
-      if let up { applyUnicodePayload(up, units: units) }
-      postHID(dn)
-      postHID(up)
+      postUnicodeUnits(units, source: source, tap: .cghidEventTap)
       usleep(1000)
     }
   }
 
-  /// v2.15 (đơn giản hoá): true khi systemwide AX KHÔNG thấy focused element.
-  /// Trên macOS, app thường luôn cho systemwide focus → false (không đụng).
-  /// Spotlight/overlay làm systemwide trả nil → true → ép axDirect; bên trong
-  /// `axDirectReplace` tự duyệt overlay tìm ô search + ghi (có verify + fallback
-  /// HID nên app thường lỡ nil cũng an toàn). Rẻ: chỉ 1 AX call.
-  /// v2.15 (CHỐT): override axDirect khi focused element (system-wide) là ô
-  /// SEARCH/TEXT của overlay nuốt synthetic backspace (Spotlight).
-  /// FACT (file-diag trên máy thật): trong vkey, `AXUIElementCreateSystemWide`
-  /// + focused TRẢ VỀ AXTextField của Spotlight (err=0) — KHÔNG nil như script
-  /// ngoài. Nên không thể gate theo "systemwide nil"; phải kiểm tra: focused
-  /// element thuộc tiến trình overlay đã biết + role text/search.
-  private static func overlaySearchIsFocused() -> Bool {
-    guard let el = Focused.focusedElement(timeout: Focused.hotPathAXTimeout) else { return false }
-    AXUIElementSetMessagingTimeout(el, Focused.hotPathAXTimeout)
-    var pid: pid_t = 0
-    guard AXUIElementGetPid(el, &pid) == .success, pid > 0 else { return false }
-    let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
-    let isOverlay = overlayBundleIds.contains { bundle == $0 || bundle.hasPrefix($0) }
-    guard isOverlay else { return false }
-    return isEditableTextElement(el, timeout: Focused.hotPathAXTimeout)
-  }
-
-  /// v4.15: dạng ký tự THỰC SỰ phát ra, bám theo dạng lưu của field.
-  /// - Field NFC (Apple/Finder/native panel/omnibox) → gộp combining mark vào
-  ///   base (precomposed) để ô tìm kiếm khớp text precomposed.
-  /// - Field NFD (web content Chromium/Electron) → GIỮ NGUYÊN combining mark
-  ///   như `calcKeyStrokesNFD` đã tính; precompose ở đây làm lệch số scalar so
-  ///   với backspace đã gửi → ăn mất ký tự trước nguyên âm mang dấu ("gửi"→"ửi").
-  static func emittedCharacters(_ diffChars: [Character], normalizeToNFC: Bool) -> [Character] {
-    guard normalizeToNFC else { return diffChars }
-    return Array(String(diffChars).precomposedStringWithCanonicalMapping)
-  }
+  // MARK: - Replacement Dispatch
 
   static func sendReplacement(
     backspaceCount: Int,
     diffChars rawDiffChars: [Character],
     strategy: SendingStrategy,
     normalizeToNFC: Bool
-  ) -> EventSendTelemetry {
-    let diffChars = emittedCharacters(rawDiffChars, normalizeToNFC: normalizeToNFC)
-    // Chụp PID đích NGAY BÂY GIỜ: hàm này chạy đồng bộ trên tap thread, trong
-    // đúng lần gọi tap callback vừa ghi `axTargetPID` cho phím này. Nhánh
-    // `.axDirect` bên dưới flush TRỄ trên `simulationQueue`, lúc đó biến global
-    // có thể đã mang PID của app khác (người dùng đổi app đúng giữa chừng) →
-    // ghi AX nhầm ô. Mang theo giá trị, đừng đọc lại lúc flush.
+  ) {
+    let diffChars = TextDiff.emittedCharacters(rawDiffChars, normalizeToNFC: normalizeToNFC)
+    // Chụp PID đích đồng bộ ngay trên tap thread trước khi async xuống `simulationQueue`.
     let targetPID = axTargetPID
-    let touchedCharacters = backspaceCount + diffChars.count
-    guard touchedCharacters > 0 else {
-      return EventSendTelemetry(
-        attemptedTransform: false,
-        createdEvents: true,
-        usedAsyncQueue: false,
-        touchedCharacters: 0
-      )
-    }
+    guard backspaceCount + diffChars.count > 0 else { return }
 
-    // v2.15: nếu strategy KHÔNG phải axDirect nhưng ô đang focus là search/text
-    // field của overlay (Spotlight…) — vốn nuốt synthetic backspace → ép
-    // axDirect. Phát hiện qua AX role+bundle thật (không phụ thuộc
-    // eventTargetUnixProcessID, vốn không trả đúng PID Spotlight trên macOS 26).
     var effectiveStrategy = strategy
-    if case .axDirect = strategy {} else if overlaySearchIsFocused() {
+    if case .axDirect = strategy {} else if AXDirectInjector.overlaySearchIsFocused() {
       effectiveStrategy = .axDirect
     }
 
     switch effectiveStrategy {
     case .batch:
-      // 1.5.0: even .batch now dispatches to simulationQueue so the event tap
-      // callback never blocks. Ordering with the user's next keystroke is
-      // preserved because simulationQueue is serial and the system queues
-      // pending events behind our outgoing post() calls.
       let source = privateEventSource()
       simulationQueue.async {
         sendBackspace(backspaceCount, source: source, delayMicroseconds: 0)
         sendString(String(diffChars), source: source)
       }
-      return EventSendTelemetry(
-        attemptedTransform: true,
-        createdEvents: true,
-        usedAsyncQueue: true,
-        touchedCharacters: touchedCharacters
-      )
 
     case .stepByStep:
-      guard let source = privateEventSource() else {
-        return EventSendTelemetry(
-          attemptedTransform: true,
-          createdEvents: false,
-          usedAsyncQueue: true,
-          touchedCharacters: touchedCharacters
-        )
-      }
-      // Dispatch to background queue to avoid blocking the event tap
+      guard let source = privateEventSource() else { return }
       simulationQueue.async {
         sendBackspace(backspaceCount, source: source, delayMicroseconds: 2000)
         usleep(3000)
         sendStringStepByStep(String(diffChars), source: source, delayMicroseconds: 2000)
         usleep(3000)
       }
-      return EventSendTelemetry(
-        attemptedTransform: true,
-        createdEvents: true,
-        usedAsyncQueue: true,
-        touchedCharacters: touchedCharacters
-      )
 
     case .axDirect:
       simulationQueue.async {
-        // Spotlight có thể đang bận search → AX call fail thoáng qua; retry
-        // 3 lần (5ms/lần, theo gonhanh) rồi mới fallback synthetic.
         for attempt in 0..<3 {
           if attempt > 0 { usleep(5000) }
-          if axDirectReplace(
+          if AXDirectInjector.axDirectReplace(
             backspaceCount: backspaceCount, insert: String(diffChars),
-            usesNFC: normalizeToNFC, targetPID: targetPID) {
+            usesNFC: normalizeToNFC, targetPID: targetPID)
+          {
             return
           }
         }
@@ -1046,38 +272,90 @@ class EventSimulator {
             backspaceCount: backspaceCount, diffChars: diffChars, source: source)
         }
       }
-      return EventSendTelemetry(
-        attemptedTransform: true,
-        createdEvents: true,
-        usedAsyncQueue: true,
-        touchedCharacters: touchedCharacters
-      )
 
     case .hybrid(let backspaceDelay):
-      guard let source = privateEventSource() else {
-        return EventSendTelemetry(
-          attemptedTransform: true,
-          createdEvents: false,
-          usedAsyncQueue: true,
-          touchedCharacters: touchedCharacters
-        )
-      }
-      // Dispatch to background queue to avoid blocking the event tap
+      guard let source = privateEventSource() else { return }
       simulationQueue.async {
         sendBackspace(backspaceCount, source: source, delayMicroseconds: backspaceDelay)
         sendString(String(diffChars), source: source)
       }
-      return EventSendTelemetry(
-        attemptedTransform: true,
-        createdEvents: true,
-        usedAsyncQueue: true,
-        touchedCharacters: touchedCharacters
-      )
     }
   }
 
-  // `sendShiftLeft` đã gỡ: đường "bôi đen bằng Shift+Left rồi ghi đè" bị bỏ từ
-  // v2.3.10 (CHANGELOG), sau đó không caller nào trong source lẫn test gọi nữa —
-  // 22 dòng chết còn kéo theo hằng `KeyCode.leftArrow`. Ô có inline autocomplete
-  // giờ đi đường `.axDirect` (`axDirectReplace` xử lý cả vùng selection ở cuối).
+  // MARK: - Compatibility Forwarders (delegate to AppCompatibilityRegistry / TextDiff / AXDirectInjector)
+
+  static var appStrategies: [AppSendingConfig] { AppCompatibilityRegistry.appStrategies }
+  static var terminalBundlePrefixes: [String] { AppCompatibilityRegistry.terminalBundlePrefixes }
+
+  static func isTerminalApp(_ bundleId: String?) -> Bool {
+    AppCompatibilityRegistry.isTerminalApp(bundleId)
+  }
+
+  static func isOverlayBundle(_ bundleId: String) -> Bool {
+    AppCompatibilityRegistry.isOverlayBundle(bundleId)
+  }
+
+  static func userSendingMode(for bundleId: String) -> AppSendingMode? {
+    AppCompatibilityRegistry.userSendingMode(for: bundleId)
+  }
+
+  static func getStrategy(for bundleId: String) -> SendingStrategy {
+    AppCompatibilityRegistry.getStrategy(for: bundleId)
+  }
+
+  static func resolveStrategy(for bundleId: String, userMode: AppSendingMode?) -> SendingStrategy {
+    AppCompatibilityRegistry.resolveStrategy(for: bundleId, userMode: userMode)
+  }
+
+  static func builtInStrategy(for bundleId: String) -> SendingStrategy {
+    AppCompatibilityRegistry.builtInStrategy(for: bundleId)
+  }
+
+  static func calcKeyStrokes(from: String, to: String) -> (Int, [Character]) {
+    TextDiff.calcKeyStrokes(from: from, to: to)
+  }
+
+  static func calcKeyStrokesNFD(from: String, to: String) -> (Int, [Character]) {
+    TextDiff.calcKeyStrokesNFD(from: from, to: to)
+  }
+
+  static func calcKeyStrokes(from: String, to: String, usesNFC: Bool) -> (Int, [Character]) {
+    TextDiff.calcKeyStrokes(from: from, to: to, usesNFC: usesNFC)
+  }
+
+  static func emittedCharacters(_ diffChars: [Character], normalizeToNFC: Bool) -> [Character] {
+    TextDiff.emittedCharacters(diffChars, normalizeToNFC: normalizeToNFC)
+  }
+
+  static func axDeleteStart(
+    _ value: String, caretUTF16: Int, backspaceCount: Int, usesNFC: Bool
+  ) -> Int {
+    TextDiff.axDeleteStart(
+      value, caretUTF16: caretUTF16, backspaceCount: backspaceCount, usesNFC: usesNFC)
+  }
+
+  static func focusedOverlayBundle() -> String? {
+    AXDirectInjector.focusedOverlayBundle()
+  }
+
+  static func axDirectReplace(
+    backspaceCount: Int, insert: String, usesNFC: Bool, targetPID: pid_t
+  ) -> Bool {
+    AXDirectInjector.axDirectReplace(
+      backspaceCount: backspaceCount, insert: insert, usesNFC: usesNFC, targetPID: targetPID)
+  }
+
+  static func axShouldPlaceCaret(
+    selectionAfterWrite: CFRange?, targetCaret: Int, valueLength: Int
+  ) -> Bool {
+    AXDirectInjector.axShouldPlaceCaret(
+      selectionAfterWrite: selectionAfterWrite, targetCaret: targetCaret, valueLength: valueLength)
+  }
+
+  static func axWriteLanded(
+    oldValue: String, wanted: String, got: String, hadSuffixSelection: Bool
+  ) -> Bool {
+    AXDirectInjector.axWriteLanded(
+      oldValue: oldValue, wanted: wanted, got: got, hadSuffixSelection: hadSuffixSelection)
+  }
 }

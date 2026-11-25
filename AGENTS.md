@@ -40,31 +40,44 @@ Keyboard Event → EventHook (CGEvent tap) → InputProcessor
 
 ### Key Components
 
-**App/** - Application lifecycle and state
-- `AppState.swift` - Observable state container with Combine publishers for enabled state, typing method, and per-app input mode memory
-- `InputProcessor.swift` - Main keyboard event handler that maintains word state and delegates to the typing engine. Also owns the NFC/NFD decision per focused field and `canonicalAppBundle` (an app's own helper process is not an app switch)
-- `Setting.swift` - Persistent settings using Defaults framework
-- `Updater.swift` - Sparkle wrapper · `UserDataMigration.swift` - backup/restore of personal data
+**App/** - Application lifecycle, coordination, settings & migration
+- `AppDelegate.swift` / `WindowCoordinator.swift` / `AccessibilityWatchdog.swift` - Lifecycle, window/activation-policy orchestration, trust polling & 2s revocation/tap-health/secure-input watchdog
+- `AppState.swift` - Observable state container with Combine publishers for enabled state, typing method, Smart Switch transitions, and per-app input mode memory
+- `InputProcessor.swift` - Main keyboard event coordinator wiring `WordBuffer`, `AutoCapitalizer`, `MacroExpander`, `SpellDecisionEngine`, `EmitPlan`, and `EventSimulator`
+- `Setting.swift` / `SettingsModels.swift` / `ThemeModels.swift` / `DefaultsDerivedCache.swift` - Persistent settings & cached derived values
+- `UserDataMigration.swift` / `UserDataExport.swift` / `UpgradeBackupPrompt.swift` / `StartupMigrations.swift` - Backup/restore & idempotent startup migrations
+- `Updater.swift` - Sparkle wrapper · `FileExportService.swift` - shared `NSSavePanel`/`NSOpenPanel` JSON/text helpers
 
-**Engine/** - Vietnamese typing logic
-- `TiengViet.swift` - Vietnamese syllable model: tone marks (DauThanh), diacritics (DauMu), consonant clusters, vowels
+**Engine/** - Pure Foundation Vietnamese typing logic (zero `AppKit` / `Defaults`)
+- `EngineOptions.swift` - Explicit options struct injected into engine operations
+- `TiengViet.swift` - Vietnamese syllable model: tone marks (DauThanh), diacritics (DauMu), immutable consonant Tries, vowels
 - `TiengVietParser/Transformer/Validator.swift` - parse a syllable, place marks, reject impossible ones (phonotactics)
 - `Telex.swift` / `VNI.swift` - Input method implementations following TypingMethod protocol
 
+**Input/** - Word state, diffing & commit pipelines
+- `EmitPlan.swift` - Type-enforced NFC/NFD axis + transport plan invariant
+- `WordBuffer.swift` - Syllable buffer, recovery mode, snapshot rollback, `dd` toggle
+- `TextDiff.swift` - Pure Foundation NFC grapheme & NFD scalar diffing + UTF-16 caret step-back
+- `AutoCapitalizer.swift` - Sentence-start auto-capitalization state machine
+- `MacroExpander.swift` - Macro matching (exact + auto-capitalized variant) & case preservation
+- `SpellDecisionEngine.swift` - Keep Vietnamese vs restore English decision logic
+
 **Platform/** - macOS system interaction
-- `EventHook.swift` - Global CGEvent tap for keyboard interception (requires Accessibility permission). `setEnabled` only resets the word buffer on a real state change
-- `EventSimulator.swift` - Simulates backspace and text input to replace typed text; per-app sending strategy incl. `axDirect` for Chromium omnibox
-- `Focused.swift` - Accessibility API: focused element, `FieldKind` (webContent / nativePanel / windowField)
-- Also: HUD windows (Toggle/Notice), input-source monitor
+- `EventHook.swift` - Global CGEvent tap for keyboard interception (requires Accessibility permission)
+- `SecureInputMonitor.swift` / `RemoteInputPolicy.swift` / `ModifierHotkeyTracker.swift` - Secure Input scoping, Screen Sharing / remote-desktop stand-aside, and modifier-only hotkeys
+- `EventSimulator.swift` / `AXDirectInjector.swift` - Synthetic CGEvent posting + Accessibility direct value replacement for Spotlight/omnibox
+- `AppCompatibilityRegistry.swift` - Single source of truth for per-app sending strategies, NFC/NFD classification, terminals, browsers, overlays, remote viewers, and `canonicalAppBundle`
+- `Focused.swift` / `AXHelpers.swift` / `FocusContextTracker.swift` - Accessibility API helpers, `FieldKind`, and coalesced focus tracking
+- `FloatingHUDPanel.swift` / `ToggleHUDWindow.swift` / `NoticeHUDWindow.swift` - Borderless floating HUDs · `AccessibilityPermissionPane.swift` · `InputSourceMonitor.swift`
 
 **KeyLayout/** - Keyboard mapping
 - `KeyboardUS.swift` - US keyboard layout key code to character mapping
 - `Keys.swift` - TaskKey enum for special keys (Enter, Tab, Space, arrows)
+- `ModifierFormatting.swift` - Canonical macOS modifier glyph formatting (`⌃⌥⇧⌘`)
 
-**Input/** - `SpellDecisionEngine.swift` (keep Vietnamese vs restore English)
-**Lexicon/** - embedded word lists + the GitHub `lexicon-update.json` fetch path
-**Stats/** - usage statistics (local only, no telemetry)
-**View/** - SwiftUI. `View/Redesign/VK*` is the live design system; older top-level views are legacy
+**Lexicon/** - Embedded word lists (`Resources/syllables.txt`) + GitHub `lexicon-update.json` fetch path
+**Stats/** - Local-only usage statistics (`UsageStatistics.swift`, `StatsModels.swift`, `StatsStore.swift`, `PhraseTracker.swift`, `PersonalDictMiner.swift`, `SmartSwitchLearner.swift`)
+**View/** - SwiftUI organized by role: `DesignSystem/`, `MenuBar/`, `Settings/`, `Sheets/`, `HUD/`, `Onboarding/`, `DonateView.swift`
 **Marketing/** - `--export-marketing` screenshot exporter (dev tool, Debug builds only)
 
 ### Dependencies (Swift Packages)
@@ -73,8 +86,8 @@ Keyboard Event → EventHook (CGEvent tap) → InputProcessor
 - **LaunchAtLogin** - Auto-start functionality
 - **Sparkle** - Silent auto-update; drives `appcast.xml` and the whole release flow
 
-The Settings window is hand-built SwiftUI (`View/Redesign/VKSettingsView.swift`),
-not the `Settings` package.
+The Settings window is hand-built SwiftUI (`View/Settings/VKSettingsView.swift`),
+not the `Settings` package. `vkey` and `vkeyTests` use Xcode `PBXFileSystemSynchronizedRootGroup`, so adding/moving/deleting files syncs automatically without editing `project.pbxproj`.
 
 ## Working copy location
 

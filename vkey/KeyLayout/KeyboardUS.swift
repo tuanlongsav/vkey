@@ -1,4 +1,4 @@
-import Cocoa
+import Foundation
 
 /// Maps a physical macOS key code to the character that key occupies on a
 /// US QWERTY layout. Physical key codes are stable across input sources, so this

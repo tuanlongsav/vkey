@@ -5,129 +5,67 @@
 //  Created by KhanhIceTea on 17/02/2024.
 //
 
-/// VNI - Kiểu gõ tiếng Việt sử dụng phím số
-///
-/// Bảng phím VNI:
-/// ┌─────────────────────────────────────────────────────────┐
-/// │ Phím số đặt dấu thanh (Tone marks):                     │
-/// │   1 = sắc (´)  - ma1 → má                               │
-/// │   2 = huyền (`) - ma2 → mà                              │
-/// │   3 = hỏi (ˀ)  - ma3 → mả                               │
-/// │   4 = ngã (~)  - ma4 → mã                               │
-/// │   5 = nặng (.) - ma5 → mạ                               │
-/// ├─────────────────────────────────────────────────────────┤
-/// │ Phím số đặt dấu mũ (Diacritical marks):                 │
-/// │   6 = mũ (^) cho a, e, o → â, ê, ô                      │
-/// │       Ví dụ: a6 → â, e6 → ê, o6 → ô                     │
-/// │   7 = móc (horn) cho u, o → ư, ơ                        │
-/// │       Ví dụ: u7 → ư, o7 → ơ                             │
-/// │   8 = trăng (breve) cho a → ă                           │
-/// │       Ví dụ: a8 → ă                                     │
-/// ├─────────────────────────────────────────────────────────┤
-/// │ Phím đặc biệt:                                          │
-/// │   9 = gạch ngang (stroke) cho d → đ                     │
-/// │       Ví dụ: d9i → đi                                   │
-/// └─────────────────────────────────────────────────────────┘
-///
-/// Quy tắc hủy dấu (gõ đúp):
-/// - Gõ đúp phím số (11, 22, 33, 44, 55, 88) → hủy dấu, in số
-/// - a66, o66, e66 → hủy dấu mũ, in số 6
-/// - d99 → hủy gạch ngang, in số 9
-
 import Foundation
 
+/// VNI - Kiểu gõ tiếng Việt sử dụng phím số (1–5 dấu thanh, 6 mũ, 7 móc, 8 trăng, 9 đ).
 class VNI: TypingMethod {
+
+  private static let dTriggerChars: Set<Character> = ["9"]
+  private static let simpleCancelSuffixes = ["11", "22", "33", "44", "55", "77", "88"]
 
   // MARK: - TypingMethod Protocol
 
-  /// Kiểm tra có nên dừng xử lý VNI không
   public func shouldStopProcessing(keyStr: String) -> Bool {
     let lowerKeyStr = keyStr.lowercased()
-    
-    // 1. Check simple suffixes (double tap tone marks)
-    let simpleSuffixes = ["11", "22", "33", "44", "55", "77", "88"]
-    if simpleSuffixes.contains(where: { lowerKeyStr.hasSuffix($0) }) {
-        return true
+
+    if Self.simpleCancelSuffixes.contains(where: { lowerKeyStr.hasSuffix($0) }) {
+      return true
     }
-    
-    // 2. Check complex cases (double tap vowel/d when it already exists)
-    // "66", "99" -> Cancel mark if the character exists before
-    
-    // Check "66" suffix: requires 'a', 'e', or 'o' to exist previously (circumflex)
+
     if lowerKeyStr.hasSuffix("66") {
-      return lowerKeyStr.contains("a") || lowerKeyStr.contains("e") || lowerKeyStr.contains("o")
+      let prefix = lowerKeyStr.dropLast(2)
+      return prefix.contains("a") || prefix.contains("e") || prefix.contains("o")
     }
-    
-    // Check "99" suffix: requires 'd' to exist previously (stroked d)
+
     if lowerKeyStr.hasSuffix("99") {
-      return lowerKeyStr.hasPrefix("d")
+      return lowerKeyStr.dropLast(2).hasPrefix("d")
     }
 
     return false
   }
 
-  /// Xử lý ký tự nhập vào theo kiểu gõ VNI
-  /// - Parameters:
-  ///   - char: Ký tự vừa gõ
-  ///   - state: Trạng thái TiengVietState hiện tại
-  /// - Returns: Tuple (state mới, có áp dụng dấu không)
-  public func push(char: Character, state: TiengVietState) -> (state: TiengVietState, appliedMark: Bool) {
+  public func push(
+    char: Character,
+    state: TiengVietState,
+    options: EngineOptions
+  ) -> (state: TiengVietState, appliedMark: Bool) {
+    if let common = tryCommonPushPrefix(
+      char: char, state: state, dTriggerChars: Self.dTriggerChars, options: options
+    ) {
+      return common
+    }
+
     let thanhPhan = state.thanhPhanTieng
 
-    // Bỏ qua nếu từ có phần không hợp lệ (conLai) — đối xứng với Telex.push.
-    // Validator CỐ Ý thả conLai==["g"] đi qua (typo "gn"→"ng") nên nhánh dưới
-    // vẫn chạy được: thiếu guard này thì "leg2" ra "lèg", nuốt luôn chữ số 2
-    // (Telex "legf" giữ nguyên "legf").
-    if !thanhPhan.conLai.isEmpty {
-      return (state.push(char), false)
-    }
-
-    // Xử lý d9 → đ (phím 9 sau chữ d)
-    if state.chuKhongDau.count == 1,
-      let chuCaiDau = state.chuKhongDau.first,
-      (char == "9") && (chuCaiDau == "d" || chuCaiDau == "D")
-    {
-      return (state.withGachD(), true)
-    }
-
-    // Xử lý phím 9 gõ cuối từ để gạch D (Late D toggle, ví dụ: dinh9 -> định)
-    if let toggled = state.tryLateDToggle(char: char, triggerChars: ["9"]) {
-      return (toggled, true)
-    }
-
-    // Xử lý các phím số dấu (chỉ khi đã có nguyên âm)
     if !thanhPhan.nguyenAm.isEmpty {
-      switch char {
-      // Phím dấu thanh: 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
-      case "1":
-        return (state.withTone(.sac), true)
-      case "2":
-        return (state.withTone(.huyen), true)
-      case "3":
-        return (state.withTone(.hoi), true)
-      case "4":
-        return (state.withTone(.nga), true)
-      case "5":
-        return (state.withTone(.nang), true)
+      if let tone = TiengViet.VNIToneKeys[char] {
+        return (state.withTone(tone), true)
+      }
 
-      // Phím 6: dấu mũ (^) cho a, e, o → â, ê, ô
+      switch char {
       case "6":
         if thanhPhan.nguyenAmChua1KyTu(mangKyTu: ["a", "A", "o", "O", "e", "E"]) {
           return (state.withMu(.muUp), true)
         }
 
-      // Phím 7: dấu móc (horn) cho u, o → ư, ơ
       case "7":
         if thanhPhan.nguyenAmChua1KyTu(mangKyTu: ["u", "o", "U", "O"]) {
-          // Phím `7` thứ hai của cụm "uo" là của chữ 'o' → giữ móc, không toggle
-          // tắt. Thiếu guard này thì "nu7o7c1" ra "nuóc", "d9u7o7ng2" ra "đuòng".
           if let giuNguyen = state.giuMuMocTrenUO() {
             return (giuNguyen, true)
           }
           return (state.withMu(.muMoc), true)
         }
 
-      // Phím 8: dấu trăng (breve) cho a → ă
       case "8":
         if thanhPhan.nguyenAmChua1KyTu(mangKyTu: ["a", "A"]) {
           return (state.withMu(.muNgua), true)
@@ -138,12 +76,6 @@ class VNI: TypingMethod {
       }
     }
 
-    // Không áp dụng dấu, thêm ký tự như bình thường
-    return (state.push(char), false)
-  }
-
-  /// Xóa ký tự cuối cùng
-  public func pop(state: TiengVietState) -> TiengVietState {
-    return state.pop()
+    return (state.push(char, options: options), false)
   }
 }

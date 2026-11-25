@@ -10,483 +10,296 @@ import Combine
 import Defaults
 import Foundation
 import KeyboardShortcuts
-import os
 import os.log
 
 private let appLog = OSLog(subsystem: "dev.longht.vkey", category: "AppState")
 
 class AppState: ObservableObject {
 
-    /// When true, the next `enabled` mutation skips persistence into `appModes`.
-    /// Used by Smart Switch so launcher apps don't pollute the per-app memory.
-    private var skipPersistAppMode = false
-    public var smartSwitchActive = false
-    public var enabledBeforeSmartSwitch = false
-    private var skipHUDNotification = true
+  /// When true, the next `enabled` mutation skips persistence into `appModes`.
+  private var skipPersistAppMode = false
+  public var smartSwitchActive = false
+  public var enabledBeforeSmartSwitch = false
+  private var skipHUDNotification = true
 
-    // 2.0 (B2): theo dõi non-Latin IME để tự động disable vkey.
-    private let inputSourceMonitor = InputSourceMonitor()
-    public private(set) var nonLatinIMEActive = false
-    private var enabledBeforeNonLatinIME = false
+  /// Callback hiển thị Toggle HUD (do `AppDelegate` gắn để `AppState` không phụ thuộc trực tiếp vào tầng HUD).
+  var onToggleHUD: ((Bool) -> Void)?
 
-    @Published public var enabled = false {
-        didSet {
-            if !skipPersistAppMode {
-                self.appModes[self.activeAppName] = enabled
-            }
-            self.eventHook.setEnabled(enabled)
-            
-            if !skipHUDNotification {
-                DispatchQueue.main.async {
-                    ToggleHUDWindow.shared.show(isEnabled: self.enabled)
-                }
-            }
-        }
-    }
-    @Published public var typingMethod: TypingMethods {
-        didSet {
-            self.inputProcessor.changeTypingMethod(newMethod: typingMethod)
-            Defaults[.typingMethod] = typingMethod
-        }
-    }
-    @Published public var allowedZWJF: Bool {
-        didSet {
-            if allowedZWJF {
-                TiengViet.PhuAmDau =
-                    TiengViet.PhuAmGhep + TiengViet.PhuAmDon + TiengViet.PhuAmDonNuocNgoai
-            } else {
-                TiengViet.PhuAmDau = TiengViet.PhuAmGhep + TiengViet.PhuAmDon
-            }
-            TiengViet.updatePhuAmDauTrie()
+  // 2.0 (B2): theo dõi non-Latin IME để tự động disable vkey.
+  private let inputSourceMonitor = InputSourceMonitor()
+  public private(set) var nonLatinIMEActive = false
+  private var enabledBeforeNonLatinIME = false
 
-            Defaults[.allowedZWJF] = allowedZWJF
-        }
-    }
-    @Published public var secureInputActive = false
+  @Published public var enabled = false {
+    didSet {
+      if !skipPersistAppMode {
+        self.appModes[self.activeAppName] = enabled
+      }
+      self.eventHook.setEnabled(enabled)
 
-    /// Tên app NỀN đang giữ secure input, hoặc `nil`. Watchdog 2 giây ở
-    /// `AppDelegate` cập nhật; menu bar dùng để nói cho người dùng biết vì sao
-    /// có thể không gõ được tiếng Việt dù vkey vẫn hiện đang bật — trường hợp
-    /// này ổ khoá (`secureInputActive`) cố ý KHÔNG hiện vì ô mật khẩu không nằm
-    /// ở app đang gõ.
-    @Published public var secureInputHolderName: String?
-
-    /// vkey đang đứng ngoài vì app đang trước là app điều khiển máy từ xa (xem
-    /// `EventHook.remoteDesktopViewerBundles`). Callback tap cập nhật; menu dùng
-    /// để nói vì sao lá cờ còn V mà không ra dấu.
-    @Published public var remoteDesktopStandAside = false
-
-    /// App mà người dùng vừa TỰ đổi V/E (phím tắt, tổ hợp modifier, menu).
-    /// Smart Switch không ép lại cấu hình cho app này tới khi đổi sang app khác
-    /// — nếu không thì thao tác đổi chế độ bị hoàn tác ngay ở phím kế tiếp.
-    public private(set) var manualModeBundleId: String?
-
-    public var inputProcessor: InputProcessor
-    public var eventHook: EventHook
-    @Published public var appModes: [String: Bool] = [:]
-    @Published public var activeAppName = "Unknown"
-    public var bundleId: String
-
-    /// 1.7.x: cached bundle ID của focused app — cập nhật bởi NSWorkspace
-    /// notification (cross-app) và async AX refresh trên mouse-click
-    /// (cho in-app sub-window focus). EventHook callback đọc property
-    /// này thay vì tự gọi AX đồng bộ trên thread event-tap.
-    /// (v4.23 đã gỡ `Focused.focusedAppBundleId()`; chỗ trước đây dùng nó nay
-    /// đọc bundle id từ `Focused.snapshot()`.)
-    /// ⚠️ Property này có NĂM người ghi, không phải một — `frontmostApplication`
-    /// lúc seed và lúc `didActivateApplication`, `eventTargetUnixProcessID` qua
-    /// `noteFocusedBundleId`, và `Focused.snapshot()` ở CẢ HAI đường
-    /// (`syncFocusedContextForKeystroke` đồng bộ + `performFocusedElementRefresh`
-    /// async). Ba trong năm KHÔNG phải snapshot, và trên macOS 26 chúng bất đồng
-    /// với nhau khi có overlay (xem `EventHook.eventTapCallback`).
-    /// Đừng "dọn" khối v2.11 hay `noteFocusedBundleId` vì tưởng đã có nguồn duy
-    /// nhất — làm thế là dựng lại đúng lỗi Spotlight của v2.11/v4.11.
-    public private(set) var currentFocusedBundleId: String?
-    // `currentFocusedElementIsSearchOrCombo` đã gỡ: nó chỉ đẩy sang
-    // `inputProcessor.isSearchOrComboFocused`, mà cờ đó không còn ai ĐỌC kể từ
-    // khi v4.23 gỡ `isFixAutocompleteApp()`. Lý do đầy đủ ghi ở chỗ khai báo
-    // cũ trong `InputProcessor`.
-    /// v3.9: phân loại field đang focus (web content / hộp thoại native /
-    /// field cửa sổ chính). InputProcessor dùng để chọn diff NFC/NFD và chiến
-    /// lược gửi (omnibox Chrome = windowField của app NFD → axDirect).
-    ///
-    /// ⚠️ CỐ Ý GÁN THẲNG từ mỗi ảnh chụp AX, KHÔNG qua cổng lọc nào. Đã thử HAI
-    /// lần và đã lùi cả hai:
-    ///   • `adoptFieldKind` — đóng băng phân loại suốt một từ + không cho phỏng
-    ///     đoán kém tin cậy ghi đè;
-    ///   • `adoptFocusSnapshot` + `FieldKind?` — sticky-on-miss có phạm vi, tức
-    ///     một phép đo AX HỤT thì giữ phân loại cũ thay vì hạ về `.unknown`.
-    /// Cái sau lùi cùng chốt trục theo từ ở `InputProcessor.emitPlan()`: nó tồn
-    /// tại CHỈ để đỡ cho chốt, và không còn chốt thì HEAD tự hội tụ về đúng
-    /// (`.unknown` ⇒ NFD ⇒ synthetic) trong đúng những ca sticky định cứu. Lý do
-    /// đầy đủ ghi ở `Focused.fieldKind(from:)` mục (e)/(f).
-    public private(set) var currentFocusedFieldKind: Focused.FieldKind = .unknown {
-        didSet {
-            inputProcessor.focusedFieldKind = currentFocusedFieldKind
-        }
-    }
-    private let focusRefreshQueue = DispatchQueue(
-        label: "dev.longht.vkey.focusRefresh", qos: .userInteractive,
-        // Mỗi lần chụp AX tạo hàng chục object autorelease — xả theo từng block.
-        autoreleaseFrequency: .workItem
-    )
-    /// v3.6: refresh trễ thứ hai (coalesced) — hộp thoại native (Save panel)
-    /// xuất hiện SAU ⌘S/click một nhịp nên refresh ngay tại event còn thấy
-    /// focus cũ; nhịp trễ ~0.5s bắt đúng field mới.
-    private var pendingDelayedFocusRefresh: DispatchWorkItem?
-    private let immediateFocusRefreshQueued = OSAllocatedUnfairLock(initialState: false)
-    /// Bản đã giải mã của `Defaults[.appSmartSwitchConfigs]`. Key đó là
-    /// `[String: Codable]`: MỖI lần đọc `Defaults[...]` là giải mã JSON lại TỪNG
-    /// cấu hình (kèm `Date`) — trước đây event tap làm vậy ở mọi keyDown/click
-    /// khi Smart Switch bật, chỉ để tra đúng một app.
-    private let smartSwitchConfigsCache =
-        DefaultsDerivedCache<[String: AppSmartSwitchConfig]>(.appSmartSwitchConfigs) {
-            Defaults[.appSmartSwitchConfigs]
-        }
-
-    init() {
-        bundleId = Bundle.main.bundleIdentifier ?? "dev.longht.vkey"
-
-        let defaultMethod = Defaults[.typingMethod]
-        // Use direct assignment to avoid didSet during init if not needed, 
-        // but here we want to ensure side effects are consistent.
-        // Actually, didSet does NOT run in init.
-        typingMethod = defaultMethod
-        allowedZWJF = Defaults[.allowedZWJF]
-        
-        let processor = InputProcessor(method: defaultMethod)
-        inputProcessor = processor
-        eventHook = EventHook(inputProcessor: processor)
-
-        // Initial setup for allowedZWJF side effects since didSet doesn't run in init
-        if allowedZWJF {
-            TiengViet.PhuAmDau = TiengViet.PhuAmGhep + TiengViet.PhuAmDon + TiengViet.PhuAmDonNuocNgoai
-        } else {
-            TiengViet.PhuAmDau = TiengViet.PhuAmGhep + TiengViet.PhuAmDon
-        }
-        TiengViet.updatePhuAmDauTrie()
-
-        KeyboardShortcuts.onKeyUp(for: .toggleInputMode) { [self] in
-            self.setEnabledByUser(!self.enabled)
-        }
-
-        // 2.0.1: Floating Toolbar handler đã bị xoá cùng với tính năng.
-
-        // Register application change observer
-        NSWorkspace.shared.notificationCenter.addObserver(
-            self, selector: #selector(activeApplicationDidChange),
-            name: NSWorkspace.didActivateApplicationNotification, object: nil)
-
-        // 1.7.x: seed currentFocusedBundleId từ frontmost app — đảm bảo
-        // EventHook callback có giá trị valid trước khi notification đầu
-        // tiên fire (e.g. app khởi động khi Spotlight đang mở).
-        if let frontmost = NSWorkspace.shared.frontmostApplication,
-           let bid = frontmost.bundleIdentifier,
-           bid != bundleId
-        {
-            currentFocusedBundleId = bid
-            refreshFocusedBundleIdAsync()
-        }
-            
-        // Enable HUD notifications after a brief delay once startup is fully completed
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.skipHUDNotification = false
-        }
-
-        // 2.0 (B2): theo dõi input source change.
-        inputSourceMonitor.onInputSourceChange = { [weak self] category in
-            self?.handleInputSourceCategoryChange(category)
-        }
-        inputSourceMonitor.start()
-    }
-
-    /// Cấu hình Smart Switch của `bundleId`, tra trên bản đã giải mã sẵn.
-    public func smartSwitchConfig(for bundleId: String) -> AppSmartSwitchConfig? {
-        smartSwitchConfigsCache.value[bundleId]
-    }
-
-    deinit {
-        // Gỡ observer NSWorkspace đã đăng ký trong init để tránh leak nếu
-        // AppState bị tái tạo (observer giữ tham chiếu tới self).
-        NSWorkspace.shared.notificationCenter.removeObserver(self)
-    }
-
-    /// 2.0 (B2): xử lý khi user chuyển input source. Khi sang non-Latin IME
-    /// (Japanese / Chinese / Korean / Thai / Arabic …) — vkey tự động
-    /// disable và nhớ state trước đó. Khi quay về Latin — restore state.
-    /// Logic không chạm vào `appModes` để tránh ô nhiễm per-app memory.
-    private func handleInputSourceCategoryChange(_ category: InputSourceCategory) {
-        guard Defaults[.nonLatinIMEAutoDisable] else {
-            // Toggle off → nếu đang bị disable bởi non-Latin trước đó,
-            // restore state để không kẹt user.
-            if nonLatinIMEActive {
-                nonLatinIMEActive = false
-                setEnabledWithoutPersist(enabledBeforeNonLatinIME)
-            }
-            return
-        }
-
-        switch category {
-        case .nonLatin:
-            if !nonLatinIMEActive {
-                enabledBeforeNonLatinIME = enabled
-                nonLatinIMEActive = true
-                setEnabledWithoutPersist(false)
-                os_log("AppState: non-Latin IME active — vkey disabled",
-                       log: appLog, type: .info)
-            }
-        case .latin, .unknown:
-            if nonLatinIMEActive {
-                nonLatinIMEActive = false
-                setEnabledWithoutPersist(enabledBeforeNonLatinIME)
-                os_log("AppState: Latin input source restored — vkey re-enabled to %{public}@",
-                       log: appLog, type: .info, String(enabledBeforeNonLatinIME))
-            }
-        }
-    }
-
-    public func isNewAppVersion() -> Bool {
-        let storedVersion = Defaults[.currentVersion]
-        return storedVersion != "0.1" && Bundle.main.appVersionLong != storedVersion
-    }
-
-    public func storeTrustedAppVersion() {
-        Defaults[.currentVersion] = Bundle.main.appVersionLong
-    }
-
-    public func setTypingMethod(method: TypingMethods) {
-        typingMethod = method
-    }
-
-    public func setEnabled(set state: Bool) {
-        enabled = state
-    }
-
-    /// Đổi V/E do NGƯỜI DÙNG chủ động (phím tắt, tổ hợp modifier, menu, Cài
-    /// đặt). Khác `setEnabled(set:)` ở chỗ ghi nhớ app đang gõ để Smart Switch
-    /// tôn trọng lựa chọn này cho tới khi đổi app (xem `manualModeBundleId`).
-    public func setEnabledByUser(_ state: Bool) {
-        let app = inputProcessor.activeApp
-        manualModeBundleId = app.isEmpty ? nil : app
-        enabled = state
-    }
-
-    @objc func activeApplicationDidChange(notification: Notification) {
-        let wasSkippingHUD = skipHUDNotification
-        skipHUDNotification = true
-        defer { skipHUDNotification = wasSkippingHUD }
-
-        if let activeApp = NSWorkspace.shared.frontmostApplication,
-            let appName = activeApp.bundleIdentifier,
-            appName != bundleId
-        {
-            // Đổi app thật: lựa chọn V/E thủ công của app trước hết hiệu lực,
-            // Smart Switch áp lại cấu hình như thường.
-            manualModeBundleId = nil
-
-            // Vào/ra app điều khiển máy từ xa: cập nhật ngay, không chờ phím
-            // hay cú click đầu tiên, để biểu tượng menu bar đổi cùng lúc.
-            eventHook.updateRemoteDesktopStandAside(frontmostBundle: appName)
-
-            // 1.7.x: cập nhật cached focused bundle ID — push-based,
-            // tránh AX query đồng bộ trong EventHook callback.
-            currentFocusedBundleId = appName
-            refreshFocusedBundleIdAsync()
-
-            activeAppName = appName
-            inputProcessor.changeActiveApp(activeAppName)
-
-            // Cấu hình 3 trạng thái theo app. Danh sách "tắt VN" đời cũ
-            // (`smartSwitchApps`) đã được `migrateLegacySmartSwitchApps` chuyển
-            // hết sang đây lúc khởi động nên không còn đường tra thứ hai.
-            if Defaults[.smartSwitchEnabled], let config = smartSwitchConfig(for: appName) {
-                if !smartSwitchActive {
-                    enabledBeforeSmartSwitch = enabled
-                }
-                smartSwitchActive = true
-                setEnabledWithoutPersist(config.state.enablesVietnamese)
-                return
-            }
-
-            let shouldRestoreBeforeSmartSwitch = smartSwitchActive
-            smartSwitchActive = false
-
-            if let appMode = appModes[activeAppName] {
-                setEnabled(set: appMode)
-            } else if shouldRestoreBeforeSmartSwitch {
-                setEnabled(set: enabledBeforeSmartSwitch)
-            } else {
-                setEnabled(set: enabled)
-            }
-        }
-    }
-
-    /// v2.11: cập nhật cache focused-bundle từ event-target PID — EventHook
-    /// đọc PID đích trực tiếp trên mỗi event nên chính xác hơn AX refresh
-    /// cho overlay UIElement (Spotlight). Gọi trên main run loop (event tap).
-    public func noteFocusedBundleId(_ bid: String) {
-        currentFocusedBundleId = bid
-    }
-
-    /// v3.13: snapshot AX đồng bộ ngay trước transform — `focusedFieldKind` async
-    /// không kịp sau Cmd+L / click omnibox rồi gõ nhanh.
-    ///
-    /// ⚠️ Hàm này chạy MỖI keyDown (EventHook), nên một hiccup AX GIỮA từ vẫn có
-    /// thể lật trục NFC/NFD (lỗi F1 — xem `Focused.fieldKind(from:)`). Đã thử
-    /// chặn tại đây HAI lần — bằng cổng đóng băng phân loại theo từ
-    /// (`adoptFieldKind`), rồi bằng sticky-on-miss có phạm vi
-    /// (`adoptFocusSnapshot` + `FieldKind?` + cờ
-    /// `focusMovedSinceFieldKindMeasured`) — đã lùi cả hai. Đừng thêm lại cổng ở
-    /// tầng này; muốn thử lại thì ĐO TRƯỚC bằng `Tools/probe`, xem
-    /// `Focused.fieldKind(from:)` mục (e)/(f).
-    public func syncFocusedContextForKeystroke() {
-        let snap = Focused.snapshot()
-        if let bid = snap.bundleId {
-            currentFocusedBundleId = bid
-        }
-        currentFocusedFieldKind = snap.fieldKind
-    }
-
-    // ĐÃ GỠ: `adoptFocusSnapshot(_:)` — luật sticky-on-miss có phạm vi, gộp hai
-    // đường snapshot (đồng bộ + async) lại làm một. Nó lùi cùng chốt trục theo
-    // từ vì nó chỉ tồn tại để đỡ cho chốt; xem `Focused.fieldKind(from:)` mục
-    // (e). Hệ quả CỐ Ý: hai đường lại có hai luật khác nhau đúng như HEAD —
-    // đường đồng bộ sticky `bundleId` (`if let`), đường async gán thẳng kể cả
-    // nil. Đó là hành vi HEAD, đừng "dọn" cho đồng nhất nếu chưa đo lại.
-
-    /// 1.7.x: refresh `currentFocusedBundleId` async — gọi từ EventHook
-    /// callback trên mouse-click events. Chạy trên background queue để
-    /// không block event tap. NSWorkspace notification đã đủ cho cross-app
-    /// switch; refresh này bắt sub-window focus changes trong cùng app.
-    public func refreshFocusedBundleIdAsync() {
-        // Gộp nhịp NGAY: đã có một nhịp đang chờ trên queue (chưa bắt đầu) thì
-        // nhịp đó sẽ đọc trạng thái mới nhất — khỏi xếp thêm. Trước đây giữ phím
-        // mũi tên (~30 lần/giây) xếp 30 lần chụp AX/giây (mỗi lần tới ~50
-        // message) + 30 lượt `main.async`. Cờ hạ NGAY TRƯỚC khi chụp, nên
-        // trigger đến giữa lúc đang chụp vẫn có nhịp riêng sau nó.
-        let alreadyQueued = immediateFocusRefreshQueued.withLock { queued -> Bool in
-            defer { queued = true }
-            return queued
-        }
-        if !alreadyQueued {
-            focusRefreshQueue.async { [weak self] in
-                self?.immediateFocusRefreshQueued.withLock { $0 = false }
-                self?.performFocusedElementRefresh()
-            }
-        }
-        // v3.6: nhịp refresh trễ — hộp thoại native (Save panel của Chrome)
-        // mở SAU keystroke/click trigger nên nhịp đầu còn thấy focus cũ.
-        // Coalesce: trigger mới hủy nhịp trễ cũ, chỉ giữ 1 pending.
-        pendingDelayedFocusRefresh?.cancel()
-        let delayed = DispatchWorkItem { [weak self] in
-            self?.performFocusedElementRefresh()
-        }
-        pendingDelayedFocusRefresh = delayed
-        focusRefreshQueue.asyncAfter(deadline: .now() + 0.5, execute: delayed)
-    }
-
-    /// Đọc AX state của focused element (chạy trên focusRefreshQueue) rồi
-    /// publish về main. Tách riêng để refresh ngay + refresh trễ dùng chung.
-    /// v3.7: gộp 3 round-trip AX (bundleId + combo/search + web-area) thành
-    /// MỘT lần fetch focused element qua `Focused.snapshot()`.
-    private func performFocusedElementRefresh() {
-        // F4: chạy trên `focusRefreshQueue`, KHÔNG trên tap thread → dùng ngân
-        // sách nền (0,1), không phải ngân sách đường nóng. Nhịp trễ 0,5s tồn tại
-        // để bắt hộp thoại native xuất hiện muộn, nên đây là chỗ cần kiên nhẫn
-        // nhất trong cả tiến trình.
-        let snap = Focused.snapshot(timeout: Focused.defaultAXTimeout)
+      if !skipHUDNotification, let onToggleHUD {
+        let current = self.enabled
         DispatchQueue.main.async {
-            self.currentFocusedBundleId = snap.bundleId
-            self.currentFocusedFieldKind = snap.fieldKind
+          onToggleHUD(current)
         }
+      }
+    }
+  }
+
+  @Published public var typingMethod: TypingMethods {
+    didSet {
+      self.inputProcessor.changeTypingMethod(newMethod: typingMethod)
+      Defaults[.typingMethod] = typingMethod
+    }
+  }
+
+  @Published public var allowedZWJF: Bool {
+    didSet {
+      Defaults[.allowedZWJF] = allowedZWJF
+    }
+  }
+
+  @Published public var secureInputActive = false
+  @Published public var secureInputHolderName: String?
+  @Published public var remoteDesktopStandAside = false
+
+  /// App mà người dùng vừa tự đổi V/E; Smart Switch tôn trọng tới khi chuyển app khác.
+  public private(set) var manualModeBundleId: String?
+
+  public var inputProcessor: InputProcessor
+  public var eventHook: EventHook
+  @Published public var appModes: [String: Bool] = [:]
+  @Published public var activeAppName = "Unknown"
+  public var bundleId: String
+
+  private let focusTracker = FocusContextTracker()
+
+  public var currentFocusedBundleId: String? {
+    focusTracker.currentFocusedBundleId
+  }
+
+  public var currentFocusedFieldKind: Focused.FieldKind {
+    focusTracker.currentFocusedFieldKind
+  }
+
+  /// Bản đã giải mã của `Defaults[.appSmartSwitchConfigs]`.
+  private let smartSwitchConfigsCache =
+    DefaultsDerivedCache<[String: AppSmartSwitchConfig]>(.appSmartSwitchConfigs) {
+      Defaults[.appSmartSwitchConfigs]
     }
 
-    /// Chuyển danh sách "tắt VN" đời cũ (`smartSwitchApps`, trước 1.7.0) sang
-    /// cấu hình 3 trạng thái rồi XOÁ danh sách. Idempotent.
-    ///
-    /// Bản 1.7.0 chỉ chép khi `appSmartSwitchConfigs` còn rỗng và không xoá
-    /// nguồn, nên danh sách cũ sống mãi làm đường tra thứ hai ở MỖI PHÍM — và
-    /// một app còn nằm trong đó thì xoá cấu hình ở tab Smart Switch cũng không
-    /// hết bị ép tiếng Anh, vì không có dòng nào trên UI để xoá. Nay app nào
-    /// trong danh sách cũ mà chưa có cấu hình thì hiện thành một dòng
-    /// `englishMode` (đúng hành vi đang có), người dùng thấy và gỡ được.
-    public static func migrateLegacySmartSwitchApps() {
-        let legacy = Defaults[.smartSwitchApps]
-        guard !legacy.isEmpty else { return }
-        Defaults[.appSmartSwitchConfigs] = mergingLegacySmartSwitchApps(
-            legacy, into: Defaults[.appSmartSwitchConfigs], now: Date())
-        Defaults[.smartSwitchApps] = []
+  init() {
+    bundleId = Bundle.main.bundleIdentifier ?? "dev.longht.vkey"
+
+    let defaultMethod = Defaults[.typingMethod]
+    typingMethod = defaultMethod
+    allowedZWJF = Defaults[.allowedZWJF]
+
+    let processor = InputProcessor(method: defaultMethod)
+    inputProcessor = processor
+    eventHook = EventHook(inputProcessor: processor)
+
+    focusTracker.onFieldKindChange = { [weak processor] kind in
+      processor?.focusedFieldKind = kind
     }
 
-    /// Lõi thuần của `migrateLegacySmartSwitchApps`: app trong danh sách cũ mà
-    /// chưa có cấu hình thì nhận `englishMode`; app đã có cấu hình giữ nguyên.
-    static func mergingLegacySmartSwitchApps(
-        _ legacy: [String], into configs: [String: AppSmartSwitchConfig], now: Date
-    ) -> [String: AppSmartSwitchConfig] {
-        var merged = configs
-        for bundleId in legacy where merged[bundleId] == nil {
-            merged[bundleId] = AppSmartSwitchConfig(
-                state: .englishMode, source: .user, lastModified: now)
-        }
-        return merged
+    KeyboardShortcuts.onKeyUp(for: .toggleInputMode) { [weak self] in
+      guard let self else { return }
+      self.setEnabledByUser(!self.enabled)
     }
 
-    /// v4.11: Spotlight giờ THEO MODE hiện tại (không ép English). Gỡ nó khỏi
-    /// cả `smartSwitchApps` (list) lẫn `appSmartSwitchConfigs` (nếu bản cũ đã
-    /// seed vào) — chạy 1 lần. An toàn vì Spotlight không cấu hình được qua UI
-    /// (luôn là auto-seed, không phải lựa chọn có chủ đích của user). KHÔNG đụng
-    /// tới launcher (Raycast/Alfred/LaunchBar) vì đó là app thường user tự chỉnh.
-    public static func migrateSpotlightKeepMode() {
-        guard !Defaults[.didMigrateSpotlightKeepMode] else { return }
-        let spotlight = "com.apple.Spotlight"
-        if Defaults[.smartSwitchApps].contains(spotlight) {
-            Defaults[.smartSwitchApps].removeAll { $0 == spotlight }
-        }
-        if Defaults[.appSmartSwitchConfigs][spotlight] != nil {
-            Defaults[.appSmartSwitchConfigs].removeValue(forKey: spotlight)
-        }
-        Defaults[.didMigrateSpotlightKeepMode] = true
+    NSWorkspace.shared.notificationCenter.addObserver(
+      self, selector: #selector(activeApplicationDidChange),
+      name: NSWorkspace.didActivateApplicationNotification, object: nil)
+
+    if let frontmost = NSWorkspace.shared.frontmostApplication,
+      let bid = frontmost.bundleIdentifier,
+      bid != bundleId
+    {
+      focusTracker.noteFocusedBundleId(bid)
+      focusTracker.refreshAsync()
     }
 
-    /// v4.12: launcher (Raycast/Alfred/LaunchBar) giờ THEO MODE hiện tại (không
-    /// ép English). Gỡ khỏi `smartSwitchApps` + `appSmartSwitchConfigs` nếu đang
-    /// ở englishMode (trạng thái auto-seed từ default cũ) — chạy 1 lần. Chỉ gỡ
-    /// entry englishMode để KHÔNG đè lựa chọn có chủ đích của user (vd họ tự đặt
-    /// một launcher = vietnameseMode / disabled thì giữ nguyên).
-    public static func migrateLaunchersKeepMode() {
-        guard !Defaults[.didMigrateLaunchersKeepMode] else { return }
-        let launchers = [
-            "com.raycast.macos",
-            "com.runningwithcrayons.Alfred",
-            "com.runningwithcrayons.Alfred-Preferences",
-            "com.obdev.LaunchBar",
-        ]
-        var apps = Defaults[.smartSwitchApps]
-        apps.removeAll { launchers.contains($0) }
-        Defaults[.smartSwitchApps] = apps
-        var configs = Defaults[.appSmartSwitchConfigs]
-        for id in launchers where configs[id]?.state == .englishMode {
-            configs.removeValue(forKey: id)
-        }
-        Defaults[.appSmartSwitchConfigs] = configs
-        Defaults[.didMigrateLaunchersKeepMode] = true
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+      self?.skipHUDNotification = false
     }
 
-    /// Apply an enabled state change without writing it to per-app memory.
-    /// Used by Smart Switch so transient launcher activations don't override
-    /// the user's preference for the app underneath.
-    public func setEnabledWithoutPersist(_ value: Bool) {
-        // Gán lại đúng giá trị cũ vẫn bắn `objectWillChange` (`@Published` không
-        // so sánh) → menu bar + Settings (nếu đang giữ) render lại toàn bộ, mà
-        // Smart Switch / rule tiêu đề áp lại chế độ ở mỗi lần đổi app. Không phát
-        // gì thêm: didSet ở đây không lưu `appModes`, không hiện HUD, và
-        // `EventHook.setEnabled` vốn đã bỏ qua khi không đổi.
-        guard enabled != value else { return }
-        let wasSkippingHUD = skipHUDNotification
-        skipHUDNotification = true
-        skipPersistAppMode = true
-        enabled = value
-        skipPersistAppMode = false
-        skipHUDNotification = wasSkippingHUD
+    inputSourceMonitor.onInputSourceChange = { [weak self] category in
+      self?.handleInputSourceCategoryChange(category)
     }
+    inputSourceMonitor.start()
+  }
+
+  deinit {
+    NSWorkspace.shared.notificationCenter.removeObserver(self)
+  }
+
+  // MARK: - Smart Switch (Unified)
+
+  /// Cấu hình Smart Switch của `bundleId`, tra trên bản đã giải mã sẵn.
+  public func smartSwitchConfig(for bundleId: String) -> AppSmartSwitchConfig? {
+    smartSwitchConfigsCache.value[bundleId]
+  }
+
+  /// Áp một cấu hình Smart Switch đã khớp cho `bundleId`.
+  private func applySmartSwitchConfig(
+    _ config: AppSmartSwitchConfig,
+    for bundleId: String,
+    recordFire: Bool
+  ) {
+    if !smartSwitchActive {
+      enabledBeforeSmartSwitch = enabled
+      smartSwitchActive = true
+      if recordFire {
+        UsageStatistics.shared.recordSmartSwitchFire(toApp: bundleId)
+      }
+    }
+    setEnabledWithoutPersist(config.state.enablesVietnamese)
+  }
+
+  /// Áp Smart Switch trong event tap cho focused bundle (đã quy chuẩn về app cha).
+  public func applySmartSwitchIfNeeded(
+    forFocusedBundle rawFocusedBundleId: String,
+    frontmostBundle: String?
+  ) {
+    let focusedBundleId = AppCompatibilityRegistry.canonicalAppBundle(
+      focused: rawFocusedBundleId, frontmost: frontmostBundle)
+    guard manualModeBundleId != focusedBundleId else { return }
+
+    if let config = smartSwitchConfig(for: focusedBundleId) {
+      applySmartSwitchConfig(config, for: focusedBundleId, recordFire: true)
+    } else if smartSwitchActive {
+      smartSwitchActive = false
+      setEnabledWithoutPersist(enabledBeforeSmartSwitch)
+    }
+  }
+
+  // MARK: - Input Source Monitoring
+
+  private func handleInputSourceCategoryChange(_ category: InputSourceCategory) {
+    guard Defaults[.nonLatinIMEAutoDisable] else {
+      if nonLatinIMEActive {
+        nonLatinIMEActive = false
+        setEnabledWithoutPersist(enabledBeforeNonLatinIME)
+      }
+      return
+    }
+
+    switch category {
+    case .nonLatin:
+      if !nonLatinIMEActive {
+        enabledBeforeNonLatinIME = enabled
+        nonLatinIMEActive = true
+        setEnabledWithoutPersist(false)
+        os_log("AppState: non-Latin IME active — vkey disabled", log: appLog, type: .info)
+      }
+    case .latin, .unknown:
+      if nonLatinIMEActive {
+        nonLatinIMEActive = false
+        setEnabledWithoutPersist(enabledBeforeNonLatinIME)
+        os_log(
+          "AppState: Latin input source restored — vkey re-enabled to %{public}@",
+          log: appLog, type: .info, String(enabledBeforeNonLatinIME))
+      }
+    }
+  }
+
+  // MARK: - Version & Mode Control
+
+  public func isNewAppVersion() -> Bool {
+    let storedVersion = Defaults[.currentVersion]
+    return storedVersion != "0.1" && Bundle.main.appVersionLong != storedVersion
+  }
+
+  public func storeTrustedAppVersion() {
+    Defaults[.currentVersion] = Bundle.main.appVersionLong
+  }
+
+  public func setTypingMethod(method: TypingMethods) {
+    typingMethod = method
+  }
+
+  public func setEnabled(set state: Bool) {
+    enabled = state
+  }
+
+  /// Đổi V/E do người dùng chủ động — ghi nhớ `manualModeBundleId` để Smart Switch tôn trọng.
+  public func setEnabledByUser(_ state: Bool) {
+    let app = inputProcessor.activeApp
+    manualModeBundleId = app.isEmpty ? nil : app
+    enabled = state
+  }
+
+  @objc func activeApplicationDidChange(notification: Notification) {
+    let wasSkippingHUD = skipHUDNotification
+    skipHUDNotification = true
+    defer { skipHUDNotification = wasSkippingHUD }
+
+    if let activeApp = NSWorkspace.shared.frontmostApplication,
+      let appName = activeApp.bundleIdentifier,
+      appName != bundleId
+    {
+      manualModeBundleId = nil
+      eventHook.updateRemoteDesktopStandAside(frontmostBundle: appName)
+
+      focusTracker.noteFocusedBundleId(appName)
+      focusTracker.refreshAsync()
+
+      activeAppName = appName
+      inputProcessor.changeActiveApp(activeAppName)
+
+      if Defaults[.smartSwitchEnabled], let config = smartSwitchConfig(for: appName) {
+        applySmartSwitchConfig(config, for: appName, recordFire: false)
+        return
+      }
+
+      let shouldRestoreBeforeSmartSwitch = smartSwitchActive
+      smartSwitchActive = false
+
+      if let appMode = appModes[activeAppName] {
+        setEnabled(set: appMode)
+      } else if shouldRestoreBeforeSmartSwitch {
+        setEnabled(set: enabledBeforeSmartSwitch)
+      } else {
+        setEnabled(set: enabled)
+      }
+    }
+  }
+
+  // MARK: - Focus Tracking Bridges
+
+  public func noteFocusedBundleId(_ bid: String) {
+    focusTracker.noteFocusedBundleId(bid)
+  }
+
+  public func syncFocusedContextForKeystroke() {
+    focusTracker.syncForKeystroke()
+  }
+
+  public func refreshFocusedBundleIdAsync() {
+    focusTracker.refreshAsync()
+  }
+
+  // MARK: - Migration Bridges (preserve existing test API)
+
+  public static func migrateLegacySmartSwitchApps() {
+    StartupMigrations.migrateLegacySmartSwitchApps()
+  }
+
+  static func mergingLegacySmartSwitchApps(
+    _ legacy: [String], into configs: [String: AppSmartSwitchConfig], now: Date
+  ) -> [String: AppSmartSwitchConfig] {
+    StartupMigrations.mergingLegacySmartSwitchApps(legacy, into: configs, now: now)
+  }
+
+  /// Apply an enabled state change without writing it to per-app memory or showing HUD.
+  public func setEnabledWithoutPersist(_ value: Bool) {
+    guard enabled != value else { return }
+    let wasSkippingHUD = skipHUDNotification
+    skipHUDNotification = true
+    skipPersistAppMode = true
+    enabled = value
+    skipPersistAppMode = false
+    skipHUDNotification = wasSkippingHUD
+  }
 }
